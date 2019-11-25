@@ -1,3 +1,4 @@
 snowshu.egg-info/
 dist/
+build/
 *.pyc
