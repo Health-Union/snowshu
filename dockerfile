@@ -6,7 +6,7 @@ RUN mkdir /app
 COPY . /app
 WORKDIR /app
 RUN apt-get update && \
-apt-get install -y vim && \ ## just for dev :)
+apt-get install -y vim && \ 
 pip3 install -r requirements/requirements.txt && \
 pip3 install -r requirements/dev_requirements.txt
 

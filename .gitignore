@@ -1,5 +1,3 @@
 snowshu.egg-info/
 dist/
-dockerfile
 *.pyc
-__pychache__/*
