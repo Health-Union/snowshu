@@ -5,6 +5,8 @@ dist/
 build/
 *.pyc
 *.log
+*.log.*
+
 
 tests/assets/integration/trail-path.yml
 tests/assets/integration/credentials.yml

@@ -1,6 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor
-import threading
-import queue
 from typing import Optional,Any,TextIO
 from pathlib import Path
 import os
@@ -32,19 +29,15 @@ class TrailPath:
 
     def _load_full_catalog(self)->None:
         conn=self.connections['source']
-        full_catalog=list()
-        
-        def accumulate_relation(queue:queue.Queue,accumulator:list):
-            while not queue.empty():
-                accumulator += list(self.source_adapter.get_relations_from_database(conn,queue.get()))
-        
-        relation_queue=queue.Queue()
-        [relation_queue.put(db) for db in self.source_adapter.get_all_databases(conn)]
-        with ThreadPoolExecutor(max_workers=self.THREADS) as executor:
-            executor.submit(accumulate_relation, relation_queue, full_catalog)
+        dataframes,full_catalog=list(),list()
+
+        for db in self.source_adapter.get_all_databases(conn):
+            conn=self.source_adapter.get_connection(self._credentials['source'])
+            dataframes + list(self.source_adapter.get_relation_attribute_dataframe_from_database(conn,db))
+        for frame in dataframes:
+            full_catalog + list(self.source_adapter.get_relations_from_dataframe(frame))
 
         self.full_catalog=tuple(full_catalog)
-
 
     def _set_adapters(self):
         self._fetch_source_adapter(self._get_config_value(self._credentials['source'],'adapter',parent_name="source"))

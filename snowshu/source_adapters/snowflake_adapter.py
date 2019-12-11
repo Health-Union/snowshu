@@ -76,6 +76,65 @@ class SnowflakeAdapter(BaseSourceAdapter):
         logger.debug(f'Done. Found {len(databases)} databases.')
         return databases
 
+    def build_relations_from_dataframe(self,relations_frame:pd.DataFrame)->Tuple[Relation]:
+        if len(relations_frame) < 1:
+            return tuple()
+        unique_relations = (relations_frame['schema'] +'.'+relations_frame['relation_name']).unique()
+        database=str(relations_frame['database'].unique()[0])
+        
+        logger.debug(f'Done. Found a total of {len(unique_relations)} relations. in database {database}.')
+        relations=list()
+        for relation in unique_relations:
+            logger.debug(f'Building relation {database+"."+relation}...')
+            attributes=list()
+            for attribute in relations_frame.loc[(relations_frame['schema']+'.'+relations_frame['relation_name']) == relation].itertuples():
+                attributes.append(
+                            Attribute(
+                                attribute.name,
+                                self._get_data_type(attribute.data_type)
+                                ))
+            
+            relation=Relation(attribute.database,
+                              attribute.schema,
+                              attribute.relation_name,
+                              attribute.materialization,
+                              attributes)
+            logger.debug(f'Added relation {relation.dot_notation} to pool.')
+            relations.append(relation)
+
+        logger.info(f'Found {len(relations)} total relations in database {database}.')
+        return tuple(relations) 
+
+    def get_relation_attribute_dataframe_from_database(self,connection:sqlalchemy.engine.base.Engine,database:str)->pd.DataFrame:
+        relations_sql=f"""
+                                 SELECT 
+                                    m.table_schema, 
+                                    m.table_name, 
+                                    m.table_type,
+                                    c.column_name,
+                                    c.ordinal_position,
+                                    c.data_type
+                                 FROM 
+                                    "{database}"."INFORMATION_SCHEMA"."TABLES" m
+                                 INNER JOIN
+                                    "{database}"."INFORMATION_SCHEMA"."COLUMNS" c  
+                                 ON 
+                                    c.table_schema = m.table_schema
+                                 AND
+                                    c.table_name = m.table_name
+                                 WHERE
+                                    m.table_schema <> 'INFORMATION_SCHEMA'
+                              """
+                                            
+            
+        logger.debug(f'Collecting detailed relations from database {database}...')
+        details=self._safe_query(connection,relations_sql)
+        frame=pd.DataFrame(details,columns=("schema","relation_name","materialization","name","ordinal","data_type",))
+        frame['database']=database
+        return frame
+
+
+
     def get_relations_from_database(self,connection:sqlalchemy.engine.base.Engine,database:str)->Tuple[Relation]:
         relations_sql=f"""
                                  SELECT 
