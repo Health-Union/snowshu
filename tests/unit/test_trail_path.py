@@ -32,6 +32,7 @@ def randomized_config():
         SOURCES_ACCOUNT:str
         SOURCES_PASSWORD:str
         SOURCES_USERNAME:str
+        SOURCES_DATABASE:str
         
         TARGETS_NAME:str
         TARGETS_ADAPTER:str
@@ -47,7 +48,7 @@ def randomized_config():
         STORAGES_USERNAME:str
         CREDPATH:str=f"{PACKAGE_ROOT}/tests/assets/unit/credentials.yml"
     
-    expected=Expected(*[rand_string(10) for _ in range(23)])
+    expected=Expected(*[rand_string(10) for _ in range(24)])
 
    
     # randomize values
@@ -76,7 +77,8 @@ def randomized_config():
                         adapter=expected.SOURCES_ADAPTER,
                         account=expected.SOURCES_ACCOUNT,
                         password=expected.SOURCES_PASSWORD,
-                        username=expected.SOURCES_USERNAME)],
+                        user=expected.SOURCES_USERNAME,
+                        database=expected.SOURCES_DATABASE)],
           targets=[dict(
                         name=expected.TARGETS_NAME,
                         adapter=expected.TARGETS_ADAPTER,
@@ -95,14 +97,6 @@ def randomized_config():
     yield as_file_object, as_dict, expected, random_creds_as_file_object, random_creds_as_dict,
 
 
-
-
-def test_loads_correct_cred_profiles(randomized_config):
-    config,_,__,___,____=randomized_config
-    tp=TrailPath()
-    tp.load_config(config)
-    
-    #assert tp._credentials['source']['password'] == 'super-secure-password'
    
 def test_errors_on_bad_profile(randomized_config):
     _,config_dict,expected,__,___=randomized_config
@@ -139,20 +133,6 @@ def test_rejects_bad_adapter():
     with pytest.raises(KeyError):
         trail_path._fetch_source_adapter('european_plug_adapter')
 
-def test_get_connection(randomized_config):
-    config,_,expected,__,___ = randomized_config
-    trail_path=TrailPath()
-    USER,PASSWORD,ACCOUNT,DATABASE,SCHEMA,ROLE = [rand_string(10) for _ in range(6)]
-    
-    trail_path.source_adapter=SnowflakeAdapter()
-    trail_path._credentials=dict(source=dict(user=USER,
-                                             password=PASSWORD,
-                                             account=ACCOUNT,
-                                             database=DATABASE,
-                                             schema=SCHEMA,
-                                             role=ROLE))
-    
-    trail_path._set_connections()
-    assert isinstance(trail_path.connections['source'],sqlalchemy.engine.base.Engine)
+
           
     

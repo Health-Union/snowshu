@@ -1,4 +1,10 @@
-from typing import Optional,Any,TextIO
+import queue
+from concurrent.futures import ThreadPoolExecutor
+import threading
+import time
+from copy import deepcopy
+from typing import Optional,Any,TextIO,List
+from snowshu.core.credentials import Credentials
 from pathlib import Path
 import os
 import yaml
@@ -28,14 +34,15 @@ class TrailPath:
         
 
     def _load_full_catalog(self)->None:
-        conn=self.connections['source']
-        dataframes,full_catalog=list(),list()
-
-        for db in self.source_adapter.get_all_databases(conn):
-            conn=self.source_adapter.get_connection(self._credentials['source'])
-            dataframes + list(self.source_adapter.get_relation_attribute_dataframe_from_database(conn,db))
-        for frame in dataframes:
-            full_catalog + list(self.source_adapter.get_relations_from_dataframe(frame))
+        full_catalog=list()
+        databases = queue.Queue()
+        [databases.put(db) for db in self.source_adapter.get_all_databases()]
+        
+        def accumulate_relations(db,accumulator):
+            accumulator+=self.source_adapter.get_relations_from_database(db)
+        
+        with ThreadPoolExecutor(max_workers=self.THREADS) as executor:
+            executor.submit(accumulate_relations,databases,full_catalog)
 
         self.full_catalog=tuple(full_catalog)
 
@@ -43,7 +50,10 @@ class TrailPath:
         self._fetch_source_adapter(self._get_config_value(self._credentials['source'],'adapter',parent_name="source"))
 
     def _set_connections(self):
-        self._connections['source']=self.source_adapter.get_connection(self._credentials['source'])
+        creds=deepcopy(self._credentials['source'])
+        creds.pop('name')
+        creds.pop('adapter')
+        self.source_adapter.credentials=Credentials(**creds)
 
     def _load_credentials(self,credentials_path:str, 
                                source_profile:str, 
