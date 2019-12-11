@@ -1,4 +1,10 @@
+.coverage
+*.swp
 snowshu.egg-info/
 dist/
 build/
 *.pyc
+*.log
+
+tests/assets/integration/trail-path.yml
+tests/assets/integration/credentials.yml

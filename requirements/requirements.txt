@@ -1,3 +1,12 @@
 -r dev_requirements.txt
+pyyaml==5.2
 pandas==0.25.3
-docker-py
+docker-py==1.10.6
+click==7.0
+coloredlogs==10.0
+networkx==2.4
+
+##SNOWFLAKE
+snowflake-connector-python==2.1.0
+snowflake-sqlalchemy==1.1.17
+python-dateutil==2.8.0 #gross back-pin for snowflake-sqlalchemy :(

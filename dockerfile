@@ -7,6 +7,7 @@ COPY . /app
 WORKDIR /app
 RUN apt-get update && \
 apt-get install -y vim && \ 
+echo "export PYTHONPATH=${PWD}:$PYTHONPATH" >> /root/.bashrc && \
 pip3 install -r requirements/requirements.txt && \
 pip3 install -r requirements/dev_requirements.txt
 

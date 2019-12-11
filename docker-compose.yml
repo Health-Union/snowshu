@@ -1,0 +1,11 @@
+version: "3.5"
+
+services:
+  snowshu:
+    image: snowshu
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+    command: tail -f /dev/null
