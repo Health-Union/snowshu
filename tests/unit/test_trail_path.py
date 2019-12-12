@@ -1,4 +1,9 @@
+import networkx
 import sqlalchemy
+from snowshu.core.materializations import TABLE,VIEW
+from snowshu.core.attribute import Attribute
+import snowshu.core.data_types as dt
+from snowshu.core.relation import Relation
 import mock
 import os
 from snowshu.utils import PACKAGE_ROOT
@@ -53,7 +58,7 @@ def randomized_config():
    
     # randomize values
     relationships=test_trail_path['source']['relations'][0]['relationships']
-    directional=relationships['depends_on'][0]
+    directional=relationships['directional'][0]
     directional['local_attribute']=expected.DRELATION_LOCAL_ATTRIBUTE
     directional['remote_attribute']=expected.DRELATION_REMOTE_ATTRIBUTE
     directional['relation']=expected.DRELATION
@@ -63,7 +68,7 @@ def randomized_config():
     bidirectional['remote_attribute']=expected.BIRELATION_REMOTE_ATTRIBUTE
     bidirectional['relation']=expected.BIRELATION
     bidirectional['schema']=expected.BIRELATION_SCHEMA
-    relationships['depends_on'][0]=directional
+    relationships['directional'][0]=directional
     relationships['bidirectional'][0]=bidirectional
     test_trail_path['source']['relations'][0]['relationships']=relationships
     test_trail_path['credpath']=expected.CREDPATH
@@ -133,6 +138,57 @@ def test_rejects_bad_adapter():
     with pytest.raises(KeyError):
         trail_path._fetch_source_adapter('european_plug_adapter')
 
+def test_builds_dags_regex():
+    tp=TrailPath()
+    NEVER_RELATION=Relation(database='RAWDATABASE',
+                 schema='NOT_MY_SCHEMA',
+                 name='NOT_MY_TABLE',
+                 materialization=VIEW, 
+                 attributes=[Attribute('hot_dog',dt.INTEGER),Attribute('shoes',dt.DATE)])
+    DEFAULT_MATCHED_RELATION=Relation(database='RAWDATABASE',
+                 schema='RAWSCHEMA',
+                 name='RAWVIEW',
+                 materialization=VIEW, 
+                 attributes=[Attribute('hot_dog',dt.INTEGER),Attribute('shoes',dt.DATE)])
+    DEPENDENT_RELATION=Relation(database='PRODDATABASE',
+                 schema='SNOWSCHEMA',
+                 name='COLDTABLE',
+                 materialization=TABLE,
+                 attributes=[Attribute('banana',dt.VARCHAR)])
+    SPECIFIED_RELATION=Relation(database='RAWDATABASE',
+                 materialization=TABLE,
+                 schema='SNOWSCHEMA',
+                 name='FROSTY',
+                 attributes=[Attribute('hot_dog_id',dt.INTEGER),Attribute('not_hotdog',dt.VARCHAR)])           
+    ISO_RELATION=Relation(database='RAWDATABASE',
+                          schema='RAWSCHEMA',
+                          materialization=VIEW,
+                          name="ISO_VIEW",
+                          attributes=[Attribute('thing',dt.INTEGER)])
+    TEST_RELATIONS=(NEVER_RELATION,DEFAULT_MATCHED_RELATION,DEPENDENT_RELATION,SPECIFIED_RELATION,ISO_RELATION)
 
-          
+    TEST_BIDIRECTONAL_RELATIONSHIP=dict(local_attribute='hot_dog_id',database='RAWDATABASE',schema='RAWSCHEMA',relation='RAWVIEW',remote_attribute='hot_dog')
+    TEST_DIRECTIONAL_RELATIONSHIP=dict(local_attribute='not_hotdog',database='PRODDATABASE',schema='SNOWSCHEMA',relation='COLDTABLE',remote_attribute='banana')
+
+
+
+    tp.full_catalog=TEST_RELATIONS
+    tp.source_configs=dict()
+    tp.source_configs['default_sampling']=dict(databases=[dict(name="(?i)^raw.*", schemas=[dict(name="RAWSCHEMA", relations=["(?i).*VIEW$"])])])  
+    tp.source_configs['specified_relations']=[dict(database="(?i)^raw.*",schema="^SNOW.*", relation=".*Y",bidirectional=[TEST_BIDIRECTONAL_RELATIONSHIP],directional=[TEST_DIRECTIONAL_RELATIONSHIP])]
+
+    graph=tp.load_dags()
+    for dag in tp.dags:
+        assert isinstance(dag,networkx.Graph)
     
+    for dag in tp.dags:
+        directed=dag.is_directed()
+        if len(dag) < 2:
+            assert not directed
+        else:
+            assert directed
+
+    for dag in tp.dags:
+        for node in dag.nodes():
+            if node == DEPENDENT_RELATION:
+                assert SPECIFIED_RELATION in networkx.descendants(dag,node)

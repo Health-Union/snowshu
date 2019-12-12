@@ -8,7 +8,7 @@ class SampleType:
     name:str
     required_params:dict
 
-    def __str__(self)->str:
+    def __repr__(self)->str:
         return self.name
 
 STRATIFIED=SampleType('STRATIFIED',

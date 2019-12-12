@@ -38,7 +38,7 @@ source:
         remote_attribute: id 
 
       ## this maps `RawSourceData.django.users.home_page_id => RawSourceData.django.website_pages.id` 
-      depends_on:
+      directional:
       - local_attribute: home_page_id
         database: RawSourceData
         schema: django

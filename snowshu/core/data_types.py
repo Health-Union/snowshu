@@ -6,7 +6,7 @@ class DataType:
     name:str
     pandas_primative:Optional[Any]=None
 
-    def __str__(self)->str:
+    def __repr__(self)->str:
         return self.name
 
 #TODO:break these out into meaninful data types

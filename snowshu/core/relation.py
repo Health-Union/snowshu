@@ -1,14 +1,17 @@
 from typing import Union,List
-from snowshu.core.relation_types import Table, View, MaterializedView, Sequence
+from snowshu.core.materializations import Materialization
 from snowshu.core.attribute import Attribute
+import pandas as pd
 
 class Relation:
+
+    data:pd.DataFrame
 
     def __init__(self,
                     database:str,
                     schema:str,
                     name:str,
-                    materialization:Union[Table,View,MaterializedView,Sequence],
+                    materialization:Materialization,
                     attributes:List[Attribute],
                     bidirectional_relationships:list=[],
                     directional_relationships:list=[]):
@@ -21,6 +24,21 @@ class Relation:
         self.bidirectional_relationships=bidirectional_relationships
         self.directional_relationships=directional_relationships 
 
+    def __repr__(self)->str:
+        return f"<Relation object {self.database}.{self.schema}.{self.name}>"
+
     @property
     def dot_notation(self)->str:
         return f"{self.database}.{self.schema}.{self.name}"
+
+    
+    
+    ## Relation.relation is confusing compared to Relation.name, but in other objects the 
+    ## <database>.<schema>.<relation> convention makes this convenient.
+    @property
+    def relation(self)->str:
+        return self.name
+
+    @relation.setter
+    def relation(self,value:str)->None:
+        self.name=value

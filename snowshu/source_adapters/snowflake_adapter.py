@@ -8,6 +8,7 @@ from snowshu.core.relation import Relation
 from snowshu.source_adapters import BaseSourceAdapter
 from snowshu.source_adapters.sample_methods import BERNOULLI, SYSTEM
 import snowshu.core.data_types as dtypes
+import snowshu.core.materializations as mz
 from snowshu.logger import Logger
 from snowshu.core.credentials import Credentials,USER,PASSWORD,ACCOUNT,DATABASE,SCHEMA,ROLE,WAREHOUSE
 logger=Logger().logger
@@ -34,6 +35,8 @@ class SnowflakeAdapter(BaseSourceAdapter):
                             array=dtypes.ARRAY,
                             binary=dtypes.BINARY)
     
+    MATERIALIZATION_MAPPINGS=dict(BASE_TABLE=mz.TABLE,
+                                  VIEW=mz.VIEW)
 
 
     GET_ALL_DATABASES_SQL=  """ SELECT DISTINCT database_name 
@@ -101,7 +104,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
             relation=Relation(database,
                               attribute.schema,
                               attribute.relation_name,
-                              attribute.materialization,
+                              self.MATERIALIZATION_MAPPINGS[attribute.materialization],
                               attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')
             relations.append(relation)
