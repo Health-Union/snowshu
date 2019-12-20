@@ -4,3 +4,5 @@ autopep8==1.4.4
 testfixtures==6.10.3
 pytest-cov==2.8.1
 pipupgrade==1.5.2
+pyflakes==2.1.1
+dfmock==0.0.13

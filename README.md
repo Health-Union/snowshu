@@ -8,7 +8,7 @@ SnowShu enables data developers to author transforms and models in a highly perf
 
 ### Using SnowShu
 - [Getting Started With SnowShu](docs/getting_started.md)
-- [Configuring Your Trail Path](docs/trail_paths.md)
+- [Configuring A Replica File](docs/replicas.md)
 
 ### Contributing to SnowShu
 

@@ -1,9 +1,10 @@
 import sqlalchemy
-from typing import Tuple
-from snowshu.core.credentials import Credentials
-from snowshu.core.relation import Relation
+import pandas as pd
+from typing import Tuple,Optional
+from snowshu.core.models.credentials import Credentials
+from snowshu.core.models.relation import Relation
 from snowshu.utils import MAX_ALLOWED_DATABASES, MAX_ALLOWED_ROWS
-from snowshu.core.data_types import DataType
+from snowshu.core.models.data_types import DataType
 from snowshu.logger import Logger
 import time
 logger=Logger().logger
@@ -40,22 +41,17 @@ class BaseSourceAdapter:
             raise KeyError('Adapter.get_connection called before setting Adapter.credentials')
     
     def get_all_databases(self)->Tuple:
-        """gets all non-system databases for a source."""
-        raise NotImplementedError()
-    
-    def get_all_databases(self)->Tuple:
         logger.debug('Collecting databases from snowflake...')
-        databases=tuple([row[0] for row in self._safe_query(self.GET_ALL_DATABASES_SQL)])
+        databases=tuple(self._safe_query(self.GET_ALL_DATABASES_SQL)['database_name'].tolist())
         logger.debug(f'Done. Found {len(databases)} databases.')
         return databases
-
 
     def all_releations_from_database(self)->Tuple[Relation]:
         """ this function is expected to get all the non-system relations as a tuple of 
             relation objects for a given database"""
         raise NotImplementedError()       
 
-    def _safe_query(self,query_sql:str)->list:
+    def _safe_query(self,query_sql:str)->pd.DataFrame:
         """runs the query and closes the connection"""
         logger.debug('Beginning query execution...')
         start=time.time()
@@ -66,16 +62,17 @@ class BaseSourceAdapter:
             # further safety added by the constraints in snowshu.utils
             # this allows the connection to return to the pool
             logger.debug(f'Executed query in {time.time()-start} seconds.')
-            return cursor.execute(query_sql).fetchall()
+            frame=pd.read_sql(query_sql,conn)
         finally:
             cursor.close()
             conn.dispose()
+        return frame
 
     def _count_query(self)->int:
         """wraps any query in a COUNT statement, returns that integer"""
         raise NotImplementedError()              
 
-    def _check_count_and_query(self,query:str,max_count:int)->tuple:
+    def check_count_and_query(self,query:str,max_count:int)->tuple:
         """ checks the count, if count passes returns results as a tuple."""
         raise NotImplementedError()
 

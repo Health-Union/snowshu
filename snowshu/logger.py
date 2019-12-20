@@ -1,14 +1,21 @@
 import os
-from snowshu.formats import LOGGING_FILE_FORMAT, LOGGING_CLI_FORMAT, LOGGING_DATE_FORMAT
+import time
+from snowshu.formats import LOGGING_FILE_FORMAT, LOGGING_CLI_FORMAT, LOGGING_DATE_FORMAT, LOGGING_CLI_WARNING_FORMAT
 import logging
 from coloredlogs import ColoredFormatter
 from typing import Optional
 from logging.handlers import RotatingFileHandler
 
+
+def duration(start:int)->str:
+    dur=round(time.time()-start,2)
+    if dur < 1:
+        return "< 1 second"
+    else:
+        return f"{dur} seconds"
+
 class Logger:
     """ File log is ALWAYS debug, regardless of log level. 
-        Stream (stdout) defaults to root logger level.
-        This lets us globally control visable output at program entry via root logger.
     """
     DEFAULT_LOG_FILE_LOCATION=os.path.abspath('./snowshu.log')
 
@@ -16,7 +23,6 @@ class Logger:
     def __init__(self,
                  log_file_location:Optional[str]=DEFAULT_LOG_FILE_LOCATION)->None:
         self._logger=logging.getLogger('snowshu')
-        self._logger.setLevel(logging.DEBUG)
         root_logger=logging.getLogger()
         
         for logger in (self.logger,root_logger,):
@@ -24,13 +30,22 @@ class Logger:
 
         self.file_handler=self._construct_file_handler(log_file_location)
         self.file_handler.setFormatter(self._construct_file_formatter())
-        
+
         stream_handler=self._construct_stream_handler()
         stream_handler.setFormatter(self._construct_colored_formatter())
+        stream_handler.addFilter(self._exclude_warning_filter)
+
+        warning_handler=self._construct_stream_handler()
+        warning_handler.setFormatter(self._construct_warning_formatter())
+        warning_handler.addFilter(self._warning_only_filter)
         
         root_logger.addHandler(stream_handler)
+        root_logger.addHandler(warning_handler)
         self.logger.addHandler(self.file_handler)
         
+    def set_log_level(self,level:str)->None:
+        self._logger.setLevel(level)
+
     def remove_all_handlers(self,logger:logging.Logger)->None:
         logger.handlers=list()
 
@@ -68,6 +83,12 @@ class Logger:
                                 level_styles=self._colored_log_level_styles()
                                 )
 
+    def _construct_warning_formatter(self)->ColoredFormatter:
+        return ColoredFormatter(fmt=LOGGING_CLI_WARNING_FORMAT,
+                                datefmt=LOGGING_DATE_FORMAT,
+                                level_styles=self._colored_log_level_styles()
+                                )
+
     def _colored_log_level_styles(self)->dict:
         return {'critical': {'color': 'red'}, 
                 'debug': {}, 
@@ -77,6 +98,9 @@ class Logger:
                 'success': {'color': 'green'}, 
                 'warning': {'color': 'yellow'}
                 }
-
-
+    # Filters
+    def _warning_only_filter(self,record):
+        return record.levelno == logging.WARNING
     
+    def _exclude_warning_filter(self,record):
+        return record.levelno != logging.WARNING

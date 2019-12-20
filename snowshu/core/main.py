@@ -1,3 +1,4 @@
+import sys
 import os
 import click
 from pathlib import Path
@@ -6,26 +7,26 @@ from snowshu.logger import Logger
 from shutil import which, copyfile
 from snowshu.formats import DEFAULT_TAG_FORMAT
 from datetime import datetime
-from snowshu.core.trail_path import TrailPath
-from snowshu.core.sample import SampleRunner
+from snowshu.core.replica import Replica
 
 
 
 # Always check for docker 
 NO_DOCKER='SnowShu requires Docker, \
-but it does not look like Docker is installed on this machine. \
+but it does not look like Docker is installed on this machine.\n \
 See docs for more information at \
 https://bitbucket.org/healthunion/snowshu/src/master/README.md'
 
-TRAIL_PATH_DEFAULT=os.path.join(os.getcwd(),'trail-path.yml')
+REPLICA_DEFAULT=os.path.join(os.getcwd(),'replica.yml')
 
     
 @click.group()
 @click.option('--debug','-d', is_flag=True, default=False, help="run commands in debug mode")
 def cli(debug:bool):
     log_level = logging.DEBUG if debug else logging.INFO
-    (logging.getLogger()).setLevel(log_level)
-    logger=Logger().logger
+    log_engine=Logger()
+    log_engine.set_log_level(log_level)
+    logger=log_engine.logger
     if not which('docker'):
         logger.warning(NO_DOCKER)
 
@@ -34,22 +35,24 @@ def cli(debug:bool):
 @cli.command()
 @click.argument('path', default=os.getcwd(),type=click.Path(exists=True))
 def init(path:click.Path)->None:
-    """generates sample trail-path.yml and credentials.yml files in the current directory."""
+    """generates sample replica.yml and credentials.yml files in the current directory."""
     logger=Logger().logger
     templates=os.path.join(Path(__file__).parent.parent,'templates')
+
     def destination(filename):
         return os.path.join(path,filename)
     def source(filename):
         return os.path.join(templates,filename)
 
     CREDENTIALS='credentials.yml'
-    TRAIL_PATH='trail-path.yml'
+    REPLICA='replica.yml'
 
-    if os.path.isfile(destination(CREDENTIALS)) or os.path.isfile(destination(TRAIL_PATH)):
-        logger.error("cannot generate sample files, already exist in current directory.")
-        sys.exit()
+    if os.path.isfile(destination(CREDENTIALS)) or os.path.isfile(destination(REPLICA)):
+        message="cannot generate sample files, already exist in current directory."
+        logger.error(message)
+        raise ValueError(message)
     try:
-        copyfile(source(TRAIL_PATH),destination(TRAIL_PATH)) 
+        copyfile(source(REPLICA),destination(REPLICA)) 
         copyfile(source(CREDENTIALS),destination(CREDENTIALS)) 
         logger.info(f"sample files created in directory {os.path.abspath(path)}")
     except Exception as e:
@@ -58,24 +61,17 @@ def init(path:click.Path)->None:
 
 @cli.command()
 @click.option('--tag', default=datetime.utcnow().strftime(DEFAULT_TAG_FORMAT))
-@click.option('--trail-path-file', type=click.Path(exists=True), default=TRAIL_PATH_DEFAULT, help="the Path, string or bytes object snowshu will use for your trail_path configuration file, default is ./trail-path.yml")
-@click.option('--dry-run', is_flag=True, default=False, help="compiles and prints both source and target queries without executing them.")
+@click.option('--replica-file', type=click.Path(exists=True), default=REPLICA_DEFAULT, help="the Path, string or bytes object snowshu will use for your replica configuration file, default is ./replica.yml")
 def sample( tag:str,
-            trail_path_file:click.Path,
-            dry_run:bool):
-    trail_path=TrailPath()
-    trail_path.load_config(trail_path_file)
-    
-    run=SampleRunner()
-    run.execute(tag=tag,
-                trail_path=trail_path,
-                dry_run=dry_run)
+            replica_file:click.Path):
+    replica=Replica()
+    replica.load_config(replica_file)
+    replica.run(tag)
 
 
 @cli.command()
-@click.option('--trail-path-file', type=click.Path(exists=True), default=TRAIL_PATH_DEFAULT, help="where snowshu will look for your trail_path configuration file, default is ./trail-path.yml")
-def analyze(trail_path_file:click.Path):
-    trail_path=TrailPath()
-    trail_path.load_config(trail_path_file)
-    trail_path.analyze()
-    trail_path.pretty_print_analysis()
+@click.option('--replica-file', type=click.Path(exists=True), default=REPLICA_DEFAULT, help="where snowshu will look for your replica configuration file, default is ./replica.yml")
+def analyze(replica_file:click.Path):
+    replica=Replica()
+    replica.load_config(replica_file)
+    click.echo(replica.analyze())

@@ -28,6 +28,7 @@ Since SnowShu is a tool for enabling TDD in data development, you can expect tha
 5. Commit. Repeat.  
 
 #### Integration Testing
-Integration tests require live test sources (ie Redshift, Snowflake, Bigquery instances). These tests will look for a trail-path.yml and credentials.yml in the folder `/tests/assets/integration` (by default these files are included in the `.gitignore`). Name each of the profiles after the source to be tested. 
+Integration tests require live test sources (ie Redshift, Snowflake, Bigquery instances). These tests will look for a trail-path.yml and credentials.yml in the folder `/tests/assets/integration` (by default these files are included in the `.gitignore`). Name each of the profiles after the source to be tested.
 
-
+**TEST DATA** 
+integration test data is included in the `/tests/assets/data` folder. The folder structure of the test data reflects how the integration tests are expecting the source db to be structured (ie `database=SNOWSHU_DEVELOPMENT` means the database name should be... you guessed it, `SNOWSHU_DEVELOPMENT`). Data loading will vary by source data system, but you can start with the `integration_test_setup.py` script located in `/tests/assets/` folder. 

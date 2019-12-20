@@ -7,3 +7,8 @@ def rand_string(length:int)->str:
         char=ascii_lowercase[randrange(len(ascii_lowercase))]   
         result.append(char)
     return ''.join(result)
+
+def query_equalize(query:str)->str:
+    """removes whitespace/newline deltas from sql"""
+    return ' '.join(query.replace('\n',' ').split())
+    
