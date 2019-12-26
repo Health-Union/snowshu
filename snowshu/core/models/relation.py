@@ -7,23 +7,25 @@ class Relation:
 
     data:pd.DataFrame
     compiled_query:str
+    core_query:str
+    population_size:int
+    sample_size:int
+    source_extracted:bool=False
+    target_loaded:bool=False
+
 
     def __init__(self,
                     database:str,
                     schema:str,
                     name:str,
                     materialization:Materialization,
-                    attributes:List[Attribute],
-                    bidirectional_relationships:list=[],
-                    directional_relationships:list=[]):
+                    attributes:List[Attribute]):
 
         self.database=database
         self.schema=schema
         self.name=name
         self.materialization=materialization
         self.attributes=attributes
-        self.bidirectional_relationships=bidirectional_relationships
-        self.directional_relationships=directional_relationships 
         
 
     def __repr__(self)->str:

@@ -16,8 +16,7 @@ class Catalog:
             accumulator+=self.adapter.get_relations_from_database(db)
         
         catalog=list()
-        with ThreadPoolExecutor(max_workers=self.threads) as executor:
-            for database in self.adapter.get_all_databases():
-                executor.submit(accumulate_relations,database,catalog)
-
+        with ThreadPoolExecutor(max_workers=20) as executor:
+            {executor.submit(accumulate_relations,database,catalog) for database in self.adapter.get_all_databases()}
+            
         self.catalog=tuple(catalog)

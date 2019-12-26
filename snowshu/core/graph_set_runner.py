@@ -1,3 +1,4 @@
+import gc
 from typing import List
 from snowshu.utils import MAX_ALLOWED_ROWS
 from snowshu.target_adapters.base_target_adapter import BaseTargetAdapter
@@ -43,14 +44,26 @@ class GraphSetRunner:
             logger.debug(f"Executing graph with {len(executable.graph)} relations in it...")
             for i,relation in enumerate(nx.algorithms.dag.topological_sort(executable.graph)):
                 logger.debug(f'Executing graph {i+1} of {len(executable.graph)} source query for relation {relation.dot_notation}...')
-                relation.data=executable.source_adapter.check_count_and_query(relation.compiled_query,MAX_ALLOWED_ROWS)
-                if not executable.analyze:
+
+                if executable.analyze:
+                    result=[row for row in executable.source_adapter.check_count_and_query(relation.compiled_query,MAX_ALLOWED_ROWS).itertuples()][0]
+                    relation.population_size=result.population_size
+                    relation.sample_size=result.sample_size
+                    logger.info(f'Analysis of relation {relation.dot_notation} completed in {duration(start_time)}.')        
+                else:
+                    relation.data=executable.source_adapter.check_count_and_query(relation.compiled_query,MAX_ALLOWED_ROWS)
                     logger.info(f'{len(relation.data)} records retrieved. Inserting into target...')
                     executable.target_adapter.create_relation(relation)
                     executable.target_adapter.insert_into_relation(relation)
                     logger.info(f'Done replication of relation {relation.dot_notation} in {duration(start_time)}.')        
-                else:
-                    logger.info(f'Analysis of relation {relation.dot_notation} completed in {duration(start_time)}.')        
+                    relation.target_loaded=True
+                relation.source_extracted=True
+            try:
+                for relation in executable.graph.nodes:
+                    del relation.data
+            except AttributeError:
+                pass
+            gc.collect()       
         except Exception as e:
             logger.error(e)
             raise e

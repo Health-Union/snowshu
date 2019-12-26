@@ -3,7 +3,7 @@ credpath: "/app/tests/assets/integration/credentials.yml" ## can be a relative o
 name: integration trail path
 short_description: this is a sample with LIVE CREDS for integration
 long_description: this is for testing against a live db
-threads: 4
+threads: 15
 source:
   profile: default
   default_sampling:

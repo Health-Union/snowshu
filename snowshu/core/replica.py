@@ -40,8 +40,6 @@ class Replica:
                                     threads=self.THREADS,
                                     analyze=True)
         report=list()
-#        headers=('relation','population size','sample size','dependencies','aproximate %',)        
-#        column_alignment=('left','right','right','center','right',)
         for graph in self.graphs:
             for relation in graph.nodes:
                 ##TODO: this color display logic doesn't belong here. 
@@ -51,12 +49,14 @@ class Replica:
 
                 deps = len(networkx.ancestors(graph,relation))
                 deps = " " if deps == 0 else str(deps)
-                percent=0 if int(relation.data.iloc[0].population_size) < 1\
-                               else round(100.0 * (relation.data.iloc[0].sample_size / relation.data.iloc[0].population_size))
-                percent = f"{colors['green']}{percent} %{colors['reset']}" if self.SAMPLE_METHOD.is_acceptable(percent) else f"{colors['red']}{percent} %{colors['reset']}"
+                percent=0 if int(relation.population_size) < 1\
+                               else round(100.0 * (relation.sample_size / relation.population_size))
+                formatted_color='green' if self.SAMPLE_METHOD.is_acceptable(percent) else 'red'
+
+                percent = f"{colors[formatted_color]}{percent} %{colors['reset']}"                 
                 report.append(( relation.dot_notation,
-                                relation.data.iloc[0].population_size,
-                                relation.data.iloc[0].sample_size,
+                                relation.population_size,
+                                relation.sample_size,
                                 deps,
                                 percent,))
 
