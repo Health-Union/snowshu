@@ -1,3 +1,5 @@
+-r base.txt
+
 pytest==5.3.0
 mock==3.0.5
 autopep8==1.4.4
@@ -6,3 +8,5 @@ pytest-cov==2.8.1
 pipupgrade==1.5.2
 pyflakes==2.1.1
 dfmock==0.0.13
+coverage==4.4.1
+prospector==1.1.7

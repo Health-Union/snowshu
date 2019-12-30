@@ -1,0 +1,19 @@
+image: python:3.7-slim-buster
+pipelines:
+  pull-requests:
+    '**':
+      - parallel:
+        - step:
+            name: "Run Static Code Analysis"
+            caches:
+              - pip
+            script:
+              - pip install -r requirements/dev.txt
+              - prospector -t dodgy -t pep8 -t profile-validator -t mccabe -t pyflakes
+        - step:
+            name: "Run Tests"
+            caches:
+              - pip
+            script:
+              - pip install -r requirements/dev.txt
+              - pytest --cov=snowshu tests/
