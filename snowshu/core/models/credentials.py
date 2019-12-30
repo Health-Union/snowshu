@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
-
+from urllib.parse import quote_plus
 
 USER='user'
 PASSWORD='password'
@@ -28,4 +28,9 @@ class Credentials:
     warehouse:Optional[str]=None       
 
     
-    
+    def urlencode(self)->None:
+        """ quote-plus encoding of all attributes
+            good for sql urls."""   
+        for key in vars(self).keys():
+            if isinstance(self.__dict__[key],str):
+                self.__dict__[key] = quote_plus(self.__dict__[key])

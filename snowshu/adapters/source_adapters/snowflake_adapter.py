@@ -18,7 +18,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
     def __init__(self):
         pass
     
-    supported_sample_methods=(BernoulliSample,SystemSample)
+    SUPPORTED_SAMPLE_METHODS=(BernoulliSample,SystemSample)
     REQUIRED_CREDENTIALS=(USER,PASSWORD,ACCOUNT,DATABASE,)
     ALLOWED_CREDENTIALS=(SCHEMA,WAREHOUSE,ROLE,)
 
