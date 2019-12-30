@@ -1,7 +1,7 @@
 from snowshu.core.models.relation import Relation
 import pytest
 import mock
-from snowshu.source_adapters.sample_methods import BernoulliSample 
+from snowshu.adapters.source_adapters.sample_methods import BernoulliSample 
 from snowshu.core.replica import Replica
 from snowshu.core.models.materializations import TABLE,VIEW
 from snowshu.core.models.attribute import Attribute

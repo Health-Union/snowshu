@@ -5,8 +5,8 @@ from sqlalchemy.pool import NullPool
 from typing import Tuple,List,Union,Any,Optional
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
-from snowshu.source_adapters import BaseSourceAdapter
-from snowshu.source_adapters.sample_methods import SampleType,BernoulliSample, SystemSample
+from snowshu.adapters.source_adapters import BaseSourceAdapter
+from snowshu.adapters.source_adapters.sample_methods import SampleType,BernoulliSample, SystemSample
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
 from snowshu.logger import Logger

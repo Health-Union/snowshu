@@ -7,10 +7,10 @@ from tests.common import rand_string
 import networkx as nx
 from tests.common import query_equalize
 import snowshu.core.models.materializations as mz
-from snowshu.source_adapters.snowflake_adapter import SnowflakeAdapter
+from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
 from snowshu.core.models.relation import Relation
 from snowshu.core.compile import BaseCompiler
-from snowshu.source_adapters.sample_methods import BernoulliSample
+from snowshu.adapters.source_adapters.sample_methods import BernoulliSample
 from snowshu.core.models.attribute import Attribute
 import snowshu.core.models.data_types as dt
 

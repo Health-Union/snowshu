@@ -1,5 +1,5 @@
 
-from snowshu.target_adapters import BaseTargetAdapter
+from snowshu.adapters.target_adapters import BaseTargetAdapter
 
 class PostgresAdapter(BaseTargetAdapter):
 

@@ -17,7 +17,7 @@ class BaseSourceAdapter:
     ALLOWED_CREDENTIALS=tuple()
 
     def supported_sample_methods(self)->tuple:
-        """a static tuple of sample methods from snowshu.source_adapters.sample_methods"""
+        """a static tuple of sample methods from snowshu.adapters.source_adapters.sample_methods"""
         raise NotImplementedError()
 
     @property

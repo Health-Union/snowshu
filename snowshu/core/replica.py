@@ -9,9 +9,9 @@ from snowshu.core.catalog import Catalog
 from snowshu.core.models.credentials import Credentials
 from pathlib import Path
 from typing import Union
-import snowshu.source_adapters as source_adapters
-import snowshu.target_adapters as target_adapters
-from snowshu.source_adapters.sample_methods import get_sample_method_from_kwargs, SampleType
+import snowshu.adapters.source_adapters as source_adapters
+import snowshu.adapters.target_adapters as target_adapters
+from snowshu.adapters.source_adapters.sample_methods import get_sample_method_from_kwargs, SampleType
 from snowshu.logger import Logger, duration
 from snowshu.core.models.relation import Relation
 from snowshu.core.graph_set_runner import GraphSetRunner
