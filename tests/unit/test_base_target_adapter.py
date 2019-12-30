@@ -32,4 +32,5 @@ string_attr soup
     assert _safe_execute.called_with(ddl)
 
 
+
     
