@@ -1,4 +1,5 @@
 import sqlalchemy
+from snowshu.adapters import BaseSQLAdapter
 import pandas as pd
 from typing import Tuple,Optional
 from snowshu.core.models.credentials import Credentials
@@ -8,7 +9,7 @@ from snowshu.core.models.data_types import DataType
 from snowshu.logger import Logger
 import time
 logger=Logger().logger
-class BaseSourceAdapter:
+class BaseSourceAdapter(BaseSQLAdapter):
 
     MAX_ALLOWED_DATABASES=MAX_ALLOWED_DATABASES
     MAX_ALLOWED_ROWS=MAX_ALLOWED_ROWS
@@ -19,21 +20,6 @@ class BaseSourceAdapter:
     def supported_sample_methods(self)->tuple:
         """a static tuple of sample methods from snowshu.adapters.source_adapters.sample_methods"""
         raise NotImplementedError()
-
-    @property
-    def credentials(self)->dict:
-        return self._credentials
-
-    @credentials.setter
-    def credentials(self,value:Credentials)->None:
-        for cred in self.REQUIRED_CREDENTIALS:
-            if value.__dict__[cred] == None:
-                raise KeyError(f"{self.__class__.__name__} requires missing credential {cred}.")
-        ALL_CREDENTIALS = self.REQUIRED_CREDENTIALS+self.ALLOWED_CREDENTIALS
-        for val in [val for val in value.__dict__.keys() if (val not in ALL_CREDENTIALS and value.__dict__[val] is not None)]:
-            raise KeyError(f"{self.__class__.__name__} received extra argument {val} this is not allowed")
-
-        self._credentials=value
        
     def get_connection(self)->sqlalchemy.engine.base.Engine:
         """ uses the instance credentials to create an engine"""
