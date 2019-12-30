@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 import pytest
+import mock
+import pandas as pd
 from dfmock import DFMock
 from tests.common import rand_string
 import networkx as nx
@@ -145,3 +147,22 @@ FROM
     "{relations.DATABASE}"."{relations.SCHEMA}"."{relations.TABLE4}"
     WHERE
 """) in query_equalize(relations.DIRECTIONAL_RELATION.compiled_query)
+
+
+def test_unsampled_analyze(stub_graph_set):
+    source_adapter=SnowflakeAdapter()
+    source_adapter.check_count_and_query = mock.MagicMock()
+    source_adapter.check_count_and_query.return_value=pd.DataFrame([dict(population_size=1000,sample_size=1000)])
+    graph_set,vals=stub_graph_set
+    vals.birelation_left.unsampled=True
+    graph=nx.DiGraph()
+    graph.add_node(vals.birelation_left)
+    comp=BaseCompiler([graph],source_adapter,sample_method=BernoulliSample(10), analyze=True)
+    comp.compile()
+    assert query_equalize(vals.birelation_left.core_query) == query_equalize(f"""SELECT
+*
+FROM
+{vals.birelation_left.quoted_dot_notation}""")
+
+    assert query_equalize(vals.birelation_left.compiled_query) == query_equalize(f"""
+WITH __SNOWSHU_COUNT_POPULATION AS ( SELECT COUNT(*) AS population_size FROM "{vals.birelation_left.database}"."{vals.birelation_left.schema}"."birelation_left" ) ,__SNOWSHU_CORE_SAMPLE AS ( SELECT * FROM "{vals.birelation_left.database}"."{vals.birelation_left.schema}"."birelation_left" ) ,__SNOWSHU_CORE_SAMPLE_COUNT AS ( SELECT COUNT(*) AS sample_size FROM __SNOWSHU_CORE_SAMPLE ) SELECT s.sample_size AS sample_size ,p.population_size AS population_size FROM __SNOWSHU_CORE_SAMPLE_COUNT s INNER JOIN __SNOWSHU_COUNT_POPULATION p ON 1=1 LIMIT 1""")

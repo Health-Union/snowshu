@@ -1,4 +1,5 @@
 import time
+import copy
 from snowshu.core.graph import SnowShuGraph
 from snowshu.core.utils import get_config_value, load_from_file_or_path
 from snowshu.core.compile import BaseCompiler
@@ -14,6 +15,7 @@ from snowshu.source_adapters.sample_methods import get_sample_method_from_kwargs
 from snowshu.logger import Logger, duration
 from snowshu.core.models.relation import Relation
 from snowshu.core.graph_set_runner import GraphSetRunner
+from snowshu.core.configuration_parser import ConfigurationParser
 import networkx
 from tabulate import tabulate
 logger=Logger().logger
@@ -51,8 +53,9 @@ class Replica:
                 deps = " " if deps == 0 else str(deps)
                 percent=0 if int(relation.population_size) < 1\
                                else round(100.0 * (relation.sample_size / relation.population_size))
-                formatted_color='green' if self.SAMPLE_METHOD.is_acceptable(percent) else 'red'
-
+                formatted_color='green' if self.SAMPLE_METHOD.is_acceptable(percent) else 'red' 
+                formatted_color='green' if relation.unsampled and percent==100 else formatted_color
+    
                 percent = f"{colors[formatted_color]}{percent} %{colors['reset']}"                 
                 report.append(( relation.dot_notation,
                                 relation.population_size,
@@ -69,15 +72,18 @@ class Replica:
         """ does all the initial work to make the resulting Replica object usable."""
         logger.info('Loading credentials...')
         start_timer=time.time()
-        config=load_from_file_or_path(config)
+        config_parser=ConfigurationParser()
+        config_parser.from_file_or_path(config)
+        for section in ('source','target','storage',):
+            self.__dict__[section+'_configs']=config_parser.__dict__[section]
 
-        self.source_configs=get_config_value(config,'source')
-        self.THREADS=int(get_config_value(config,"threads"))
-        self.SAMPLE_METHOD=get_sample_method_from_kwargs(**self.source_configs)
-        self._load_credentials(get_config_value(config,
-                                                      "credpath",
-                                                      "SNOWSHU_CREDENTIALS_FILEPATH"),
-                                                      *[get_config_value(config[section], "profile") for section in ('source','target','storage',)])
+        self.THREADS=config_parser.threads
+
+        self.SAMPLE_METHOD=get_sample_method_from_kwargs(**dict(sample_method=self.source_configs['sample_method'],
+                                                         probability=self.source_configs['probability']))
+        
+        self._load_credentials(config_parser.credpath,
+                            *[self.__dict__[section+'_configs']["profile"] for section in ('source','target','storage',)])
         
 
         self._load_adapters()

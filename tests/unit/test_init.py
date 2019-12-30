@@ -1,4 +1,5 @@
-import logging
+from logging import DEBUG
+from snowshu.logger import Logger
 from pathlib import Path
 from mock import patch, MagicMock
 from tests.common import rand_string
@@ -38,58 +39,56 @@ def temporary_replica():
     else:
         yield localpath
 
+
 @patch('snowshu.core.main.Replica.run')
 @patch('snowshu.core.main.Replica.load_config')
-def test_sample_defaults(run,replica, temporary_replica):
+def test_sample_defaults(load,run,temporary_replica):
     runner = CliRunner()
     EXPECTED_REPLICA_FILE=temporary_replica
-    result= runner.invoke(main.cli, ('sample',))
-    ACTUAL_REPLICA_FILE=replica.call_args_list[0][0][0]
-    run_args=run.call_args_list[0][1]
-
-    ACTUAL_TAG_AS_DATETIME=datetime.strptime(run_args['tag'],DEFAULT_TAG_FORMAT)
+    result= runner.invoke(main.cli, ('run',))
+    ACTUAL_REPLICA_FILE=load.call_args_list[0][0][0]
+    run_args=run.call_args_list[0][0][0]
+    ACTUAL_TAG_AS_DATETIME=datetime.strptime(run_args,DEFAULT_TAG_FORMAT)
     assert ACTUAL_REPLICA_FILE==EXPECTED_REPLICA_FILE
     assert ACTUAL_TAG_AS_DATETIME.date() == datetime.now().date()
     
     
+
 @patch('snowshu.core.main.Replica.load_config')
-@patch('snowshu.core.main.SampleRunner.execute')
-def test_sample_args_valid(execute, replica):
+@patch('snowshu.core.main.Replica.run')
+def test_sample_args_valid(run, replica):
     runner = CliRunner()
     with runner.isolated_filesystem():
+        logger=Logger().logger
         tempfile=Path('./test-file.yml')
         tempfile.touch()
         EXPECTED_REPLICA_FILE=tempfile.absolute()
         EXPECTED_TAG=rand_string(10)
-        EXPECTED_DRY_RUN=True
         EXPECTED_DEBUG=True
         result = runner.invoke(main.cli, ('--debug',
-                                          'sample',
+                                          'run',
                                           '--replica-file',EXPECTED_REPLICA_FILE,
                                           '--tag',EXPECTED_TAG,
-                                          '--dry-run',))
+                                          ))
         replica.assert_called_once_with(EXPECTED_REPLICA_FILE)
-        args=execute.call_args_list[0][1]
-        ACTUAL_TAG=args['tag']
+        ACTUAL_TAG=run.call_args_list[0][0][0]
         assert EXPECTED_TAG==ACTUAL_TAG
-        ACTUAL_DRY_RUN=args['dry_run']
-        assert EXPECTED_DRY_RUN==ACTUAL_DRY_RUN
-        assert logging.getLogger().getEffectiveLevel() == logging.DEBUG
+        assert logger.getEffectiveLevel() == DEBUG
 
 
 
+@patch('snowshu.core.main.Replica.target_adapter.create_relation')
 @patch('snowshu.core.main.Replica')
-@patch('snowshu.core.main.SampleRunner.execute')
-def test_analyze_does_all_but_run(execute,replica):
+def test_analyze_does_all_but_run(replica,create_relation):
     runner = CliRunner()
     with runner.isolated_filesystem():
         tempfile=Path('./replica.yml')
         tempfile.touch()
         REPLICA_FILE=tempfile.absolute()
-        result = runner.invoke(main.cli, ('analyze','--replica-file',REPLICA_FILE))
+        result = runner.invoke(main.cli, ('analyze','--replica-file',REPLICA_FILE.absolute()))
         replica_methods=replica.mock_calls
         assert '().load_config' == replica_methods[1][0]
         assert '().analyze' == replica_methods[2][0]
         replica.assert_called_once()
-        execute.assert_not_called()
+        create_relation.assert_not_called()
 

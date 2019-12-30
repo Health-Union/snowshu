@@ -16,29 +16,52 @@ class SnowShuGraph:
         self.graph:networkx.Graph=None
 
     def build_graph(self, configs:dict, full_catalog:Tuple[Relation])->networkx.DiGraph:
-        """Builds a directed graph per trail path config"""
+        """Builds a directed graph per replica config"""
         logger.debug('Building graphs from config...')
         included_relations=self._filter_relations(full_catalog, self._build_sum_patterns_from_configs(configs))
-        SPECIFIED_RELATIONS=get_config_value(configs,"specified_relations")
-        if SPECIFIED_RELATIONS:
-            included_relations=included_relations.union(self._get_dependency_relations(full_catalog,SPECIFIED_RELATIONS))
+        specified_relations=get_config_value(configs,"specified_relations")
+        if specified_relations:
+            included_relations=included_relations.union(self._get_dependency_relations(full_catalog,specified_relations))
         logger.info(f'Identified a total of {len(included_relations)} relations to sample based on the specified configurations.')
 
         ## build graph and add edges
         graph=networkx.DiGraph()
         graph.add_nodes_from(included_relations)
-        
-        for relation in SPECIFIED_RELATIONS:
+        for relation in specified_relations:
             relation["name"]=relation["relation"] # hack for the pattern match lookup
+        self.graph=self._apply_specifications(specified_relations,graph,included_relations)
+        if not self.graph.is_directed():
+            raise ValueError('The graph created by the specified trail path is not directed (circular reference detected).')
+        logger.debug(f'built graph with {len(self.graph)} total nodes.')
+
+    def _apply_specifications(self,configs:dict, graph:networkx.DiGraph, available_nodes:Set[Relation])->networkx.DiGraph:
+        """ takes a configuration file, a graph and a collection of available nodes, applies configs as edges and returns the graph."""
+        for relation in configs:
+            if relation.get('unsampled',False):
+                unsampled_relations=set(filter(lambda x :single_full_pattern_match(x,relation), available_nodes))
+                for rel in unsampled_relations:
+                    rel.unsampled=True
+                continue
+            
             edges=list()
             for direction in ('bidirectional','directional',):
                 edges+=[dict(direction=direction,**val) for val in relation['relationships'][direction]]
            
             for edge in edges:
-                downstream_relations=set(filter(lambda x :single_full_pattern_match(x,relation), included_relations))
-                upstream_relation = lookup_relation(edge,included_relations)
-                downstream_relations.discard(upstream_relation)
+                downstream_relations=set(filter(lambda x :single_full_pattern_match(x,relation), available_nodes))
+                ## populate any string wildcard upstreams
+                #for attr in ('database','schema',):
+                #    edge[attr]=relation[attr] if edge[attr]=='' else edge[attr]
+
+                #upstream_relation = lookup_relation(edge,available_nodes)
+                #downstream_relations.discard(upstream_relation)
                 for rel in downstream_relations:
+                    ## populate any string wildcard upstreams
+                    for attr in ('database','schema',):
+                        edge[attr]=rel.__dict__[attr] if edge[attr]=='' else edge[attr]
+                        upstream_relation = lookup_relation(edge,available_nodes)
+                        if upstream_relation == rel:
+                            continue
                     graph.add_edge( upstream_relation,
                                     rel,
                                     direction='bidirectional', 
@@ -46,8 +69,7 @@ class SnowShuGraph:
                                     local_attribute=edge['local_attribute'])
         if not graph.is_directed():
             raise ValueError('The graph created by the specified trail path is not directed (circular reference detected).')
-        logger.debug(f'built graph with {len(graph)} total nodes.')
-        self.graph=graph
+        return graph
 
     def get_graphs(self)->tuple:
         """builds independent graphs and returns the collection of them"""
@@ -98,11 +120,17 @@ class SnowShuGraph:
 
     def _get_dependency_relations(self,full_catalog:iter,specified_configs:dict)->Set[Relation]:
         """ gets relations for each dependency in the specified configs"""
-        dependencies=[r for parent in specified_configs\
-                      for r in parent['relationships']['bidirectional'] + parent['relationships']['directional']]
+        dependencies=list()
+        for parent in specified_configs:
+            for r in parent['relationships']['bidirectional'] + parent['relationships']['directional']:
+                for attr in ('database','schema',):
+                    r[attr]=parent[attr] if r[attr]=='' else r[attr]
+                dependencies.append(r)
+
         dep_relations=set()   
         ## add dependency relations
         for dependency in dependencies:
+            
             dep_relation=lookup_relation(dependency,full_catalog)
             if dep_relation is None:
                 raise ValueError(f"relation \

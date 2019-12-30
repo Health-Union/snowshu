@@ -44,6 +44,13 @@ class SnowflakeAdapter(BaseSourceAdapter):
                                 WHERE is_transient = 'NO'
                                 AND database_name <> 'UTIL_DB'"""
 
+    def unsampled_statement(self,relation:Relation)->str:
+        return f"""
+SELECT
+    *
+FROM
+    {relation.quoted_dot_notation}
+"""
 
     def directionally_wrap_statement(self,sql:str,sample_type:Union[SampleType,None])->str:
         if sample_type is None:

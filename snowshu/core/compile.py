@@ -29,25 +29,30 @@ class BaseCompiler:
                 - wrap with counts if analyze
         """
         for relation in networkx.algorithms.dag.topological_sort(dag): #topo puts them in order of dag execution
-            do_not_sample=False
-            predicates=list()
-            for parent in [p for p in dag.predecessors(relation)]:
-                for edge in dag.edges((parent,relation,),True):
-                    edge_data=edge[2]
-                    if edge_data['direction']=='bidirectional':
-                        do_not_sample=True
-                    predicates.append(self.adapter.predicate_constraint_statement(parent,
-                                                                                  self.analyze,
-                                                                                  edge_data['local_attribute'],
-                                                                                  edge_data['remote_attribute']))
-            
+            query=str()
+            if relation.unsampled:
+                query=self.adapter.unsampled_statement(relation)
+            else:    
+                do_not_sample=False
+                predicates=list()
+                for parent in [p for p in dag.predecessors(relation)]:
+                    for edge in dag.edges((parent,relation,),True):
+                        edge_data=edge[2]
+                        if edge_data['direction']=='bidirectional':
+                            do_not_sample=True
+                        predicates.append(self.adapter.predicate_constraint_statement(parent,
+                                                                                      self.analyze,
+                                                                                      edge_data['local_attribute'],
+                                                                                      edge_data['remote_attribute']))
+                
 
-            query=self.adapter.sample_statement_from_relation(relation, (None if predicates else self.sample_method))
-            if predicates:
-                query+= " WHERE " + ' AND '.join(predicates)
-                query=self.adapter.directionally_wrap_statement(query,(None if do_not_sample else self.sample_method))
-            
+                query=self.adapter.sample_statement_from_relation(relation, (None if predicates else self.sample_method))
+                if predicates:
+                    query+= " WHERE " + ' AND '.join(predicates)
+                    query=self.adapter.directionally_wrap_statement(query,(None if do_not_sample else self.sample_method))
+                
             relation.core_query=query
+            
             if self.analyze:
                 query=self.adapter.analyze_wrap_statement(query,relation)
             relation.compiled_query=query

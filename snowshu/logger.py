@@ -20,14 +20,11 @@ class Logger:
     DEFAULT_LOG_FILE_LOCATION=os.path.abspath('./snowshu.log')
 
 
-    def __init__(self,
-                 log_file_location:Optional[str]=DEFAULT_LOG_FILE_LOCATION)->None:
+    def __init__(self)->None:
         self._logger=logging.getLogger('snowshu')
-        root_logger=logging.getLogger()
         
-        for logger in (self.logger,root_logger,):
-            self.remove_all_handlers(logger)       
-
+    def initialize_logger(self,
+                          log_file_location:Optional[str]=DEFAULT_LOG_FILE_LOCATION)->None:
         self.file_handler=self._construct_file_handler(log_file_location)
         self.file_handler.setFormatter(self._construct_file_formatter())
 
@@ -39,12 +36,15 @@ class Logger:
         warning_handler.setFormatter(self._construct_warning_formatter())
         warning_handler.addFilter(self._warning_only_filter)
         
-        root_logger.addHandler(stream_handler)
-        root_logger.addHandler(warning_handler)
+        self.logger.addHandler(stream_handler)
+        self.logger.addHandler(warning_handler)
         self.logger.addHandler(self.file_handler)
         
     def set_log_level(self,level:str)->None:
-        self._logger.setLevel(level)
+        logging.getLogger().setLevel(level)
+        for handler in self.logger.handlers:
+            if handler != self.file_handler:
+                handler.setLevel(level)
 
     def remove_all_handlers(self,logger:logging.Logger)->None:
         logger.handlers=list()

@@ -25,6 +25,7 @@ REPLICA_DEFAULT=os.path.join(os.getcwd(),'replica.yml')
 def cli(debug:bool):
     log_level = logging.DEBUG if debug else logging.INFO
     log_engine=Logger()
+    log_engine.initialize_logger()
     log_engine.set_log_level(log_level)
     logger=log_engine.logger
     if not which('docker'):
@@ -60,9 +61,9 @@ def init(path:click.Path)->None:
         raise e
 
 @cli.command()
-@click.option('--tag', default=datetime.utcnow().strftime(DEFAULT_TAG_FORMAT))
+@click.option('--tag', default=datetime.utcnow().strftime(DEFAULT_TAG_FORMAT), help="the image tag of the resulting replication image. Defaults to timestamp")
 @click.option('--replica-file', type=click.Path(exists=True), default=REPLICA_DEFAULT, help="the Path, string or bytes object snowshu will use for your replica configuration file, default is ./replica.yml")
-def sample( tag:str,
+def run( tag:str,
             replica_file:click.Path):
     replica=Replica()
     replica.load_config(replica_file)

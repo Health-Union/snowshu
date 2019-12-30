@@ -12,6 +12,7 @@ class Relation:
     sample_size:int
     source_extracted:bool=False
     target_loaded:bool=False
+    unsampled=False
 
 
     def __init__(self,

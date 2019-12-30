@@ -44,7 +44,7 @@ def test_directional_statement():
                       name=TABLE,
                       materialization=TABLE,
                       attributes=[])
-    relation.compiled_query=f"""
+    relation.core_query=f"""
 SELECT
     *
 FROM 

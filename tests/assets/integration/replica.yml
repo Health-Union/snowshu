@@ -22,12 +22,16 @@ source:
   specified_relations: 
   - database: SNOWSHU_DEVELOPMENT
     schema: SOURCE_SYSTEM
+    relation: ORDERS
+    unsampled: True
+  - database: SNOWSHU_DEVELOPMENT
+    schema: SOURCE_SYSTEM
     relation: ORDER_ITEMS
     relationships:
       bidirectional: 
       - local_attribute: PRODUCT_ID 
-        database: SNOWSHU_DEVELOPMENT
-        schema: SOURCE_SYSTEM
+        database: '' ## empty strings inherit from the downstream relation
+        schema: ''
         relation: PRODUCTS
         remote_attribute: ID
       directional: 

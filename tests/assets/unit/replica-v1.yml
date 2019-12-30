@@ -19,7 +19,7 @@ source:
   probability: 20 
   
   # these are exceptions to the 'default' sampling above
-  relations:
+  specified_relations:
   - database: RawSourceData
     schema: django
     relation: users
