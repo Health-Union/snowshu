@@ -1,4 +1,4 @@
-from snowshu.source_adapters import BaseSourceAdapter
+from snowshu.adapters.source_adapters import BaseSourceAdapter
 from concurrent.futures import ThreadPoolExecutor
 from snowshu.logger import Logger
 logger=Logger().logger

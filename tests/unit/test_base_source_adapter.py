@@ -2,7 +2,7 @@ import pytest
 import mock
 from tests.common import rand_string
 import pandas as pd
-from snowshu.source_adapters.base_source_adapter import BaseSourceAdapter
+from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
 
 
 def test_get_databases():

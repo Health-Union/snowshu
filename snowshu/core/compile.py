@@ -1,5 +1,5 @@
-from snowshu.source_adapters.sample_methods import SampleType
-from snowshu.source_adapters.base_source_adapter import BaseSourceAdapter
+from snowshu.adapters.source_adapters.sample_methods import SampleType
+from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
 import networkx
 from typing import List
 from snowshu.logger import Logger
