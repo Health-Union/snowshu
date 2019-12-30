@@ -14,17 +14,8 @@ class BaseSourceAdapter(BaseSQLAdapter):
     MAX_ALLOWED_DATABASES=MAX_ALLOWED_DATABASES
     MAX_ALLOWED_ROWS=MAX_ALLOWED_ROWS
     DATA_TYPE_MAPPINGS=dict()
-    REQUIRED_CREDENTIALS=tuple()
-    ALLOWED_CREDENTIALS=tuple()
+    SUPPORTED_SAMPLE_METHODS=tuple()
 
-    def supported_sample_methods(self)->tuple:
-        """a static tuple of sample methods from snowshu.adapters.source_adapters.sample_methods"""
-        raise NotImplementedError()
-       
-    def get_connection(self)->sqlalchemy.engine.base.Engine:
-        """ uses the instance credentials to create an engine"""
-        if not self.credentials:
-            raise KeyError('Adapter.get_connection called before setting Adapter.credentials')
     
     def get_all_databases(self)->Tuple:
         logger.debug('Collecting databases from snowflake...')
@@ -66,5 +57,5 @@ class BaseSourceAdapter(BaseSQLAdapter):
         try:
             return self.DATA_TYPE_MAPPINGS[source_type.lower()]
         except KeyError as e:
-            logger.error('{this.__class__} adapter does not support data type {source_type}.')
+            logger.error('{self.CLASSNAME} adapter does not support data type {source_type}.')
             raise e

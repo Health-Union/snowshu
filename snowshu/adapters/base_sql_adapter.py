@@ -1,4 +1,5 @@
 import sqlalchemy
+from sqlalchemy.pool import NullPool
 from snowshu.logger import Logger
 from snowshu.core.models.credentials import Credentials
 
@@ -32,19 +33,8 @@ class BaseSQLAdapter:
             raise KeyError('Adapter.get_connection called before setting Adapter.credentials')
 
         logger.debug(f'Aquiring {self.CLASSNAME} connection...')
-        conn_parts=[f"snowflake://{self.credentials.user}:{self.credentials.password}@{self.credentials.account}/{self.credentials.database}/"]
-        conn_parts.append(self.credentials.schema if self.credentials.schema is not None else '')
-        get_args=list()
-        for arg in ('warehouse','role',):
-            if self.credentials.__dict__[arg] is not None:
-                get_args.append(f"{arg}={self.credentials.__dict__[arg]}")
-        
-        get_string = "?" + "&".join([arg for arg in get_args])
-        conn_string = (''.join(conn_parts)) + get_string  
-
-        engine = sqlalchemy.create_engine(conn_string,poolclass=NullPool)
-        logger.debug('Done. New snowflake connection aquired.')
-        logger.debug(f'conn string: {repr(engine.url)}')
+        engine=sqlalchemy.create_engine(self._build_conn_string(), poolclass=NullPool)
+        logger.debug(f'engine aquired. Conn string: {repr(engine.url)}')
         return engine
 
 

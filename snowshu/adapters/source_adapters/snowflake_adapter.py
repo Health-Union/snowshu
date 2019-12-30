@@ -1,7 +1,5 @@
 import time
 import pandas as pd
-import sqlalchemy
-from sqlalchemy.pool import NullPool
 from typing import Tuple,List,Union,Any,Optional
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
@@ -16,7 +14,7 @@ logger=Logger().logger
 class SnowflakeAdapter(BaseSourceAdapter):
     
     def __init__(self):
-        pass
+        super().__init__()    
     
     SUPPORTED_SAMPLE_METHODS=(BernoulliSample,SystemSample)
     REQUIRED_CREDENTIALS=(USER,PASSWORD,ACCOUNT,DATABASE,)
@@ -152,9 +150,8 @@ FROM
             logger.error(message)
             raise NotImplementedError(message)
 
-    def get_connection(self)->sqlalchemy.engine.base.Engine:
-        logger.debug('Aquiring snowflake connection...')
-        super().get_connection()
+    def _build_conn_string(self)->str:
+        """overrides the base conn string"""
         conn_parts=[f"snowflake://{self.credentials.user}:{self.credentials.password}@{self.credentials.account}/{self.credentials.database}/"]
         conn_parts.append(self.credentials.schema if self.credentials.schema is not None else '')
         get_args=list()
@@ -163,12 +160,7 @@ FROM
                 get_args.append(f"{arg}={self.credentials.__dict__[arg]}")
         
         get_string = "?" + "&".join([arg for arg in get_args])
-        conn_string = (''.join(conn_parts)) + get_string  
-
-        engine = sqlalchemy.create_engine(conn_string,poolclass=NullPool)
-        logger.debug('Done. New snowflake connection aquired.')
-        logger.debug(f'conn string: {repr(engine.url)}')
-        return engine
+        return (''.join(conn_parts)) + get_string  
 
 
     def get_relations_from_database(self,database:str)->List[Relation]:
