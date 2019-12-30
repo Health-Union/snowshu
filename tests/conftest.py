@@ -161,6 +161,23 @@ class RelationTestHelper:
         for r in ('downstream_relation','upstream_relation','iso_relation','birelation_left','birelation_right','view_relation',):
             self.__dict__[r].compiled_query=''
 
+class AttributeTestHelper:
+    
+    def __init__(self):
+        self.string_attribute=Attribute(name=rand_string(10), data_type=dt.VARCHAR)
+        self.integer_attribute=Attribute(name=rand_string(10), data_type=dt.INTEGER)
+        self.double_attribute=Attribute(name=rand_string(10), data_type=dt.DOUBLE)
+
+
+
+@pytest.fixture
+def stub_relation():
+    relation=RelationTestHelper()
+    attrs=AttributeTestHelper()
+    relation.iso_relation.attributes=[attrs.string_attribute,attrs.integer_attribute,attrs.double_attribute]
+
+    return relation.iso_relation
+
 
 @pytest.fixture
 def stub_graph_set()->tuple:

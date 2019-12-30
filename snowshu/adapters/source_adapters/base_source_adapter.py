@@ -16,7 +16,9 @@ class BaseSourceAdapter(BaseSQLAdapter):
     DATA_TYPE_MAPPINGS=dict()
     SUPPORTED_SAMPLE_METHODS=tuple()
 
-    
+    def __init__(self):
+        super().__init__()    
+
     def get_all_databases(self)->Tuple:
         logger.debug('Collecting databases from snowflake...')
         databases=tuple(self._safe_query(self.GET_ALL_DATABASES_SQL)['database_name'].tolist())
