@@ -5,8 +5,19 @@ from snowshu.core.models import Relation
 class BaseTargetAdapter(BaseSQLAdapter):
     """All target adapters inherit from this one."""
 
-    DATA_TYPE_MAPPINGS=dict()
+    DATA_TYPE_MAPPINGS:dict=None
     
+    DOCKER_IMAGE:str=None
+    
+
+    ## on init:
+    # starts the container with "snowshu" creds
+        # keeps container alive
+        # mounts data dir internally to image
+    # sets self creds to "snowshu"
+    # creates snowshu db
+    
+
     def create_relation(self,relation:Relation)->bool:
         """creates the relation in the target, returns success"""
         ddl_statement=f"CREATE {relation.materialization} {relation.quoted_dot_notation} ("

@@ -1,7 +1,7 @@
 -r dev_requirements.txt
 pyyaml==5.2
 pandas==0.25.3
-docker-py==1.10.6
+docker==4.1.0
 click==7.0
 coloredlogs==10.0
 networkx==2.4
