@@ -2,13 +2,14 @@ from dataclasses import dataclass
 from typing import Optional
 from urllib.parse import quote_plus
 
-USER='user'
-PASSWORD='password'
-HOST='host'
 ACCOUNT='account'
 DATABASE='database'
-SCHEMA='schema'
+HOST='host'
+PASSWORD='password'
+PORT='port'
 ROLE='role'
+SCHEMA='schema'
+USER='user'
 WAREHOUSE='warehouse'
 
 
@@ -18,13 +19,14 @@ class Credentials:
         attempting to bring some sanity to how configs are defined for disparate adapters.
         
     """
-    user:Optional[str]=None
-    password:Optional[str]=None
-    host:Optional[str]=None
     account:Optional[str]=None
     database:Optional[str]=None
-    schema:Optional[str]=None
+    host:Optional[str]=None
+    password:Optional[str]=None
+    port:Optional[int]=None
     role:Optional[str]=None
+    schema:Optional[str]=None
+    user:Optional[str]=None
     warehouse:Optional[str]=None       
 
     
