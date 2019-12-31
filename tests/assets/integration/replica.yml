@@ -1,6 +1,6 @@
 version: "1"
 credpath: "/app/tests/assets/integration/credentials.yml" ## can be a relative or expandable path
-name: integration trail path
+name: integration-test
 short_description: this is a sample with LIVE CREDS for integration
 long_description: this is for testing against a live db
 threads: 15
@@ -42,7 +42,7 @@ source:
         remote_attribute: ID
 
 target:
-  profile: default
+  adapter: 'postgres'
 
 storage:
   profile: default

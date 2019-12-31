@@ -29,22 +29,19 @@ def test_errors_on_bad_profile(stub_configs):
 def test_loads_good_creds(stub_creds):
     replica=Replica()
     stub_creds=stub_creds()
-    SOURCES_NAME,SOURCES_PASSWORD,TARGETS_USERNAME,STORAGES_ACCOUNT=[rand_string(10) for _ in range(4)]
+    SOURCES_NAME,SOURCES_PASSWORD,STORAGES_ACCOUNT=[rand_string(10) for _ in range(3)]
     with tempfile.NamedTemporaryFile(mode='w') as mock_file:
         stub_creds['sources'][0]['name']=SOURCES_NAME
         stub_creds['sources'][0]['password']=SOURCES_PASSWORD
-        stub_creds['targets'][0]['username']=TARGETS_USERNAME
         stub_creds['storages'][0]['account']=STORAGES_ACCOUNT
         json.dump(stub_creds,mock_file)
         mock_file.seek(0)
         replica._load_credentials(mock_file.name,
                                  SOURCES_NAME,
-                                 'default',
                                  'default')
 
     assert replica._credentials['source']['name'] == SOURCES_NAME
     assert replica._credentials['source']['password'] == SOURCES_PASSWORD
-    assert replica._credentials['target']['username'] == TARGETS_USERNAME
     assert replica._credentials['storage']['account'] == STORAGES_ACCOUNT
         
 def test_sets_good_source_adapter(stub_configs):

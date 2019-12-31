@@ -109,7 +109,7 @@ CONFIGURATION={
     ]
   },
   "target": {
-    "profile": "default"
+    "adapter": "postgres"
   },
   "storage": {
     "profile": "default"

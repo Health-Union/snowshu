@@ -1,28 +1,38 @@
 import pytest
 import mock
+from tests.common import rand_string
 from snowshu.core.models import Relation
 from snowshu.core.models import data_types as dtypes
 from snowshu.core.models import materializations as mz
 from snowshu.adapters.target_adapters import BaseTargetAdapter
 
-
-def test_inits_container():
-    ## on _init_image():
-    # starts the container with "snowshu" creds
-        # keeps container alive
-        # mounts data dir internally to image
-    # sets self creds to "snowshu"
-    # creates snowshu db
+@pytest.mark.skip
+@mock.patch('snowshu.adapters.target_adapters.base_target_adapter.BaseTargetAdapter.sqlalchemy')
+def test_spins_up_container(sqlalchemy):
+    REPLICA_NAME=rand_string(10)
     base=BaseTargetAdapter()
-    base.DOCKER_IMAGE='postgres:12'
-    base._init_image()
-    for attr in ('user','password','database',):
-        assert base._credentials.__[attr] = 'SNOWSHU'
-    assert base._credentials.host='localhost'
+    base.load_config(config)
+    mocked_sqlalchemy=mock.MagicMock()
+    base.get_connection=lambda : return mocked_sqlalchemy
     
+    base._init_image()
+    for attr in ('user','password','database','host'):
+        assert base._credentials.__[attr] == 'snowshu'
+    assert mocked_sqlalchemy.method_calls = ''
+    
+       
+    ## creates image
+    ## all creds set to "snowshu"
+    ## creates snowshu DB
+    
+def test_populates_meta_db():
+    ## inserts run data into snowshu dbs
+    pass
 
-
-
+def test_copies_data_inside_container():
+    ## accepts data dir location and envar name for data dir
+    ## docker commits new image
+    pass
 
 @mock.patch('snowshu.adapters.target_adapters.base_target_adapter.BaseTargetAdapter._safe_execute')
 def test_creates_relation_sets_up(_safe_execute,stub_relation):
@@ -52,4 +62,5 @@ string_attr soup
 
 
 
+    
     
