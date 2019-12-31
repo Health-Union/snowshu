@@ -3,8 +3,22 @@ import yaml
 from typing import Union,TextIO
 from snowshu.logger import Logger
 from snowshu.utils import DEFAULT_THREAD_COUNT
+from dataclasses import dataclass
 logger=Logger().logger
 
+
+##TODO: move all configs to class-based config       
+
+@dataclass     
+class ReplicaConfiguration:
+    """top-level configs"""
+    name:str
+    short_description:str
+    long_description:str
+    threads:int
+    source_name:str
+    target_adapter:str
+    storages_name:str
 
 class ConfigurationParser:
 
@@ -25,10 +39,22 @@ class ConfigurationParser:
         self._check_required_keys()
         logger.debug('Done loading.')
         self._standardize_keys()
-        logger.debug('populated required source values')
+        logger.debug('populated required values')
+        self._replica_configuration = ReplicaConfiguration(self.name,
+                                                            self.short_description,
+                                                            self.long_description,
+                                                            self.threads,
+                                                            self.source['profile'],
+                                                            self.target['adapter'],
+                                                            self.storage['profile'])
+
+    @property
+    def replica_configuration(self)->ReplicaConfiguration:
+        return self._replica_configuration
+
 
     def _check_required_keys(self)->None:
-        for key in ('source','target','storage',):
+        for key in ('source','target','storage','name','version',):
             try:
                 self.__dict__[key]
             except KeyError as e:
@@ -37,10 +63,13 @@ class ConfigurationParser:
                 raise AttributeError(message)
 
     def _standardize_keys(self)->None:
-        """traverses the source attributes and adds the expected 
+        """traverses attributes and adds the expected 
             default values"""
+        for attr in ('long_description','short_description',):
+            self.__dict__[attr]=getattr(self,attr,'')
 
         for rel in self.source['specified_relations']:
             rel['unsampled']=rel.get('unsampled',False)
             rel['relationships']=rel.get('relationships',dict(bidirectional=[],directional=[]))
-            
+
+

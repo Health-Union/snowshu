@@ -1,24 +1,25 @@
 import pytest
 import mock
 from tests.common import rand_string
+from snowshu.core.configuration_parser import ReplicaConfiguration
 from snowshu.core.models import Relation
 from snowshu.core.models import data_types as dtypes
 from snowshu.core.models import materializations as mz
 from snowshu.adapters.target_adapters import BaseTargetAdapter
 
-@pytest.mark.skip
-@mock.patch('snowshu.adapters.target_adapters.base_target_adapter.BaseTargetAdapter.sqlalchemy')
-def test_spins_up_container(sqlalchemy):
+@mock.patch('snowshu.adapters.base_sql_adapter.sqlalchemy')
+def test_spins_up_container(sqlalchemy,stub_replica_configuration):
     REPLICA_NAME=rand_string(10)
     base=BaseTargetAdapter()
-    base.load_config(config)
+    base.load_config(stub_replica_configuration)
     mocked_sqlalchemy=mock.MagicMock()
-    base.get_connection=lambda : return mocked_sqlalchemy
+    base.get_connection=lambda : mocked_sqlalchemy
     
     base._init_image()
     for attr in ('user','password','database','host'):
         assert base._credentials.__[attr] == 'snowshu'
-    assert mocked_sqlalchemy.method_calls = ''
+    
+    assert mocked_sqlalchemy.method_calls == 'banana'
     
        
     ## creates image
