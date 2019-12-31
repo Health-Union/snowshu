@@ -83,7 +83,7 @@ class Replica:
                                                          probability=self.source_configs['probability']))
         
         self._load_credentials(config_parser.credpath,
-                            *[self.__dict__[section+'_configs']["profile"] for section in ('source','target','storage',)])
+                            *[self.__dict__[section+'_configs']["profile"] for section in ('source','storage',)])
         
 
         self._load_adapters()
@@ -119,11 +119,9 @@ class Replica:
                             get_config_value(self._credentials['source'],
                                             'adapter',
                                             parent_name="source"))
+        self._fetch_adapter('target', 
+                            self.target_configs['adapter'])
 
-        self._fetch_adapter('target',
-                            get_config_value(self._credentials['target'],
-                                            'adapter',
-                                            parent_name="target"))
     def _set_connections(self):
         creds=deepcopy(self._credentials['source'])
         creds.pop('name')
@@ -132,13 +130,12 @@ class Replica:
 
     def _load_credentials(self,credentials_path:str, 
                                source_profile:str, 
-                               target_profile:str,
                                storage_profile:str)->None:
         logger.debug('loading credentials for adapters...')
         all_creds=load_from_file_or_path(credentials_path)
-        requested_profiles=dict(source=source_profile,target=target_profile,storage=storage_profile)
+        requested_profiles=dict(source=source_profile,storage=storage_profile)
 
-        for section in ('source','target','storage',):
+        for section in ('source','storage',):
             sections=f"{section}s" #pluralize ;)
             logger.debug(f'loading {sections} profile {requested_profiles[section]}...')
             profiles=get_config_value(all_creds,sections) 
