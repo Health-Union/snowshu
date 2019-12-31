@@ -19,6 +19,15 @@ def test_fills_in_empty_source_values(stub_configs):
         for direction in ('bidirectional','directional',):
             assert direction in rel['relationships'].keys()
 
+def test_fills_empty_top_level_values(stub_configs):
+    parser=ConfigurationParser()
+    stub_configs=stub_configs()
+    del stub_configs['long_description']
+    mock_config_file=StringIO(yaml.dump(stub_configs))   
+    parser.from_file_or_path(mock_config_file)
+
+    assert parser.long_description == ''
+
 def test_errors_on_missing_section(stub_configs):
     SOURCE_PROFILE,TARGET_PROFILE,STORAGE_PROFILE=[rand_string(10) for _ in range(3)]
     stub_configs=stub_configs()

@@ -1,4 +1,5 @@
 from snowshu.adapters import BaseSQLAdapter
+from snowshu.core.configuration_parser import ReplicaConfiguration
 from snowshu.core.models import Relation
 
 
@@ -7,16 +8,11 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
     DATA_TYPE_MAPPINGS:dict=None
     
-    DOCKER_IMAGE:str=None
     
 
-    ## on init:
-    # starts the container with "snowshu" creds
-        # keeps container alive
-        # mounts data dir internally to image
-    # sets self creds to "snowshu"
-    # creates snowshu db
-    
+    def load_config(self,config:ReplicaConfiguration)->None:
+        self.replica_configuration=config    
+
 
     def create_relation(self,relation:Relation)->bool:
         """creates the relation in the target, returns success"""

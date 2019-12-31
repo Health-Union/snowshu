@@ -1,8 +1,10 @@
 import pytest
+from io import StringIO
 import tempfile
 import copy
 import json
 import yaml
+from snowshu.core.configuration_parser import ConfigurationParser
 from tests.common import rand_string
 from snowshu.core.models import Relation, Attribute
 import snowshu.core.models.data_types as dt
@@ -161,6 +163,7 @@ class RelationTestHelper:
         for r in ('downstream_relation','upstream_relation','iso_relation','birelation_left','birelation_right','view_relation',):
             self.__dict__[r].compiled_query=''
 
+
 class AttributeTestHelper:
     
     def __init__(self):
@@ -169,6 +172,11 @@ class AttributeTestHelper:
         self.double_attribute=Attribute(name=rand_string(10), data_type=dt.DOUBLE)
 
 
+@pytest.fixture
+def stub_replica_configuration():
+    parser=ConfigurationParser()
+    parser.from_file_or_path(StringIO(yaml.dump(CONFIGURATION)))
+    return parser.replica_configuration
 
 @pytest.fixture
 def stub_relation():
