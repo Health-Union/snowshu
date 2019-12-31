@@ -5,6 +5,25 @@ from snowshu.core.models import data_types as dtypes
 from snowshu.core.models import materializations as mz
 from snowshu.adapters.target_adapters import BaseTargetAdapter
 
+
+def test_inits_container():
+    ## on _init_image():
+    # starts the container with "snowshu" creds
+        # keeps container alive
+        # mounts data dir internally to image
+    # sets self creds to "snowshu"
+    # creates snowshu db
+    base=BaseTargetAdapter()
+    base.DOCKER_IMAGE='postgres:12'
+    base._init_image()
+    for attr in ('user','password','database',):
+        assert base._credentials.__[attr] = 'SNOWSHU'
+    assert base._credentials.host='localhost'
+    
+
+
+
+
 @mock.patch('snowshu.adapters.target_adapters.base_target_adapter.BaseTargetAdapter._safe_execute')
 def test_creates_relation_sets_up(_safe_execute,stub_relation):
     base=BaseTargetAdapter()
