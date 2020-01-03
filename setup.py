@@ -23,7 +23,7 @@ packagedata['entry_points']=dict(console_scripts=['snowshu= snowshu.core.main:cl
 with open('./README.md','r') as readme:
     packagedata['long_description']=readme.read()
 
-with open('./requirements/requirements.txt', 'r') as requirements:
+with open('./requirements/base.txt', 'r') as requirements:
     for line in requirements.readlines():
         if not line.startswith('-r'):
             packagedata['install_requires'].append(line)

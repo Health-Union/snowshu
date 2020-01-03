@@ -1,21 +1,21 @@
 from dataclasses import dataclass
 from typing import Any
 
-class SampleType:
+class SampleMethod:
     """ represents a sample method. 
         required_params(dict) is in format param=type
     """
     def name(self):
-        raise NotImplementedError("SampleType instances must have a name.")
+        raise NotImplementedError("SampleMethod instances must have a name.")
 
     def __repr__(self)->str:
-        return f"<SampleType self.name>"
+        return f"<SampleMethod self.name>"
 
     def is_acceptable(self,value:Any)->bool:
         """returns if the given sample measure(s) is acceptable."""
-        raise NotImplementedError("SampleType instances must test acceptability of results.")
+        raise NotImplementedError("SampleMethod instances must test acceptability of results.")
 
-class StratifiedSample(SampleType):
+class StratifiedSample(SampleMethod):
 
     name='STRATIFIED'
     def __init__(self,percentage:float,strata:str):
@@ -23,7 +23,7 @@ class StratifiedSample(SampleType):
         self.strata=strata      
 
 
-class BernoulliSample(SampleType):
+class BernoulliSample(SampleMethod):
     name='BERNOULLI'
     def __init__(self,probability:float):
         self.probability=probability
@@ -34,14 +34,14 @@ class BernoulliSample(SampleType):
                 if percent < 1 else abs(self.probability - percent)
         return delta <=5 ## 5% diff ok? 
 
-class SystemSample(SampleType):
+class SystemSample(SampleMethod):
     name='SYSTEM'
 
     def __init__(self,probability:float):
         self.probability:probability
 
 
-def get_sample_method_from_kwargs(**kwargs)->SampleType:
+def get_sample_method_from_kwargs(**kwargs)->SampleMethod:
     method=kwargs['sample_method']
     if method.upper() == 'BERNOULLI':
         return BernoulliSample(int(kwargs['probability']))

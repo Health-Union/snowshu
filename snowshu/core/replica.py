@@ -11,19 +11,20 @@ from pathlib import Path
 from typing import Union
 import snowshu.adapters.source_adapters as source_adapters
 import snowshu.adapters.target_adapters as target_adapters
-from snowshu.adapters.source_adapters.sample_methods import get_sample_method_from_kwargs, SampleType
+from snowshu.adapters.source_adapters.sample_methods import get_sample_method_from_kwargs, SampleMethod
 from snowshu.logger import Logger, duration
 from snowshu.core.models.relation import Relation
 from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.configuration_parser import ConfigurationParser
 import networkx
-from tabulate import tabulate
+from snowshu.core.printable_result import graph_to_result_list,printable_result
 logger=Logger().logger
 
 
 class Replica:
 
     source_adapter:source_adapters.BaseSourceAdapter
+    target_adapter:target_adapters.BaseTargetAdapter
     graphs:List[networkx.Graph]
 
     def __init__(self):
@@ -31,6 +32,14 @@ class Replica:
 
     def run(self)->None:
         pass
+        self.ANALYZE=False
+        self.compile_graphs()
+        runner=GraphSetRunner()
+        runner.execute_graph_set(   self.graphs,
+                                    self.source_adapter,
+                                    self.target_adapter,
+                                    threads=self.THREADS,
+                                    analyze=self.ANALYZE)
 
     def analyze(self)->None:
         self.ANALYZE=True
@@ -40,15 +49,15 @@ class Replica:
                                     self.source_adapter,
                                     self.target_adapter,
                                     threads=self.THREADS,
-                                    analyze=True)
+                                    analyze=self.ANALYZE)
+        return printable_result(graph_to_result_list(self.graphs,
+                                                     self.SAMPLE_METHOD),
+                                self.ANALYZE)
+
+        """
         report=list()
         for graph in self.graphs:
             for relation in graph.nodes:
-                ##TODO: this color display logic doesn't belong here. 
-                colors=dict(reset="\033[0m",
-                            red="\033[0;31m",
-                            green="\033[0;32m")
-
                 deps = len(networkx.ancestors(graph,relation))
                 deps = " " if deps == 0 else str(deps)
                 percent=0 if int(relation.population_size) < 1\
@@ -67,6 +76,7 @@ class Replica:
         column_alignment=('left','right','right','center','right',)
         message_top="\n\nANALYZE RESULTS:\n\n"
         return message_top + tabulate(report,headers,colalign=column_alignment) +"\n"      
+        """
 
     def load_config(self,config:Union[Path,str,TextIO]):
         """ does all the initial work to make the resulting Replica object usable."""

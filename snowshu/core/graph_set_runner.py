@@ -53,8 +53,7 @@ class GraphSetRunner:
                 else:
                     relation.data=executable.source_adapter.check_count_and_query(relation.compiled_query,MAX_ALLOWED_ROWS)
                     logger.info(f'{len(relation.data)} records retrieved. Inserting into target...')
-                    executable.target_adapter.create_relation(relation)
-                    executable.target_adapter.insert_into_relation(relation)
+                    executable.target_adapter.create_and_load_relation(relation)
                     logger.info(f'Done replication of relation {relation.dot_notation} in {duration(start_time)}.')        
                     relation.target_loaded=True
                 relation.source_extracted=True

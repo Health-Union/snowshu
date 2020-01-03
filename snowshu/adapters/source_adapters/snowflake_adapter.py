@@ -6,7 +6,7 @@ from typing import Tuple,List,Union,Any,Optional
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
 from snowshu.adapters.source_adapters import BaseSourceAdapter
-from snowshu.adapters.source_adapters.sample_methods import SampleType,BernoulliSample, SystemSample
+from snowshu.adapters.source_adapters.sample_methods import SampleMethod,BernoulliSample, SystemSample
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
 from snowshu.logger import Logger
@@ -52,7 +52,7 @@ FROM
     {relation.quoted_dot_notation}
 """
 
-    def directionally_wrap_statement(self,sql:str,sample_type:Union[SampleType,None])->str:
+    def directionally_wrap_statement(self,sql:str,sample_type:Union[SampleMethod,None])->str:
         if sample_type is None:
             return sql
 
@@ -104,7 +104,7 @@ ON
 LIMIT 1
 """
 
-    def sample_statement_from_relation(self,relation:Relation,sample_type:Union[SampleType,None])->str:
+    def sample_statement_from_relation(self,relation:Relation,sample_type:Union[SampleMethod,None])->str:
         """builds the base sample statment for a given relation"""
         query=f"""
 SELECT
@@ -142,7 +142,7 @@ FROM
         return clause_string
 
 
-    def _sample_type_to_query_sql(self,sample_type:SampleType)->str:
+    def _sample_type_to_query_sql(self,sample_type:SampleMethod)->str:
         if isinstance(sample_type,BernoulliSample):
             return f"SAMPLE BERNOULLI ({sample_type.probability})"
         elif isinstance(sample_type,SystemSample):
