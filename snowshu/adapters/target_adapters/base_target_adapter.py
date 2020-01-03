@@ -72,19 +72,6 @@ class BaseTargetAdapter(BaseSQLAdapter):
     def _build_snowshu_envars(self,snowshu_envars:list)->list:
         """helper method to populate envars with `snowshu`"""
         return [f"{envar}=snowshu" for envar in snowshu_envars]
-
-    def _create_snowshu_database(self)->None:
-        engine=self.get_connection()
-        engine.execute(self._create_snowshu_database_statement())
-
-    def _create_snowshu_database_statement(self)->str:
-        return 'CREATE DATABASE snowshu;'
-
-    def _create_snowshu_schema(self)->None:
-        engine.execute(self._create_snowshu_schema_statement())
-
-    def _create_snowshu_schema_statement(self)->None:
-        return 'CREATE SCHEMA snowshu;'
         
     def _load_snowshu_database(self)->None:
         engine=self.get_connection()
@@ -104,7 +91,7 @@ number_of_replicated_relations INT)
     def create_database_if_not_exists(self, database:str)->str:
         raise NotImplementedError()
 
-    def create_schema_if_not_exists(self, schema:str)->str:
+    def create_schema_if_not_exists(self, database:str, schema:str)->str:
         raise NotImplementedError()
 
     def _safe_execute(self,query:str)->None:
