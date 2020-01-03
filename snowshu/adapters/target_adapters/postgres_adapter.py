@@ -1,12 +1,16 @@
 import sqlalchemy
-
+from snowshu.core.models import materializations as mz
+from snowshu.core.models import data_types as dt
 from snowshu.adapters.target_adapters import BaseTargetAdapter
+
 
 class PostgresAdapter(BaseTargetAdapter):
 
     dialect='postgres'
     DATA_TYPE_MAPPINGS:dict=None
     DOCKER_IMAGE='postgres'
+    MATERIALIZATION_MAPPINGS=dict(TABLE=mz.TABLE,VIEW=mz.VIEW)
+    DATA_TYPE_MAPPINGS=dict(VARCHAR=dt.VARCHAR,INTEGER=dt.INTEGER,TIMESTAMP=dt.TIMESTAMPTZ)
 
     ##NOTE: either start container with db listening on port 9999,
     ##  or override with DOCKER_TARGET_PORT

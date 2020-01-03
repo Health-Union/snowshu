@@ -1,10 +1,13 @@
 from time import sleep
+from snowshu.core.utils import key_for_value
 from typing import Optional
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import DOCKER_TARGET_PORT,DOCKER_TARGET_CONTAINER
 from snowshu.core.models.credentials import USER,PASSWORD,HOST,PORT,DATABASE
 from snowshu.core.configuration_parser import ReplicaConfiguration
-from snowshu.core.models import Relation,Credentials
+from snowshu.core.models import Relation,Credentials,Attribute
+from snowshu.core.models import materializations as mz
+from snowshu.core.models import data_types as dt
 from snowshu.core.docker import SnowShuDocker
 from snowshu.logger import Logger
 logger=Logger().logger
@@ -55,10 +58,8 @@ class BaseTargetAdapter(BaseSQLAdapter):
         logger.info('Container initialized.')
         while self.container.exec_run(self.DOCKER_READY_COMMAND).exit_code > 0:
             sleep(.5)
-        self.create_database_if_not_exists('snowshu')
-        self.create_schema_if_not_exists('snowshu','snowshu')
-        self._load_snowshu_database()
-        
+        self._initialize_snowshu_meta_database()
+
     def _generate_credentials(self)->Credentials:
         return Credentials( host=DOCKER_TARGET_CONTAINER,
                             port=self.DOCKER_TARGET_PORT,
@@ -73,20 +74,22 @@ class BaseTargetAdapter(BaseSQLAdapter):
         """helper method to populate envars with `snowshu`"""
         return [f"{envar}=snowshu" for envar in snowshu_envars]
         
-    def _load_snowshu_database(self)->None:
-        engine=self.get_connection()
-        engine.execute(self._load_snowshu_meta_statement())
-
-    def _load_snowshu_meta_statement(self)->str:
-        return """
-CREATE OR REPLACE TABLE "snowshu"."snowshu"."replica_meta" (
-created_at TIMESTAMP,
-name VARCHAR,
-short_description VARCHAR,
-long_description VARCHAR,
-source_name VARCHAR,
-number_of_replicated_relations INT)
-"""
+    def _initialize_snowshu_meta_database(self)->None:
+        self.create_database_if_not_exists('snowshu')
+        self.create_schema_if_not_exists('snowshu','snowshu')
+        attributes=[
+            Attribute('created_at',dt.TIMESTAMPTZ),
+            Attribute('name',dt.VARCHAR),
+            Attribute('short_description',dt.VARCHAR),
+            Attribute('long_description',dt.VARCHAR)]
+            
+        relation=Relation(  
+                            "snowshu",
+                            "snowshu",
+                            "replica_meta",                           
+                            mz.TABLE,
+                            attributes)
+        self.create_and_load_relation(relation)
 
     def create_database_if_not_exists(self, database:str)->str:
         raise NotImplementedError()
@@ -94,7 +97,21 @@ number_of_replicated_relations INT)
     def create_schema_if_not_exists(self, database:str, schema:str)->str:
         raise NotImplementedError()
 
-    def _safe_execute(self,query:str)->None:
+    def create_and_load_relation(self,relation)->None:
+        self.create_relation_if_not_exists(relation)
+        self.load_data_into_relation(relation)
+
+    def create_relation_if_not_exists(self,relation:Relation)->None:
+        engine=self.get_connection( database_override=relation.database,
+                                    schema_override=relation.schema)
+
+        materialization=key_for_value(self.MATERIALIZATION_MAPPINGS,relation.materialization)
+        ddl_statement=f"""
+CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation} 
+({relation.typed_columns(self.DATA_TYPE_MAPPINGS)})
+"""
+        engine.execute(ddl_statement)
+
+    def load_data_into_relation(self,relation:Relation)->None:
         pass
-
-
+            
