@@ -1,5 +1,7 @@
 import time
 import pandas as pd
+import sqlalchemy
+from sqlalchemy.pool import NullPool
 from typing import Tuple,List,Union,Any,Optional
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
@@ -150,7 +152,7 @@ FROM
             logger.error(message)
             raise NotImplementedError(message)
 
-    def _build_conn_string(self)->str:
+    def _build_conn_string(self,overrides:Optional[dict]={})->str:
         """overrides the base conn string"""
         conn_parts=[f"snowflake://{self.credentials.user}:{self.credentials.password}@{self.credentials.account}/{self.credentials.database}/"]
         conn_parts.append(self.credentials.schema if self.credentials.schema is not None else '')
@@ -234,3 +236,18 @@ FROM
             raise ValueError(message)
         response=self._safe_query(query)
         return response
+
+    def get_connection(self,database_override:Optional[str]=None,schema_override:Optional[str]=None)->sqlalchemy.engine.base.Engine:
+        """ Creates a connection engine without transactions. 
+            By default uses the instance credentials unless database or schema override are provided.
+        """
+        if not self._credentials:
+            raise KeyError('Adapter.get_connection called before setting Adapter.credentials')
+
+        logger.debug(f'Aquiring {self.CLASSNAME} connection...')
+        overrides=dict((k,v) for (k,v) in dict(database=database_override,schema=schema_override).items() if v is not None)
+
+        engine=sqlalchemy.create_engine(self._build_conn_string(overrides), poolclass=NullPool)
+        logger.debug(f'engine aquired. Conn string: {repr(engine.url)}')
+        return engine
+

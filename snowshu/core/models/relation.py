@@ -5,6 +5,8 @@ from snowshu.core.models.attribute import Attribute
 import pandas as pd
 import os
 import re
+from snowshu.logger import Logger
+logger=Logger().logger
 
 class Relation:
 
