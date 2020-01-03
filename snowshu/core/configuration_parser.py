@@ -2,7 +2,7 @@ from pathlib import Path
 import yaml
 from typing import Union,TextIO
 from snowshu.logger import Logger
-from snowshu.utils import DEFAULT_THREAD_COUNT
+from snowshu.configs import DEFAULT_THREAD_COUNT
 from dataclasses import dataclass
 logger=Logger().logger
 

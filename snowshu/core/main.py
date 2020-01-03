@@ -6,6 +6,7 @@ import logging
 from snowshu.logger import Logger
 from shutil import which, copyfile
 from snowshu.formats import DEFAULT_TAG_FORMAT
+from snowshu.configs import IS_IN_DOCKER
 from datetime import datetime
 from snowshu.core.replica import Replica
 
@@ -28,7 +29,7 @@ def cli(debug:bool):
     log_engine.initialize_logger()
     log_engine.set_log_level(log_level)
     logger=log_engine.logger
-    if not which('docker'):
+    if not which('docker') and not IS_IN_DOCKER:
         logger.warning(NO_DOCKER)
 
 

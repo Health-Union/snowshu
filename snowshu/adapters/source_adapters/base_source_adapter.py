@@ -10,14 +10,14 @@ from snowshu.logger import Logger
 import time
 logger=Logger().logger
 class BaseSourceAdapter(BaseSQLAdapter):
-
     MAX_ALLOWED_DATABASES=MAX_ALLOWED_DATABASES
     MAX_ALLOWED_ROWS=MAX_ALLOWED_ROWS
-    DATA_TYPE_MAPPINGS=dict()
-    SUPPORTED_SAMPLE_METHODS=tuple()
 
     def __init__(self):
         super().__init__()    
+        for attr in ('DATA_TYPE_MAPPINGS','SUPPORTED_SAMPLE_METHODS',):
+            if not hasattr(self,attr):
+                raise NotImplementedError(f'Source adapter requires attribute f{attr} but was not set.')
 
     def get_all_databases(self)->Tuple:
         logger.debug('Collecting databases from snowflake...')
