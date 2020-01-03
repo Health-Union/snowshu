@@ -1,19 +1,30 @@
+from time import sleep
+from typing import Optional
 from snowshu.adapters import BaseSQLAdapter
+from snowshu.configs import DOCKER_TARGET_PORT,DOCKER_TARGET_CONTAINER
 from snowshu.core.models.credentials import USER,PASSWORD,HOST,PORT,DATABASE
 from snowshu.core.configuration_parser import ReplicaConfiguration
 from snowshu.core.models import Relation,Credentials
 from snowshu.core.docker import SnowShuDocker
+from snowshu.logger import Logger
+logger=Logger().logger
 
 class BaseTargetAdapter(BaseSQLAdapter):
     """All target adapters inherit from this one."""
-    TARGET_NAME="snowshu_target"
     REQUIRED_CREDENTIALS=[USER,PASSWORD,HOST,PORT,DATABASE]
     ALLOWED_CREDENTIALS=list()
-    DATA_TYPE_MAPPINGS:dict=None
-    DOCKER_IMAGE:str=None
-    DOCKER_START_COMMAND:str=None
-    DOCKER_ENVARS:list=None
-    DOCKER_PORT:int   
+    DOCKER_TARGET_PORT=DOCKER_TARGET_PORT
+    
+    def __init__(self):
+        super().__init__()    
+        for attr in (
+                     'DOCKER_IMAGE',
+                     'DOCKER_SNOWSHU_ENVARS',
+                     'DATA_TYPE_MAPPINGS',
+                     ):
+            if not hasattr(self,attr):
+                raise NotImplementedError(f'Target adapter requires attribute f{attr} but was not set.')
+        self.credentials=self._generate_credentials()
 
     def load_config(self,config:ReplicaConfiguration)->None:
         self.replica_configuration=config    
@@ -36,32 +47,48 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
     def _init_image(self)->None:
         docker=SnowShuDocker()
-        docker.kill_container(self.TARGET_NAME)
-        docker.startup( self.DOCKER_IMAGE,
+        logger.info('Initializing target container...')
+        self.container=docker.startup( self.DOCKER_IMAGE,
                         self.DOCKER_START_COMMAND,
-                        docker._build_envars(self.DOCKER_ENVARS),
-                        port=self.DOCKER_PORT)
-        self.container=docker.container
-
-        self.credentials=self._generate_credentials()
-
-        self._create_snowshu_database_and_schema()
+                        self.DOCKER_TARGET_PORT,
+                        self._build_snowshu_envars(self.DOCKER_SNOWSHU_ENVARS))
+        logger.info('Container initialized.')
+        while self.container.exec_run(self.DOCKER_READY_COMMAND).exit_code > 0:
+            sleep(.5)
+        self.create_database_if_not_exists('snowshu')
+        self.create_schema_if_not_exists('snowshu','snowshu')
         self._load_snowshu_database()
-        self.container.reload()
-        raise ValueError(self.container.status)
         
     def _generate_credentials(self)->Credentials:
-        return Credentials( host=self.TARGET_NAME,
-                            port=9999,
+        return Credentials( host=DOCKER_TARGET_CONTAINER,
+                            port=self.DOCKER_TARGET_PORT,
                             **dict(zip(('user','password','database',),['snowshu' for _ in range(3)])))
 
-    def _create_snowshu_database_and_schema(self)->None:
+    def _build_conn_string_partial(self, dialect:str,database:Optional[str]=None)->str:
+        database=database if database is not None else self._credentials.database
+        conn_string=f"{self.dialect}://{self._credentials.user}:{self._credentials.password}@{self._credentials.host}:{self.DOCKER_TARGET_PORT}/{database}?"
+        return conn_string, {USER,PASSWORD,HOST,PORT,DATABASE,}
+
+    def _build_snowshu_envars(self,snowshu_envars:list)->list:
+        """helper method to populate envars with `snowshu`"""
+        return [f"{envar}=snowshu" for envar in snowshu_envars]
+
+    def _create_snowshu_database(self)->None:
         engine=self.get_connection()
-        engine.execute('CREATE DATABASE snowshu; CREATE SCHEMA "snowshu"."snowshu"')
+        engine.execute(self._create_snowshu_database_statement())
+
+    def _create_snowshu_database_statement(self)->str:
+        return 'CREATE DATABASE snowshu;'
+
+    def _create_snowshu_schema(self)->None:
+        engine.execute(self._create_snowshu_schema_statement())
+
+    def _create_snowshu_schema_statement(self)->None:
+        return 'CREATE SCHEMA snowshu;'
         
     def _load_snowshu_database(self)->None:
         engine=self.get_connection()
-        engine.execute(self._load_snowshu_meta_statement)
+        engine.execute(self._load_snowshu_meta_statement())
 
     def _load_snowshu_meta_statement(self)->str:
         return """
@@ -74,11 +101,11 @@ source_name VARCHAR,
 number_of_replicated_relations INT)
 """
 
-    def _create_database_if_not_exists(self, database:str)->str:
-        return f"CREATE SCHEMA IF NOT EXISTS '{database}'"
+    def create_database_if_not_exists(self, database:str)->str:
+        raise NotImplementedError()
 
-    def _create_schema_if_not_exists(self, schema:str)->str:
-        return f"CREATE SCHEMA IF NOT EXISTS '{schema}'"
+    def create_schema_if_not_exists(self, schema:str)->str:
+        raise NotImplementedError()
 
     def _safe_execute(self,query:str)->None:
         pass

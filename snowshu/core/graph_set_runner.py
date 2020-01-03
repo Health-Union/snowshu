@@ -1,6 +1,6 @@
 import gc
 from typing import List
-from snowshu.utils import MAX_ALLOWED_ROWS
+from snowshu.configs import MAX_ALLOWED_ROWS
 from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
 from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
 import networkx as nx
