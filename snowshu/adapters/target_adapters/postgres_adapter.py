@@ -21,9 +21,6 @@ class PostgresAdapter(BaseTargetAdapter):
         self.DOCKER_START_COMMAND=f'postgres -p {self._credentials.port}'
         self.DOCKER_READY_COMMAND=f'pg_isready -p {self._credentials.port} -h {self._credentials.host} -U {self._credentials.user} -d {self._credentials.database}'
 
-    def _create_snowshu_database_statement(self)->str:
-        return 'CREATE DATABASE "snowshu";'
-
     def _create_snowshu_schema_statement(self)->str:
         return 'CREATE SCHEMA IF NOT EXISTS "snowshu";'
 
@@ -40,3 +37,8 @@ class PostgresAdapter(BaseTargetAdapter):
                 pass
             else:
                 raise e
+
+    def create_schema_if_not_exists(self,database:str,schema:str)->None:
+        conn=self.get_connection(database_override=database)
+        statement=f"CREATE SCHEMA IF NOT EXISTS {schema}" 
+        conn.execute(statement)

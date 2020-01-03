@@ -58,7 +58,7 @@ class BaseSQLAdapter:
         conn_string,used_credentials=self._build_conn_string_partial(self.dialect,overrides.get('database'))
         instance_creds = copy.deepcopy(self._credentials)
         for key in overrides.keys():
-            instance_creds[key]=overrides[key]
+            instance_creds.__dict__[key]=overrides[key]
         get_args='&'.join([f"{arg}={instance_creds.__dict__[arg]}" for arg in (set(self.ALLOWED_CREDENTIALS)-used_credentials) if arg in vars(instance_creds) and instance_creds.__dict__[arg] is not None])
         return conn_string+get_args
                                 
