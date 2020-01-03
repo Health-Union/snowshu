@@ -2,8 +2,8 @@ import networkx
 from snowshu.core.models.relation import Relation
 from typing import Tuple,Set,List
 from snowshu.logger import Logger
-from snowshu.core.models.relation import get_config_value,\
-at_least_one_full_pattern_match,\
+from snowshu.core.utils import get_config_value
+from snowshu.core.models.relation import at_least_one_full_pattern_match,\
 lookup_relation,\
 single_full_pattern_match
 

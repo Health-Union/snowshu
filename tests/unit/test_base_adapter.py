@@ -9,12 +9,17 @@ def rand_creds(args)->Credentials:
     kwargs=dict(zip(args,[rand_string(10) for _ in range(len(args))]))
     return Credentials(**kwargs)
 
+
+class TestAdapter(BaseSQLAdapter):
+    
+    REQUIRED_CREDENTIALS=(USER,PASSWORD,HOST)
+    ALLOWED_CREDENTIALS=(ACCOUNT,SCHEMA)
+    DATA_TYPE_MAPPINGS=dict()
+    MATERIALIZATION_MAPPINGS=dict()
+
 def test_sets_credentials():
 
-    base=BaseSQLAdapter()
-
-    base.REQUIRED_CREDENTIALS=(USER,PASSWORD,HOST)
-    base.ALLOWED_CREDENTIALS=(ACCOUNT,SCHEMA)
+    base=TestAdapter()
 
     with pytest.raises(KeyError):
         base.credentials=rand_creds((HOST,))
@@ -28,7 +33,7 @@ def test_sets_credentials():
 
 
 def test_default_conn_string():
-    base=BaseSQLAdapter()
+    base=TestAdapter()
     base.dialect='postgres'
     
     base.REQUIRED_CREDENTIALS=(USER,PASSWORD,DATABASE,HOST)
