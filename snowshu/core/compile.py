@@ -1,4 +1,4 @@
-from snowshu.adapters.source_adapters.sample_methods import SampleType
+from snowshu.adapters.source_adapters.sample_methods import SampleMethod
 from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
 import networkx
 from typing import List
@@ -10,7 +10,7 @@ class BaseCompiler:
     def __init__(self,
                  dags:List[networkx.Graph],
                  adapter:BaseSourceAdapter,
-                 sample_method:SampleType,
+                 sample_method:SampleMethod,
                  analyze:bool=False):
         self.dags=dags
         self.adapter=adapter
