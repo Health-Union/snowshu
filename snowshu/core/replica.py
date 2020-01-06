@@ -30,7 +30,7 @@ class Replica:
     def __init__(self):
         self._credentials=dict()
 
-    def run(self)->None:
+    def run(self,tag:str)->None:
         pass
         self.ANALYZE=False
         self.compile_graphs()
@@ -40,6 +40,10 @@ class Replica:
                                     self.target_adapter,
                                     threads=self.THREADS,
                                     analyze=self.ANALYZE)
+
+        return printable_result(graph_to_result_list(self.graphs,
+                                                     self.SAMPLE_METHOD),
+                                self.ANALYZE)
 
     def analyze(self)->None:
         self.ANALYZE=True
@@ -53,30 +57,7 @@ class Replica:
         return printable_result(graph_to_result_list(self.graphs,
                                                      self.SAMPLE_METHOD),
                                 self.ANALYZE)
-
-        """
-        report=list()
-        for graph in self.graphs:
-            for relation in graph.nodes:
-                deps = len(networkx.ancestors(graph,relation))
-                deps = " " if deps == 0 else str(deps)
-                percent=0 if int(relation.population_size) < 1\
-                               else round(100.0 * (relation.sample_size / relation.population_size))
-                formatted_color='green' if self.SAMPLE_METHOD.is_acceptable(percent) else 'red' 
-                formatted_color='green' if relation.unsampled and percent==100 else formatted_color
-    
-                percent = f"{colors[formatted_color]}{percent} %{colors['reset']}"                 
-                report.append(( relation.dot_notation,
-                                relation.population_size,
-                                relation.sample_size,
-                                deps,
-                                percent,))
-
-        headers=('relation','population size','sample size','dependencies','aproximate %',)        
-        column_alignment=('left','right','right','center','right',)
-        message_top="\n\nANALYZE RESULTS:\n\n"
-        return message_top + tabulate(report,headers,colalign=column_alignment) +"\n"      
-        """
+     
 
     def load_config(self,config:Union[Path,str,TextIO]):
         """ does all the initial work to make the resulting Replica object usable."""
