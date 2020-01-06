@@ -49,12 +49,6 @@ class SnowShuGraph:
            
             for edge in edges:
                 downstream_relations=set(filter(lambda x :single_full_pattern_match(x,relation), available_nodes))
-                ## populate any string wildcard upstreams
-                #for attr in ('database','schema',):
-                #    edge[attr]=relation[attr] if edge[attr]=='' else edge[attr]
-
-                #upstream_relation = lookup_relation(edge,available_nodes)
-                #downstream_relations.discard(upstream_relation)
                 for rel in downstream_relations:
                     ## populate any string wildcard upstreams
                     for attr in ('database','schema',):
