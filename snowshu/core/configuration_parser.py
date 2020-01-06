@@ -54,15 +54,16 @@ class SpecifiedMatchPattern():
 @dataclass 
 class Configuration():
     name:str
+    version:str
+    credpath:str
     short_description:str
     long_description:str
     threads:int
-    source_name:str
+    source_profile:str
     target_adapter:str
-    storages_name:str
+    storage_profile:str
     include_outliers:bool
-    default_sampling_method:SampleMethod
-    default_probability:int
+    default_sample_method:SampleMethod
     default_sampling: List[MatchPattern]   
     specified_relations:List[SpecifiedMatchPattern]
 
@@ -85,21 +86,23 @@ class ConfigurationParser:
 
         logger.debug('Done loading.')
         try:
-            replica_base=(loaded['name'],
-                                    loaded['version'],
-                                    loaded.get('short_description',''),
-                                    loaded.get('long_description',''),
-                                    loaded.get('threads',DEFAULT_THREAD_COUNT),
-                                    loaded.get('include_outliers',False),
-                                    get_sample_method_from_kwargs(**loaded['source']),
-                                    loaded['source']['profile'],
-                                    loaded['target']['adapter'],
-                                    loaded['storage']['profile'],)
-
-            default_sampling=MatchPattern([MatchPattern.DatabasePattern(database,
-                                                            [MatchPattern.SchemaPattern(schema, 
-                                                                                        [MatchPattern.RelationPattern(relation) for relation in schema]) 
-                                                            for schema in database]) for database in loaded['source']['default_sampling']])
+            replica_base=(  loaded['name'],
+                            loaded['version'],
+                            loaded['credpath'],
+                            loaded.get('short_description',''),
+                            loaded.get('long_description',''),
+                            loaded.get('threads',DEFAULT_THREAD_COUNT),
+                            loaded['source']['profile'],
+                            loaded['target']['adapter'],
+                            loaded['storage']['profile'],
+                            loaded['source'].get('include_outliers',False),
+                            get_sample_method_from_kwargs(**loaded['source']),
+                            )
+            
+            default_sampling=MatchPattern([MatchPattern.DatabasePattern(database['name'],
+                                                            [MatchPattern.SchemaPattern(schema['name'], 
+                                                                                        [MatchPattern.RelationPattern(relation) for relation in schema['relations']]) 
+                                                            for schema in database['schemas']]) for database in loaded['source']['default_sampling']['databases']])
                     
             specified_relations=[SpecifiedMatchPattern( rel['database'],
                                                         rel['schema'],
@@ -108,23 +111,23 @@ class ConfigurationParser:
                                                         SpecifiedMatchPattern.Relationships(
                                                             [SpecifiedMatchPattern.RelationshipPattern(
                                                                                                 dsub['local_attribute'],
-                                                                                                dsub['database'],
-                                                                                                dsub['schema'],
+                                                                                                dsub['database'] if dsub['database'] != '' else rel['database'],
+                                                                                                dsub['schema'] if dsub['schema'] != '' else rel['schema'],
                                                                                                 dsub['relation'],
-                                                                                                dsub['remote_attribute']) for dsub in rel.get('directional',list())],
+                                                                                                dsub['remote_attribute']) for dsub in rel.get('relationships',dict()).get('directional',list())],
 
                                                             [SpecifiedMatchPattern.RelationshipPattern(
                                                                                                 bsub['local_attribute'],
-                                                                                                bsub['database'],
-                                                                                                bsub['schema'],
+                                                                                                bsub['database'] if bsub['database'] != '' else rel['database'],
+                                                                                                bsub['schema'] if bsub['schema'] != '' else rel['schema'],
                                                                                                 bsub['relation'],
-                                                                                                bsub['remote_attribute']) for bsub in rel.get('bidirectional',list())])) for rel in loaded['source'].get('specified_relationships',list())]
+                                                                                                bsub['remote_attribute']) for bsub in rel.get('relationships',dict()).get('bidirectional',list())])) for rel in loaded['source'].get('specified_relations',list())]
 
             
             return Configuration(*replica_base,
                                         default_sampling,
                                         specified_relations)
         except KeyError as e:
-            message=f"Configuration missing required section {key}."
+            message=f"Configuration missing required section: {e}."
             logger.critical(message)
             raise AttributeError(message)

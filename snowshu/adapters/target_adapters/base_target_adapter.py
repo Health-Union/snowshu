@@ -4,7 +4,7 @@ from typing import Optional
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import DOCKER_TARGET_PORT,DOCKER_TARGET_CONTAINER,DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.core.models.credentials import USER,PASSWORD,HOST,PORT,DATABASE
-from snowshu.core.configuration_parser import ReplicaConfiguration
+from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models import Relation,Credentials,Attribute
 from snowshu.core.models import materializations as mz
 from snowshu.core.models import data_types as dt
@@ -31,7 +31,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
                 raise NotImplementedError(f'Target adapter requires attribute f{attr} but was not set.')
         self.credentials=self._generate_credentials()
 
-    def load_config(self,config:ReplicaConfiguration)->None:
+    def load_config(self,config:Configuration)->None:
         self.replica_configuration=config    
 
     def create_database_if_not_exists(self, database:str)->str:
