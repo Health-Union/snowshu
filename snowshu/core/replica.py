@@ -31,50 +31,39 @@ class Replica:
         self._credentials=dict()
 
     def run(self,tag:str)->None:
-        pass
         self.ANALYZE=False
-        self.compile_graphs()
-        runner=GraphSetRunner()
-        runner.execute_graph_set(   self.graphs,
-                                    self.source_adapter,
-                                    self.target_adapter,
-                                    threads=self.THREADS,
-                                    analyze=self.ANALYZE)
-
-        return printable_result(graph_to_result_list(self.graphs,
-                                                     self.SAMPLE_METHOD),
-                                self.ANALYZE)
+        return self._execute()
 
     def analyze(self)->None:
         self.ANALYZE=True
+        return self._execute()
+     
+
+    def _execute(self)->None:
         self.compile_graphs()
+        if len(self.graphs) < 1:
+            return "No relations found per provided replica configuration, exiting."
+            
         runner=GraphSetRunner()
         runner.execute_graph_set(   self.graphs,
                                     self.source_adapter,
                                     self.target_adapter,
-                                    threads=self.THREADS,
+                                    threads=self.config.threads,
                                     analyze=self.ANALYZE)
+
         return printable_result(graph_to_result_list(self.graphs,
-                                                     self.SAMPLE_METHOD),
+                                                     self.config.default_sample_method),
                                 self.ANALYZE)
-     
 
     def load_config(self,config:Union[Path,str,TextIO]):
         """ does all the initial work to make the resulting Replica object usable."""
         logger.info('Loading credentials...')
         start_timer=time.time()
-        config_parser=ConfigurationParser()
-        config_parser.from_file_or_path(config)
-        for section in ('source','target','storage',):
-            self.__dict__[section+'_configs']=config_parser.__dict__[section]
-
-        self.THREADS=config_parser.threads
-
-        self.SAMPLE_METHOD=get_sample_method_from_kwargs(**dict(sample_method=self.source_configs['sample_method'],
-                                                         probability=self.source_configs['probability']))
+        self.config=ConfigurationParser.from_file_or_path(config)
         
-        self._load_credentials(config_parser.credpath,
-                            *[self.__dict__[section+'_configs']["profile"] for section in ('source','storage',)])
+        self._load_credentials( self.config.credpath,
+                                self.config.source_profile,
+                                self.config.storage_profile)
         
 
         self._load_adapters()
@@ -85,7 +74,7 @@ class Replica:
         """public interface to compile graphs"""
         compiler=BaseCompiler(  self._build_uncompiled_graphs(),
                                 self.source_adapter,
-                                self.SAMPLE_METHOD,
+                                self.config.default_sample_method,
                                 self.ANALYZE)
         self.graphs=compiler.compile()
         logger.info(f'Compiled a total of {len(self.graphs)} unique graphs for this replica.')
@@ -94,13 +83,13 @@ class Replica:
     def _build_uncompiled_graphs(self)->List[networkx.Graph]:
         graph=SnowShuGraph()
         self._load_full_catalog()
-        graph.build_graph(self.source_configs,self.full_catalog)
+        graph.build_graph(self.config,self.full_catalog)
         return graph.get_graphs()
 
     def _load_full_catalog(self)->None:
         logger.info('Assessing full catalog...')
         start_timer=time.time()
-        catalog=Catalog(self.source_adapter,self.THREADS)
+        catalog=Catalog(self.source_adapter,self.config.threads)
         catalog.load_full_catalog()
         self.full_catalog=catalog.catalog
         logger.info(f'Done assessing catalog. Found a total of {len(self.full_catalog)} relations from the source in {duration(start_timer)}.')
@@ -111,7 +100,7 @@ class Replica:
                                             'adapter',
                                             parent_name="source"))
         self._fetch_adapter('target', 
-                            self.target_configs['adapter'])
+                            self.config.target_adapter)
 
     def _set_connections(self):
         creds=deepcopy(self._credentials['source'])

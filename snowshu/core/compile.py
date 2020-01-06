@@ -1,5 +1,6 @@
 from snowshu.adapters.source_adapters.sample_methods import SampleMethod
 from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
+from snowshu.core.models import Relation
 import networkx
 from typing import List
 from snowshu.logger import Logger
@@ -61,7 +62,7 @@ class BaseCompiler:
         
     def construct_compiled_query(   self,
                                     relation:Relation,
-                                    dag:DiGraph,
+                                    dag:networkx.DiGraph,
                                     adapter:BaseSourceAdapter,
                                     analyze:bool)->str:
         query=str()

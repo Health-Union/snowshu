@@ -18,6 +18,9 @@ def _is_in_docker()->bool:
     if os.path.exists(os.path.join('var','run','docker.sock')) and not which('docker'):
         return True
     ## running vertical (not recommended)
-    with open('/proc/1/cgroup', 'rt') as ifh:
-        return any([indicator in line for line in ifh.readlines() for indicator in ('docker','kubepods',)])
+    try:
+        with open('/proc/1/cgroup', 'rt') as ifh:
+            return any([indicator in line for line in ifh.readlines() for indicator in ('docker','kubepods',)])
+    except FileNotFoundError:
+        return False
 IS_IN_DOCKER=_is_in_docker()

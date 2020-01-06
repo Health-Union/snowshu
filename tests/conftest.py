@@ -130,6 +130,7 @@ def stub_configs():
         return copy.deepcopy(CONFIGURATION)
     return _stub_configs
 
+
 class RelationTestHelper:
     """builds a collection of different relations for testing"""
     def rand_relation_helper(self)->dict:
