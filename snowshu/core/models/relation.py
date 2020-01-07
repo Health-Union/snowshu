@@ -1,6 +1,7 @@
-from typing import List,Union
+from typing import List,Union,Optional
 from snowshu.core.utils import key_for_value
 from snowshu.core.models.materializations import Materialization
+from snowshu.core.sample_methods import SampleMethod
 from snowshu.core.models.attribute import Attribute
 import pandas as pd
 import os
@@ -17,6 +18,7 @@ class Relation:
     sample_size:int
     source_extracted:bool=False
     target_loaded:bool=False
+    sample_method:Optional[SampleMethod]
     unsampled=False
 
 

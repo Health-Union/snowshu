@@ -6,7 +6,7 @@ from typing import Tuple,List,Union,Any,Optional
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
 from snowshu.adapters.source_adapters import BaseSourceAdapter
-from snowshu.adapters.source_adapters.sample_methods import SampleMethod,BernoulliSample, SystemSample
+from snowshu.core.sample_methods import SampleMethod,BernoulliSample, SystemSample
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
 from snowshu.logger import Logger
@@ -127,19 +127,31 @@ FROM
             def quoted(val:Any)->str:
                 return f"'{val}'" if relation.lookup_attribute(remote_key).data_type.requires_quotes else val 
 
-            constraint_set=[f" SELECT {quoted(val)} AS {remote_key} " for val in relation.data[remote_key].unique()]
-            constraint_sql= ' UNION ALL '.join(constraint_set)       
-            
+            def case_insensitive_column_lookup(column_name:str)->str:
+                """gets you the case-corrected column name for a given remote_key"""
+                for col in relation.data.columns:
+                    for i,char in enumerate(column_name):
+                        last=(i==len(column_name)-1)
+                        if len(col)!=len(column_name):
+                            break
+                        if col[i].lower() != char.lower():
+                            break
+                        if last:
+                            return col
+                return False
+                        
 
-        clause_string= f"""
-{local_key} IN 
-    ( SELECT  
-        {remote_key}
-    FROM (
-{constraint_sql}
-))
-"""
-        return clause_string
+            try:
+                column_name = case_insensitive_column_lookup(remote_key)
+                if not column_name:
+                    raise KeyError(f'No column found in dataframe columns matching remote_key {remote_key}')               
+                constraint_set=[quoted(val) for val in relation.data[column_name].unique()]
+                constraint_sql=','.join(constraint_set)
+            except KeyError as e:
+                logger.critical(f'failed to build predicates for {relation.dot_notation}: remote key {remote_key} not in dataframe columns ({relation.data.columns})')
+                raise e
+
+        return f"{local_key} IN ({constraint_sql})"
 
 
     def _sample_type_to_query_sql(self,sample_type:SampleMethod)->str:

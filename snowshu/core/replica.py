@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Union
 import snowshu.adapters.source_adapters as source_adapters
 import snowshu.adapters.target_adapters as target_adapters
-from snowshu.adapters.source_adapters.sample_methods import get_sample_method_from_kwargs, SampleMethod
+from snowshu.core.sample_methods import get_sample_method_from_kwargs, SampleMethod
 from snowshu.logger import Logger, duration
 from snowshu.core.models.relation import Relation
 from snowshu.core.graph_set_runner import GraphSetRunner
@@ -40,7 +40,8 @@ class Replica:
      
 
     def _execute(self)->None:
-        self.compile_graphs()
+        self.graphs=self._build_uncompiled_graphs()
+        #self.compile_graphs()
         if len(self.graphs) < 1:
             return "No relations found per provided replica configuration, exiting."
             

@@ -2,7 +2,8 @@ import sqlalchemy
 from snowshu.core.models import materializations as mz
 from snowshu.core.models import data_types as dt
 from snowshu.adapters.target_adapters import BaseTargetAdapter
-
+from snowshu.logger import Logger
+logger=Logger().logger
 
 class PostgresAdapter(BaseTargetAdapter):
 
@@ -10,7 +11,7 @@ class PostgresAdapter(BaseTargetAdapter):
     DATA_TYPE_MAPPINGS:dict=None
     DOCKER_IMAGE='postgres'
     MATERIALIZATION_MAPPINGS=dict(TABLE=mz.TABLE,VIEW=mz.VIEW)
-    DATA_TYPE_MAPPINGS=dict(VARCHAR=dt.VARCHAR,INTEGER=dt.INTEGER,TIMESTAMP=dt.TIMESTAMPTZ)
+    DATA_TYPE_MAPPINGS=dict(VARCHAR=dt.VARCHAR,INTEGER=dt.INTEGER,TIMESTAMP=dt.TIMESTAMPTZ,FLOAT=dt.DOUBLE,BOOLEAN=dt.BOOLEAN)
 
     ##NOTE: either start container with db listening on port 9999,
     ##  or override with DOCKER_TARGET_PORT
@@ -29,20 +30,22 @@ class PostgresAdapter(BaseTargetAdapter):
         return 'CREATE SCHEMA IF NOT EXISTS "snowshu";'
 
 
-    def create_database_if_not_exists(self,database:str)->None:
-        """Postgres doesn't have great CINE support. So ask for forgiveness instead.
+    def create_database_if_not_exists(self,database:str)->str:
+        """ Postgres doesn't have great CINE support. So ask for forgiveness instead.
         """
         conn=self.get_connection()
-        statement=f"CREATE DATABASE {database}" 
+        statement=f'CREATE DATABASE "{database}"' 
         try:
             conn.execute(statement)
-        except sqlalchemy.exc.ProgrammingError as e:
-            if f'database "{database}" already exists' in str(e):
+        except sqlalchemy.exc.ProgrammingError as e: 
+            if f'database "{database}" already exists' in  str(e):
+                logger.debug(f'Database "{database}" already exists, skipping.')
                 pass
             else:
                 raise e
+        return database
 
     def create_schema_if_not_exists(self,database:str,schema:str)->None:
         conn=self.get_connection(database_override=database)
-        statement=f"CREATE SCHEMA IF NOT EXISTS {schema}" 
+        statement=f'CREATE SCHEMA IF NOT EXISTS "{schema}"' 
         conn.execute(statement)

@@ -2,7 +2,9 @@ from tabulate import tabulate
 import networkx as nx
 from dataclasses import dataclass
 from typing import Any,List
-from snowshu.adapters.source_adapters.sample_methods import SampleMethod
+from snowshu.core.sample_methods import SampleMethod
+from snowshu.logger import Logger
+logger=Logger().logger
 
 @dataclass
 class ReportRow:
@@ -24,20 +26,24 @@ class ReportRow:
 def graph_to_result_list(graphs:nx.Graph, sample_method:SampleMethod)->list:
     report=list()
     for graph in graphs:
-        for relation in graph.nodes:
-            deps = len(nx.ancestors(graph,relation))
-            deps = " " if deps == 0 else str(deps)
-            percent=0 if int(relation.population_size) < 1\
-                           else round(100.0 * (relation.sample_size / relation.population_size))
-            percent_is_acceptable=any((sample_method.is_acceptable(percent), (relation.unsampled and percent==100),))
-            report.append(ReportRow(
-                            relation.dot_notation,
-                            relation.population_size,
-                            relation.sample_size,
-                            deps,
-                            percent,
-                            percent_is_acceptable))
-
+        try:
+            for relation in graph.nodes:
+                deps = len(nx.ancestors(graph,relation))
+                deps = " " if deps == 0 else str(deps)
+                percent=0 if int(relation.population_size) < 1\
+                               else round(100.0 * (relation.sample_size / relation.population_size))
+                percent_is_acceptable=any((sample_method.is_acceptable(percent), (relation.unsampled and percent==100),))
+                report.append(ReportRow(
+                                relation.dot_notation,
+                                relation.population_size,
+                                relation.sample_size,
+                                deps,
+                                percent,
+                                percent_is_acceptable))
+        except Exception as e: 
+            message=f"failure in building row for relation {relation.dot_notation} : {e}"
+            logger.critical(message)
+            raise ValueError(message)
     return report
 
 def printable_result(report:List[ReportRow], analyze:str)->str:
