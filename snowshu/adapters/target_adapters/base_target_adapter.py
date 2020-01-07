@@ -19,7 +19,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
     REQUIRED_CREDENTIALS=[USER,PASSWORD,HOST,PORT,DATABASE]
     ALLOWED_CREDENTIALS=list()
     DOCKER_TARGET_PORT=DOCKER_TARGET_PORT
-    
+
     def __init__(self):
         super().__init__()    
         for attr in (
@@ -49,11 +49,16 @@ class BaseTargetAdapter(BaseSQLAdapter):
                                     schema_override=relation.schema)
 
         materialization=key_for_value(self.MATERIALIZATION_MAPPINGS,relation.materialization)
+        logger.debug(f'Creating relation (if not exists) {relation.quoted_dot_notation}')
         ddl_statement=f"""
 CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation} 
 ({relation.typed_columns(self.DATA_TYPE_MAPPINGS)})
-"""
-        engine.execute(ddl_statement)
+""" 
+        try:
+            engine.execute(ddl_statement)
+        except Exception as e:
+            logger.debug(f"Failed to create {materialization} {relation.quoted_dot_notation}:{e}")
+            raise e
 
     def load_data_into_relation(self,relation:Relation)->None:
         engine=self.get_connection(database_override=relation.database,

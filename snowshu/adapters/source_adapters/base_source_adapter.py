@@ -1,11 +1,9 @@
 import sqlalchemy
 from snowshu.adapters import BaseSQLAdapter
 import pandas as pd
-from typing import Tuple,Optional
-from snowshu.core.models.credentials import Credentials
-from snowshu.core.models.relation import Relation
+from typing import Tuple, Optional
+from snowshu.core.models import Credentials,Relation,DataType
 from snowshu.utils import MAX_ALLOWED_DATABASES, MAX_ALLOWED_ROWS
-from snowshu.core.models.data_types import DataType
 from snowshu.logger import Logger
 import time
 logger=Logger().logger
