@@ -50,9 +50,9 @@ class SnowShuGraph:
             edges=list()
             for direction in ('bidirectional','directional',):
                 edges+=[dict(   direction=direction,
-                                database=val.database,
-                                schema=val.schema,
-                                relation=val.relation,
+                                database=val.database_pattern,
+                                schema=val.schema_pattern,
+                                relation=val.relation_pattern,
                                 remote_attribute=val.remote_attribute,
                                 local_attribute=val.local_attribute) for val in relation.relationships.__dict__[direction]]
            
@@ -105,9 +105,9 @@ class SnowShuGraph:
     def _build_sum_patterns_from_configs(self,config:Configuration)->List[dict]:
         """ creates pattern dictionaries to filter with to build the total filtered catalog."""
         logger.debug('building sum patterns for configs...')
-        approved_default_patterns = [dict(database=d.pattern, 
-                                  schema=s.pattern, 
-                                  name=r.pattern) for d in config.default_sampling.databases \
+        approved_default_patterns = [dict(database=d.database_pattern, 
+                                  schema=s.schema_pattern, 
+                                  name=r.relation_pattern) for d in config.default_sampling.databases \
                                           for s in d.schemas \
                                           for r in s.relations]
 
@@ -125,12 +125,12 @@ class SnowShuGraph:
         dep_relations=set()   
         ## add dependency relations
         for dependency in dependencies:
-            dep_relation=lookup_relation(dict(  database=dependency.database, 
-                                                schema=dependency.schema, 
-                                                relation=dependency.relation),full_catalog)
+            dep_relation=lookup_relation(dict(  database=dependency.database_pattern, 
+                                                schema=dependency.schema_pattern, 
+                                                relation=dependency.relation_pattern),full_catalog)
             if dep_relation is None:
                 raise ValueError(f"relation \
-{dependency.database}.{dependency.schema}.{dependency.relation} \
+{dependency.database_pattern}.{dependency.schema_pattern}.{dependency.relation_pattern} \
 specified as a dependency but it does not exist.")
             dep_relations.add(dep_relation)
         return dep_relations

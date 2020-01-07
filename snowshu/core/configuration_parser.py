@@ -12,16 +12,16 @@ class MatchPattern:
 
     @dataclass 
     class RelationPattern:
-        pattern:str
+        relation_pattern:str
 
     @dataclass 
     class SchemaPattern:
-        pattern:str
+        schema_pattern:str
         relations:List
 
     @dataclass 
     class DatabasePattern:
-        pattern:str
+        database_pattern:str
         schemas:List
 
     databases:List[DatabasePattern]
@@ -33,9 +33,9 @@ class SpecifiedMatchPattern():
     @dataclass 
     class RelationshipPattern:
         local_attribute:str 
-        database:str
-        schema:str
-        relation:str
+        database_pattern:str
+        schema_pattern:str
+        relation_pattern:str
         remote_attribute:str 
 
     @dataclass
