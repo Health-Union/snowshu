@@ -60,7 +60,6 @@ def test_included_and_excluded(conf_obj):
     assert MOCKED_CATALOG[4] not in matched_nodes.nodes
     assert MOCKED_CATALOG[5] not in matched_nodes.nodes
     assert MOCKED_CATALOG[6] in matched_nodes.nodes
-    assert MOCKED_CATALOG[7] in matched_nodes.nodes
 
 
 

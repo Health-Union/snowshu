@@ -13,4 +13,4 @@ def test_analyze_unsampled():
 
     for line in result.split('\n'):
         if "ORDERS" in line:
-            assert "100 %" in line   
+            assert "\x1b[0;32m100\x1b[0m" in line   
