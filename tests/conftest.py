@@ -164,6 +164,9 @@ class RelationTestHelper:
         for r in ('downstream_relation','upstream_relation','iso_relation','birelation_left','birelation_right','view_relation',):
             self.__dict__[r].compiled_query=''
 
+@pytest.fixture
+def stub_relation_set():
+    return RelationTestHelper()
 
 class AttributeTestHelper:
     

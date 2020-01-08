@@ -2,7 +2,6 @@ import time
 import copy
 from snowshu.core.graph import SnowShuGraph
 from snowshu.core.utils import get_config_value, load_from_file_or_path
-from snowshu.core.compile import BaseCompiler
 from copy import deepcopy
 from typing import TextIO,List
 from snowshu.core.catalog import Catalog
@@ -71,21 +70,7 @@ class Replica:
         self._set_connections()
         logger.info(f'Credentials loaded in {duration(start_timer)}.')
 
-    def compile_graphs(self)->None:
-        """public interface to compile graphs"""
-        compiler=BaseCompiler(  self._build_uncompiled_graphs(),
-                                self.source_adapter,
-                                self.config.default_sample_method,
-                                self.ANALYZE)
-        self.graphs=compiler.compile()
-        logger.info(f'Compiled a total of {len(self.graphs)} unique graphs for this replica.')
-                
 
-    def _build_uncompiled_graphs(self)->List[networkx.Graph]:
-        graph=SnowShuGraph()
-        self._load_full_catalog()
-        graph.build_graph(self.config,self.full_catalog)
-        return graph.get_graphs()
 
     def _load_full_catalog(self)->None:
         logger.info('Assessing full catalog...')
@@ -147,6 +132,11 @@ class Replica:
             logger.error(f"failed to load config; {adapter_name} is not a valid {adapter_type} adapter.{e}")            
             raise e
         
+    def _build_uncompiled_graphs(self)->List[networkx.Graph]:
+        graph=SnowShuGraph()
+        self._load_full_catalog()
+        graph.build_graph(self.config,self.full_catalog)
+        return graph.get_graphs()
 
             
 
