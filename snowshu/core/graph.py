@@ -21,10 +21,7 @@ class SnowShuGraph:
         """Builds a directed graph per replica config"""
         logger.debug('Building graphs from config...')
         included_relations=self._filter_relations(full_catalog, self._build_sum_patterns_from_configs(configs))
-        #if configs.specified_relations:
-        #    included_relations=included_relations.union(self._get_dependency_relations(full_catalog,configs))
-        logger.info(f'Identified a total of {len(included_relations)} relations to sample based on the specified configurations.')
-        
+
         ## build graph and add edges
         graph=networkx.DiGraph()
         graph.add_nodes_from(included_relations)
@@ -35,7 +32,6 @@ class SnowShuGraph:
 
         if not self.graph.is_directed():
             raise ValueError('The graph created by the specified trail path is not directed (circular reference detected).')
-        logger.debug(f'built graph with {len(self.graph)} total nodes.')
 
     def _apply_specifications(self,configs:Configuration, graph:networkx.DiGraph, available_nodes:Set[Relation])->networkx.DiGraph:
         """ takes a configuration file, a graph and a collection of available nodes, applies configs as edges and returns the graph."""
@@ -45,6 +41,7 @@ class SnowShuGraph:
                 unsampled_relations=set(filter(lambda x :single_full_pattern_match(x,relation_dict), available_nodes))
                 for rel in unsampled_relations:
                     rel.unsampled=True
+                graph.add_node(rel)
                 continue
             
             edges=list()
@@ -120,23 +117,6 @@ class SnowShuGraph:
         all_patterns=approved_default_patterns + approved_specified_patterns 
         logger.debug(f'All config primary primary: {all_patterns}')
         return all_patterns
-
-    def _get_dependency_relations(self,full_catalog:iter,config:Configuration)->Set[Relation]:
-        """ gets relations for each dependency in the specified configs"""
-        dependencies=[r for parent in config.specified_relations for r in parent.relationships.bidirectional + parent.relationships.directional]
-        dep_relations=set()   
-        ## add dependency relations
-        for dependency in dependencies:
-            dep_relation=set(lookup_relations(dict( database=dependency.database_pattern, 
-                                                schema=dependency.schema_pattern, 
-                                                name=dependency.relation_pattern),full_catalog))
-            if dep_relation is None:
-                raise ValueError(f"relation \
-{dependency.database_pattern}.{dependency.schema_pattern}.{dependency.relation_pattern} \
-specified as a dependency but it does not exist.")
-            dep_relations.update(dep_relation)
-        return dep_relations
-
 
     def _filter_relations(self, full_catalog:iter, patterns:dict)->Set[Relation]:
         """ applies patterns to the full catalog to build the filtered relation set."""
