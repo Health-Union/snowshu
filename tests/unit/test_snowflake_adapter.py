@@ -56,6 +56,7 @@ FROM
 {LOCAL_KEY} IN 
     ( SELECT  
         {REMOTE_KEY}
+      AS {LOCAL_KEY}
     FROM (
 SELECT
     *

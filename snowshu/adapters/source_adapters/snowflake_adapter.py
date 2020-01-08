@@ -121,7 +121,7 @@ FROM
 
         constraint_sql=str()
         if analyze:
-            constraint_sql=relation.core_query
+            constraint_sql=f" SELECT {remote_key} AS {local_key} FROM ({relation.core_query})"
         else:
 
             def quoted(val:Any)->str:
