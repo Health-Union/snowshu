@@ -1,8 +1,10 @@
 import pytest
 from tests.conftest import CONFIGURATION
+from io import StringIO
+import yaml
 import copy
 import networkx as nx
-from snowshu.core.configuration_parser import Configuration
+from snowshu.core.configuration_parser import ConfigurationParser
 from snowshu.core.graph import SnowShuGraph
 
 def test_graph_builds_dags_correctly(stub_graph_set):
@@ -37,7 +39,7 @@ def test_graph_allows_upstream_wildcards(stub_graph_set):
                     vals.birelation_right]
     config_dict=copy.deepcopy(CONFIGURATION)
     
-    config_dict['source']['specified_relations'] = dict(name=vals.downstream_relation.name,
+    config_dict['source']['specified_relations'] = [dict(relation=vals.downstream_relation.name,
                                  database=vals.downstream_relation.database,
                                  schema=vals.downstream_relation.schema,
                                  unsampled=False,
@@ -46,13 +48,13 @@ def test_graph_allows_upstream_wildcards(stub_graph_set):
                                                                         database='',
                                                                         schema='',
                                                                         local_attribute=vals.downstream_relation.attributes[0].name,
-                                                                        remote_attribute=vals.upstream_relation.attributes[0].name)]))
+                                                                        remote_attribute=vals.upstream_relation.attributes[0].name)]))]
        
     
     
-    config=ConfigurationParser.from_file_or_path(StringIO(yaml.dump(config_dict)))
+    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
-    modified_graph=shgraph._apply_specifications([config],nx.DiGraph(),full_catalog)       
+    modified_graph=shgraph._apply_specifications(config,nx.DiGraph(),full_catalog)       
     
     assert (vals.upstream_relation,vals.downstream_relation,) in modified_graph.edges   
 
@@ -69,11 +71,13 @@ def test_unsampled(stub_graph_set):
                     vals.birelation_left,
                     vals.birelation_right]
 
-    config=[dict(name=vals.iso_relation.name,
+    config_dict=copy.deepcopy(CONFIGURATION)
+    config_dict['source']['specified_relations']=[dict(relation=vals.iso_relation.name,
                  database=vals.iso_relation.database,
                  schema=vals.iso_relation.schema,
                  unsampled=True)]
 
+    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
     assert vals.iso_relation.unsampled==False    
 
     modified_graph=shgraph._apply_specifications(config,nx.DiGraph(),full_catalog)       
