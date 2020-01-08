@@ -125,22 +125,12 @@ FROM
         else:
 
             def quoted(val:Any)->str:
-                return f"'{val}'" if relation.lookup_attribute(remote_key).data_type.requires_quotes else val 
+                return f"'{val}'" if relation.lookup_attribute(remote_key).data_type.requires_quotes else str(val) 
 
             def case_insensitive_column_lookup(column_name:str)->str:
                 """gets you the case-corrected column name for a given remote_key"""
                 for col in relation.data.columns:
-                    for i,char in enumerate(column_name):
-                        last=(i==len(column_name)-1)
-                        if len(col)!=len(column_name):
-                            break
-                        if col[i].lower() != char.lower():
-                            break
-                        if last:
-                            return col
-                return False
-                        
-
+                    return col if col.lower() == column_name.lower() else False
             try:
                 column_name = case_insensitive_column_lookup(remote_key)
                 if not column_name:
