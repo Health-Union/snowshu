@@ -16,4 +16,21 @@ pipelines:
               - pip
             script:
               - pip install -r requirements/dev.txt
+              - pip install coverage-badge anybadge
               - pytest --cov=snowshu tests/
+            after-script:
+              - coverage-badge -o coverage.svg
+              - pipe: atlassian/bitbucket-upload-file:0.1.2
+                variables:
+                  BITBUCKET_USERNAME: $BB_USER_NAME
+                  BITBUCKET_APP_PASSWORD: $BB_APP_PASSWORD
+                  FILENAME: 'coverage.svg'
+              - anybadge --label=pipeline --value=$BITBUCKET_EXIT_CODE --file=pipeline.svg 0=green 1=red
+              - pipe: atlassian/bitbucket-upload-file:0.1.2
+                variables:
+                  BITBUCKET_USERNAME: $BB_USER_NAME
+                  BITBUCKET_APP_PASSWORD: $BB_APP_PASSWORD
+                  FILENAME: 'pipeline.svg'
+            artifacts:
+              - coverage.svg
+              - pipeline.svg
