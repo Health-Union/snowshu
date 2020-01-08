@@ -5,7 +5,8 @@ from typing import Tuple,Set,List
 from snowshu.logger import Logger
 from snowshu.core.utils import get_config_value
 from snowshu.core.models.relation import at_least_one_full_pattern_match,\
-lookup_relation,\
+lookup_relations,\
+lookup_single_relation,\
 single_full_pattern_match
 
 logger=Logger().logger
@@ -20,18 +21,17 @@ class SnowShuGraph:
         """Builds a directed graph per replica config"""
         logger.debug('Building graphs from config...')
         included_relations=self._filter_relations(full_catalog, self._build_sum_patterns_from_configs(configs))
-        if configs.specified_relations:
-            included_relations=included_relations.union(self._get_dependency_relations(full_catalog,configs))
+        #if configs.specified_relations:
+        #    included_relations=included_relations.union(self._get_dependency_relations(full_catalog,configs))
         logger.info(f'Identified a total of {len(included_relations)} relations to sample based on the specified configurations.')
-
+        
         ## build graph and add edges
         graph=networkx.DiGraph()
         graph.add_nodes_from(included_relations)
-        self.graph=self._apply_specifications(configs,graph,included_relations)
-        
+        self.graph=self._apply_specifications(configs,graph, full_catalog)#included_relations)
         ## set default sampling at relation level
-        [self._set_sampling_method(relation,configs) for relation in self.graph]
-
+        [self._set_sampling_method(relation,configs) for relation in self.graph.nodes]
+        logger.info(f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
 
         if not self.graph.is_directed():
             raise ValueError('The graph created by the specified trail path is not directed (circular reference detected).')
@@ -61,13 +61,15 @@ class SnowShuGraph:
                 for rel in downstream_relations:
                     ## populate any string wildcard upstreams
                     for attr in ('database','schema',):
-                        edge[attr]=getattr(rel,attr) if edge[attr]=='' else edge[attr]
-                        upstream_relation = lookup_relation(edge,available_nodes)
-                        if upstream_relation == rel:
-                            continue
+                        edge[attr]=edge[attr] if edge[attr] is not None else getattr(rel,attr)
+                    upstream_relation = lookup_single_relation(edge,available_nodes)
+                    if upstream_relation is None:
+                        raise ValueError(f'It looks like the wildcard relation {edge["database"]}.{edge["schema"]}.{edge["relation"]} was specified as a dependency, but it does not exist.')
+                    if upstream_relation == rel:
+                        continue
                     graph.add_edge( upstream_relation,
                                     rel,
-                                    direction='bidirectional', 
+                                    direction=edge['direction'], 
                                     remote_attribute=edge['remote_attribute'],
                                     local_attribute=edge['local_attribute'])
         if not graph.is_directed():
@@ -125,14 +127,14 @@ class SnowShuGraph:
         dep_relations=set()   
         ## add dependency relations
         for dependency in dependencies:
-            dep_relation=lookup_relation(dict(  database=dependency.database_pattern, 
+            dep_relation=set(lookup_relations(dict( database=dependency.database_pattern, 
                                                 schema=dependency.schema_pattern, 
-                                                relation=dependency.relation_pattern),full_catalog)
+                                                name=dependency.relation_pattern),full_catalog))
             if dep_relation is None:
                 raise ValueError(f"relation \
 {dependency.database_pattern}.{dependency.schema_pattern}.{dependency.relation_pattern} \
 specified as a dependency but it does not exist.")
-            dep_relations.add(dep_relation)
+            dep_relations.update(dep_relation)
         return dep_relations
 
 

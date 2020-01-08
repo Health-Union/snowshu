@@ -4,6 +4,7 @@ import copy
 import networkx as nx
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.graph import SnowShuGraph
+
 def test_graph_builds_dags_correctly(stub_graph_set):
     shgraph=SnowShuGraph()
     _,vals = stub_graph_set
@@ -49,7 +50,7 @@ def test_graph_allows_upstream_wildcards(stub_graph_set):
        
     
     
-    config=ConfigurationParser.from_file_or_path(StringIO(yaml.dump(config_dict))
+    config=ConfigurationParser.from_file_or_path(StringIO(yaml.dump(config_dict)))
 
     modified_graph=shgraph._apply_specifications([config],nx.DiGraph(),full_catalog)       
     

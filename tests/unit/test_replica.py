@@ -7,7 +7,7 @@ import networkx
 import yaml
 import json
 from io import StringIO
-from snowshu.adapters.source_adapters.sample_methods import BernoulliSample 
+from snowshu.core.sample_methods import BernoulliSample 
 import snowshu.core.models.data_types as dt
 from snowshu.core.models.materializations import TABLE,VIEW
 from snowshu.core.models.relation import Relation
