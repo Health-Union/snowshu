@@ -111,15 +111,15 @@ class ConfigurationParser:
                                                         SpecifiedMatchPattern.Relationships(
                                                             [SpecifiedMatchPattern.RelationshipPattern(
                                                                                                 dsub['local_attribute'],
-                                                                                                dsub['database'] if dsub['database'] != '' else rel['database'],
-                                                                                                dsub['schema'] if dsub['schema'] != '' else rel['schema'],
+                                                                                                dsub['database'] if dsub['database'] != '' else None,
+                                                                                                dsub['schema'] if dsub['schema'] != '' else None,
                                                                                                 dsub['relation'],
                                                                                                 dsub['remote_attribute']) for dsub in rel.get('relationships',dict()).get('directional',list())],
 
                                                             [SpecifiedMatchPattern.RelationshipPattern(
                                                                                                 bsub['local_attribute'],
-                                                                                                bsub['database'] if bsub['database'] != '' else rel['database'],
-                                                                                                bsub['schema'] if bsub['schema'] != '' else rel['schema'],
+                                                                                                bsub['database'] if bsub['database'] != '' else None,
+                                                                                                bsub['schema'] if bsub['schema'] != '' else None,
                                                                                                 bsub['relation'],
                                                                                                 bsub['remote_attribute']) for bsub in rel.get('relationships',dict()).get('bidirectional',list())])) for rel in loaded['source'].get('specified_relations',list())]
 

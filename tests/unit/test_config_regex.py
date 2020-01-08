@@ -1,74 +1,73 @@
-from snowshu.core.models.relation import Relation
 import pytest
 import mock
-from snowshu.adapters.source_adapters.sample_methods import BernoulliSample 
-from snowshu.core.replica import Replica
-from snowshu.core.models.materializations import TABLE,VIEW
-from snowshu.core.models.attribute import Attribute
-import snowshu.core.models.data_types as dt
-import networkx
+from io import StringIO
+import yaml
+from snowshu.core.models import materializations as mz
+from snowshu.core.models import Relation
+from snowshu.core.configuration_parser import ConfigurationParser
+from snowshu.core.graph import SnowShuGraph
 
-def test_builds_dags_regex():
-    ## this test is deprecated to the utils suite
-    tp=Replica()
-    NEVER_RELATION=Relation(database='RAWDATABASE',
-                 schema='NOT_MY_SCHEMA',
-                 name='NOT_MY_TABLE',
-                 materialization=VIEW, 
-                 attributes=[Attribute('hot_dog',dt.INTEGER),Attribute('shoes',dt.DATE)])
-    DEFAULT_MATCHED_RELATION=Relation(database='RAWDATABASE',
-                 schema='RAWSCHEMA',
-                 name='RAWVIEW',
-                 materialization=VIEW, 
-                 attributes=[Attribute('hot_dog',dt.INTEGER),Attribute('shoes',dt.DATE)])
-    DEPENDENT_RELATION=Relation(database='PRODDATABASE',
-                 schema='SNOWSCHEMA',
-                 name='COLDTABLE',
-                 materialization=TABLE,
-                 attributes=[Attribute('banana',dt.VARCHAR)])
-    SPECIFIED_RELATION=Relation(database='RAWDATABASE',
-                 materialization=TABLE,
-                 schema='SNOWSCHEMA',
-                 name='FROSTY',
-                 attributes=[Attribute('hot_dog_id',dt.INTEGER),Attribute('not_hotdog',dt.VARCHAR)])           
-    ISO_RELATION=Relation(database='RAWDATABASE',
-                          schema='RAWSCHEMA',
-                          materialization=VIEW,
-                          name="ISO_VIEW",
-                          attributes=[Attribute('thing',dt.INTEGER)])
-    TEST_RELATIONS=(NEVER_RELATION,DEFAULT_MATCHED_RELATION,DEPENDENT_RELATION,SPECIFIED_RELATION,ISO_RELATION,)
-
-    TEST_BIDIRECTONAL_RELATIONSHIP=dict(local_attribute='hot_dog_id',database=DEFAULT_MATCHED_RELATION.database,schema=DEFAULT_MATCHED_RELATION.schema,relation=DEFAULT_MATCHED_RELATION.name, remote_attribute='hot_dog')
-    TEST_DIRECTIONAL_RELATIONSHIP=dict(local_attribute='not_hotdog',database='PRODDATABASE',schema='SNOWSCHEMA',relation='COLDTABLE',remote_attribute='banana')
+MOCKED_CONFIG=dict( name='test',
+                    version='1',
+                    credpath='./',
+                    source=dict(
+                        profile='default',
+                        sample_method='bernoulli',
+                        probability=10,
+                        default_sampling=dict(databases=[dict(name='(?i)^snow.*',
+                                                              schemas=[dict(name='THING',
+                                                                            relations=['.*suffix$'])])]),
+                        specified_relations=[dict(database='(?i)^snow.*',
+                                                  schema='THING',
+                                                  relation='.*suffix$',
+                                                  relationships=dict(bidirectional=[dict(local_attribute='id',
+                                                                                         remote_attribute='id',
+                                                                                         database='',
+                                                                                         schema='',
+                                                                                         relation='nevermatch_except_bidirectional')
+                                                                    ],
+                                                                     directional=[dict( local_attribute='id',
+                                                                                        remote_attribute='id',
+                                                                                        database='snowno',
+                                                                                        schema='THING',
+                                                                                        relation='matches_in_directional')]                  
+                                                                ))]),
+                    target=dict(adapter=''),
+                    storage=dict(profile=''))
 
 
+MOCKED_CATALOG=(Relation('snowyes','THING','foo_suffix',mz.TABLE,[]),
+                Relation('SNOWYES','THING','bar_suffix',mz.TABLE,[]),
+                Relation('SNOWNO','THING','nevermatch_except_bidirectional',mz.TABLE,[]),
+                Relation('noperope','THING','foo_suffix',mz.TABLE,[]),
+                Relation('SNOWNO','thing','bar_suffix',mz.TABLE,[]),
+                Relation('SNOWNO','dont_match','nevermatch_except_bidirectional',mz.TABLE,[]),
+                Relation('snowno','THING','matches_in_directional',mz.TABLE,[]),
+                Relation('SNOWYES','THING','nevermatch_except_bidirectional',mz.TABLE,[]),
+                Relation('snowyes','THING','nevermatch_except_bidirectional',mz.TABLE,[]),)
+@pytest.fixture
+def conf_obj():
+    return ConfigurationParser.from_file_or_path(StringIO(yaml.dump(MOCKED_CONFIG)))
 
-    tp.source_configs=dict()
-    tp.source_configs['default_sampling']=dict(databases=[dict(name="(?i)^raw.*", schemas=[dict(name="RAWSCHEMA", relations=["(?i).*VIEW$"])])])  
-    tp.source_configs['specified_relations']=[dict(database="(?i)^raw.*",schema="^SNOW.*", relation=".*Y",relationships=dict(bidirectional=[TEST_BIDIRECTONAL_RELATIONSHIP],directional=[TEST_DIRECTIONAL_RELATIONSHIP]))]
+def test_included_and_excluded(conf_obj):
+    shgraph=SnowShuGraph()
+    shgraph.build_graph(conf_obj,MOCKED_CATALOG)
+    matched_nodes=shgraph.graph
+    assert MOCKED_CATALOG[0] in matched_nodes.nodes
+    assert MOCKED_CATALOG[1] in matched_nodes.nodes
+    assert MOCKED_CATALOG[2] not in matched_nodes.nodes
+    assert MOCKED_CATALOG[3] not in matched_nodes.nodes
+    assert MOCKED_CATALOG[4] not in matched_nodes.nodes
+    assert MOCKED_CATALOG[5] not in matched_nodes.nodes
+    assert MOCKED_CATALOG[6] in matched_nodes.nodes
+    assert MOCKED_CATALOG[7] in matched_nodes.nodes
 
-    tp.ANALYZE=True
-    tp.source_adapter,tp.target_adapter=[mock.MagicMock() for _ in range(2)]
 
-    mock_string=mock.MagicMock(return_value='')
-    tp.source_adapter.predicate_constraint_statement=mock_string    
-    tp.source_adapter.sample_statement_from_relation=mock_string
 
-    tp.source_adapter.sample_method=BernoulliSample
 
-    def _mock_full_catalog():
-        tp.full_catalog=TEST_RELATIONS
 
-    tp._load_full_catalog=mock.MagicMock(side_effect=_mock_full_catalog)
-    tp.THREADS=4
-    graphs=tp._build_uncompiled_graphs()
-    for dag in graphs:
-        assert isinstance(dag,networkx.Graph)
-    
-    for dag in graphs:
-        assert dag.is_directed()
 
-    for dag in graphs:
-        for node in dag.nodes():
-            if node == SPECIFIED_RELATION:
-                assert len(networkx.ancestors(dag,node)) > 0 
+
+
+
+

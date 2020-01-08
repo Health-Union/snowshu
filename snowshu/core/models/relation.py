@@ -79,13 +79,14 @@ class Relation:
 
 
 
-def lookup_relation(lookup:dict,relation_set:iter)->Relation:
+def lookup_single_relation(lookup:dict,relation_set:iter)->Relation:
     """ looks up a single relation by dict given the relation_set, returns None if not found.
         ARGS:
             lookup(dict) a dict of database, schema, relation keys
             relation_set(iter) any iterable of relations
     """
     logger.debug(f'looking for relation {lookup}...')
+    lookup['relation']=lookup.get('relation',lookup.get('name')) #flexibility to match other apis with either 'name' or 'relation'
     found=next((rel for rel in relation_set if \
                                         rel.database==lookup['database'] \
                                     and rel.schema==lookup['schema'] \
@@ -94,11 +95,25 @@ def lookup_relation(lookup:dict,relation_set:iter)->Relation:
     logger.debug(f'found {found}.')
     return found
 
+def lookup_relations(lookup:dict,relation_set:iter)->Relation:
+    """ Finds all relations that match regex patterns in given the relation_set, returns None if not found.
+        ARGS:
+            lookup(dict) a dict of database, schema, relation regex patterns
+            relation_set(iter) any iterable of relations
+    """
+    logger.debug(f'looking for relations that match {lookup}...')
+    found=filter(lambda rel: single_full_pattern_match(rel,lookup),relation_set)
+    logger.debug(f'found {str(found)}.')
+    return list(found)
+
 def single_full_pattern_match(rel:Relation,pattern:dict)->bool:
     """ determines if a relation matches a regex pattern dictionary of database,schema,name(relation)."""
     attributes=('database','schema','name',)
+    if not all([pattern[attribute] for attribute in attributes]):
+        return False
     return all([(lambda r,p : re.match(r,p)) (pattern[attr],rel.__dict__[attr],) for attr in attributes])
 
 def at_least_one_full_pattern_match(rel:Relation,patterns:iter)->bool:
     """ determines if a relation matches any of a collection of pattern dictionaries (database,schema,name)."""
+    patterns=list(filter(lambda p : all(p[attr] for attr in ('database','schema','name',)),patterns))
     return any([single_full_pattern_match(rel,pattern) for pattern in patterns])
