@@ -41,7 +41,7 @@ class SnowShuGraph:
                 unsampled_relations=set(filter(lambda x :single_full_pattern_match(x,relation_dict), available_nodes))
                 for rel in unsampled_relations:
                     rel.unsampled=True
-                graph.add_node(rel)
+                    graph.add_node(rel)
                 continue
             
             edges=list()
