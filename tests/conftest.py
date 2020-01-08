@@ -178,9 +178,7 @@ class AttributeTestHelper:
 
 @pytest.fixture
 def stub_replica_configuration():
-    parser=ConfigurationParser()
-    parser.from_file_or_path(StringIO(yaml.dump(CONFIGURATION)))
-    return parser.replica_configuration
+    return ConfigurationParser().from_file_or_path(StringIO(yaml.dump(CONFIGURATION)))
 
 @pytest.fixture
 def stub_relation():
