@@ -7,7 +7,7 @@ def test_analyze_unsampled():
 
     replica=Replica()
 
-    config=os.path.join(PACKAGE_ROOT,"tests","assets","integration","replica.yml")
+    config=os.path.join(PACKAGE_ROOT,"snowshu","templates","replica.yml")
     replica.load_config(config) 
     result=replica.analyze()
 
