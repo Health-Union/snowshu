@@ -10,29 +10,39 @@ class SnowShuDocker:
 
     def startup(self,image:str,start_command:str,port:int,envars:list,protocol:str="tcp")->docker.models.containers.Container:
         port_dict={f"{str(port)}/{protocol}":port}
-        ## docker errors here are ambiguous, so we need to explicitly check
-        ## and make sure the container does not already exist
-        if DOCKER_TARGET_CONTAINER in [container.name for container in self.client.containers.list(all=True)]:
-            self.client.containers.get(DOCKER_TARGET_CONTAINER).remove(force=True) #clobber it
-        #raise ValueError(str(dict(image=image,start_command=start_command,network=DOCKER_NETWORK,name=DOCKER_TARGET_CONTAINER,ports=port_dict,environment=envars)))
-        return self.client.containers.run(  image, 
+        self.remove_container(DOCKER_TARGET_CONTAINER)
+        network=self._get_or_create_network(DOCKER_NETWORK)
+        logger.info(f"Creating target container {DOCKER_TARGET_CONTAINER}...")
+        logger.info(f"running `{start_command}` against image {image} on network {network.name} for container {DOCKER_TARGET_CONTAINER} with envars {envars}")
+        target_container=self.client.containers.run(  image, 
                                             start_command, 
-                                            network=DOCKER_NETWORK,
+                                            network=network.name,
                                             name=DOCKER_TARGET_CONTAINER,
                                             ports=port_dict, 
                                             environment=envars,
                                             remove=True,
                                             detach=True)
-        
-   
+        logger.info(f"Created target container {target_container.name}.")
+        return target_container
+
     def remove_container(self,container:str)->None:
+        logger.info(f'Removing existing target container {container}...')
         try:
-            self.client.containers.get(container).remove(force=True)   
+            removable=self.client.containers.get(container)
+            removable.kill()
+            logger.info(f'Container {container} removed.')
         except docker.errors.NotFound:
+            logger.info(f'existing containers: {[con.name for con in self.client.containers.list(all=True)]}')
+            logger.info(f'Container {container} not found, skipping.')
             pass # already removed.
 
-    def _create_network(self,name:str)->docker.models.networks.Network:
+    def _get_or_create_network(self,name:str)->docker.models.networks.Network:
+        logger.info(f'Getting docker network {name}...')
         try:
-            return self.client.networks.get(name)
+            network=self.client.networks.get(name)
+            logger.info(f'Network {network.name} found.')
         except docker.errors.NotFound:
-            return self.client.networks.create(name,check_duplicate=True)
+            logger.info(f'Network {name} not found, creating...')
+            network=self.client.networks.create(name,check_duplicate=True)
+            logger.info(f'Network {network.name} created.')
+        return network

@@ -9,7 +9,7 @@ class PostgresAdapter(BaseTargetAdapter):
 
     dialect='postgres'
     DATA_TYPE_MAPPINGS:dict=None
-    DOCKER_IMAGE='postgres'
+    DOCKER_IMAGE='postgres:12'
     MATERIALIZATION_MAPPINGS=dict(TABLE=mz.TABLE,VIEW=mz.VIEW)
     DATA_TYPE_MAPPINGS=dict(VARCHAR=dt.VARCHAR,INTEGER=dt.INTEGER,TIMESTAMP=dt.TIMESTAMPTZ,FLOAT=dt.DOUBLE,BOOLEAN=dt.BOOLEAN)
 
@@ -37,8 +37,8 @@ class PostgresAdapter(BaseTargetAdapter):
         statement=f'CREATE DATABASE "{database}"' 
         try:
             conn.execute(statement)
-        except sqlalchemy.exc.ProgrammingError as e: 
-            if f'database "{database}" already exists' in  str(e):
+        except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as e: 
+            if (f'database "{database}" already exists' in  str(e)) or ('duplicate key value violates unique constraint ' in str(e)):
                 logger.debug(f'Database "{database}" already exists, skipping.')
                 pass
             else:

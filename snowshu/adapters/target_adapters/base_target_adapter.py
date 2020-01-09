@@ -32,7 +32,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         self.credentials=self._generate_credentials()
 
     def load_config(self,config:Configuration)->None:
-        self.replica_configuration=config    
+        self.config=config    
 
     def create_database_if_not_exists(self, database:str)->str:
         raise NotImplementedError()
@@ -70,6 +70,11 @@ CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation}
                                 index=False,
                                 chunksize=DEFAULT_INSERT_CHUNK_SIZE,
                                 method='multi')
+
+    def initialize_replica(self)->None:
+        """shimming but will want to move _init_image public with this interface"""
+        self._init_image()
+
 
     def _init_image(self)->None:
         docker=SnowShuDocker()
@@ -114,9 +119,9 @@ CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation}
                             attributes)
 
         relation.data=pd.DataFrame([dict(created_at=datetime.now(),
-                                         name=self.replica_configuration.name,
-                                         short_description=self.replica_configuration.short_description,
-                                         long_description=self.replica_configuration.long_description)])
+                                         name=self.config.name,
+                                         short_description=self.config.short_description,
+                                         long_description=self.config.long_description)])
 
         self.create_and_load_relation(relation)
 

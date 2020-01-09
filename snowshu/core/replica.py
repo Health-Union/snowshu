@@ -40,10 +40,10 @@ class Replica:
 
     def _execute(self)->None:
         self.graphs=self._build_uncompiled_graphs()
-        #self.compile_graphs()
         if len(self.graphs) < 1:
             return "No relations found per provided replica configuration, exiting."
             
+        self.target_adapter.initialize_replica()
         runner=GraphSetRunner()
         runner.execute_graph_set(   self.graphs,
                                     self.source_adapter,
@@ -87,6 +87,8 @@ class Replica:
                                             parent_name="source"))
         self._fetch_adapter('target', 
                             self.config.target_adapter)
+
+        self.target_adapter.load_config(self.config)
 
     def _set_connections(self):
         creds=deepcopy(self._credentials['source'])
@@ -137,7 +139,4 @@ class Replica:
         self._load_full_catalog()
         graph.build_graph(self.config,self.full_catalog)
         return graph.get_graphs()
-
-            
-
 
