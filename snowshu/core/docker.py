@@ -11,7 +11,7 @@ class SnowShuDocker:
     def __init__(self):
         self.client=docker.from_env()
 
-    def startup(self,image:str,start_command:str,port:int,envars:list,protocol:str="tcp")->docker.models.containers.Container:
+    def startup(self,image:str,start_command:str,port:int,target_adapter:str,envars:list,protocol:str="tcp")->docker.models.containers.Container:
         port_dict={f"{str(port)}/{protocol}":port}
         self.remove_container(DOCKER_TARGET_CONTAINER)
         network=self._get_or_create_network(DOCKER_NETWORK)
@@ -23,6 +23,7 @@ class SnowShuDocker:
                                             name=DOCKER_TARGET_CONTAINER,
                                             ports=port_dict, 
                                             environment=envars,
+                                            labels=dict(target_adapter=target_adapter),
                                             remove=True,
                                             detach=True)
         logger.info(f"Created target container {target_container.name}.")
@@ -50,16 +51,18 @@ class SnowShuDocker:
             logger.info(f'Network {network.name} created.')
         return network
 
-    def sanitize_tag_name(self,tag_name:str)->str:
+    def sanitize_replica_name(self,name:str)->str:
         """
             Much more strict than standard docker tag names.
             Replica names are coerced into ASCII lowercase, dash-seperated a-z0-9 strings when possible.
         """
-        logger.info(f'sanitizing tag name {tag_name}...')
-        tag='-'.join(re.sub(r'[\-\_\+\.]',' ',tag_name.lower()).split())
-        if not re.match(r'^[a-z0-9\-]*$',tag):
-            raise ValueError(f'tag name {tag_name} cannot be converted to replica name')
-        return tag   
+        logger.info(f'sanitizing replica name {name}...')
+        image='-'.join(re.sub(r'[\-\_\+\.]',' ',name.lower()).split())
+        if not re.match(r'^[a-z0-9\-]*$',image):
+            raise ValueError(f'Replica name {name} cannot be converted to replica name')
+        final_image="snowshu_replica__"+image
+        logger.info(f'Replica name sanitized to {final_image}')
+        return final_image   
     
     def _remount_replica_data(self,container:docker.models.containers.Container, target_adapter:Type['BaseTargetAdapter'])->bool:
         logger.info('Remounting data inside target...')

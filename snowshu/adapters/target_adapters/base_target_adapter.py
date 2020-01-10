@@ -83,6 +83,7 @@ CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation}
         self.container=docker.startup( self.DOCKER_IMAGE,
                         self.DOCKER_START_COMMAND,
                         self.DOCKER_TARGET_PORT,
+                        self.CLASSNAME,
                         self._build_snowshu_envars(self.DOCKER_SNOWSHU_ENVARS))
         logger.info('Container initialized.')
         while self.container.exec_run(self.DOCKER_READY_COMMAND).exit_code > 0:
