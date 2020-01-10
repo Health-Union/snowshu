@@ -12,6 +12,8 @@ docker-compose up -d
 ```
 docker-compose exec snowshu /bin/bash
 ```
+*A Note On Preventing Docker-Ception:* Snowshu uses docker to create and run replicas, and as such developing _in_ docker while using docker creates potential challenges. There is a great debate around the use of docker-in-docker (docker-ception). For the purposes of developing SnowShu we prevent docker-ception by mounting the host docker.sock into the container, creating a "sideways" relationship between the development container and new spawns. This means you can `docker ps` on your host machine and see containers spawned from _inside_ the dev container. It also creates some tricky bits around resolving hostnames, but beats the potential mess of nesting-doll development.
+
 ### Branching and PRing
 We use a forking model. So when working on a new feature:
 1. Check out a new branch with the GitHub issue # and the name (ie `ISSUE-444-fix-banana-stand`)

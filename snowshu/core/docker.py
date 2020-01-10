@@ -1,4 +1,5 @@
 import docker
+import re
 from snowshu.configs import DOCKER_NETWORK,DOCKER_TARGET_CONTAINER
 from snowshu.logger import Logger
 logger=Logger().logger
@@ -46,3 +47,14 @@ class SnowShuDocker:
             network=self.client.networks.create(name,check_duplicate=True)
             logger.info(f'Network {network.name} created.')
         return network
+
+    def sanitize_tag_name(self,tag_name:str)->str:
+        """
+            Much more strict than standard docker tag names.
+            Replica names are coerced into ASCII lowercase, dash-seperated a-z0-9 strings when possible.
+        """
+        logger.info(f'sanitizing tag name {tag_name}...')
+        tag='-'.join(re.sub(r'[\-\_\+\.]',' ',tag_name.lower()).split())
+        if not re.match(r'^[a-z0-9\-]*$',tag):
+            raise ValueError(f'tag name {tag_name} cannot be converted to replica name')
+        return tag   

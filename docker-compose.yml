@@ -8,4 +8,11 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/app
+      - /var/run/docker.sock:/var/run/docker.sock
     command: tail -f /dev/null
+    networks:
+      - snowshu
+networks:
+  snowshu:
+    name: snowshu
+    driver: bridge
