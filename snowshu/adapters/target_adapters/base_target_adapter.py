@@ -19,13 +19,14 @@ class BaseTargetAdapter(BaseSQLAdapter):
     REQUIRED_CREDENTIALS=[USER,PASSWORD,HOST,PORT,DATABASE]
     ALLOWED_CREDENTIALS=list()
     DOCKER_TARGET_PORT=DOCKER_TARGET_PORT
-
+    
     def __init__(self):
         super().__init__()    
         for attr in (
                      'DOCKER_IMAGE',
                      'DOCKER_SNOWSHU_ENVARS',
                      'DATA_TYPE_MAPPINGS',
+                     'NATIVE_DATA_DIRECTORY',
                      ):
             if not hasattr(self,attr):
                 raise NotImplementedError(f'Target adapter requires attribute f{attr} but was not set.')

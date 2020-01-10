@@ -12,6 +12,7 @@ class PostgresAdapter(BaseTargetAdapter):
     DOCKER_IMAGE='postgres:12'
     MATERIALIZATION_MAPPINGS=dict(TABLE=mz.TABLE,VIEW=mz.VIEW)
     DATA_TYPE_MAPPINGS=dict(VARCHAR=dt.VARCHAR,INTEGER=dt.INTEGER,TIMESTAMP=dt.TIMESTAMPTZ,FLOAT=dt.DOUBLE,BOOLEAN=dt.BOOLEAN)
+    NATIVE_DATA_DIRECTORY='/var/lib/postgresql/data'
 
     ##NOTE: either start container with db listening on port 9999,
     ##  or override with DOCKER_TARGET_PORT

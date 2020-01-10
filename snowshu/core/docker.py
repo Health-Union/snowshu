@@ -1,6 +1,8 @@
+from __future__ import annotations
+from typing import Type
 import docker
 import re
-from snowshu.configs import DOCKER_NETWORK,DOCKER_TARGET_CONTAINER
+from snowshu.configs import DOCKER_NETWORK,DOCKER_TARGET_CONTAINER,DOCKER_REMOUNT_DIRECTORY
 from snowshu.logger import Logger
 logger=Logger().logger
 
@@ -58,3 +60,9 @@ class SnowShuDocker:
         if not re.match(r'^[a-z0-9\-]*$',tag):
             raise ValueError(f'tag name {tag_name} cannot be converted to replica name')
         return tag   
+    
+    def _remount_replica_data(self,container:docker.models.containers.Container, target_adapter:Type['BaseTargetAdapter'])->bool:
+        logger.info('Remounting data inside target...')
+        exit_code=container.exec_run(f'cp {target_adapter.NATIVE_DATA_DIRECTORY} /{DOCKER_REMOUNT_DIRECTORY}')[0]
+        return exit_code==0
+        
