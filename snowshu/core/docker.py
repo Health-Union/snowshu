@@ -11,6 +11,20 @@ class SnowShuDocker:
     def __init__(self):
         self.client=docker.from_env()
 
+    def convert_container_to_replica(self,
+                                     name:str,
+                                     container:docker.models.containers.Container,
+                                     target_adapter:Type['BaseTargetAdapter'])->docker.models.images.Image:
+        """ coerces a live container into a replica image and returns the image.
+            name: the name of the new replica
+        """
+        self._remount_replica_data(container,target_adapter)
+        logger.info(f'Creating new replica image with name {name}...')
+        replica=container.commit(repository=self.sanitize_replica_name(name))
+        logger.info(f'ReplicaFactory image {replica.name} created. Cleaning up...')
+        self.remove_container(container)
+        return replica
+        
     def startup(self,image:str,start_command:str,port:int,target_adapter:str,envars:list,protocol:str="tcp")->docker.models.containers.Container:
         port_dict={f"{str(port)}/{protocol}":port}
         self.remove_container(DOCKER_TARGET_CONTAINER)
@@ -54,7 +68,7 @@ class SnowShuDocker:
     def sanitize_replica_name(self,name:str)->str:
         """
             Much more strict than standard docker tag names.
-            Replica names are coerced into ASCII lowercase, dash-seperated a-z0-9 strings when possible.
+            ReplicaFactory names are coerced into ASCII lowercase, dash-seperated a-z0-9 strings when possible.
         """
         logger.info(f'sanitizing replica name {name}...')
         image='-'.join(re.sub(r'[\-\_\+\.]',' ',name.lower()).split())

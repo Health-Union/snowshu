@@ -20,7 +20,7 @@ from snowshu.core.printable_result import graph_to_result_list,printable_result
 logger=Logger().logger
 
 
-class Replica:
+class ReplicaFactory:
 
     source_adapter:source_adapters.BaseSourceAdapter
     target_adapter:target_adapters.BaseTargetAdapter
@@ -56,7 +56,7 @@ class Replica:
                                 self.ANALYZE)
 
     def load_config(self,config:Union[Path,str,TextIO]):
-        """ does all the initial work to make the resulting Replica object usable."""
+        """ does all the initial work to make the resulting ReplicaFactory object usable."""
         logger.info('Loading credentials...')
         start_timer=time.time()
         self.config=ConfigurationParser.from_file_or_path(config)

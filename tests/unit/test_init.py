@@ -40,8 +40,8 @@ def temporary_replica():
         yield localpath
 
 
-@patch('snowshu.core.main.Replica.run')
-@patch('snowshu.core.main.Replica.load_config')
+@patch('snowshu.core.main.ReplicaFactory.run')
+@patch('snowshu.core.main.ReplicaFactory.load_config')
 def test_sample_defaults(load,run,temporary_replica):
     runner = CliRunner()
     EXPECTED_REPLICA_FILE=temporary_replica
@@ -54,8 +54,8 @@ def test_sample_defaults(load,run,temporary_replica):
     
     
 
-@patch('snowshu.core.main.Replica.load_config')
-@patch('snowshu.core.main.Replica.run')
+@patch('snowshu.core.main.ReplicaFactory.load_config')
+@patch('snowshu.core.main.ReplicaFactory.run')
 def test_sample_args_valid(run, replica):
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -77,8 +77,8 @@ def test_sample_args_valid(run, replica):
 
 
 
-@patch('snowshu.core.main.Replica.target_adapter.create_relation')
-@patch('snowshu.core.main.Replica')
+@patch('snowshu.core.main.ReplicaFactory.target_adapter.create_relation')
+@patch('snowshu.core.main.ReplicaFactory')
 def test_analyze_does_all_but_run(replica,create_relation):
     runner = CliRunner()
     with runner.isolated_filesystem():

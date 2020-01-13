@@ -52,7 +52,7 @@ def test_snowshu_explain(run_snowshu_create):
 def test_launches(run_snowshu_create):
     runner=CliRunner()
     response=runner.invoke(cli,'launch','integration-test')
-    assert 'Replica integration-test launched and started.' in response.output
+    assert 'ReplicaFactory integration-test launched and started.' in response.output
     assert 'You can connect to this replica with connection string: postgresql://snowshu:snowshu@snowshu:9999/snowshu' in response.output
     assert 'To stop your replica temporarily, use command `snowshu stop integration-test`' in response.output
     assert 'To spin down your replica, use command `snowshu down integration-test`' in response.output
@@ -66,7 +66,7 @@ def test_launches(run_snowshu_create):
 def test_starts(run_snowshu_create):
     runner=CliRunner()
     response=runner.invoke(cli,'start','integration-test')
-    assert 'Replica integration-test restarted.' in response.output
+    assert 'ReplicaFactory integration-test restarted.' in response.output
     assert 'You can connect to this replica with connection string: postgresql://snowshu:snowshu@snowshu:9999/snowshu' in response.output
     assert 'To stop your replica temporarily, use command `snowshu stop integration-test`' in response.output
     assert 'To spin down your replica, use command `snowshu down integration-test`' in response.output
@@ -78,7 +78,7 @@ def test_starts(run_snowshu_create):
 def test_stops(run_snowshu_create):
     runner=CliRunner()
     response=runner.invoke(cli,'stop','integration-test')
-    assert 'Replica integration-test stopped.' in response.output
+    assert 'ReplicaFactory integration-test stopped.' in response.output
     assert 'You can connect to this replica with connection string: postgresql://snowshu:snowshu@snowshu:9999/snowshu' not in response.output
     assert 'To start your replica again use command `snowshu start integration-test`' in response.output
 

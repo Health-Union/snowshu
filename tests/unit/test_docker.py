@@ -32,6 +32,7 @@ def test_remounts_data_in_replica():
     assert shdocker._remount_replica_data(container,PostgresAdapter())
     assert [arg for arg in container.exec_run.call_args_list][0][0][0] == 'cp /var/lib/postgresql/data /snowshu_replica_data'
 
+
     
 
 

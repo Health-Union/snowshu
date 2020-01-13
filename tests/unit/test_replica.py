@@ -1,4 +1,4 @@
-from snowshu.core.replica import Replica
+from snowshu.core.replica import ReplicaFactory
 from tests.common import rand_string
 import tempfile
 import pytest
@@ -15,7 +15,7 @@ from snowshu.core.models.attribute import Attribute
 from snowshu.adapters.source_adapters import SnowflakeAdapter
 
 def test_errors_on_bad_profile(stub_configs):
-    replica=Replica()
+    replica=ReplicaFactory()
     stub_configs=stub_configs()
     SOURCE_PROFILE,TARGET_PROFILE,STORAGE_PROFILE=[rand_string(10) for _ in range(3)]
     stub_configs['source']['profile']=SOURCE_PROFILE
@@ -27,7 +27,7 @@ def test_errors_on_bad_profile(stub_configs):
         replica.load_config(mock_config_file)
 
 def test_loads_good_creds(stub_creds):
-    replica=Replica()
+    replica=ReplicaFactory()
     stub_creds=stub_creds()
     SOURCES_NAME,SOURCES_PASSWORD,STORAGES_ACCOUNT=[rand_string(10) for _ in range(3)]
     with tempfile.NamedTemporaryFile(mode='w') as mock_file:
@@ -46,13 +46,13 @@ def test_loads_good_creds(stub_creds):
         
 def test_sets_good_source_adapter(stub_configs):
     config=StringIO(yaml.dump(stub_configs()))
-    replica=Replica()
+    replica=ReplicaFactory()
     replica.load_config(config)
 
     assert isinstance(replica.source_adapter,SnowflakeAdapter)
 
 def test_rejects_bad_adapter():
-    replica=Replica()
+    replica=ReplicaFactory()
     with pytest.raises(KeyError):
         replica._fetch_adapter('european_plug_adapter','source')
 

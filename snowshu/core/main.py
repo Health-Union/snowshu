@@ -8,7 +8,7 @@ from shutil import which, copyfile
 from snowshu.formats import DEFAULT_TAG_FORMAT
 from snowshu.configs import IS_IN_DOCKER
 from datetime import datetime
-from snowshu.core.replica import Replica
+from snowshu.core.replica import ReplicaFactory
 
 
 
@@ -66,7 +66,7 @@ def init(path:click.Path)->None:
 @click.option('--replica-file', type=click.Path(exists=True), default=REPLICA_DEFAULT, help="the Path, string or bytes object snowshu will use for your replica configuration file, default is ./replica.yml")
 def run( tag:str,
             replica_file:click.Path):
-    replica=Replica()
+    replica=ReplicaFactory()
     replica.load_config(replica_file)
     replica.run(tag)
 
@@ -74,6 +74,6 @@ def run( tag:str,
 @cli.command()
 @click.option('--replica-file', type=click.Path(exists=True), default=REPLICA_DEFAULT, help="where snowshu will look for your replica configuration file, default is ./replica.yml")
 def analyze(replica_file:click.Path):
-    replica=Replica()
+    replica=ReplicaFactory()
     replica.load_config(replica_file)
     click.echo(replica.analyze())

@@ -1,5 +1,5 @@
-## The SnowShu Replica File
-SnowShu runs use a single yaml configuration file (called a *Replica* in SnowShu speak) to control most of the sampling behavior. There are only a handful of inputs to a run that do _not_ need to come from this replica file. These include:
+## The SnowShu ReplicaFactory File
+SnowShu runs use a single yaml configuration file (called a *ReplicaFactory* in SnowShu speak) to control most of the sampling behavior. There are only a handful of inputs to a run that do _not_ need to come from this replica file. These include:
 - cli flags and options
 - credentials
 - environment variables `SNOWSHU_CREDENTIALS_FILEPATH`
