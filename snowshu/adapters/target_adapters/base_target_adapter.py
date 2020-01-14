@@ -52,7 +52,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
                                     schema_override=relation.schema)
 
         materialization=key_for_value(self.MATERIALIZATION_MAPPINGS,relation.materialization)
-        logger.debug(f'Creating relation (if not exists) {relation.quoted_dot_notation}')
+        logger.info(f'Creating relation (if not exists) {relation.quoted_dot_notation}')
         ddl_statement=f"""
 CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation} 
 ({relation.typed_columns(self.DATA_TYPE_MAPPINGS)})
@@ -60,19 +60,26 @@ CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation}
         try:
             engine.execute(ddl_statement)
         except Exception as e:
-            logger.debug(f"Failed to create {materialization} {relation.quoted_dot_notation}:{e}")
+            logger.info(f"Failed to create {materialization} {relation.quoted_dot_notation}:{e}")
             raise e
+        logger.info(f'Created relation {relation.quoted_dot_notation}')
 
     def load_data_into_relation(self,relation:Relation)->None:
         engine=self.get_connection(database_override=relation.database,
                                     schema_override=relation.schema)
-        relation.data.to_sql(   relation.name,
-                                engine,
-                                schema=relation.schema,
-                                if_exists='append',
-                                index=False,
-                                chunksize=DEFAULT_INSERT_CHUNK_SIZE,
-                                method='multi')
+        logger.info(f'Loading data into relation {relation.quoted_dot_notation}...')
+        try:
+            relation.data.to_sql(   relation.name,
+                                    engine,
+                                    schema=relation.schema,
+                                    if_exists='append',
+                                    index=False,
+                                    chunksize=DEFAULT_INSERT_CHUNK_SIZE,
+                                    method='multi')
+        except Exception as e:
+            logger.info(f"Failed to load data into {relation.quoted_dot_notation}:{e}")
+            raise e
+        logger.info(f'Data loaded into relation {relation.quoted_dot_notation}')
 
     def initialize_replica(self)->None:
         """shimming but will want to move _init_image public with this interface"""
@@ -96,10 +103,10 @@ CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation}
         """returns the image name of the completed replica"""
         shdocker=SnowShuDocker()
         logger.info('Finalizing target container into replica...')
-        replica_image=shdocker.convert_container_to_replica(self.configs.name,
+        replica_image=shdocker.convert_container_to_replica(self.config.name,
                                               self.container,
                                               self)
-        logger.info('Finalized replica image {self.configs.name}')
+        logger.info(f'Finalized replica image {self.config.name}')
         return replica_image.tags[0]
 
 

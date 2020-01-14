@@ -77,3 +77,10 @@ def analyze(replica_file:click.Path):
     replica=ReplicaFactory()
     replica.load_config(replica_file)
     click.echo(replica.analyze())
+"""
+@cli.command()
+@click.argument('replica', help="Name of the replica to launch")
+@click.option('-p','--port', type=int, help="The port snowshu will forward the replica connection to. Defaults to 9999.")
+@click.option('-h','--host', type=str, help="The local hostname for the replica, default will be the replica name.")
+def launch(
+"""

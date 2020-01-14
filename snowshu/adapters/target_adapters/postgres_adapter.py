@@ -55,4 +55,11 @@ class PostgresAdapter(BaseTargetAdapter):
     def create_schema_if_not_exists(self,database:str,schema:str)->None:
         conn=self.get_connection(database_override=database)
         statement=f'CREATE SCHEMA IF NOT EXISTS "{schema}"' 
-        conn.execute(statement)
+        try:
+            conn.execute(statement)
+        except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as e: 
+            if (f'Key (nspname)=({schema}) already exists' in  str(e)) or ('duplicate key value violates unique constraint ' in str(e)):
+                logger.debug(f'Schema "{database}"."{schema}" already exists, skipping.')
+                pass
+            else:
+                raise e
