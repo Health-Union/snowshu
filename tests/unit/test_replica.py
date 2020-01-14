@@ -1,4 +1,4 @@
-from snowshu.core.replica import ReplicaFactory
+from snowshu.core.replica.replica_factory import ReplicaFactory
 from tests.common import rand_string
 import tempfile
 import pytest

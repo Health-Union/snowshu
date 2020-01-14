@@ -1,13 +1,14 @@
 import time
-import copy
+from copy import deepcopy
+from typing import TextIO,List,Type,Union
+from pathlib import Path
+import networkx
+
+from snowshu.core.replica import Replica
 from snowshu.core.graph import SnowShuGraph
 from snowshu.core.utils import get_config_value, load_from_file_or_path
-from copy import deepcopy
-from typing import TextIO,List,Type
 from snowshu.core.catalog import Catalog
 from snowshu.core.models.credentials import Credentials
-from pathlib import Path
-from typing import Union
 import snowshu.adapters.source_adapters as source_adapters
 import snowshu.adapters.target_adapters as target_adapters
 from snowshu.core.sample_methods import get_sample_method_from_kwargs, SampleMethod
@@ -15,22 +16,8 @@ from snowshu.logger import Logger, duration
 from snowshu.core.models.relation import Relation
 from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.configuration_parser import ConfigurationParser
-from snowshu.core.docker import SnowShuDocker
-import networkx
 from snowshu.core.printable_result import graph_to_result_list,printable_result
 logger=Logger().logger
-
-class ReplicaManager:
-    """ manages the local replica ecosystem"""
-    
-    @staticmethod
-    def get_replica(name:str)->Replica:
-        shdocker=SnowShuDocker()
-        image_name=shdocker.sanitize_replica_name(name)
-        target_adapter=target_adapters.__dict__[shdocker.get_adapter(image_name)]
-        return Replica(image_name,target_adapter)
-        
-    
 
 class ReplicaFactory:
     
@@ -62,6 +49,8 @@ class ReplicaFactory:
                                     self.target_adapter,
                                     threads=self.config.threads,
                                     analyze=self.ANALYZE)
+    
+        self.target_adapter.finalize_replica()
 
         return printable_result(graph_to_result_list(self.graphs,
                                                      self.config.default_sample_method),

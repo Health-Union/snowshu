@@ -120,7 +120,7 @@ class SnowShuDocker:
     def _remount_replica_data(self,container:docker.models.containers.Container, target_adapter:Type['BaseTargetAdapter'])->None:
         logger.info('Remounting data inside target...')
         mount_strings=[f"/bin/bash -c 'mkdir /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'",
-                       f"/bin/bash -c 'cp -a {target_adapter.NATIVE_DATA_DIRECTORY}/ /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'"]
+                       f"/bin/bash -c 'cp -a {target_adapter.NATIVE_DATA_DIRECTORY}/* /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'"]
         for string in mount_strings:
             response=container.exec_run(string,tty=True)
             if response[0] > 0:

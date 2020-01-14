@@ -80,9 +80,9 @@ CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation}
 
 
     def _init_image(self)->None:
-        docker=SnowShuDocker()
+        shdocker=SnowShuDocker()
         logger.info('Initializing target container...')
-        self.container=docker.startup( self.DOCKER_IMAGE,
+        self.container=shdocker.startup( self.DOCKER_IMAGE,
                         self.DOCKER_START_COMMAND,
                         self.DOCKER_TARGET_PORT,
                         self.CLASSNAME,
@@ -91,6 +91,17 @@ CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation}
         while self.container.exec_run(self.DOCKER_READY_COMMAND).exit_code > 0:
             sleep(.5)
         self._initialize_snowshu_meta_database()
+
+    def finalize_replica(self)->str:
+        """returns the image name of the completed replica"""
+        shdocker=SnowShuDocker()
+        logger.info('Finalizing target container into replica...')
+        replica_image=shdocker.convert_container_to_replica(self.configs.name,
+                                              self.container,
+                                              self)
+        logger.info('Finalized replica image {self.configs.name}')
+        return replica_image.tags[0]
+
 
     def _generate_credentials(self)->Credentials:
         return Credentials( host=DOCKER_TARGET_CONTAINER,

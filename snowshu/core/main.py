@@ -8,7 +8,7 @@ from shutil import which, copyfile
 from snowshu.formats import DEFAULT_TAG_FORMAT
 from snowshu.configs import IS_IN_DOCKER
 from datetime import datetime
-from snowshu.core.replica import ReplicaFactory
+from snowshu.core.replica.replica_factory import ReplicaFactory
 
 
 
