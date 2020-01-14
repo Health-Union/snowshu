@@ -1,6 +1,20 @@
-import py.test
-from snowshu.core.docker import SnoShuDocker
+import pytest
+import time
+import docker
+from tests.common import rand_string
+from sqlalchemy import create_engine
+from snowshu.core.replica.replica_manager import ReplicaManager
+from snowshu.core.docker import SnowShuDocker
 from snowshu.adapters.target_adapters import PostgresAdapter
+
+from snowshu.logger import Logger
+Logger().set_log_level(0)
+
+@pytest.fixture
+def kill_docker():
+    yield
+    shdocker=SnowShuDocker()
+    shdocker.remove_container('snowshu_target')
 
 def test_creates_replica():
     # build image
@@ -16,7 +30,7 @@ def test_creates_replica():
                         target_adapter.DOCKER_IMAGE,
                         target_adapter.DOCKER_START_COMMAND,
                         9999,
-                        target.name,
+                        target_adapter.CLASSNAME,
                         
                         ['POSTGRES_USER=snowshu',
                          'POSTGRES_PASSWORD=snowshu',
@@ -25,12 +39,23 @@ def test_creates_replica():
 
 
     ## load test data
+    time.sleep(5) # give pg a moment to spin up all the way
     engine=create_engine('postgresql://snowshu:snowshu@snowshu_target:9999/snowshu')
-    engine.execute('CREATE TABLE {test_table} (column_one VARCHAR, column_two INT)')
-    engine.execute("INSERT INTO {test_table} VALUES ('a',1), ('b',2), ('c',3)")
+    engine.execute(f'CREATE TABLE {test_table} (column_one VARCHAR, column_two INT)')
+    engine.execute(f"INSERT INTO {test_table} VALUES ('a',1), ('b',2), ('c',3)")
     
-    replica=shdocker.convert_container_to_replica(target_container, 
-                                                  test_name,
-                                                  target)
+    checkpoint=engine.execute(f"SELECT * FROM {test_table}").fetchall()
+    assert ('a',1) == checkpoint[0] 
+
+    replica=shdocker.convert_container_to_replica(test_name,
+                                                  target_container, 
+                                                  target_adapter)
     
-                                                                        
+    ## get a new replica
+    test_replica=ReplicaManager().get_replica(test_name)
+    time.sleep(5) # give pg a moment to spin up all the way
+    engine=create_engine(f'postgresql://snowshu:snowshu@{test_replica.name}:9999/snowshu')
+    res=engine.execute(f'SELECT * FROM {test_table}').fetchall() 
+    assert ('a',1,) in res
+    assert ('b',2,) in res
+    assert ('c',3,) in res                                                                       

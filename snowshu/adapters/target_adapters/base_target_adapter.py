@@ -25,11 +25,13 @@ class BaseTargetAdapter(BaseSQLAdapter):
         for attr in (
                      'DOCKER_IMAGE',
                      'DOCKER_SNOWSHU_ENVARS',
+                     'DOCKER_REPLICA_ENVARS',
                      'DATA_TYPE_MAPPINGS',
                      'NATIVE_DATA_DIRECTORY',
                      ):
             if not hasattr(self,attr):
                 raise NotImplementedError(f'Target adapter requires attribute f{attr} but was not set.')
+
         self.credentials=self._generate_credentials()
 
     def load_config(self,config:Configuration)->None:

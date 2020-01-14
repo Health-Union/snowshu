@@ -1,4 +1,5 @@
 import sqlalchemy
+from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
 from snowshu.core.models import materializations as mz
 from snowshu.core.models import data_types as dt
 from snowshu.adapters.target_adapters import BaseTargetAdapter
@@ -13,7 +14,9 @@ class PostgresAdapter(BaseTargetAdapter):
     MATERIALIZATION_MAPPINGS=dict(TABLE=mz.TABLE,VIEW=mz.VIEW)
     DATA_TYPE_MAPPINGS=dict(VARCHAR=dt.VARCHAR,INTEGER=dt.INTEGER,TIMESTAMP=dt.TIMESTAMPTZ,FLOAT=dt.DOUBLE,BOOLEAN=dt.BOOLEAN)
     NATIVE_DATA_DIRECTORY='/var/lib/postgresql/data'
-
+    DOCKER_REMOUNT_DIRECTORY=DOCKER_REMOUNT_DIRECTORY
+    DOCKER_REPLICA_ENVARS=[f"PGDATA={DOCKER_REMOUNT_DIRECTORY}"]
+    
     ##NOTE: either start container with db listening on port 9999,
     ##  or override with DOCKER_TARGET_PORT
 
@@ -21,11 +24,14 @@ class PostgresAdapter(BaseTargetAdapter):
     DOCKER_SNOWSHU_ENVARS=[ 'POSTGRES_PASSWORD',
                     'POSTGRES_USER',
                     'POSTGRES_DB']
+
     def __init__(self):
         super().__init__()
 
         self.DOCKER_START_COMMAND=f'postgres -p {self._credentials.port}'
         self.DOCKER_READY_COMMAND=f'pg_isready -p {self._credentials.port} -h {self._credentials.host} -U {self._credentials.user} -d {self._credentials.database}'
+        self.DOCKER_REPLICA_START_COMMAND=self.DOCKER_START_COMMAND
+        self.DOCKER_REPLICA_ENVARS+=self._build_snowshu_envars(self.DOCKER_SNOWSHU_ENVARS)
 
     def _create_snowshu_schema_statement(self)->str:
         return 'CREATE SCHEMA IF NOT EXISTS "snowshu";'
