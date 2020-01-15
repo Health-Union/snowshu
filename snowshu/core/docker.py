@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Type
+from typing import Type,Optional
 import docker
 import re
 from snowshu.configs import DOCKER_NETWORK,\
@@ -34,13 +34,46 @@ class SnowShuDocker:
 
         return replica
 
+
+
+    def get_stopped_container(self,
+                              image,
+                              start_command:str,
+                              envars:list,
+                              port:int,
+                              hostname:Optional[str]=None,
+                              container_name:Optional[str]=None,
+                              labels:dict=dict(),
+                              protocol:str="tcp")->docker.models.containers.Container:
+        container_name=container_name if container_name else image
+        hostname=hostname if hostname else container_name
+        port_dict={f"{str(port)}/{protocol}":port}
+        
+        self.remove_container(container_name)
+        network=self._get_or_create_network(DOCKER_NETWORK)
+        logger.info(f"Creating stopped container {container_name}...")
+        container=self.client.containers.create(  image, 
+                                            start_command, 
+                                            network=network.name,
+                                            name=container_name,
+                                            ports=port_dict, 
+                                            environment=envars,
+                                            hostname=hostname,
+                                            labels=labels,
+                                            detach=True)
+        logger.info(f"Created stopped container {container.name}.")
+        return container
+
+    """
+
     def launch( self,
                 image:str,
                 start_command:str,
                 envars:list,
+                hostname:str,
+                port:int,
                 container_name:Optional[str]=None,
                 labels:dict=dict(),
-                port:int=DOCKER_TARGET_PORT,
                 protocol:str="tcp")->docker.models.containers.Container:
         container_name=container_name if container_name is not None else image
         port_dict={f"{str(port)}/{protocol}":port}
@@ -54,11 +87,10 @@ class SnowShuDocker:
                                             ports=port_dict, 
                                             environment=envars,
                                             labels=labels,
-                                            remove=True,
                                             detach=True)
         logger.info(f"Created target container {container.name}.")
         return container
-        
+    """    
     def startup(self,
                 image:str,
                 start_command:str,
@@ -66,19 +98,29 @@ class SnowShuDocker:
                 target_adapter:str,
                 envars:list,
                 protocol:str="tcp")->docker.models.containers.Container:
-        
-        return self.launch(image, 
-                         start_command, 
-                         envars,
-                         container_name=DOCKER_TARGET_CONTAINER,
-                         labels=dict(target_adapter=target_adapter),
-                         port=port)
+
+        container = self.get_stopped_container( image,
+                                                start_command,
+                                                envars,
+                                                port,
+                                                hostname=DOCKER_TARGET_CONTAINER,
+                                                container_name=DOCKER_TARGET_CONTAINER,
+                                                labels=dict(target_adapter=target_adapter))
+        logger.info(f'starting created container {DOCKER_TARGET_CONTAINER}...')
+        container.start()
+        logger.info(f'Container {DOCKER_TARGET_CONTAINER} started.')
+        return container
 
     def remove_container(self,container:str)->None:
         logger.info(f'Removing existing target container {container}...')
         try:
             removable=self.client.containers.get(container)
-            removable.kill()
+            try:
+                removable.kill()
+            except docker.errors.APIError:
+                logger.info(f'Container {container} already stopped.')
+                pass
+            removable.remove()    
             logger.info(f'Container {container} removed.')
         except docker.errors.NotFound:
             logger.info(f'Container {container} not found, skipping.')

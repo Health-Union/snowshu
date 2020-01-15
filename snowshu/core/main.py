@@ -3,12 +3,15 @@ import os
 import click
 from pathlib import Path
 import logging
+from typing import Optional
 from snowshu.logger import Logger
 from shutil import which, copyfile
 from snowshu.formats import DEFAULT_TAG_FORMAT
-from snowshu.configs import IS_IN_DOCKER
+from snowshu.configs import IS_IN_DOCKER, DOCKER_TARGET_PORT
 from datetime import datetime
 from snowshu.core.replica.replica_factory import ReplicaFactory
+from snowshu.core.replica.replica_manager import ReplicaManager
+
 
 
 
@@ -77,10 +80,20 @@ def analyze(replica_file:click.Path):
     replica=ReplicaFactory()
     replica.load_config(replica_file)
     click.echo(replica.analyze())
-"""
+
 @cli.command()
-@click.argument('replica', help="Name of the replica to launch")
-@click.option('-p','--port', type=int, help="The port snowshu will forward the replica connection to. Defaults to 9999.")
-@click.option('-h','--host', type=str, help="The local hostname for the replica, default will be the replica name.")
-def launch(
-"""
+@click.argument('replica' )
+@click.option('-p','--port', type=int, default=DOCKER_TARGET_PORT, help="The port snowshu will forward the replica connection to. Defaults to 9999.")
+@click.option('-h','--hostname', type=str, help="The local hostname for the replica, default will be the replica name.")
+def launch( replica:str,
+            port:int,
+            hostname:Optional[str]=None):
+    """ Launches an existing replica as a daemon."""    
+    hostname=hostname if hostname else replica
+    replica=ReplicaManager().get_replica(replica,hostname=hostname,port=port)
+    if replica is None:
+        message=f"No replica found with name {replica}"
+        logger.error(message)
+        click.echo(message)
+        sys.exit()
+    replica.launch()

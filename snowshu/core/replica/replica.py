@@ -6,13 +6,17 @@ class Replica:
     """ The actual live container instance of the replica"""
     def __init__(self,
                  image:str,
+                 hostname:str,
+                 port:int,
                  target_adapter:Type[BaseTargetAdapter]):
         shdocker=SnowShuDocker()
         self.name=image
-        self.container=shdocker.launch(
+        self.container=shdocker.get_stopped_container(
                                         image,
                                         target_adapter.DOCKER_REPLICA_START_COMMAND,
                                         target_adapter.DOCKER_REPLICA_ENVARS,
-                                        port=target_adapter.DOCKER_TARGET_PORT)
-
-
+                                        port,
+                                        hostname)
+        
+    def launch(self)->None:
+        self.container.start()
