@@ -10,6 +10,6 @@ psycopg2-binary==2.8.4
 
 
 #SNOWFLAKE
-snowflake-connector-python==2.1.0
+snowflake-connector-python==2.1.1
 snowflake-sqlalchemy==1.1.17
 python-dateutil==2.8.0 #gross back-pin for snowflake-sqlalchemy :(

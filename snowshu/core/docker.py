@@ -47,6 +47,17 @@ class SnowShuDocker:
                               protocol:str="tcp")->docker.models.containers.Container:
         container_name=container_name if container_name else image
         hostname=hostname if hostname else container_name
+
+        logger.info(f'Finding base image {image}...')
+        try:
+            self.client.images.get(image)
+        except docker.errors.ImageNotFound:
+            parsed_image=image.split(':')
+            if len(parsed_image)>1:
+                self.client.images.pull(parsed_image[0],tag=parsed_image[1])
+            else:
+                self.client.images.pull(parsed_image[0])
+
         port_dict={f"{str(port)}/{protocol}":port}
         
         self.remove_container(container_name)
@@ -107,6 +118,7 @@ class SnowShuDocker:
                                                 container_name=DOCKER_TARGET_CONTAINER,
                                                 labels=dict(target_adapter=target_adapter))
         logger.info(f'starting created container {DOCKER_TARGET_CONTAINER}...')
+        self._connect_to_bridge_network(container)
         container.start()
         logger.info(f'Container {DOCKER_TARGET_CONTAINER} started.')
         return container
@@ -136,7 +148,13 @@ class SnowShuDocker:
             network=self.client.networks.create(name,check_duplicate=True)
             logger.info(f'Network {network.name} created.')
         return network
-    
+
+    def _connect_to_bridge_network(self,container:docker.models.containers.Container)->None:
+        logger.info('Adding container to bridge...')
+        bridge=self.client.networks.get('bridge')
+        bridge.connect(container)
+        logger.info(f'Connected container {container.name} to bridge network.')
+
     def get_adapter_name(self,name:str)->str:
         try:
             return self.client.images.get(name).labels['target_adapter']

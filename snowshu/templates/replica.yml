@@ -1,5 +1,5 @@
 version: "1"
-credpath: "/app/tests/assets/integration/credentials.yml" ## can be a relative or expandable path
+credpath: "./tests/assets/integration/credentials.yml" ## can be a relative or expandable path
 name: integration-test
 short_description: this is a sample with LIVE CREDS for integration
 long_description: this is for testing against a live db

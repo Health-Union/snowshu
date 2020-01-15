@@ -2,7 +2,10 @@ from time import sleep
 from snowshu.core.utils import key_for_value
 from typing import Optional
 from snowshu.adapters import BaseSQLAdapter
-from snowshu.configs import DOCKER_TARGET_PORT,DOCKER_TARGET_CONTAINER,DEFAULT_INSERT_CHUNK_SIZE
+from snowshu.configs import DOCKER_TARGET_PORT,\
+DOCKER_TARGET_CONTAINER,\
+DEFAULT_INSERT_CHUNK_SIZE,\
+IS_IN_DOCKER
 from snowshu.core.models.credentials import USER,PASSWORD,HOST,PORT,DATABASE
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models import Relation,Credentials,Attribute
@@ -111,7 +114,8 @@ CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation}
 
 
     def _generate_credentials(self)->Credentials:
-        return Credentials( host=DOCKER_TARGET_CONTAINER,
+        host=DOCKER_TARGET_CONTAINER if IS_IN_DOCKER else 'localhost'
+        return Credentials( host=host,
                             port=self.DOCKER_TARGET_PORT,
                             **dict(zip(('user','password','database',),['snowshu' for _ in range(3)])))
 
