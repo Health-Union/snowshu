@@ -1,36 +1,46 @@
-image: python:3.7-slim-buster
+image: python:3.7
+definitions:
+  steps:
+    - step: &code-analysis
+        name: "Run Static Code Analysis"
+        caches:
+          - pip
+        script:
+          - pip install -r requirements/dev.txt
+          - prospector -t dodgy -t pep8 -t profile-validator -t mccabe -t pyflakes
+
+    - step: &run-tests
+        name: "Run Tests"
+        caches:
+          - pip
+        script:
+          - pip install -r requirements/dev.txt
+          - pip install coverage-badge anybadge
+          - pytest --cov=snowshu tests/ --junitxml=test-results/junit_$BITBUCKET_BUILD_NUMBER.xml
+        after-script:
+          - coverage-badge -o coverage.svg
+          - pipe: atlassian/bitbucket-upload-file:0.1.2
+            variables:
+              BITBUCKET_USERNAME: $BB_USER_NAME
+              BITBUCKET_APP_PASSWORD: $BB_APP_PASSWORD
+              FILENAME: 'coverage.svg'
+          - anybadge --label=pipeline --value=$BITBUCKET_EXIT_CODE --file=pipeline.svg 0=green 1=red
+          - pipe: atlassian/bitbucket-upload-file:0.1.2
+            variables:
+              BITBUCKET_USERNAME: $BB_USER_NAME
+              BITBUCKET_APP_PASSWORD: $BB_APP_PASSWORD
+              FILENAME: 'pipeline.svg'
+        artifacts:
+          - coverage.svg
+          - pipeline.svg
 pipelines:
+  default:
+    - parallel:
+      - step: *code-analysis
+      - step: *run-tests
   pull-requests:
     '**':
       - parallel:
-        - step:
-            name: "Run Static Code Analysis"
-            caches:
-              - pip
-            script:
-              - pip install -r requirements/dev.txt
-              - prospector -t dodgy -t pep8 -t profile-validator -t mccabe -t pyflakes
-        - step:
-            name: "Run Tests"
-            caches:
-              - pip
-            script:
-              - pip install -r requirements/dev.txt
-              - pip install coverage-badge anybadge
-              - pytest --cov=snowshu tests/
-            after-script:
-              - coverage-badge -o coverage.svg
-              - pipe: atlassian/bitbucket-upload-file:0.1.2
-                variables:
-                  BITBUCKET_USERNAME: $BB_USER_NAME
-                  BITBUCKET_APP_PASSWORD: $BB_APP_PASSWORD
-                  FILENAME: 'coverage.svg'
-              - anybadge --label=pipeline --value=$BITBUCKET_EXIT_CODE --file=pipeline.svg 0=green 1=red
-              - pipe: atlassian/bitbucket-upload-file:0.1.2
-                variables:
-                  BITBUCKET_USERNAME: $BB_USER_NAME
-                  BITBUCKET_APP_PASSWORD: $BB_APP_PASSWORD
-                  FILENAME: 'pipeline.svg'
-            artifacts:
-              - coverage.svg
-              - pipeline.svg
+        - step: *code-analysis
+        - step: *run-tests
+
