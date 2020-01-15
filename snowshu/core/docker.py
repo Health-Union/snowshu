@@ -177,6 +177,10 @@ class SnowShuDocker:
         logger.info(f'Replica name sanitized to {final_image}')
         return final_image   
     
+    def replica_image_name_to_common_name(self,name:str)->str:
+        """reverse the replica sanitizer"""
+        return name.replace('snowshu__replica__','')
+
     def _remount_replica_data(self,container:docker.models.containers.Container, target_adapter:Type['BaseTargetAdapter'])->None:
         logger.info('Remounting data inside target...')
         mount_strings=[f"/bin/bash -c 'mkdir /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'",

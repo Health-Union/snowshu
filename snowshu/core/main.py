@@ -96,4 +96,4 @@ def launch( replica:str,
         logger.error(message)
         click.echo(message)
         sys.exit()
-    replica.launch()
+    click.echo(replica.launch())

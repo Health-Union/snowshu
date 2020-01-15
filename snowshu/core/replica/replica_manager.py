@@ -14,6 +14,6 @@ class ReplicaManager:
         shdocker=SnowShuDocker()
         image_name=shdocker.sanitize_replica_name(name)
         target_adapter=target_adapters.__dict__[shdocker.get_adapter_name(image_name)]()
-        logger.info(f'Mounting target adapter {target_adapter.CLASSNAME}')
+        logger.info(f'Mounting target adapter {target_adapter.CLASSNAME}.')
         return Replica(image_name,hostname,port,target_adapter)
 

@@ -1,4 +1,5 @@
 from typing import Type
+from snowshu.configs import IS_IN_DOCKER
 from snowshu.adapters.target_adapters import BaseTargetAdapter
 from snowshu.core.docker import SnowShuDocker
 
@@ -10,7 +11,7 @@ class Replica:
                  port:int,
                  target_adapter:Type[BaseTargetAdapter]):
         shdocker=SnowShuDocker()
-        self.name=image
+        self.name,self.port,self.hostname=shdocker.replica_image_name_to_common_name(image),port,hostname
         self.container=shdocker.get_stopped_container(
                                         image,
                                         target_adapter.DOCKER_REPLICA_START_COMMAND,
@@ -20,3 +21,18 @@ class Replica:
         
     def launch(self)->None:
         self.container.start()
+        message = f"""
+Replica {self.name} has been launched!
+You can connect directly from your host computer using the connection string
+
+snowshu:snowshu@localhost:{self.port}/snowshu
+
+"""
+        if IS_IN_DOCKER:
+            message+=f"""You can connect to the sample database from within docker containers running on the `snowshu` docker network.
+use the connection string 
+
+snowshu:snowshu@{self.hostname}/snowshu 
+
+to connect."""
+        return message 
