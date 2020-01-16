@@ -10,10 +10,10 @@ class ReplicaManager:
     """ manages the local replica ecosystem"""
     
     @staticmethod
-    def get_replica(name:str,hostname:Optional[str]=None,port:Optional[str]=None)->Replica:
+    def get_replica(name:str,port:int)->Replica:
         shdocker=SnowShuDocker()
         image_name=shdocker.sanitize_replica_name(name)
         target_adapter=target_adapters.__dict__[shdocker.get_adapter_name(image_name)]()
-        logger.info(f'Mounting target adapter {target_adapter.CLASSNAME}.')
-        return Replica(image_name,hostname,port,target_adapter)
+        logger.info(f'Found target adapter {target_adapter.CLASSNAME} for image {name}.')
+        return Replica(image_name,port,target_adapter)
 

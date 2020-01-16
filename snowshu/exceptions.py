@@ -1,0 +1,3 @@
+
+class InvalidRelationshipException(Exception):
+    pass

@@ -10,10 +10,12 @@ SnowShu enables data developers to author transforms and models in a highly perf
 ## Table of Contents
 
 ### Using SnowShu
+- [SnowShu Philosophical Statement](docs/philosopy.md)
 - [Getting Started With SnowShu](docs/getting_started.md)
-- [Configuring A ReplicaFactory File](docs/replicas.md)
+- [Configuring A Replica File](docs/replicas.md)
 
 ### Contributing to SnowShu
 
 - [Introduction to Development](docs/development.md)
 - [Creating a New Adapter](docs/creating_adapters.md)
+

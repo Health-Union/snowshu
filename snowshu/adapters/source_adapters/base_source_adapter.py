@@ -7,6 +7,7 @@ from snowshu.utils import MAX_ALLOWED_DATABASES, MAX_ALLOWED_ROWS
 from snowshu.logger import Logger
 import time
 logger=Logger().logger
+
 class BaseSourceAdapter(BaseSQLAdapter):
     MAX_ALLOWED_DATABASES=MAX_ALLOWED_DATABASES
     MAX_ALLOWED_ROWS=MAX_ALLOWED_ROWS

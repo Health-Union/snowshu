@@ -84,13 +84,10 @@ def analyze(replica_file:click.Path):
 @cli.command()
 @click.argument('replica' )
 @click.option('-p','--port', type=int, default=DOCKER_TARGET_PORT, help="The port snowshu will forward the replica connection to. Defaults to 9999.")
-@click.option('-h','--hostname', type=str, help="The local hostname for the replica, default will be the replica name.")
 def launch( replica:str,
-            port:int,
-            hostname:Optional[str]=None):
+            port:int):
     """ Launches an existing replica as a daemon."""    
-    hostname=hostname if hostname else replica
-    replica=ReplicaManager().get_replica(replica,hostname=hostname,port=port)
+    replica=ReplicaManager().get_replica(replica,port=port)
     if replica is None:
         message=f"No replica found with name {replica}"
         logger.error(message)

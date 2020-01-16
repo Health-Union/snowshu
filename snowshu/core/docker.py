@@ -41,13 +41,10 @@ class SnowShuDocker:
                               start_command:str,
                               envars:list,
                               port:int,
-                              hostname:Optional[str]=None,
-                              container_name:Optional[str]=None,
+                              name:Optional[str]=None,
                               labels:dict=dict(),
                               protocol:str="tcp")->docker.models.containers.Container:
-        container_name=container_name if container_name else image
-        hostname=hostname if hostname else container_name
-
+        name=name if name else self.replica_image_name_to_common_name(image)
         logger.info(f'Finding base image {image}...')
         try:
             self.client.images.get(image)
@@ -60,48 +57,21 @@ class SnowShuDocker:
 
         port_dict={f"{str(port)}/{protocol}":port}
         
-        self.remove_container(container_name)
+        self.remove_container(name)
         network=self._get_or_create_network(DOCKER_NETWORK)
-        logger.info(f"Creating stopped container {container_name}...")
+        logger.info(f"Creating stopped container {name}...")
         container=self.client.containers.create(  image, 
                                             start_command, 
                                             network=network.name,
-                                            name=container_name,
+                                            name=name,
+                                            hostname=name,
                                             ports=port_dict, 
                                             environment=envars,
-                                            hostname=hostname,
                                             labels=labels,
                                             detach=True)
         logger.info(f"Created stopped container {container.name}.")
         return container
 
-    """
-
-    def launch( self,
-                image:str,
-                start_command:str,
-                envars:list,
-                hostname:str,
-                port:int,
-                container_name:Optional[str]=None,
-                labels:dict=dict(),
-                protocol:str="tcp")->docker.models.containers.Container:
-        container_name=container_name if container_name is not None else image
-        port_dict={f"{str(port)}/{protocol}":port}
-        self.remove_container(container_name)
-        network=self._get_or_create_network(DOCKER_NETWORK)
-        logger.info(f"Creating container {container_name}...")
-        container=self.client.containers.run(  image, 
-                                            start_command, 
-                                            network=network.name,
-                                            name=container_name,
-                                            ports=port_dict, 
-                                            environment=envars,
-                                            labels=labels,
-                                            detach=True)
-        logger.info(f"Created target container {container.name}.")
-        return container
-    """    
     def startup(self,
                 image:str,
                 start_command:str,
@@ -114,11 +84,11 @@ class SnowShuDocker:
                                                 start_command,
                                                 envars,
                                                 port,
-                                                hostname=DOCKER_TARGET_CONTAINER,
-                                                container_name=DOCKER_TARGET_CONTAINER,
+                                                name=DOCKER_TARGET_CONTAINER,
                                                 labels=dict(target_adapter=target_adapter))
-        logger.info(f'starting created container {DOCKER_TARGET_CONTAINER}...')
+        logger.info(f'Connecting {DOCKER_TARGET_CONTAINER} to bridge network..')
         self._connect_to_bridge_network(container)
+        logger.info(f'Connected. Starting created container {DOCKER_TARGET_CONTAINER}...')
         container.start()
         logger.info(f'Container {DOCKER_TARGET_CONTAINER} started.')
         return container

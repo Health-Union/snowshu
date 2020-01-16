@@ -26,7 +26,7 @@ source:
     unsampled: True
   - database: SNOWSHU_DEVELOPMENT
     schema: SOURCE_SYSTEM
-    relation: ORDER_ITEMS
+    relation: '^ORDER_ITEMS$'
     relationships:
       bidirectional: 
       - local_attribute: PRODUCT_ID 

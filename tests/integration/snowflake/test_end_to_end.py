@@ -1,6 +1,8 @@
 from datetime import datetime
+import docker
 import pytest
 import os
+import time
 from sqlalchemy import create_engine
 from snowshu.configs import PACKAGE_ROOT
 from click.testing import CliRunner
@@ -8,34 +10,34 @@ from snowshu.core.main import cli
 
 #Build the initial test replica from snowshu creds
 
-CONN_STRING='postgresql://snowshu:snowshu@snowshu:9999/snowshu'
+CONN_STRING='postgresql://snowshu:snowshu@integration-test:9999/snowshu'
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session",autouse=True)
 def run_snowshu_create():
     runner=CliRunner()
     configuration_path=os.path.join(PACKAGE_ROOT,'snowshu','templates','replica.yml')
     return runner.invoke(cli,('run','--replica-file',configuration_path)).output.split('\n')
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session",autouse=True)
 def run_snowshu_launch():
     runner=CliRunner()
     runner.invoke(cli,'launch','integration-test')
     yield
-    runner.invoke(cli,'down','integration-test')
+    docker.from_env().containers.get('integration-test').kill()
 
 def test_reports_full_catalog_start(run_snowshu_create):
     result_lines=run_snowshu_create
-    assert 'Assessing full catalog...' in result_lines[2]
+    assert any(['Assessing full catalog...' in line for line in result_lines])
 
 def test_finds_7_relations(run_snowshu_create):
     result_lines=run_snowshu_create
-    assert 'Identified a total of 7 relations to sample based on the specified configurations.' in result_lines[4]
+    assert any(['Identified a total of 7 relations to sample based on the specified configurations.' in line for line in result_lines])
 
 
 def test_replicates_order_items(run_snowshu_create):
     result_lines=run_snowshu_create
-    assert 'Done replication of relation SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS' in result_lines[-3]   
+    assert any(['Done replication of relation SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS' in line for line in result_lines])   
 
 @pytest.mark.skip 
 def test_snowshu_explain(run_snowshu_create):
@@ -48,16 +50,30 @@ def test_snowshu_explain(run_snowshu_create):
     assert response['source_adapter'] == 'snowflake'
     assert datetime(response['created_at']) < datetime.now()
 
-@pytest.mark.skip
 def test_launches(run_snowshu_create):
     runner=CliRunner()
-    response=runner.invoke(cli,'launch','integration-test')
-    assert 'ReplicaFactory integration-test launched and started.' in response.output
-    assert 'You can connect to this replica with connection string: postgresql://snowshu:snowshu@snowshu:9999/snowshu' in response.output
-    assert 'To stop your replica temporarily, use command `snowshu stop integration-test`' in response.output
-    assert 'To spin down your replica, use command `snowshu down integration-test`' in response.output
+    response=runner.invoke(cli,('launch','integration-test'))
+    EXPECTED_STRING="""
+Replica integration-test has been launched and started.
+To stop your replica temporarily, use command `snowshu stop integration-test`.
+To spin down your replica, use command `snowshu down integration-test`.
 
-    conn=create_engine(CONN_STRING)
+You can connect directly from your host computer using the connection string
+
+snowshu:snowshu@localhost:9999/snowshu
+
+You can connect to the sample database from within docker containers running on the `snowshu` docker network.
+use the connection string 
+
+snowshu:snowshu@integration-test:9999/snowshu 
+
+to connect.
+"""
+    assert EXPECTED_STRING in response.output
+    conn_string=('/').join(CONN_STRING.split('/')[:-1])+'/SNOWSHU_DEVELOPMENT'
+    conn=create_engine(conn_string)
+    time.sleep(5) # would be better to ping with wait commands, but that is a lot of overhead here
+
     q=conn.execute('SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."EXTERNAL_DATA"."ADDRESS_REGION_ATTRIBUTES"')
     count=q.fetchall()[0][0]
     assert count > 100

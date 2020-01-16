@@ -1,5 +1,5 @@
 import os
-from snowshu.core.replica import ReplicaFactory
+from snowshu.core.replica.replica_factory import ReplicaFactory
 from snowshu.utils import PACKAGE_ROOT
 from snowshu.core.models.relation import Relation
 
