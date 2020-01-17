@@ -18,9 +18,9 @@ definitions:
         script:
           - echo $CREDENTIALS | base64 --decode > tests/assets/integration/credentials.yml ## injects the credentials file
           - pip install --no-cache-dir docker-compose 
-          #- pip install coverage-badge anybadge
+          - pip install coverage-badge anybadge
           - docker-compose up -d
-          - docker-compose exec snowshu py.test --cov=snowshu tests/unit
+          - docker-compose exec -T snowshu py.test --cov=snowshu tests/unit
           #- pytest --cov=snowshu tests/ --junitxml=test-results/junit_$BITBUCKET_BUILD_NUMBER.xml
         after-script:
           - coverage-badge -o coverage.svg
