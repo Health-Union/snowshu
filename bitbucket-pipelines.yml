@@ -17,7 +17,6 @@ definitions:
           - pip
         script:
           - echo $CREDENTIALS | base64 --decode > tests/assets/integration/credentials.yml ## injects the credentials file
-          - apk add --no-cache bash py-pip
           - pip install --no-cache-dir docker-compose 
           #- pip install coverage-badge anybadge
           - docker-compose up -d
