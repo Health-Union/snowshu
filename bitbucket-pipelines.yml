@@ -14,7 +14,7 @@ definitions:
         caches:
           - pip
         script:
-          - echo "$CREDENTIALS" | base64 --decode &gt; tests/assets/integration/credentials.yml ## injects the credentials file
+          - echo "$CREDENTIALS" | base64 --decode > tests/assets/integration/credentials.yml ## injects the credentials file
           - pip install -r requirements/dev.txt
           - pip install coverage-badge anybadge
           - pytest --cov=snowshu tests/ --junitxml=test-results/junit_$BITBUCKET_BUILD_NUMBER.xml
