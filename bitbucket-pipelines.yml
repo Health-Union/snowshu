@@ -11,6 +11,8 @@ definitions:
 
     - step: &run-tests
         name: "Run Tests"
+        services:
+          - docker
         caches:
           - pip
         script:
