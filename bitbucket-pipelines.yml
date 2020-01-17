@@ -21,7 +21,7 @@ definitions:
           - pip install --no-cache-dir docker-compose 
           - pip install coverage-badge anybadge
           - docker-compose up -d
-          - docker-compose exec -T snowshu py.test --cov=snowshu pytest --cov=snowshu tests/ --junitxml=test-results/junit_$BITBUCKET_BUILD_NUMBER.xml
+          - docker-compose exec -T snowshu py.test --cov=snowshu tests/unit --junitxml=test-results/junit_$BITBUCKET_BUILD_NUMBER.xml
         after-script:
           - coverage-badge -o coverage.svg
           - pipe: atlassian/bitbucket-upload-file:0.1.2
