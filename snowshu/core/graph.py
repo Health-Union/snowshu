@@ -27,7 +27,8 @@ class SnowShuGraph:
         graph.add_nodes_from(included_relations)
         self.graph=self._apply_specifications(configs,graph, full_catalog)#included_relations)
         ## set default sampling at relation level
-        [self._set_sampling_method(relation,configs) for relation in self.graph.nodes]
+        [self._set_globals_for_node(relation,configs) for relation in self.graph.nodes]
+        
         logger.info(f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
 
         if not self.graph.is_directed():
@@ -124,7 +125,9 @@ class SnowShuGraph:
         return set([filtered_relation for filtered_relation in \
             set(filter(lambda rel : at_least_one_full_pattern_match(rel,patterns), full_catalog))])
     
-    def _set_sampling_method(self,relation:Relation,configs:Configuration)->Relation:
+    def _set_globals_for_node(self,relation:Relation,configs:Configuration)->Relation:
         """ for now sets all to default."""
         relation.sample_method=configs.default_sample_method
+        relation.include_outliers=configs.include_outliers
+        relation.max_number_of_outliers=configs.max_number_of_outliers
         return relation

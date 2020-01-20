@@ -2,7 +2,7 @@ from pathlib import Path
 import yaml
 from typing import Union,TextIO,List,Optional
 from snowshu.logger import Logger
-from snowshu.configs import DEFAULT_THREAD_COUNT
+from snowshu.configs import DEFAULT_THREAD_COUNT,DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from dataclasses import dataclass
 from snowshu.core.sample_methods import SampleMethod, get_sample_method_from_kwargs
 logger=Logger().logger
@@ -63,6 +63,7 @@ class Configuration():
     target_adapter:str
     storage_profile:str
     include_outliers:bool
+    max_number_of_outliers:int
     default_sample_method:SampleMethod
     default_sampling: List[MatchPattern]   
     specified_relations:List[SpecifiedMatchPattern]
@@ -96,6 +97,7 @@ class ConfigurationParser:
                             loaded['target']['adapter'],
                             loaded['storage']['profile'],
                             loaded['source'].get('include_outliers',False),
+                            loaded['source'].get('max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS),
                             get_sample_method_from_kwargs(**loaded['source']),
                             )
             
@@ -123,7 +125,6 @@ class ConfigurationParser:
                                                                                                 bsub['relation'],
                                                                                                 bsub['remote_attribute']) for bsub in rel.get('relationships',dict()).get('bidirectional',list())])) for rel in loaded['source'].get('specified_relations',list())]
 
-            
             return Configuration(*replica_base,
                                         default_sampling,
                                         specified_relations)
