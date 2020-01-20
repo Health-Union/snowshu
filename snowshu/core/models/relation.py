@@ -20,6 +20,7 @@ class Relation:
     target_loaded:bool=False
     sample_method:Optional[SampleMethod]
     unsampled=False
+    includes_outliers=False
 
 
     def __init__(self,
