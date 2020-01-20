@@ -126,7 +126,39 @@ FROM
             query+=f"{self._sample_type_to_query_sql(sample_type)}"
         return query
 
-    def predicate_constraint_statement(self,relation:Relation,analyze:bool,local_key:str,remote_key:str)->str:
+    def union_constraint_statement( self,
+                                    subject:Relation,
+                                    constraint:Relation,
+                                    subject_key:str,
+                                    constraint_key:str,
+                                    max_number_of_outliers:int)->str:
+        return f"""       
+SELECT
+    *
+FROM
+{subject.quoted_dot_notation}
+WHERE 
+    {subject_key}
+NOT IN 
+(SELECT
+    {constraint_key}
+FROM
+{constraint.quoted_dot_notation}
+LIMIT {max_number_of_outliers})
+"""
+
+    def upstream_constraint_statement(  self,
+                                        relation:Relation,
+                                        local_key:str,
+                                        remote_key:str)->str:
+        """ builds upstream where constraints against downstream full population"""
+        return f" {local_key} in (SELECT {remote_key} FROM {relation.quoted_dot_notation})" 
+
+    def predicate_constraint_statement( self,
+                                        relation:Relation,      
+                                        analyze:bool,
+                                        local_key:str,
+                                        remote_key:str)->str:
         """builds 'where' strings"""
 
         constraint_sql=str()
@@ -151,8 +183,7 @@ FROM
                 logger.critical(f'failed to build predicates for {relation.dot_notation}: remote key {remote_key} not in dataframe columns ({relation.data.columns})')
                 raise e
 
-        return f"{local_key} IN ({constraint_sql})"
-
+        return f"{local_key} IN ({constraint_sql}) "
 
     def _sample_type_to_query_sql(self,sample_type:SampleMethod)->str:
         if isinstance(sample_type,BernoulliSample):

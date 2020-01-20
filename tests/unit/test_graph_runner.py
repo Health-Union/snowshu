@@ -14,6 +14,8 @@ logger=log_engine.logger
 def test_traverse_and_execute_analyze(stub_graph_set):
     source_adapter,target_adapter=[mock.MagicMock() for _ in range(2)]
     source_adapter.predicate_constraint_statement.return_value=str()
+    source_adapter.upstream_constraint_statement.return_value=str()
+    source_adapter.union_constraint_statement.return_value=str()
     source_adapter.sample_statement_from_relation.return_value=str()
     runner=GraphSetRunner()
     graph_set,vals=stub_graph_set

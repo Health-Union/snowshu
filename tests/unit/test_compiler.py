@@ -99,7 +99,8 @@ def test_run_deps_directional(stub_relation_set):
     dag.add_edge(upstream,downstream,direction="directional",remote_attribute='id',local_attribute='id')
     compiler=RuntimeSourceCompiler()
     adapter=SnowflakeAdapter()
-    result=compiler.compile_queries_for_relation(downstream,dag,adapter,False)
+    compiler.compile_queries_for_relation(upstream,dag,adapter,False)
+    compiler.compile_queries_for_relation(downstream,dag,adapter,False)
     assert query_equalize(downstream.compiled_query)==query_equalize(f"""
 WITH 
 __SNOWSHU_FINAL_SAMPLE AS ( 
@@ -129,14 +130,15 @@ def test_run_deps_bidirectional_include_outliers(stub_relation_set):
     for relation in (downstream,upstream,):
         relation.attributes=[Attribute('id',dt.INTEGER)]
         relation.sample_method=BernoulliSample(10)
-        relation.includes_outliers=True    
+        relation.include_outliers=True    
         relation.max_number_of_outliers=100
 
     dag=nx.DiGraph()
     dag.add_edge(upstream,downstream,direction="bidirectional",remote_attribute='id',local_attribute='id')
     compiler=RuntimeSourceCompiler()
     adapter=SnowflakeAdapter()
-    result=compiler.compile_queries_for_relation(downstream,dag,adapter,False)
+    compiler.compile_queries_for_relation(upstream,dag,adapter,False)
+    compiler.compile_queries_for_relation(downstream,dag,adapter,False)
     assert query_equalize(downstream.compiled_query)==query_equalize(f"""
 SELECT 
     * 
@@ -155,29 +157,41 @@ NOT IN
     id
 FROM
 {upstream.quoted_dot_notation}
-LIMIT 100)
+LIMIT 100) 
 """)
 
     assert query_equalize(upstream.compiled_query)==query_equalize(f"""
-SELECT
-    *
-FROM
-{upstream.quoted_dot_notation}
-    SAMPLE BERNOULLI (10)
-UNION
-SELECT
-    *
-FROM
-{upstream.quoted_dot_notation}
+WITH __SNOWSHU_FINAL_SAMPLE AS ( 
+SELECT * FROM 
+{upstream.quoted_dot_notation} 
+    WHERE id in (SELECT id 
+       FROM 
+{downstream.quoted_dot_notation}) 
+)
+,___SNOWSHU_DIRECTIONAL_SAMPLE AS ( 
+SELECT 
+    * 
+FROM 
+    __SNOWSHU_FINAL_SAMPLE SAMPLE BERNOULLI (10)
+) 
+SELECT 
+    * 
+FROM 
+    __SNOWSHU_DIRECTIONAL_SAMPLE 
+UNION 
+SELECT 
+    * 
+FROM 
+{upstream.quoted_dot_notation} 
 WHERE 
-    id
+    id 
 NOT IN 
-(SELECT
-    id
-FROM
-{downstream.quoted_dot_notation})
-LIMIT 100
-""")
+    (SELECT 
+        id 
+    FROM 
+{downstream.quoted_dot_notation} LIMIT 100)
+"""
+)
 
 def test_run_deps_bidirectional_exclude_outliers(stub_relation_set):
     upstream=stub_relation_set.upstream_relation
@@ -191,33 +205,37 @@ def test_run_deps_bidirectional_exclude_outliers(stub_relation_set):
     dag.add_edge(upstream,downstream,direction="bidirectional",remote_attribute='id',local_attribute='id')
     compiler=RuntimeSourceCompiler()
     adapter=SnowflakeAdapter()
-    result=compiler.compile_queries_for_relation(downstream,dag,adapter,False)
+    compiler.compile_queries_for_relation(upstream,dag,adapter,False)
+    compiler.compile_queries_for_relation(downstream,dag,adapter,False)
     assert query_equalize(downstream.compiled_query)==query_equalize(f"""
 SELECT 
     * 
 FROM 
 {downstream.quoted_dot_notation}
 WHERE id IN (1,2,3) 
-AND
-id IN
-(SELECT 
-id
-FROM 
-{upstream.quoted_dot_notation}
-)
 """)
 
     assert query_equalize(upstream.compiled_query)==query_equalize(f"""
-SELECT
-    *
-FROM
-{upstream.quoted_dot_notation}
-    SAMPLE BERNOULLI (10)
+WITH __SNOWSHU_FINAL_SAMPLE AS ( 
+SELECT 
+    * 
+FROM 
+    {upstream.quoted_dot_notation} 
 WHERE 
-    id
-IN 
-(SELECT
-    id
-FROM
-{downstream.quoted_dot_notation})
+    id 
+in (SELECT 
+        id 
+    FROM 
+        {downstream.quoted_dot_notation}) ) 
+,___SNOWSHU_DIRECTIONAL_SAMPLE AS ( 
+    SELECT 
+        * 
+    FROM 
+        __SNOWSHU_FINAL_SAMPLE SAMPLE BERNOULLI (10) 
+) 
+SELECT 
+    * 
+FROM 
+__SNOWSHU_DIRECTIONAL_SAMPLE
 """)
+
