@@ -134,7 +134,7 @@ FROM
                                     constraint_key:str,
                                     max_number_of_outliers:int)->str:
         return f"""       
-SELECT
+(SELECT
     *
 FROM
 {subject.quoted_dot_notation}
@@ -144,7 +144,7 @@ NOT IN
 (SELECT
     {constraint_key}
 FROM
-{constraint.quoted_dot_notation}
+{constraint.quoted_dot_notation})
 LIMIT {max_number_of_outliers})
 """
 

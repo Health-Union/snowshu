@@ -41,8 +41,8 @@ class SpecifiedMatchPattern():
 
     @dataclass
     class Relationships:
-        bidirectional: Optional[List]
-        directional: Optional[List]
+        bidirectional: List['RelationshipPattern']
+        directional: List['RelationshipPattern']
 
     database_pattern: str
     schema_pattern: str
@@ -77,6 +77,26 @@ class ConfigurationParser:
     @staticmethod
     def from_file_or_path(loadable: Union[Path, str, TextIO]) -> Configuration:
         """rips through a configuration and returns a configuration object."""
+
+
+        def _build_relationships(specified_pattern:dict)->SpecifiedMatchPattern.Relationships:
+            
+            def build_relationship(sub)->SpecifiedMatchPattern.RelationshipPattern:
+                return SpecifiedMatchPattern.RelationshipPattern(
+                    sub['local_attribute'],
+                    sub['database'] if sub['database'] != '' else None,
+                    sub['schema'] if sub['schema'] != '' else None,
+                    sub['relation'],
+                    sub['remote_attribute'])
+
+            relationships = specified_pattern.get('relationships',dict())
+            directional=relationships.get('directional',list())
+            bidirectional=relationships.get('bidirectional',list())
+            return SpecifiedMatchPattern.Relationships(
+                    [build_relationship(rel) for rel in bidirectional],
+                    [build_relationship(rel) for rel in directional])
+            
+
         try:
             with open(loadable) as f:
                 logger.debug(f'loading from file {f.name}')
@@ -110,20 +130,7 @@ class ConfigurationParser:
                                                         rel['schema'],
                                                         rel['relation'],
                                                         rel.get('unsampled',False),
-                                                        SpecifiedMatchPattern.Relationships(
-                                                            [SpecifiedMatchPattern.RelationshipPattern(
-                                                                                                dsub['local_attribute'],
-                                                                                                dsub['database'] if dsub['database'] != '' else None,
-                                                                                                dsub['schema'] if dsub['schema'] != '' else None,
-                                                                                                dsub['relation'],
-                                                                                                dsub['remote_attribute']) for dsub in rel.get('relationships',dict()).get('directional',list())],
-
-                                                            [SpecifiedMatchPattern.RelationshipPattern(
-                                                                                                bsub['local_attribute'],
-                                                                                                bsub['database'] if bsub['database'] != '' else None,
-                                                                                                bsub['schema'] if bsub['schema'] != '' else None,
-                                                                                                bsub['relation'],
-                                                                                                bsub['remote_attribute']) for bsub in rel.get('relationships',dict()).get('bidirectional',list())])) for rel in loaded['source'].get('specified_relations',list())]
+                                                        _build_relationships(rel)) for rel in loaded['source'].get('specified_relations',list())]
 
 
             return Configuration(*replica_base,

@@ -35,9 +35,9 @@ def test_reports_full_catalog_start(run_snowshu_create):
     assert any(['Assessing full catalog...' in line for line in result_lines])
 
 
-def test_finds_8_relations(run_snowshu_create):
+def test_finds_9_relations(run_snowshu_create):
     result_lines = run_snowshu_create
-    assert any(['Identified a total of 8 relations to sample based on the specified configurations.' in line for line in result_lines])
+    assert any(['Identified a total of 9 relations to sample based on the specified configurations.' in line for line in result_lines])
 
 
 def test_replicates_order_items(run_snowshu_create):

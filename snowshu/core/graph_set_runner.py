@@ -1,3 +1,5 @@
+import os
+import shutil
 import gc
 from typing import List
 from snowshu.configs import MAX_ALLOWED_ROWS
@@ -23,12 +25,18 @@ class GraphExecutable:
 
 class GraphSetRunner:
 
+    barf_output = 'snowshu_barf_output'
     def execute_graph_set(self,
                           graph_set: List[nx.Graph],
                           source_adapter: BaseSourceAdapter,
                           target_adapter: BaseTargetAdapter,
                           threads: int,
-                          analyze: bool = False) -> None:
+                          analyze: bool = False,
+                          barf: bool = False) -> None:
+        self.barf=barf
+        if self.barf:
+            shutil.rmtree(self.barf_output, ignore_errors=True)
+            os.makedirs(self.barf_output)
 
         view_graph_set = [graph for graph in graph_set if graph.contains_views]
         table_graph_set = list(set(graph_set) - set(view_graph_set))
@@ -124,6 +132,9 @@ class GraphSetRunner:
                 relation.source_extracted = True
                 logger.info(
                     f'population:{relation.population_size}, sample:{relation.sample_size}')
+                if self.barf:
+                   with open(os.path.join(self.barf_output,f'{relation.dot_notation}.sql'),'w') as f:
+                        f.write(relation.compiled_query) 
             try:
                 for relation in executable.graph.nodes:
                     del relation.data
