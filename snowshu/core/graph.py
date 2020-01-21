@@ -1,13 +1,10 @@
 import networkx
 from snowshu.exceptions import InvalidRelationshipException
 from snowshu.core.models.relation import Relation
-from snowshu.core.models import materializations as mz
 from snowshu.core.configuration_parser import Configuration
 from typing import Tuple, Set, List
 from snowshu.logger import Logger
-from snowshu.core.utils import get_config_value
 from snowshu.core.models.relation import at_least_one_full_pattern_match,\
-    lookup_relations,\
     lookup_single_relation,\
     single_full_pattern_match
 

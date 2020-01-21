@@ -60,7 +60,9 @@ def test_snowshu_explain(run_snowshu_create):
 
 def test_launches(run_snowshu_create):
     runner = CliRunner()
+    time.sleep(3)
     response = runner.invoke(cli, ('launch', 'integration-test'))
+    time.sleep(5)
     EXPECTED_STRING = """
 Replica integration-test has been launched and started.
 To stop your replica temporarily, use command `snowshu stop integration-test`.
@@ -71,9 +73,9 @@ You can connect directly from your host computer using the connection string
 snowshu:snowshu@localhost:9999/snowshu
 
 You can connect to the sample database from within docker containers running on the `snowshu` docker network.
-use the connection string 
+use the connection string
 
-snowshu:snowshu@integration-test:9999/snowshu 
+snowshu:snowshu@integration-test:9999/snowshu
 
 to connect.
 """
@@ -81,9 +83,6 @@ to connect.
     conn_string = ('/').join(CONN_STRING.split('/')
                              [:-1])+'/SNOWSHU_DEVELOPMENT'
     conn = create_engine(conn_string)
-    # would be better to ping with wait commands, but that is a lot of overhead here
-    time.sleep(5)
-
     q = conn.execute(
         'SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."EXTERNAL_DATA"."ADDRESS_REGION_ATTRIBUTES"')
     count = q.fetchall()[0][0]
@@ -162,7 +161,7 @@ SELECT
 
 
 def test_view(run_snowshu_create, run_snowshu_launch):
-
+    time.sleep(5)
     conn = create_engine('/'.join(CONN_STRING.split('/')
                                   [:-1]+['SNOWSHU_DEVELOPMENT']))
     query = """
