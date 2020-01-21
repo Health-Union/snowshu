@@ -1,9 +1,8 @@
-from snowshu.core.sample_methods import SampleMethod
-from snowshu.core.models import materializations as mz
 from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
 from snowshu.core.models import Relation
+from snowshu.exceptions import InvalidRelationshipException
 import networkx
-from typing import List, Type
+from typing import Type
 from snowshu.logger import Logger
 logger = Logger().logger
 

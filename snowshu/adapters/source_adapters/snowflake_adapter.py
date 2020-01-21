@@ -2,7 +2,7 @@ import time
 import pandas as pd
 import sqlalchemy
 from sqlalchemy.pool import NullPool
-from typing import Tuple, List, Union, Any, Optional
+from typing import List, Union, Any, Optional
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
 from snowshu.adapters.source_adapters import BaseSourceAdapter
@@ -10,7 +10,7 @@ from snowshu.core.sample_methods import SampleMethod, BernoulliSample, SystemSam
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
 from snowshu.logger import Logger
-from snowshu.core.models.credentials import Credentials, USER, PASSWORD, ACCOUNT, DATABASE, SCHEMA, ROLE, WAREHOUSE
+from snowshu.core.models.credentials import USER, PASSWORD, ACCOUNT, DATABASE, SCHEMA, ROLE, WAREHOUSE
 logger = Logger().logger
 
 

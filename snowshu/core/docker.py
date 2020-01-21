@@ -3,9 +3,7 @@ from typing import Type, Optional
 import docker
 import re
 from snowshu.configs import DOCKER_NETWORK,\
-    DOCKER_TARGET_CONTAINER,\
-    DOCKER_REMOUNT_DIRECTORY,\
-    DOCKER_TARGET_PORT
+    DOCKER_TARGET_CONTAINER
 from snowshu.logger import Logger
 logger = Logger().logger
 

@@ -1,6 +1,5 @@
 import yaml
 import os
-import re
 from pathlib import Path
 from typing import Optional, Any, Union, TextIO
 from snowshu.logger import Logger

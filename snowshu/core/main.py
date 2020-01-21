@@ -3,7 +3,6 @@ import os
 import click
 from pathlib import Path
 import logging
-from typing import Optional
 from snowshu.logger import Logger
 from shutil import which, copyfile
 from snowshu.formats import DEFAULT_TAG_FORMAT
@@ -112,7 +111,6 @@ def launch(replica: str,
     replica = ReplicaManager().get_replica(replica, port=port)
     if replica is None:
         message = f"No replica found with name {replica}"
-        logger.error(message)
         click.echo(message)
         sys.exit()
     click.echo(replica.launch())
