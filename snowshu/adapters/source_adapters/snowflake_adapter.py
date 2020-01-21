@@ -2,57 +2,58 @@ import time
 import pandas as pd
 import sqlalchemy
 from sqlalchemy.pool import NullPool
-from typing import Tuple,List,Union,Any,Optional
+from typing import List, Union, Any, Optional
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
 from snowshu.adapters.source_adapters import BaseSourceAdapter
-from snowshu.core.sample_methods import SampleMethod,BernoulliSample, SystemSample
+from snowshu.core.sample_methods import SampleMethod, BernoulliSample, SystemSample
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
 from snowshu.logger import Logger
-from snowshu.core.models.credentials import Credentials,USER,PASSWORD,ACCOUNT,DATABASE,SCHEMA,ROLE,WAREHOUSE
-logger=Logger().logger
+from snowshu.core.models.credentials import USER, PASSWORD, ACCOUNT, DATABASE, SCHEMA, ROLE, WAREHOUSE
+logger = Logger().logger
+
 
 class SnowflakeAdapter(BaseSourceAdapter):
-    
+
     def __init__(self):
-        super().__init__()    
-    
-    SUPPORTED_SAMPLE_METHODS=(BernoulliSample,SystemSample)
-    REQUIRED_CREDENTIALS=(USER,PASSWORD,ACCOUNT,DATABASE,)
-    ALLOWED_CREDENTIALS=(SCHEMA,WAREHOUSE,ROLE,)
+        super().__init__()
 
-    DATA_TYPE_MAPPINGS=dict(number=dtypes.INTEGER,
-                            float=dtypes.DOUBLE,
-                            text=dtypes.VARCHAR,
-                            boolean=dtypes.BOOLEAN,
-                            date=dtypes.DATE,
-                            timestamp_ntz=dtypes.TIMESTAMP,
-                            timestamp_ltz=dtypes.TIMESTAMPTZ,
-                            timestamp_tz=dtypes.TIMESTAMPTZ,
-                            variant=dtypes.JSON,
-                            object=dtypes.OBJECT,
-                            array=dtypes.ARRAY,
-                            binary=dtypes.BINARY)
-    
-    MATERIALIZATION_MAPPINGS={"BASE TABLE":mz.TABLE,
-                              "VIEW":mz.VIEW}
+    SUPPORTED_SAMPLE_METHODS = (BernoulliSample, SystemSample)
+    REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
+    ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
 
-    ##TODO: this is the future, move buz logic to base and replace with these.
-    GET_ALL_DATABASES_SQL=  """ SELECT DISTINCT database_name 
+    DATA_TYPE_MAPPINGS = dict(number=dtypes.INTEGER,
+                              float=dtypes.DOUBLE,
+                              text=dtypes.VARCHAR,
+                              boolean=dtypes.BOOLEAN,
+                              date=dtypes.DATE,
+                              timestamp_ntz=dtypes.TIMESTAMP,
+                              timestamp_ltz=dtypes.TIMESTAMPTZ,
+                              timestamp_tz=dtypes.TIMESTAMPTZ,
+                              variant=dtypes.JSON,
+                              object=dtypes.OBJECT,
+                              array=dtypes.ARRAY,
+                              binary=dtypes.BINARY)
+
+    MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
+                                "VIEW": mz.VIEW}
+
+    # TODO: this is the future, move buz logic to base and replace with these.
+    GET_ALL_DATABASES_SQL = """ SELECT DISTINCT database_name
                                 FROM "UTIL_DB"."INFORMATION_SCHEMA"."DATABASES"
                                 WHERE is_transient = 'NO'
                                 AND database_name <> 'UTIL_DB'"""
 
-    def view_creation_statement(self,relation:Relation)->str:   
+    def view_creation_statement(self, relation: Relation) -> str:
         return f"""
-SELECT 
+SELECT
 REPLACE(
     GET_DDL('view','{relation.quoted_dot_notation}'),
 'CREATE OR REPLACE VIEW {relation.quoted_dot_notation} AS ','')
 """
 
-    def unsampled_statement(self,relation:Relation)->str:
+    def unsampled_statement(self, relation: Relation) -> str:
         return f"""
 SELECT
     *
@@ -60,7 +61,8 @@ FROM
     {relation.quoted_dot_notation}
 """
 
-    def directionally_wrap_statement(self,sql:str,sample_type:Union[SampleMethod,None])->str:
+    def directionally_wrap_statement(
+            self, sql: str, sample_type: Union[SampleMethod, None]) -> str:
         if sample_type is None:
             return sql
 
@@ -76,13 +78,13 @@ FROM
     __SNOWSHU_FINAL_SAMPLE
 {self._sample_type_to_query_sql(sample_type)}
 )
-SELECT 
+SELECT
     *
-FROM 
+FROM
     __SNOWSHU_DIRECTIONAL_SAMPLE
 """
 
-    def analyze_wrap_statement(self,sql:str,relation:Relation)->str:
+    def analyze_wrap_statement(self, sql: str, relation: Relation) -> str:
         return f"""
 WITH
     __SNOWSHU_COUNT_POPULATION AS (
@@ -112,152 +114,183 @@ ON
 LIMIT 1
 """
 
-    def sample_statement_from_relation(self,relation:Relation,sample_type:Union[SampleMethod,None])->str:
-        """builds the base sample statment for a given relation"""
-        query=f"""
+    def sample_statement_from_relation(
+            self, relation: Relation, sample_type: Union[SampleMethod, None]) -> str:
+        """builds the base sample statment for a given relation."""
+        query = f"""
 SELECT
     *
-FROM 
-    {relation.quoted_dot_notation} 
+FROM
+    {relation.quoted_dot_notation}
 """
         if sample_type is not None:
-            query+=f"{self._sample_type_to_query_sql(sample_type)}"
+            query += f"{self._sample_type_to_query_sql(sample_type)}"
         return query
 
-    def predicate_constraint_statement(self,relation:Relation,analyze:bool,local_key:str,remote_key:str)->str:
-        """builds 'where' strings"""
+    def predicate_constraint_statement(
+            self,
+            relation: Relation,
+            analyze: bool,
+            local_key: str,
+            remote_key: str) -> str:
+        """builds 'where' strings."""
 
-        constraint_sql=str()
+        constraint_sql = str()
         if analyze:
-            constraint_sql=f" SELECT {remote_key} AS {local_key} FROM ({relation.core_query})"
+            constraint_sql = f" SELECT {remote_key} AS {local_key} FROM ({relation.core_query})"
         else:
 
-            def quoted(val:Any)->str:
-                return f"'{val}'" if relation.lookup_attribute(remote_key).data_type.requires_quotes else str(val) 
+            def quoted(val: Any) -> str:
+                return f"'{val}'" if relation.lookup_attribute(
+                    remote_key).data_type.requires_quotes else str(val)
 
-            def case_insensitive_column_lookup(column_name:str)->str:
-                """gets you the case-corrected column name for a given remote_key"""
+            def case_insensitive_column_lookup(column_name: str) -> str:
+                """gets you the case-corrected column name for a given
+                remote_key."""
                 for col in relation.data.columns:
                     return col if col.lower() == column_name.lower() else False
             try:
                 column_name = case_insensitive_column_lookup(remote_key)
                 if not column_name:
-                    raise KeyError(f'No column found in dataframe columns matching remote_key {remote_key}')               
-                constraint_set=[quoted(val) for val in relation.data[column_name].unique()]
-                constraint_sql=','.join(constraint_set)
+                    raise KeyError(
+                        f'No column found in dataframe columns matching remote_key {remote_key}')
+                constraint_set = [
+                    quoted(val) for val in relation.data[column_name].unique()]
+                constraint_sql = ','.join(constraint_set)
             except KeyError as e:
-                logger.critical(f'failed to build predicates for {relation.dot_notation}: remote key {remote_key} not in dataframe columns ({relation.data.columns})')
+                logger.critical(
+                    f'failed to build predicates for {relation.dot_notation}: remote key {remote_key} not in dataframe columns ({relation.data.columns})')
                 raise e
 
         return f"{local_key} IN ({constraint_sql})"
 
-
-    def _sample_type_to_query_sql(self,sample_type:SampleMethod)->str:
-        if isinstance(sample_type,BernoulliSample):
+    def _sample_type_to_query_sql(self, sample_type: SampleMethod) -> str:
+        if isinstance(sample_type, BernoulliSample):
             return f"SAMPLE BERNOULLI ({sample_type.probability})"
-        elif isinstance(sample_type,SystemSample):
+        elif isinstance(sample_type, SystemSample):
             return f"SAMPLE SYSTEM ({sample_type.probability})"
         else:
-            message=f"{sample_type.name} is not supported for SnowflakeAdapter"
+            message = f"{sample_type.name} is not supported for SnowflakeAdapter"
             logger.error(message)
             raise NotImplementedError(message)
 
-    def _build_conn_string(self,overrides:Optional[dict]={})->str:
-        """overrides the base conn string"""
-        conn_parts=[f"snowflake://{self.credentials.user}:{self.credentials.password}@{self.credentials.account}/{self.credentials.database}/"]
-        conn_parts.append(self.credentials.schema if self.credentials.schema is not None else '')
-        get_args=list()
-        for arg in ('warehouse','role',):
+    def _build_conn_string(self, overrides: Optional[dict] = {}) -> str:
+        """overrides the base conn string."""
+        conn_parts = [
+            f"snowflake://{self.credentials.user}:{self.credentials.password}@{self.credentials.account}/{self.credentials.database}/"]
+        conn_parts.append(
+            self.credentials.schema if self.credentials.schema is not None else '')
+        get_args = list()
+        for arg in ('warehouse', 'role',):
             if self.credentials.__dict__[arg] is not None:
                 get_args.append(f"{arg}={self.credentials.__dict__[arg]}")
-        
+
         get_string = "?" + "&".join([arg for arg in get_args])
-        return (''.join(conn_parts)) + get_string  
+        return (''.join(conn_parts)) + get_string
 
-
-    def get_relations_from_database(self,database:str)->List[Relation]:
-        relations_sql=f"""
-                                 SELECT 
-                                    m.table_schema AS schema, 
-                                    m.table_name AS relation, 
+    def get_relations_from_database(self, database: str) -> List[Relation]:
+        relations_sql = f"""
+                                 SELECT
+                                    m.table_schema AS schema,
+                                    m.table_name AS relation,
                                     m.table_type AS materialization,
                                     c.column_name AS attribute,
                                     c.ordinal_position AS ordinal,
                                     c.data_type AS data_type
-                                 FROM 
+                                 FROM
                                     "{database}"."INFORMATION_SCHEMA"."TABLES" m
                                  INNER JOIN
-                                    "{database}"."INFORMATION_SCHEMA"."COLUMNS" c  
-                                 ON 
+                                    "{database}"."INFORMATION_SCHEMA"."COLUMNS" c
+                                 ON
                                     c.table_schema = m.table_schema
                                  AND
                                     c.table_name = m.table_name
                                  WHERE
                                     m.table_schema <> 'INFORMATION_SCHEMA'
                               """
-                                            
-            
-        logger.debug(f'Collecting detailed relations from database {database}...')
-        relations_frame=self._safe_query(relations_sql)
-        unique_relations = (relations_frame['schema'] +'.'+relations_frame['relation']).unique().tolist()
-        logger.debug(f'Done collecting relations. Found a total of {len(unique_relations)} unique relations in database {database}')
-        relations=list()
+
+        logger.debug(
+            f'Collecting detailed relations from database {database}...')
+        relations_frame = self._safe_query(relations_sql)
+        unique_relations = (
+            relations_frame['schema'] +
+            '.' +
+            relations_frame['relation']).unique().tolist()
+        logger.debug(
+            f'Done collecting relations. Found a total of {len(unique_relations)} unique relations in database {database}')
+        relations = list()
         for relation in unique_relations:
             logger.debug(f'Building relation { database + "." + relation }...')
-            attributes=list()
+            attributes = list()
 
-            for attribute in relations_frame.loc[(relations_frame['schema']+'.'+relations_frame['relation']) == relation].itertuples():
-                logger.debug(f'adding attribute {attribute.attribute} to relation..')
+            for attribute in relations_frame.loc[(
+                    relations_frame['schema'] + '.' + relations_frame['relation']) == relation].itertuples():
+                logger.debug(
+                    f'adding attribute {attribute.attribute} to relation..')
                 attributes.append(
-                            Attribute(
-                                attribute.attribute,
-                                self._get_data_type(attribute.data_type)
-                                ))
-            
-            relation=Relation(database,
-                              attribute.schema,
-                              attribute.relation,
-                              self.MATERIALIZATION_MAPPINGS[attribute.materialization],
-                              attributes)
+                    Attribute(
+                        attribute.attribute,
+                        self._get_data_type(attribute.data_type)
+                    ))
+
+            relation = Relation(database,
+                                attribute.schema,
+                                attribute.relation,
+                                self.MATERIALIZATION_MAPPINGS[attribute.materialization],
+                                attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')
             relations.append(relation)
 
-        logger.debug(f'Acquired {len(relations)} total relations from database {database}.')
-        return relations 
-        
+        logger.debug(
+            f'Acquired {len(relations)} total relations from database {database}.')
+        return relations
 
-    def _count_query(self,query:str)->int:
-        count_sql=f"WITH __SNOWSHU__COUNTABLE__QUERY as ({query}) SELECT COUNT(*) AS count FROM __SNOWSHU__COUNTABLE__QUERY"
-        count=int(self._safe_query(count_sql).iloc[0]['count'])
+    def _count_query(self, query: str) -> int:
+        count_sql = f"WITH __SNOWSHU__COUNTABLE__QUERY as ({query}) SELECT COUNT(*) AS count FROM __SNOWSHU__COUNTABLE__QUERY"
+        count = int(self._safe_query(count_sql).iloc[0]['count'])
         return count
-            
-    def check_count_and_query(self,query:str,max_count:int)->pd.DataFrame:
-        """ checks the count, if count passes returns results as a dataframe."""
+
+    def check_count_and_query(self, query: str,
+                              max_count: int) -> pd.DataFrame:
+        """checks the count, if count passes returns results as a dataframe."""
         try:
             logger.debug('Checking count for query...')
             start_time = time.time()
-            count=self._count_query(query)
+            count = self._count_query(query)
             assert count <= max_count
-            logger.debug(f'Query count safe at {count} rows in {time.time()-start_time} seconds.')
+            logger.debug(
+                f'Query count safe at {count} rows in {time.time()-start_time} seconds.')
         except AssertionError:
-            message=f'failed to execute query, result would have returned {count} rows but the max allowed rows for this type of query is {max_count}.'
+            message = f'failed to execute query, result would have returned {count} rows but the max allowed rows for this type of query is {max_count}.'
             logger.error(message)
             logger.debug(f'failed sql: {query}')
             raise ValueError(message)
-        response=self._safe_query(query)
+        response = self._safe_query(query)
         return response
 
-    def get_connection(self,database_override:Optional[str]=None,schema_override:Optional[str]=None)->sqlalchemy.engine.base.Engine:
-        """ Creates a connection engine without transactions. 
-            By default uses the instance credentials unless database or schema override are provided.
+    def get_connection(
+            self,
+            database_override: Optional[str] = None,
+            schema_override: Optional[str] = None) -> sqlalchemy.engine.base.Engine:
+        """Creates a connection engine without transactions.
+
+        By default uses the instance credentials unless database or
+        schema override are provided.
         """
         if not self._credentials:
-            raise KeyError('Adapter.get_connection called before setting Adapter.credentials')
+            raise KeyError(
+                'Adapter.get_connection called before setting Adapter.credentials')
 
         logger.debug(f'Aquiring {self.CLASSNAME} connection...')
-        overrides=dict((k,v) for (k,v) in dict(database=database_override,schema=schema_override).items() if v is not None)
+        overrides = dict(
+            (k,
+             v) for (
+                k,
+                v) in dict(
+                database=database_override,
+                schema=schema_override).items() if v is not None)
 
-        engine=sqlalchemy.create_engine(self._build_conn_string(overrides), poolclass=NullPool)
+        engine = sqlalchemy.create_engine(
+            self._build_conn_string(overrides), poolclass=NullPool)
         logger.debug(f'engine aquired. Conn string: {repr(engine.url)}')
         return engine
-

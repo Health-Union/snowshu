@@ -1,0 +1,16 @@
+strictness: medium
+doc-warnings: false
+test-warnings: false
+autodetect: true
+member-warnings: false
+
+ignore-patterns:
+  - (^|/)__init__.py$
+
+pep8:
+  disable:
+    - W504
+    - W503
+    - E501
+    - N806
+
