@@ -11,7 +11,8 @@ from snowshu.core.main import cli
 # Build the initial test replica from snowshu creds
 
 CONN_STRING = 'postgresql://snowshu:snowshu@integration-test:9999/snowshu'
-
+REPLICA_STRING='/'.join(CONN_STRING.split('/')
+                                  [:-1]+['SNOWSHU_DEVELOPMENT'])
 
 @pytest.fixture(scope="session", autouse=True)
 def run_snowshu_create():
@@ -62,7 +63,6 @@ def test_launches(run_snowshu_create):
     runner = CliRunner()
     time.sleep(3)
     response = runner.invoke(cli, ('launch', 'integration-test'))
-    time.sleep(5)
     EXPECTED_STRING = """
 Replica integration-test has been launched and started.
 To stop your replica temporarily, use command `snowshu stop integration-test`.
@@ -80,9 +80,9 @@ snowshu:snowshu@integration-test:9999/snowshu
 to connect.
 """
     assert EXPECTED_STRING in response.output
-    conn_string = ('/').join(CONN_STRING.split('/')
-                             [:-1])+'/SNOWSHU_DEVELOPMENT'
+    conn_string = (REPLICA_STRING)
     conn = create_engine(conn_string)
+    time.sleep(5)
     q = conn.execute(
         'SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."EXTERNAL_DATA"."ADDRESS_REGION_ATTRIBUTES"')
     count = q.fetchall()[0][0]
@@ -110,31 +110,31 @@ def test_stops(run_snowshu_create):
     assert 'To start your replica again use command `snowshu start integration-test`' in response.output
 
 
-@pytest.mark.skip
-def test_bidirectional(run_snowshu_create):
-    conn = create_engine(CONN_STRING)
+def test_bidirectional(run_snowshu_create, run_snowshu_launch):
+    conn = create_engine(REPLICA_STRING)
     query = """
 SELECT 
     COUNT(*) 
 FROM 
-    "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS" oi
+    "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."USER_COOKIES" uc
 FULL OUTER JOIN
-     "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."PRODUCTS" p
+     "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."USERS" u
 ON 
-    oi.product_id = p.id
+    uc.user_id=u.id
 WHERE 
-    oi.product_id IS NULL
+    uc.user_id IS NULL
 OR
-    p.id IS NULL
+    u.id IS NULL
 """
+
+    time.sleep(5)
     q = conn.execute(query)
     count = q.fetchall()[0][0]
     assert count == 0
 
 
-@pytest.mark.skip
 def test_directional(run_snowshu_create, run_snowshu_launch):
-    conn = create_engine(CONN_STRING)
+    conn = create_engine(REPLICA_STRING)
     query = """
 WITH
 joined_roots AS (
@@ -151,23 +151,23 @@ ON
 )
 SELECT 
     (SELECT COUNT(*) FROM joined_roots WHERE oi_id is null) AS upstream_missing
-    ,(SELECT COUNT(*) FROM joined_roots WHERE o.id is null) AS downstream_missing
+    ,(SELECT COUNT(*) FROM joined_roots WHERE o_id is null) AS downstream_missing
 """
     q = conn.execute(query)
     upstream_missing, downstream_missing = q.fetchall()[0]
-    assert upstream_missing == 0
+    assert upstream_missing > 0
     # it is statistically very unlikely that NONE of the upstreams without a downstream will be included.
-    assert downstream_missing > 0
+    assert downstream_missing == 0
 
 
 def test_view(run_snowshu_create, run_snowshu_launch):
-    time.sleep(5)
-    conn = create_engine('/'.join(CONN_STRING.split('/')
-                                  [:-1]+['SNOWSHU_DEVELOPMENT']))
+
+    conn = create_engine(REPLICA_STRING)
     query = """
 SELECT 
     (SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS_VIEW") /
     (SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS") AS delta
 """
+    time.sleep(5)
     q = conn.execute(query)
     assert len(set(q.fetchall()[0])) == 1

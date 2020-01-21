@@ -113,7 +113,7 @@ FROM
 {downstream.quoted_dot_notation}
 WHERE id IN (1,2,3) 
 )
-,___SNOWSHU_DIRECTIONAL_SAMPLE AS ( 
+,__SNOWSHU_DIRECTIONAL_SAMPLE AS ( 
 SELECT 
     * 
 FROM 
@@ -171,7 +171,7 @@ SELECT * FROM
        FROM 
 {downstream.quoted_dot_notation}) 
 )
-,___SNOWSHU_DIRECTIONAL_SAMPLE AS ( 
+,__SNOWSHU_DIRECTIONAL_SAMPLE AS ( 
 SELECT 
     * 
 FROM 
@@ -230,7 +230,7 @@ in (SELECT
         id 
     FROM 
         {downstream.quoted_dot_notation}) ) 
-,___SNOWSHU_DIRECTIONAL_SAMPLE AS ( 
+,__SNOWSHU_DIRECTIONAL_SAMPLE AS ( 
     SELECT 
         * 
     FROM 
