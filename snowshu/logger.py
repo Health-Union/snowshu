@@ -8,7 +8,7 @@ from logging.handlers import RotatingFileHandler
 
 
 def duration(start: int) -> str:
-    dur = round(time.time()-start, 2)
+    dur = round(time.time() - start, 2)
     if dur < 1:
         return "< 1 second"
     else:
@@ -16,15 +16,15 @@ def duration(start: int) -> str:
 
 
 class Logger:
-    """ File log is ALWAYS debug, regardless of log level. 
-    """
+    """File log is ALWAYS debug, regardless of log level."""
     DEFAULT_LOG_FILE_LOCATION = os.path.abspath('./snowshu.log')
 
     def __init__(self) -> None:
         self._logger = logging.getLogger('snowshu')
 
-    def initialize_logger(self,
-                          log_file_location: Optional[str] = DEFAULT_LOG_FILE_LOCATION) -> None:
+    def initialize_logger(
+            self,
+            log_file_location: Optional[str] = DEFAULT_LOG_FILE_LOCATION) -> None:
         self.file_handler = self._construct_file_handler(log_file_location)
         self.file_handler.setFormatter(self._construct_file_formatter())
 
@@ -62,7 +62,8 @@ class Logger:
         self.file_handler.baseFilename = value
 
     # Handlers
-    def _construct_file_handler(self, log_file_location: str) -> RotatingFileHandler:
+    def _construct_file_handler(
+            self, log_file_location: str) -> RotatingFileHandler:
         file_handler = RotatingFileHandler(log_file_location,
                                            maxBytes=10485760,
                                            backupCount=5)

@@ -13,8 +13,12 @@ class PostgresAdapter(BaseTargetAdapter):
     DATA_TYPE_MAPPINGS: dict = None
     DOCKER_IMAGE = 'postgres:12'
     MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, VIEW=mz.VIEW)
-    DATA_TYPE_MAPPINGS = dict(VARCHAR=dt.VARCHAR, INTEGER=dt.INTEGER,
-                              TIMESTAMP=dt.TIMESTAMPTZ, FLOAT=dt.DOUBLE, BOOLEAN=dt.BOOLEAN)
+    DATA_TYPE_MAPPINGS = dict(
+        VARCHAR=dt.VARCHAR,
+        INTEGER=dt.INTEGER,
+        TIMESTAMP=dt.TIMESTAMPTZ,
+        FLOAT=dt.DOUBLE,
+        BOOLEAN=dt.BOOLEAN)
     NATIVE_DATA_DIRECTORY = '/var/lib/postgresql/data'
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
     DOCKER_REPLICA_ENVARS = [f"PGDATA={DOCKER_REMOUNT_DIRECTORY}"]
@@ -39,14 +43,17 @@ class PostgresAdapter(BaseTargetAdapter):
         return 'CREATE SCHEMA IF NOT EXISTS "snowshu";'
 
     def create_database_if_not_exists(self, database: str) -> str:
-        """ Postgres doesn't have great CINE support. So ask for forgiveness instead.
+        """Postgres doesn't have great CINE support.
+
+        So ask for forgiveness instead.
         """
         conn = self.get_connection()
         statement = f'CREATE DATABASE "{database}"'
         try:
             conn.execute(statement)
         except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as e:
-            if (f'database "{database}" already exists' in str(e)) or ('duplicate key value violates unique constraint ' in str(e)):
+            if (f'database "{database}" already exists' in str(e)) or (
+                    'duplicate key value violates unique constraint ' in str(e)):
                 logger.debug(
                     f'Database "{database}" already exists, skipping.')
                 pass
@@ -60,7 +67,8 @@ class PostgresAdapter(BaseTargetAdapter):
         try:
             conn.execute(statement)
         except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as e:
-            if (f'Key (nspname)=({schema}) already exists' in str(e)) or ('duplicate key value violates unique constraint ' in str(e)):
+            if (f'Key (nspname)=({schema}) already exists' in str(e)) or (
+                    'duplicate key value violates unique constraint ' in str(e)):
                 logger.debug(
                     f'Schema "{database}"."{schema}" already exists, skipping.')
                 pass

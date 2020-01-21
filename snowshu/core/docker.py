@@ -15,12 +15,14 @@ class SnowShuDocker:
     def __init__(self):
         self.client = docker.from_env()
 
-    def convert_container_to_replica(self,
-                                     replica_name: str,
-                                     container: docker.models.containers.Container,
-                                     target_adapter: Type['BaseTargetAdapter']) -> docker.models.images.Image:
-        """ coerces a live container into a replica image and returns the image.
-            replica_name: the name of the new replica
+    def convert_container_to_replica(
+            self,
+            replica_name: str,
+            container: docker.models.containers.Container,
+            target_adapter: Type['BaseTargetAdapter']) -> docker.models.images.Image:
+        """coerces a live container into a replica image and returns the image.
+
+        replica_name: the name of the new replica
         """
         self._remount_replica_data(container, target_adapter)
         replica_name = self.sanitize_replica_name(replica_name)
@@ -36,14 +38,15 @@ class SnowShuDocker:
 
         return replica
 
-    def get_stopped_container(self,
-                              image,
-                              start_command: str,
-                              envars: list,
-                              port: int,
-                              name: Optional[str] = None,
-                              labels: dict = dict(),
-                              protocol: str = "tcp") -> docker.models.containers.Container:
+    def get_stopped_container(
+            self,
+            image,
+            start_command: str,
+            envars: list,
+            port: int,
+            name: Optional[str] = None,
+            labels: dict = dict(),
+            protocol: str = "tcp") -> docker.models.containers.Container:
         name = name if name else self.replica_image_name_to_common_name(image)
         logger.info(f'Finding base image {image}...')
         try:
@@ -80,12 +83,14 @@ class SnowShuDocker:
                 envars: list,
                 protocol: str = "tcp") -> docker.models.containers.Container:
 
-        container = self.get_stopped_container(image,
-                                               start_command,
-                                               envars,
-                                               port,
-                                               name=DOCKER_TARGET_CONTAINER,
-                                               labels=dict(target_adapter=target_adapter))
+        container = self.get_stopped_container(
+            image,
+            start_command,
+            envars,
+            port,
+            name=DOCKER_TARGET_CONTAINER,
+            labels=dict(
+                target_adapter=target_adapter))
         logger.info(
             f'Connecting {DOCKER_TARGET_CONTAINER} to bridge network..')
         self._connect_to_bridge_network(container)
@@ -110,7 +115,8 @@ class SnowShuDocker:
             logger.info(f'Container {container} not found, skipping.')
             pass  # already removed.
 
-    def _get_or_create_network(self, name: str) -> docker.models.networks.Network:
+    def _get_or_create_network(
+            self, name: str) -> docker.models.networks.Network:
         logger.info(f'Getting docker network {name}...')
         try:
             network = self.client.networks.get(name)
@@ -121,7 +127,8 @@ class SnowShuDocker:
             logger.info(f'Network {network.name} created.')
         return network
 
-    def _connect_to_bridge_network(self, container: docker.models.containers.Container) -> None:
+    def _connect_to_bridge_network(
+            self, container: docker.models.containers.Container) -> None:
         logger.info('Adding container to bridge...')
         bridge = self.client.networks.get('bridge')
         bridge.connect(container)
@@ -136,9 +143,10 @@ class SnowShuDocker:
             raise AttributeError(message)
 
     def sanitize_replica_name(self, name: str) -> str:
-        """
-            Much more strict than standard docker tag names.
-            ReplicaFactory names are coerced into ASCII lowercase, dash-seperated a-z0-9 strings when possible.
+        """Much more strict than standard docker tag names.
+
+        ReplicaFactory names are coerced into ASCII lowercase, dash-
+        seperated a-z0-9 strings when possible.
         """
         logger.info(f'sanitizing replica name {name}...')
         prefix = "snowshu__replica__"
@@ -147,18 +155,22 @@ class SnowShuDocker:
         if not re.match(r'^[a-z0-9\-]*$', image):
             raise ValueError(
                 f'Replica name {name} cannot be converted to replica name')
-        final_image = prefix+image
+        final_image = prefix + image
         logger.info(f'Replica name sanitized to {final_image}')
         return final_image
 
     def replica_image_name_to_common_name(self, name: str) -> str:
-        """reverse the replica sanitizer"""
+        """reverse the replica sanitizer."""
         return name.replace('snowshu__replica__', '')
 
-    def _remount_replica_data(self, container: docker.models.containers.Container, target_adapter: Type['BaseTargetAdapter']) -> None:
+    def _remount_replica_data(
+            self,
+            container: docker.models.containers.Container,
+            target_adapter: Type['BaseTargetAdapter']) -> None:
         logger.info('Remounting data inside target...')
-        mount_strings = [f"/bin/bash -c 'mkdir /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'",
-                         f"/bin/bash -c 'cp -a {target_adapter.NATIVE_DATA_DIRECTORY}/* /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'"]
+        mount_strings = [
+            f"/bin/bash -c 'mkdir /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'",
+            f"/bin/bash -c 'cp -a {target_adapter.NATIVE_DATA_DIRECTORY}/* /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'"]
         for string in mount_strings:
             response = container.exec_run(string, tty=True)
             if response[0] > 0:

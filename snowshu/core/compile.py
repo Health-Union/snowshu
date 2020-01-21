@@ -15,7 +15,8 @@ class RuntimeSourceCompiler:
                                      dag: networkx.Graph,
                                      source_adapter: Type[BaseSourceAdapter],
                                      analyze: bool) -> Relation:
-        """generates and populates the compiled sql for each relation in a dag"""
+        """generates and populates the compiled sql for each relation in a
+        dag."""
 
         query = str()
         if relation.is_view:
@@ -29,7 +30,8 @@ class RuntimeSourceCompiler:
             predicates = list()
             for parent in [p for p in dag.predecessors(relation)]:
                 if parent.is_view:
-                    raise InvalidRelationshipException(f'Relation {relation.quoted_dot_notation} \
+                    raise InvalidRelationshipException(
+                        f'Relation {relation.quoted_dot_notation} \
 depends on relation {parent.quoted_dot_notation}, which is a view.\
 View dependencies are not supported in SnowShu.')
 
@@ -37,10 +39,12 @@ View dependencies are not supported in SnowShu.')
                     edge_data = edge[2]
                     if edge_data['direction'] == 'bidirectional':
                         do_not_sample = True
-                    predicates.append(source_adapter.predicate_constraint_statement(parent,
-                                                                                    analyze,
-                                                                                    edge_data['local_attribute'],
-                                                                                    edge_data['remote_attribute']))
+                    predicates.append(
+                        source_adapter.predicate_constraint_statement(
+                            parent,
+                            analyze,
+                            edge_data['local_attribute'],
+                            edge_data['remote_attribute']))
 
             query = source_adapter.sample_statement_from_relation(
                 relation, (None if predicates else relation.sample_method))

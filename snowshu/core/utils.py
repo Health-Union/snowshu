@@ -8,7 +8,7 @@ logger = Logger().logger
 
 
 def key_for_value(dictionary, value):
-    """finds the key for a given value in a dict"""
+    """finds the key for a given value in a dict."""
     return list(dictionary.keys())[list(dictionary.values()).index(value)]
 
 

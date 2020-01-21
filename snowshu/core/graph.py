@@ -20,8 +20,9 @@ class SnowShuGraph:
         self.dag: tuple = None
         self.graph: networkx.Graph = None
 
-    def build_graph(self, configs: Configuration, full_catalog: Tuple[Relation]) -> networkx.DiGraph:
-        """Builds a directed graph per replica config"""
+    def build_graph(self, configs: Configuration,
+                    full_catalog: Tuple[Relation]) -> networkx.DiGraph:
+        """Builds a directed graph per replica config."""
         logger.debug('Building graphs from config...')
         included_relations = self._filter_relations(
             full_catalog, self._build_sum_patterns_from_configs(configs))
@@ -40,14 +41,25 @@ class SnowShuGraph:
             raise ValueError(
                 'The graph created by the specified trail path is not directed (circular reference detected).')
 
-    def _apply_specifications(self, configs: Configuration, graph: networkx.DiGraph, available_nodes: Set[Relation]) -> networkx.DiGraph:
-        """ takes a configuration file, a graph and a collection of available nodes, applies configs as edges and returns the graph."""
+    def _apply_specifications(
+            self,
+            configs: Configuration,
+            graph: networkx.DiGraph,
+            available_nodes: Set[Relation]) -> networkx.DiGraph:
+        """takes a configuration file, a graph and a collection of available
+        nodes, applies configs as edges and returns the graph."""
         for relation in configs.specified_relations:
-            relation_dict = dict(name=relation.relation_pattern,
-                                 database=relation.database_pattern, schema=relation.schema_pattern)
+            relation_dict = dict(
+                name=relation.relation_pattern,
+                database=relation.database_pattern,
+                schema=relation.schema_pattern)
             if relation.unsampled:
                 unsampled_relations = set(
-                    filter(lambda x: single_full_pattern_match(x, relation_dict), available_nodes))
+                    filter(
+                        lambda x: single_full_pattern_match(
+                            x,
+                            relation_dict),
+                        available_nodes))
                 for rel in unsampled_relations:
                     rel.unsampled = True
                     graph.add_node(rel)
@@ -55,16 +67,22 @@ class SnowShuGraph:
 
             edges = list()
             for direction in ('bidirectional', 'directional',):
-                edges += [dict(direction=direction,
-                               database=val.database_pattern,
-                               schema=val.schema_pattern,
-                               relation=val.relation_pattern,
-                               remote_attribute=val.remote_attribute,
-                               local_attribute=val.local_attribute) for val in relation.relationships.__dict__[direction]]
+                edges += [
+                    dict(
+                        direction=direction,
+                        database=val.database_pattern,
+                        schema=val.schema_pattern,
+                        relation=val.relation_pattern,
+                        remote_attribute=val.remote_attribute,
+                        local_attribute=val.local_attribute) for val in relation.relationships.__dict__[direction]]
 
             for edge in edges:
                 downstream_relations = set(
-                    filter(lambda x: single_full_pattern_match(x, relation_dict), available_nodes))
+                    filter(
+                        lambda x: single_full_pattern_match(
+                            x,
+                            relation_dict),
+                        available_nodes))
                 for rel in downstream_relations:
                     # populate any string wildcard upstreams
                     for attr in ('database', 'schema',):
@@ -91,7 +109,7 @@ class SnowShuGraph:
         return graph
 
     def get_graphs(self) -> tuple:
-        """builds independent graphs and returns the collection of them"""
+        """builds independent graphs and returns the collection of them."""
         if not isinstance(self.graph, networkx.Graph):
             raise ValueError(
                 'Graph must be built before SnowShuGraph can get graphs from it.')
@@ -132,8 +150,10 @@ class SnowShuGraph:
 
         return tuple(dags)
 
-    def _build_sum_patterns_from_configs(self, config: Configuration) -> List[dict]:
-        """ creates pattern dictionaries to filter with to build the total filtered catalog."""
+    def _build_sum_patterns_from_configs(
+            self, config: Configuration) -> List[dict]:
+        """creates pattern dictionaries to filter with to build the total
+        filtered catalog."""
         logger.debug('building sum patterns for configs...')
         approved_default_patterns = [dict(database=d.database_pattern,
                                           schema=s.schema_pattern,
@@ -141,21 +161,26 @@ class SnowShuGraph:
                                      for s in d.schemas
                                      for r in s.relations]
 
-        approved_specified_patterns = [dict(database=r.database_pattern,
-                                            schema=r.schema_pattern,
-                                            name=r.relation_pattern) for r in config.specified_relations]
+        approved_specified_patterns = [
+            dict(
+                database=r.database_pattern,
+                schema=r.schema_pattern,
+                name=r.relation_pattern) for r in config.specified_relations]
 
         all_patterns = approved_default_patterns + approved_specified_patterns
         logger.debug(f'All config primary primary: {all_patterns}')
         return all_patterns
 
-    def _filter_relations(self, full_catalog: iter, patterns: dict) -> Set[Relation]:
-        """ applies patterns to the full catalog to build the filtered relation set."""
+    def _filter_relations(self, full_catalog: iter,
+                          patterns: dict) -> Set[Relation]:
+        """applies patterns to the full catalog to build the filtered relation
+        set."""
 
-        return set([filtered_relation for filtered_relation in
-                    set(filter(lambda rel: at_least_one_full_pattern_match(rel, patterns), full_catalog))])
+        return set([filtered_relation for filtered_relation in set(filter(
+            lambda rel: at_least_one_full_pattern_match(rel, patterns), full_catalog))])
 
-    def _set_sampling_method(self, relation: Relation, configs: Configuration) -> Relation:
-        """ for now sets all to default."""
+    def _set_sampling_method(self, relation: Relation,
+                             configs: Configuration) -> Relation:
+        """for now sets all to default."""
         relation.sample_method = configs.default_sample_method
         return relation

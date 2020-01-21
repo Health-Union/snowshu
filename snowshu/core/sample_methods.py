@@ -3,8 +3,9 @@ from typing import Any
 
 
 class SampleMethod:
-    """ represents a sample method. 
-        required_params(dict) is in format param=type
+    """represents a sample method.
+
+    required_params(dict) is in format param=type
     """
 
     def name(self):
@@ -36,7 +37,7 @@ class BernoulliSample(SampleMethod):
 
     def is_acceptable(self, percent: float) -> bool:
         """Accepts an actual percent and determines if within tolerances."""
-        delta = abs(self.probability - (percent*100))\
+        delta = abs(self.probability - (percent * 100))\
             if percent < 1 else abs(self.probability - percent)
         return delta <= 5  # 5% diff ok?
 

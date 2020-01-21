@@ -5,7 +5,7 @@ from snowshu.core.docker import SnowShuDocker
 
 
 class Replica:
-    """ The actual live container instance of the replica"""
+    """The actual live container instance of the replica."""
 
     def __init__(self,
                  image: str,
@@ -35,9 +35,9 @@ snowshu:snowshu@localhost:{self.port}/snowshu
 """
         if IS_IN_DOCKER:
             message += f"""You can connect to the sample database from within docker containers running on the `snowshu` docker network.
-use the connection string 
+use the connection string
 
-snowshu:snowshu@{self.name}:{self.port}/snowshu 
+snowshu:snowshu@{self.name}:{self.port}/snowshu
 
 to connect."""
         return message

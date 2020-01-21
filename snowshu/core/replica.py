@@ -6,7 +6,7 @@ logger = Logger().logger
 
 
 class ReplicaManager:
-    """ manages the local replica ecosystem"""
+    """manages the local replica ecosystem."""
 
     @staticmethod
     def get_replica(name: str) -> Replica:

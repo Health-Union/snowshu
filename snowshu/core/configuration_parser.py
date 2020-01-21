@@ -75,7 +75,7 @@ class ConfigurationParser:
 
     @staticmethod
     def from_file_or_path(loadable: Union[Path, str, TextIO]) -> Configuration:
-        """ rips through a configuration and returns a configuration object"""
+        """rips through a configuration and returns a configuration object."""
         try:
             with open(loadable) as f:
                 logger.debug(f'loading from file {f.name}')
@@ -104,25 +104,39 @@ class ConfigurationParser:
                                                                                                       [MatchPattern.RelationPattern(relation) for relation in schema['relations']])
                                                                            for schema in database['schemas']]) for database in loaded['source']['default_sampling']['databases']])
 
-            specified_relations = [SpecifiedMatchPattern(rel['database'],
-                                                         rel['schema'],
-                                                         rel['relation'],
-                                                         rel.get(
-                                                             'unsampled', False),
-                                                         SpecifiedMatchPattern.Relationships(
-                [SpecifiedMatchPattern.RelationshipPattern(
-                    dsub['local_attribute'],
-                    dsub['database'] if dsub['database'] != '' else None,
-                    dsub['schema'] if dsub['schema'] != '' else None,
-                    dsub['relation'],
-                    dsub['remote_attribute']) for dsub in rel.get('relationships', dict()).get('directional', list())],
-
-                [SpecifiedMatchPattern.RelationshipPattern(
-                    bsub['local_attribute'],
-                    bsub['database'] if bsub['database'] != '' else None,
-                    bsub['schema'] if bsub['schema'] != '' else None,
-                    bsub['relation'],
-                    bsub['remote_attribute']) for bsub in rel.get('relationships', dict()).get('bidirectional', list())])) for rel in loaded['source'].get('specified_relations', list())]
+            specified_relations = [
+                SpecifiedMatchPattern(
+                    rel['database'],
+                    rel['schema'],
+                    rel['relation'],
+                    rel.get(
+                        'unsampled',
+                        False),
+                    SpecifiedMatchPattern.Relationships(
+                        [
+                            SpecifiedMatchPattern.RelationshipPattern(
+                                dsub['local_attribute'],
+                                dsub['database'] if dsub['database'] != '' else None,
+                                dsub['schema'] if dsub['schema'] != '' else None,
+                                dsub['relation'],
+                                dsub['remote_attribute']) for dsub in rel.get(
+                                'relationships',
+                                dict()).get(
+                                'directional',
+                                list())],
+                        [
+                            SpecifiedMatchPattern.RelationshipPattern(
+                                bsub['local_attribute'],
+                                bsub['database'] if bsub['database'] != '' else None,
+                                bsub['schema'] if bsub['schema'] != '' else None,
+                                bsub['relation'],
+                                bsub['remote_attribute']) for bsub in rel.get(
+                                'relationships',
+                                dict()).get(
+                                'bidirectional',
+                                list())])) for rel in loaded['source'].get(
+                    'specified_relations',
+                    list())]
 
             return Configuration(*replica_base,
                                  default_sampling,

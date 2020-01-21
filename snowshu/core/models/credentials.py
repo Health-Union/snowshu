@@ -15,10 +15,8 @@ WAREHOUSE = 'warehouse'
 
 @dataclass
 class Credentials:
-    """ Represents every accepted type of credential,
-        attempting to bring some sanity to how configs are defined for disparate adapters.
-
-    """
+    """Represents every accepted type of credential, attempting to bring some
+    sanity to how configs are defined for disparate adapters."""
     account: Optional[str] = None
     database: Optional[str] = None
     host: Optional[str] = None
@@ -30,8 +28,7 @@ class Credentials:
     warehouse: Optional[str] = None
 
     def urlencode(self) -> None:
-        """ quote-plus encoding of all attributes
-            good for sql urls."""
+        """quote-plus encoding of all attributes good for sql urls."""
         for key in vars(self).keys():
             if isinstance(self.__dict__[key], str):
                 self.__dict__[key] = quote_plus(self.__dict__[key])

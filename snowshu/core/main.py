@@ -23,7 +23,8 @@ REPLICA_DEFAULT = os.path.join(os.getcwd(), 'replica.yml')
 
 
 @click.group()
-@click.option('--debug', '-d', is_flag=True, default=False, help="run commands in debug mode")
+@click.option('--debug', '-d', is_flag=True, default=False,
+              help="run commands in debug mode")
 def cli(debug: bool):
     log_level = logging.DEBUG if debug else logging.INFO
     log_engine = Logger()
@@ -37,7 +38,8 @@ def cli(debug: bool):
 @cli.command()
 @click.argument('path', default=os.getcwd(), type=click.Path(exists=True))
 def init(path: click.Path) -> None:
-    """generates sample replica.yml and credentials.yml files in the current directory."""
+    """generates sample replica.yml and credentials.yml files in the current
+    directory."""
     logger = Logger().logger
     templates = os.path.join(Path(__file__).parent.parent, 'templates')
 
@@ -50,7 +52,8 @@ def init(path: click.Path) -> None:
     CREDENTIALS = 'credentials.yml'
     REPLICA = 'replica.yml'
 
-    if os.path.isfile(destination(CREDENTIALS)) or os.path.isfile(destination(REPLICA)):
+    if os.path.isfile(destination(CREDENTIALS)) or os.path.isfile(
+            destination(REPLICA)):
         message = "cannot generate sample files, already exist in current directory."
         logger.error(message)
         raise ValueError(message)
@@ -65,8 +68,16 @@ def init(path: click.Path) -> None:
 
 
 @cli.command()
-@click.option('--tag', default=datetime.utcnow().strftime(DEFAULT_TAG_FORMAT), help="the image tag of the resulting replication image. Defaults to timestamp")
-@click.option('--replica-file', type=click.Path(exists=True), default=REPLICA_DEFAULT, help="the Path, string or bytes object snowshu will use for your replica configuration file, default is ./replica.yml")
+@click.option(
+    '--tag',
+    default=datetime.utcnow().strftime(DEFAULT_TAG_FORMAT),
+    help="the image tag of the resulting replication image. Defaults to timestamp")
+@click.option(
+    '--replica-file',
+    type=click.Path(
+        exists=True),
+    default=REPLICA_DEFAULT,
+    help="the Path, string or bytes object snowshu will use for your replica configuration file, default is ./replica.yml")
 def run(tag: str,
         replica_file: click.Path):
     replica = ReplicaFactory()
@@ -75,7 +86,12 @@ def run(tag: str,
 
 
 @cli.command()
-@click.option('--replica-file', type=click.Path(exists=True), default=REPLICA_DEFAULT, help="where snowshu will look for your replica configuration file, default is ./replica.yml")
+@click.option(
+    '--replica-file',
+    type=click.Path(
+        exists=True),
+    default=REPLICA_DEFAULT,
+    help="where snowshu will look for your replica configuration file, default is ./replica.yml")
 def analyze(replica_file: click.Path):
     replica = ReplicaFactory()
     replica.load_config(replica_file)
@@ -84,10 +100,15 @@ def analyze(replica_file: click.Path):
 
 @cli.command()
 @click.argument('replica')
-@click.option('-p', '--port', type=int, default=DOCKER_TARGET_PORT, help="The port snowshu will forward the replica connection to. Defaults to 9999.")
+@click.option(
+    '-p',
+    '--port',
+    type=int,
+    default=DOCKER_TARGET_PORT,
+    help="The port snowshu will forward the replica connection to. Defaults to 9999.")
 def launch(replica: str,
            port: int):
-    """ Launches an existing replica as a daemon."""
+    """Launches an existing replica as a daemon."""
     replica = ReplicaManager().get_replica(replica, port=port)
     if replica is None:
         message = f"No replica found with name {replica}"

@@ -25,7 +25,8 @@ class ReportRow:
                 )
 
 
-def graph_to_result_list(graphs: nx.Graph, sample_method: SampleMethod) -> list:
+def graph_to_result_list(graphs: nx.Graph,
+                         sample_method: SampleMethod) -> list:
     report = list()
     for graph in graphs:
         try:
@@ -71,4 +72,5 @@ def printable_result(report: List[ReportRow], analyze: str) -> str:
     column_alignment = ('left', 'right', 'right', 'center', 'right',)
     title = 'ANALYZE' if analyze else 'RUN'
     message_top = f"\n\n{title} RESULTS:\n\n"
-    return message_top + tabulate(printable, headers, colalign=column_alignment) + "\n"
+    return message_top + \
+        tabulate(printable, headers, colalign=column_alignment) + "\n"

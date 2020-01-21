@@ -28,12 +28,12 @@ class BaseSourceAdapter(BaseSQLAdapter):
         return databases
 
     def all_releations_from_database(self) -> Tuple[Relation]:
-        """ this function is expected to get all the non-system relations as a tuple of 
-            relation objects for a given database"""
+        """this function is expected to get all the non-system relations as a
+        tuple of relation objects for a given database."""
         raise NotImplementedError()
 
     def _safe_query(self, query_sql: str) -> pd.DataFrame:
-        """runs the query and closes the connection"""
+        """runs the query and closes the connection."""
         logger.debug('Beginning query execution...')
         start = time.time()
         try:
@@ -50,11 +50,11 @@ class BaseSourceAdapter(BaseSQLAdapter):
         return frame
 
     def _count_query(self) -> int:
-        """wraps any query in a COUNT statement, returns that integer"""
+        """wraps any query in a COUNT statement, returns that integer."""
         raise NotImplementedError()
 
     def check_count_and_query(self, query: str, max_count: int) -> tuple:
-        """ checks the count, if count passes returns results as a tuple."""
+        """checks the count, if count passes returns results as a tuple."""
         raise NotImplementedError()
 
     def _get_data_type(self, source_type: str) -> DataType:

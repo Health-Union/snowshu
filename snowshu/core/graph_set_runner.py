@@ -1,7 +1,6 @@
 import gc
 from typing import List
 from snowshu.configs import MAX_ALLOWED_ROWS
-from snowshu.core.models import materializations as mz
 from snowshu.core.compile import RuntimeSourceCompiler
 from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
 from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
@@ -32,7 +31,7 @@ class GraphSetRunner:
                           analyze: bool = False) -> None:
 
         view_graph_set = [graph for graph in graph_set if graph.contains_views]
-        table_graph_set = list(set(graph_set)-set(view_graph_set))
+        table_graph_set = list(set(graph_set) - set(view_graph_set))
 
         def make_executables(graphs) -> List[GraphExecutable]:
             return [GraphExecutable(graph,
@@ -49,18 +48,18 @@ class GraphSetRunner:
                     executor.submit(self._traverse_and_execute,
                                     executable, start_time)
 
-    def _traverse_and_execute(self, executable: GraphExecutable, start_time: int) -> None:
+    def _traverse_and_execute(
+            self, executable: GraphExecutable, start_time: int) -> None:
         try:
             logger.debug(
                 f"Executing graph with {len(executable.graph)} relations in it...")
-            for i, relation in enumerate(nx.algorithms.dag.topological_sort(executable.graph)):
+            for i, relation in enumerate(
+                    nx.algorithms.dag.topological_sort(executable.graph)):
 
                 logger.info(
                     f'Executing graph {i+1} of {len(executable.graph)} source query for relation {relation.dot_notation}...')
-                relation = RuntimeSourceCompiler.compile_queries_for_relation(relation,
-                                                                              executable.graph,
-                                                                              executable.source_adapter,
-                                                                              executable.analyze)
+                relation = RuntimeSourceCompiler.compile_queries_for_relation(
+                    relation, executable.graph, executable.source_adapter, executable.analyze)
 
                 if executable.analyze:
                     if relation.is_view:
@@ -69,8 +68,10 @@ class GraphSetRunner:
                         logger.info(
                             f'Relation {relation.dot_notation} is a view, skipping.')
                     else:
-                        result = [row for row in executable.source_adapter.check_count_and_query(
-                            relation.compiled_query, MAX_ALLOWED_ROWS).itertuples()][0]
+                        result = [
+                            row for row in executable.source_adapter.check_count_and_query(
+                                relation.compiled_query,
+                                MAX_ALLOWED_ROWS).itertuples()][0]
                         relation.population_size = result.population_size
                         relation.sample_size = result.sample_size
                         logger.info(
@@ -88,7 +89,7 @@ class GraphSetRunner:
                         try:
                             relation.view_ddl = executable.source_adapter.check_count_and_query(
                                 relation.compiled_query, MAX_ALLOWED_ROWS).iloc[0][0]
-                        except Exception as e:
+                        except Exception:
                             raise SystemError(
                                 f'Failed to extract DDL statement: {relation.compiled_query}')
                         logger.info(
@@ -99,7 +100,7 @@ class GraphSetRunner:
                         try:
                             relation.data = executable.source_adapter.check_count_and_query(
                                 relation.compiled_query, MAX_ALLOWED_ROWS)
-                        except Exception as e:
+                        except Exception:
                             raise SystemError(
                                 f'Failed execution of extraction sql statement: {relation.compiled_query}')
 

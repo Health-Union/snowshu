@@ -69,7 +69,7 @@ AS
 """
         else:
             ddl_statement += f"""
-IF NOT EXISTS {relation.quoted_dot_notation} 
+IF NOT EXISTS {relation.quoted_dot_notation}
 ({relation.typed_columns(self.DATA_TYPE_MAPPINGS)})
 """
         try:
@@ -101,27 +101,31 @@ IF NOT EXISTS {relation.quoted_dot_notation}
             f'Data loaded into relation {relation.quoted_dot_notation}')
 
     def initialize_replica(self) -> None:
-        """shimming but will want to move _init_image public with this interface"""
+        """shimming but will want to move _init_image public with this
+        interface."""
         self._init_image()
 
     def _init_image(self) -> None:
         shdocker = SnowShuDocker()
         logger.info('Initializing target container...')
-        self.container = shdocker.startup(self.DOCKER_IMAGE,
-                                          self.DOCKER_START_COMMAND,
-                                          self.DOCKER_TARGET_PORT,
-                                          self.CLASSNAME,
-                                          self._build_snowshu_envars(self.DOCKER_SNOWSHU_ENVARS))
+        self.container = shdocker.startup(
+            self.DOCKER_IMAGE,
+            self.DOCKER_START_COMMAND,
+            self.DOCKER_TARGET_PORT,
+            self.CLASSNAME,
+            self._build_snowshu_envars(
+                self.DOCKER_SNOWSHU_ENVARS))
         logger.info('Container initialized.')
         while not self.target_database_is_ready():
             sleep(.5)
         self._initialize_snowshu_meta_database()
 
     def target_database_is_ready(self) -> bool:
-        return self.container.exec_run(self.DOCKER_READY_COMMAND).exit_code == 0
+        return self.container.exec_run(
+            self.DOCKER_READY_COMMAND).exit_code == 0
 
     def finalize_replica(self) -> str:
-        """returns the image name of the completed replica"""
+        """returns the image name of the completed replica."""
         shdocker = SnowShuDocker()
         logger.info('Finalizing target container into replica...')
         replica_image = shdocker.convert_container_to_replica(self.config.name,
@@ -134,9 +138,14 @@ IF NOT EXISTS {relation.quoted_dot_notation}
         host = DOCKER_TARGET_CONTAINER if IS_IN_DOCKER else 'localhost'
         return Credentials(host=host,
                            port=self.DOCKER_TARGET_PORT,
-                           **dict(zip(('user', 'password', 'database',), ['snowshu' for _ in range(3)])))
+                           **dict(zip(('user',
+                                       'password',
+                                       'database',
+                                       ),
+                                      ['snowshu' for _ in range(3)])))
 
-    def _build_conn_string_partial(self, dialect: str, database: Optional[str] = None) -> str:
+    def _build_conn_string_partial(
+            self, dialect: str, database: Optional[str] = None) -> str:
         database = database if database is not None else self._credentials.database
         conn_string = f"{self.dialect}://{self._credentials.user}:{self._credentials.password}@{self._credentials.host}:{self.DOCKER_TARGET_PORT}/{database}?"
         return conn_string, {USER, PASSWORD, HOST, PORT, DATABASE, }
@@ -161,9 +170,12 @@ IF NOT EXISTS {relation.quoted_dot_notation}
             mz.TABLE,
             attributes)
 
-        relation.data = pd.DataFrame([dict(created_at=datetime.now(),
-                                           name=self.config.name,
-                                           short_description=self.config.short_description,
-                                           long_description=self.config.long_description)])
+        relation.data = pd.DataFrame(
+            [
+                dict(
+                    created_at=datetime.now(),
+                    name=self.config.name,
+                    short_description=self.config.short_description,
+                    long_description=self.config.long_description)])
 
         self.create_and_load_relation(relation)

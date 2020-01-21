@@ -52,12 +52,15 @@ class ReplicaFactory:
 
         self.target_adapter.finalize_replica()
 
-        return printable_result(graph_to_result_list(self.graphs,
-                                                     self.config.default_sample_method),
-                                self.ANALYZE)
+        return printable_result(
+            graph_to_result_list(
+                self.graphs,
+                self.config.default_sample_method),
+            self.ANALYZE)
 
     def load_config(self, config: Union[Path, str, TextIO]):
-        """ does all the initial work to make the resulting ReplicaFactory object usable."""
+        """does all the initial work to make the resulting ReplicaFactory
+        object usable."""
         logger.info('Loading credentials...')
         start_timer = time.time()
         self.config = ConfigurationParser.from_file_or_path(config)
