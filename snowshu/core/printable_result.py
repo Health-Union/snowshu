@@ -1,7 +1,7 @@
 from tabulate import tabulate
 import networkx as nx
 from dataclasses import dataclass
-from typing import Any,List
+from typing import Any,List,Union
 from snowshu.core.sample_methods import SampleMethod
 from snowshu.logger import Logger
 logger=Logger().logger
@@ -9,8 +9,8 @@ logger=Logger().logger
 @dataclass
 class ReportRow:
     dot_notation:str
-    population_size:int
-    sample_size:int
+    population_size:Union[int,str]
+    sample_size:Union[int,str]
     count_of_dependencies:str
     percent:Any
     percent_is_acceptable:bool
@@ -30,9 +30,14 @@ def graph_to_result_list(graphs:nx.Graph, sample_method:SampleMethod)->list:
             for relation in graph.nodes:
                 deps = len(nx.ancestors(graph,relation))
                 deps = " " if deps == 0 else str(deps)
-                percent=0 if int(relation.population_size) < 1\
-                               else round(100.0 * (relation.sample_size / relation.population_size))
-                percent_is_acceptable=any((sample_method.is_acceptable(percent), (relation.unsampled and percent==100),))
+                if isinstance(relation.population_size,str):
+                    percent="N/A"
+                elif int(relation.population_size) < 1:
+                    percent=0
+                else:
+                    percent=round(100.0 * (relation.sample_size / relation.population_size))
+
+                percent_is_acceptable=True if isinstance(percent,str) else any((sample_method.is_acceptable(percent), (relation.unsampled and percent==100),))
                 report.append(ReportRow(
                                 relation.dot_notation,
                                 relation.population_size,

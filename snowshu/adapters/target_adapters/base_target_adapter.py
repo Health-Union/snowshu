@@ -48,18 +48,27 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
     def create_and_load_relation(self,relation)->None:
         self.create_relation_if_not_exists(relation)
-        self.load_data_into_relation(relation)
+        if not relation.is_view:
+            self.load_data_into_relation(relation)
 
     def create_relation_if_not_exists(self,relation:Relation)->None:
         engine=self.get_connection( database_override=relation.database,
                                     schema_override=relation.schema)
 
         materialization=key_for_value(self.MATERIALIZATION_MAPPINGS,relation.materialization)
-        logger.info(f'Creating relation (if not exists) {relation.quoted_dot_notation}')
-        ddl_statement=f"""
-CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation} 
+        logger.info(f'Creating relation {relation.quoted_dot_notation}')
+        ddl_statement=f"CREATE {materialization} "
+        if relation.is_view:
+            ddl_statement+=f"""
+{relation.quoted_dot_notation}
+AS
+{relation.view_ddl}
+"""
+        else:
+            ddl_statement+=f"""
+IF NOT EXISTS {relation.quoted_dot_notation} 
 ({relation.typed_columns(self.DATA_TYPE_MAPPINGS)})
-""" 
+"""
         try:
             engine.execute(ddl_statement)
         except Exception as e:
@@ -98,9 +107,13 @@ CREATE {materialization} IF NOT EXISTS {relation.quoted_dot_notation}
                         self.CLASSNAME,
                         self._build_snowshu_envars(self.DOCKER_SNOWSHU_ENVARS))
         logger.info('Container initialized.')
-        while self.container.exec_run(self.DOCKER_READY_COMMAND).exit_code > 0:
+        while not self.target_database_is_ready():
             sleep(.5)
         self._initialize_snowshu_meta_database()
+
+    def target_database_is_ready(self)->bool:
+            return self.container.exec_run(self.DOCKER_READY_COMMAND).exit_code==0
+
 
     def finalize_replica(self)->str:
         """returns the image name of the completed replica"""

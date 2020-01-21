@@ -1,6 +1,6 @@
 from typing import List,Union,Optional
 from snowshu.core.utils import key_for_value
-from snowshu.core.models.materializations import Materialization
+from snowshu.core.models import materializations as mz
 from snowshu.core.sample_methods import SampleMethod
 from snowshu.core.models.attribute import Attribute
 import pandas as pd
@@ -26,7 +26,7 @@ class Relation:
                     database:str,
                     schema:str,
                     name:str,
-                    materialization:Materialization,
+                    materialization:mz.Materialization,
                     attributes:List[Attribute]):
 
         self.database=database
@@ -77,6 +77,11 @@ class Relation:
         return next((a for a in self.attributes if a.name == attr),None)
 
 
+    @property
+    def is_view(self)->bool:
+        """convenience function for detecting if relation is a view"""
+        return self.materialization == mz.VIEW
+
 
 
 def lookup_single_relation(lookup:dict,relation_set:iter)->Relation:
@@ -117,3 +122,5 @@ def at_least_one_full_pattern_match(rel:Relation,patterns:iter)->bool:
     """ determines if a relation matches any of a collection of pattern dictionaries (database,schema,name)."""
     patterns=list(filter(lambda p : all(p[attr] for attr in ('database','schema','name',)),patterns))
     return any([single_full_pattern_match(rel,pattern) for pattern in patterns])
+
+

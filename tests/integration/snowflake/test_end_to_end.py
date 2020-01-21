@@ -30,9 +30,9 @@ def test_reports_full_catalog_start(run_snowshu_create):
     result_lines=run_snowshu_create
     assert any(['Assessing full catalog...' in line for line in result_lines])
 
-def test_finds_7_relations(run_snowshu_create):
+def test_finds_8_relations(run_snowshu_create):
     result_lines=run_snowshu_create
-    assert any(['Identified a total of 7 relations to sample based on the specified configurations.' in line for line in result_lines])
+    assert any(['Identified a total of 8 relations to sample based on the specified configurations.' in line for line in result_lines])
 
 
 def test_replicates_order_items(run_snowshu_create):
@@ -145,13 +145,13 @@ SELECT
     assert upstream_missing==0
     assert downstream_missing > 0 #it is statistically very unlikely that NONE of the upstreams without a downstream will be included.
 
-@pytest.mark.skip
 def test_view(run_snowshu_create,run_snowshu_launch):
-    conn=create_engine(CONN_STRING)
+    
+    conn=create_engine('/'.join(CONN_STRING.split('/')[:-1]+['SNOWSHU_DEVELOPMENT']))
     query="""
 SELECT 
-    (SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS_VIEW") AS oiv
-    ,(SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS") AS oi
+    (SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS_VIEW") /
+    (SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS") AS delta
 """
     q=conn.execute(query)
     assert len(set(q.fetchall()[0])) == 1

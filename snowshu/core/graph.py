@@ -1,5 +1,7 @@
 import networkx 
+from snowshu.exceptions import InvalidRelationshipException
 from snowshu.core.models.relation import Relation
+from snowshu.core.models import materializations as mz 
 from snowshu.core.configuration_parser import Configuration
 from typing import Tuple,Set,List
 from snowshu.logger import Logger
@@ -25,7 +27,7 @@ class SnowShuGraph:
         ## build graph and add edges
         graph=networkx.DiGraph()
         graph.add_nodes_from(included_relations)
-        self.graph=self._apply_specifications(configs,graph, full_catalog)#included_relations)
+        self.graph=self._apply_specifications(configs,graph, full_catalog)
         ## set default sampling at relation level
         [self._set_sampling_method(relation,configs) for relation in self.graph.nodes]
         logger.info(f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
@@ -62,6 +64,8 @@ class SnowShuGraph:
                     upstream_relation = lookup_single_relation(edge,available_nodes)
                     if upstream_relation is None:
                         raise ValueError(f'It looks like the wildcard relation {edge["database"]}.{edge["schema"]}.{edge["relation"]} was specified as a dependency, but it does not exist.')
+                    if upstream_relation.is_view:
+                        raise InvalidRelationshipException(f'Relation {upstream_relation.quoted_dot_notation} is a view, but has been specified as an upstream dependency for relation {relation.quoted_dot_notation}. View dependencies are not allowed by SnowShu.')
                     if upstream_relation == rel:
                         continue
                     graph.add_edge( upstream_relation,
@@ -99,6 +103,14 @@ class SnowShuGraph:
         dags=[networkx.DiGraph() for _ in range(len(isodags))]
         [g.add_node(n) for g,n in zip(dags,isodags)]
         [dags.append(networkx.subgraph(self.graph,collection)) for collection in node_collections]
+        
+        ## set the views flag
+        for dag in dags:
+            dag.contains_views=False
+            for relation in dag.nodes:
+                dag.contains_views=any((dag.contains_views,relation.is_view,))
+
+
         return tuple(dags)
       
     def _build_sum_patterns_from_configs(self,config:Configuration)->List[dict]:

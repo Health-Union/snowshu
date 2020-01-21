@@ -71,7 +71,7 @@ def run( tag:str,
             replica_file:click.Path):
     replica=ReplicaFactory()
     replica.load_config(replica_file)
-    replica.run(tag)
+    click.echo(replica.run(tag))
 
 
 @cli.command()
