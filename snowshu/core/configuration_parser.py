@@ -97,6 +97,15 @@ class ConfigurationParser:
                     [build_relationship(rel) for rel in directional])
             
 
+        def _build_specified_relations(source_config:dict)->SpecifiedMatchPattern:
+            
+            specified_relations=source_config.get('specified_relations',list())
+            return [SpecifiedMatchPattern( rel['database'],
+                        rel['schema'],
+                        rel['relation'],
+                        rel.get('unsampled',False),
+                        _build_relationships(rel)) for rel in specified_relations]
+
         try:
             with open(loadable) as f:
                 logger.debug(f'loading from file {f.name}')
@@ -126,12 +135,7 @@ class ConfigurationParser:
                                                                                         [MatchPattern.RelationPattern(relation) for relation in schema['relations']]) 
                                                             for schema in database['schemas']]) for database in loaded['source']['default_sampling']['databases']])
                     
-            specified_relations=[SpecifiedMatchPattern( rel['database'],
-                                                        rel['schema'],
-                                                        rel['relation'],
-                                                        rel.get('unsampled',False),
-                                                        _build_relationships(rel)) for rel in loaded['source'].get('specified_relations',list())]
-
+            specified_relations=_build_specified_relations(loaded['source'])
 
             return Configuration(*replica_base,
                                  default_sampling,
