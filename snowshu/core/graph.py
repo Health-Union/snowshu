@@ -21,6 +21,10 @@ class SnowShuGraph:
                     full_catalog: Tuple[Relation]) -> networkx.DiGraph:
         """Builds a directed graph per replica config."""
         logger.debug('Building graphs from config...')
+
+        ## set defaults for all relations in the catalog
+        [self._set_globals_for_node(relation,configs) for relation in full_catalog]
+
         included_relations = self._filter_relations(
             full_catalog, self._build_sum_patterns_from_configs(configs))
 
@@ -28,8 +32,7 @@ class SnowShuGraph:
         graph = networkx.DiGraph()
         graph.add_nodes_from(included_relations)
         self.graph=self._apply_specifications(configs,graph, full_catalog)
-        ## set default sampling at relation level
-        [self._set_globals_for_node(relation,configs) for relation in self.graph.nodes]
+
         
         logger.info(f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
 
