@@ -7,17 +7,18 @@ import os
 
 raise NotImplementedError('THIS IS A WORK IN PROGRESS, DO NOT USE!')
 
-paths=list()
+paths = list()
 for p in os.walk('./DATABASE=SNOWSHU_DEVELOPMENT/SCHEMA=SOURCE_SYSTEM'):
     for f in p[-1]:
-        paths.append(('SOURCE_SYSTEM',os.path.join(p[0],f),))
+        paths.append(('SOURCE_SYSTEM', os.path.join(p[0], f),))
 for p in os.walk('./DATABASE=SNOWSHU_DEVELOPMENT/SCHEMA=EXTERNAL_DATA'):
     for f in p[-1]:
-        paths.append(('EXTERNAL_DATA',os.path.join(p[0],f),))
+        paths.append(('EXTERNAL_DATA', os.path.join(p[0], f),))
 for p in paths:
     with open(p) as f:
-        frame=pd.read_csv(f)
-        frame.to_sql(p[1].split('/')[-1].replace('.csv','').upper(),e,schema=p[0],index=False, chunksize=16000)
+        frame = pd.read_csv(f)
+        frame.to_sql(p[1].split('/')[-1].replace('.csv', '').upper(),
+                     e, schema=p[0], index=False, chunksize=16000)
 """
 
 def load_integration_tests():

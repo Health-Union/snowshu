@@ -15,28 +15,30 @@ from snowshu.core.sample_methods import BernoulliSample
 from snowshu.core.models.attribute import Attribute
 import snowshu.core.models.data_types as dt
 
+
 def test_analyze_unsampled(stub_relation_set):
-    upstream=stub_relation_set.upstream_relation
-    upstream.unsampled=True
-    dag=nx.DiGraph()
-    dag.add_edges_from([(upstream,stub_relation_set.downstream_relation,)])
-    compiler=RuntimeSourceCompiler()
-    adapter,unsampled_method=[mock.MagicMock() for _ in range(2)]
-    adapter.unsampled_statement=unsampled_method
-    
-    result=compiler.compile_queries_for_relation(upstream,dag,adapter,True)
+    upstream = stub_relation_set.upstream_relation
+    upstream.unsampled = True
+    dag = nx.DiGraph()
+    dag.add_edges_from([(upstream, stub_relation_set.downstream_relation,)])
+    compiler = RuntimeSourceCompiler()
+    adapter, unsampled_method = [mock.MagicMock() for _ in range(2)]
+    adapter.unsampled_statement = unsampled_method
+
+    result = compiler.compile_queries_for_relation(
+        upstream, dag, adapter, True)
     assert unsampled_method.called
 
 
 def test_analyze_iso(stub_relation_set):
-    iso=stub_relation_set.iso_relation
-    iso.sample_method=BernoulliSample(10)
-    dag=nx.DiGraph()
+    iso = stub_relation_set.iso_relation
+    iso.sample_method = BernoulliSample(10)
+    dag = nx.DiGraph()
     dag.add_nodes_from([iso])
-    compiler=RuntimeSourceCompiler()
-    adapter=SnowflakeAdapter()
-    result=compiler.compile_queries_for_relation(iso,dag,adapter,True)
-    assert query_equalize(iso.compiled_query)==query_equalize(f"""
+    compiler = RuntimeSourceCompiler()
+    adapter = SnowflakeAdapter()
+    result = compiler.compile_queries_for_relation(iso, dag, adapter, True)
+    assert query_equalize(iso.compiled_query) == query_equalize(f"""
 WITH
     __SNOWSHU_COUNT_POPULATION AS (
 SELECT
@@ -71,14 +73,14 @@ LIMIT 1
 
 
 def test_run_iso(stub_relation_set):
-    iso=stub_relation_set.iso_relation
-    iso.sample_method=BernoulliSample(10)
-    dag=nx.DiGraph()
+    iso = stub_relation_set.iso_relation
+    iso.sample_method = BernoulliSample(10)
+    dag = nx.DiGraph()
     dag.add_nodes_from([iso])
-    compiler=RuntimeSourceCompiler()
-    adapter=SnowflakeAdapter()
-    result=compiler.compile_queries_for_relation(iso,dag,adapter,False)
-    assert query_equalize(iso.compiled_query)==query_equalize(f"""
+    compiler = RuntimeSourceCompiler()
+    adapter = SnowflakeAdapter()
+    result = compiler.compile_queries_for_relation(iso, dag, adapter, False)
+    assert query_equalize(iso.compiled_query) == query_equalize(f"""
 SELECT
     *
 FROM 
@@ -88,19 +90,21 @@ FROM
 
 
 def test_run_deps_directional(stub_relation_set):
-    upstream=stub_relation_set.upstream_relation
-    downstream=stub_relation_set.downstream_relation
-    upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
-    for relation in (downstream,upstream,):
-        relation.attributes=[Attribute('id',dt.INTEGER)]
-        relation.sample_method=BernoulliSample(10)
-    
-    dag=nx.DiGraph()
-    dag.add_edge(upstream,downstream,direction="directional",remote_attribute='id',local_attribute='id')
-    compiler=RuntimeSourceCompiler()
-    adapter=SnowflakeAdapter()
-    result=compiler.compile_queries_for_relation(downstream,dag,adapter,False)
-    assert query_equalize(downstream.compiled_query)==query_equalize(f"""
+    upstream = stub_relation_set.upstream_relation
+    downstream = stub_relation_set.downstream_relation
+    upstream.data = pd.DataFrame([dict(id=1), dict(id=2), dict(id=3)])
+    for relation in (downstream, upstream,):
+        relation.attributes = [Attribute('id', dt.INTEGER)]
+        relation.sample_method = BernoulliSample(10)
+
+    dag = nx.DiGraph()
+    dag.add_edge(upstream, downstream, direction="directional",
+                 remote_attribute='id', local_attribute='id')
+    compiler = RuntimeSourceCompiler()
+    adapter = SnowflakeAdapter()
+    result = compiler.compile_queries_for_relation(
+        downstream, dag, adapter, False)
+    assert query_equalize(downstream.compiled_query) == query_equalize(f"""
 WITH 
 __SNOWSHU_FINAL_SAMPLE AS ( 
 SELECT 
@@ -123,19 +127,21 @@ __SNOWSHU_DIRECTIONAL_SAMPLE
 
 
 def test_run_deps_bidirectional(stub_relation_set):
-    upstream=stub_relation_set.upstream_relation
-    downstream=stub_relation_set.downstream_relation
-    upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
-    for relation in (downstream,upstream,):
-        relation.attributes=[Attribute('id',dt.INTEGER)]
-        relation.sample_method=BernoulliSample(10)
-    
-    dag=nx.DiGraph()
-    dag.add_edge(upstream,downstream,direction="bidirectional",remote_attribute='id',local_attribute='id')
-    compiler=RuntimeSourceCompiler()
-    adapter=SnowflakeAdapter()
-    result=compiler.compile_queries_for_relation(downstream,dag,adapter,False)
-    assert query_equalize(downstream.compiled_query)==query_equalize(f"""
+    upstream = stub_relation_set.upstream_relation
+    downstream = stub_relation_set.downstream_relation
+    upstream.data = pd.DataFrame([dict(id=1), dict(id=2), dict(id=3)])
+    for relation in (downstream, upstream,):
+        relation.attributes = [Attribute('id', dt.INTEGER)]
+        relation.sample_method = BernoulliSample(10)
+
+    dag = nx.DiGraph()
+    dag.add_edge(upstream, downstream, direction="bidirectional",
+                 remote_attribute='id', local_attribute='id')
+    compiler = RuntimeSourceCompiler()
+    adapter = SnowflakeAdapter()
+    result = compiler.compile_queries_for_relation(
+        downstream, dag, adapter, False)
+    assert query_equalize(downstream.compiled_query) == query_equalize(f"""
 SELECT 
     * 
 FROM 
@@ -143,4 +149,3 @@ FROM
 WHERE id IN (1,2,3) 
 
 """)
-
