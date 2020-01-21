@@ -26,6 +26,10 @@ source:
     unsampled: True
   - database: SNOWSHU_DEVELOPMENT
     schema: SOURCE_SYSTEM
+    relation: 'ORDER_ITEMS_VIEW'
+    unsampled: True
+  - database: SNOWSHU_DEVELOPMENT
+    schema: SOURCE_SYSTEM
     relation: '^ORDER_ITEMS$'
     relationships:
       bidirectional: 

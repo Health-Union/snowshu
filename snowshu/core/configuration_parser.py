@@ -1,57 +1,57 @@
 from pathlib import Path
 import yaml
-from typing import Union,TextIO,List,Optional
+from typing import Union, TextIO, List, Optional
 from snowshu.logger import Logger
 from snowshu.configs import DEFAULT_THREAD_COUNT,DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from dataclasses import dataclass
 from snowshu.core.sample_methods import SampleMethod, get_sample_method_from_kwargs
-logger=Logger().logger
+logger = Logger().logger
 
-@dataclass 
+
+@dataclass
 class MatchPattern:
 
-    @dataclass 
+    @dataclass
     class RelationPattern:
-        relation_pattern:str
+        relation_pattern: str
 
-    @dataclass 
+    @dataclass
     class SchemaPattern:
-        schema_pattern:str
-        relations:List
+        schema_pattern: str
+        relations: List
 
-    @dataclass 
+    @dataclass
     class DatabasePattern:
-        database_pattern:str
-        schemas:List
+        database_pattern: str
+        schemas: List
 
-    databases:List[DatabasePattern]
+    databases: List[DatabasePattern]
 
 
-@dataclass 
+@dataclass
 class SpecifiedMatchPattern():
 
-    @dataclass 
+    @dataclass
     class RelationshipPattern:
-        local_attribute:str 
-        database_pattern:str
-        schema_pattern:str
-        relation_pattern:str
-        remote_attribute:str 
+        local_attribute: str
+        database_pattern: str
+        schema_pattern: str
+        relation_pattern: str
+        remote_attribute: str
 
     @dataclass
     class Relationships:
-        bidirectional:Optional[List]
-        directional:Optional[List]
+        bidirectional: Optional[List]
+        directional: Optional[List]
 
-    database_pattern:str
-    schema_pattern:str
-    relation_pattern:str
-    unsampled:bool
-    relationships:Relationships
+    database_pattern: str
+    schema_pattern: str
+    relation_pattern: str
+    unsampled: bool
+    relationships: Relationships
 
 
-
-@dataclass 
+@dataclass
 class Configuration():
     name:str
     version:str
@@ -68,31 +68,31 @@ class Configuration():
     default_sampling: List[MatchPattern]   
     specified_relations:List[SpecifiedMatchPattern]
 
+
 class ConfigurationParser:
-    
+
     def __init__(self):
         pass
 
     @staticmethod
-    def from_file_or_path(loadable:Union[Path,str,TextIO])->Configuration:
-        """ rips through a configuration and returns a configuration object"""
+    def from_file_or_path(loadable: Union[Path, str, TextIO]) -> Configuration:
+        """rips through a configuration and returns a configuration object."""
         try:
             with open(loadable) as f:
                 logger.debug(f'loading from file {f.name}')
-                loaded=yaml.safe_load(f)
+                loaded = yaml.safe_load(f)
         except TypeError:
             logger.debug('loading from file-like object...')
-            loaded=yaml.safe_load(loadable)        
-
+            loaded = yaml.safe_load(loadable)
 
         logger.debug('Done loading.')
         try:
-            replica_base=(  loaded['name'],
+            replica_base = (loaded['name'],
                             loaded['version'],
                             loaded['credpath'],
-                            loaded.get('short_description',''),
-                            loaded.get('long_description',''),
-                            loaded.get('threads',DEFAULT_THREAD_COUNT),
+                            loaded.get('short_description', ''),
+                            loaded.get('long_description', ''),
+                            loaded.get('threads', DEFAULT_THREAD_COUNT),
                             loaded['source']['profile'],
                             loaded['target']['adapter'],
                             loaded['storage']['profile'],
@@ -125,10 +125,11 @@ class ConfigurationParser:
                                                                                                 bsub['relation'],
                                                                                                 bsub['remote_attribute']) for bsub in rel.get('relationships',dict()).get('bidirectional',list())])) for rel in loaded['source'].get('specified_relations',list())]
 
+
             return Configuration(*replica_base,
-                                        default_sampling,
-                                        specified_relations)
+                                 default_sampling,
+                                 specified_relations)
         except KeyError as e:
-            message=f"Configuration missing required section: {e}."
+            message = f"Configuration missing required section: {e}."
             logger.critical(message)
             raise AttributeError(message)
