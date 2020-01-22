@@ -49,9 +49,7 @@ def test_sample_defaults(load, run, temporary_replica):
     result = runner.invoke(main.cli, ('run',))
     ACTUAL_REPLICA_FILE = load.call_args_list[0][0][0]
     run_args = run.call_args_list[0][0][0]
-    ACTUAL_TAG_AS_DATETIME = datetime.strptime(run_args, DEFAULT_TAG_FORMAT)
     assert ACTUAL_REPLICA_FILE == EXPECTED_REPLICA_FILE
-    assert ACTUAL_TAG_AS_DATETIME.date() == datetime.now().date()
 
 
 @patch('snowshu.core.main.ReplicaFactory.load_config')
@@ -68,11 +66,8 @@ def test_sample_args_valid(run, replica):
         result = runner.invoke(main.cli, ('--debug',
                                           'run',
                                           '--replica-file', EXPECTED_REPLICA_FILE,
-                                          '--tag', EXPECTED_TAG,
                                           ))
         replica.assert_called_once_with(EXPECTED_REPLICA_FILE)
-        ACTUAL_TAG = run.call_args_list[0][0][0]
-        assert EXPECTED_TAG == ACTUAL_TAG
         assert logger.getEffectiveLevel() == DEBUG
 
 

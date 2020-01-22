@@ -63,7 +63,6 @@ class ReplicaFactory:
         logger.info('Loading credentials...')
         start_timer = time.time()
         self.config = ConfigurationParser.from_file_or_path(config)
-        raise ValueError(self.config)
 
         self._load_credentials(self.config.credpath,
                                self.config.source_profile,

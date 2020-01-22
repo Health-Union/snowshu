@@ -20,7 +20,7 @@ def test_analyze_unsampled():
 
     config = os.path.join(PACKAGE_ROOT, "snowshu", "templates", "replica.yml")
     replica.load_config(config)
-    result = replica.analyze().split('\n')
+    result = replica.analyze(barf=False).split('\n')
     result.reverse()
     for line in result:
         if "ORDERS" in line:

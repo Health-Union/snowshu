@@ -97,10 +97,6 @@ class SnowShuGraph:
                             f'Relation {upstream_relation.quoted_dot_notation} is a view, but has been specified as an upstream dependency for relation {relation.quoted_dot_notation}. View dependencies are not allowed by SnowShu.')
                     if upstream_relation == rel:
                         continue
-                    if rel.name=="USER_COOKIES":
-                        raise ValueError(edge['direction'])
-
-
                     graph.add_edge(upstream_relation,
                                    rel,
                                    direction=edge['direction'],

@@ -149,7 +149,7 @@ FROM
 {downstream.quoted_dot_notation}
 WHERE id IN (1,2,3) 
 UNION
-SELECT
+(SELECT
     *
 FROM
 {downstream.quoted_dot_notation}
@@ -159,7 +159,7 @@ NOT IN
 (SELECT
     id
 FROM
-{upstream.quoted_dot_notation}
+{upstream.quoted_dot_notation})
 LIMIT 100) 
 """)
 
@@ -182,7 +182,7 @@ SELECT
 FROM 
     __SNOWSHU_DIRECTIONAL_SAMPLE 
 UNION 
-SELECT 
+(SELECT 
     * 
 FROM 
 {upstream.quoted_dot_notation} 
@@ -192,7 +192,7 @@ NOT IN
     (SELECT 
         id 
     FROM 
-{downstream.quoted_dot_notation} LIMIT 100)
+{downstream.quoted_dot_notation}) LIMIT 100)
 """
 )
 

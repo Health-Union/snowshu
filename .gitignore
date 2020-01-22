@@ -7,7 +7,7 @@ build/
 *.pyc
 *.log
 *.log.*
-
+snowshu_barf_output/
 
 tests/assets/integration/trail-path.yml
 tests/assets/integration/credentials.yml

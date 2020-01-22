@@ -18,6 +18,7 @@ def test_traverse_and_execute_analyze(stub_graph_set):
     source_adapter.union_constraint_statement.return_value=str()
     source_adapter.sample_statement_from_relation.return_value=str()
     runner=GraphSetRunner()
+    runner.barf=False
     graph_set,vals=stub_graph_set
     source_adapter.check_count_and_query.return_value=pd.DataFrame([dict(population_size=1000,sample_size=100)])
     dag=copy.deepcopy(graph_set[-1]) # last graph in the set is the dag

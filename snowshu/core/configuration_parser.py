@@ -106,6 +106,8 @@ class ConfigurationParser:
                         rel.get('unsampled',False),
                         _build_relationships(rel)) for rel in specified_relations]
 
+
+
         try:
             with open(loadable) as f:
                 logger.debug(f'loading from file {f.name}')
