@@ -12,6 +12,7 @@
 
 .. image:: ../assets/snowshu_logo.png 
 
+====================
 Philosophy Statement
 ====================
 
