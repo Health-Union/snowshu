@@ -1,4 +1,5 @@
 import pytest
+import docker
 from io import StringIO
 import tempfile
 import copy
@@ -120,3 +121,42 @@ def stub_graph_set() -> tuple:
                  local_attribute=vals.directional_key, remote_attribute=vals.directional_key)
 
     return [iso_graph, view_graph, dag], vals
+
+
+def sanitize_docker_environment():
+    client=docker.from_env()
+    def try_or_pass(statement,kwargs=dict()):
+        try:
+            statement(**kwargs)
+        except:
+            pass
+
+    def is_snowshu_related_container(container)->bool:
+        return any([val in container.name for val in ('snowshu__replica__',
+            'integration-test',
+            'snowshu_target',)])
+
+    def is_snowshu_related_image(image)->bool:
+        return any([val in image.tags[0] for val in ('snowshu__replica__',
+            'integration-test',
+            'snowshu_target',)])
+
+    for container in filter(is_snowshu_related_container,client.containers.list()):
+        try_or_pass(container.kill)
+        try_or_pass(container.remove,dict(force=True))
+    
+    for image in filter(is_snowshu_related_image,client.images.list()):
+        try_or_pass(client.images.remove,dict(image=image.tags[0],force=True))
+
+
+@pytest.fixture
+def docker_flush():
+    sanitize_docker_environment()
+    yield
+    sanitize_docker_environment()
+
+@pytest.fixture(scope="session")
+def docker_flush_session():
+    sanitize_docker_environment()
+    yield
+    sanitize_docker_environment()
