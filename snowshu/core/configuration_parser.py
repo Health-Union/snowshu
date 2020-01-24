@@ -4,7 +4,7 @@ from typing import Union, TextIO, List, Optional
 from snowshu.logger import Logger
 from snowshu.configs import DEFAULT_THREAD_COUNT,DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from dataclasses import dataclass
-from snowshu.core.sample_methods import SampleMethod, get_sample_method_from_kwargs
+from snowshu.core.sampling.sample_methods import SampleMethod, get_sample_method_from_kwargs
 logger = Logger().logger
 
 

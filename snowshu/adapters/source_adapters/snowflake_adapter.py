@@ -6,7 +6,7 @@ from typing import List, Union, Any, Optional
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
 from snowshu.adapters.source_adapters import BaseSourceAdapter
-from snowshu.core.sample_methods import SampleMethod, BernoulliSample, SystemSample
+from snowshu.core.sampling.sample_methods import SampleMethod, BernoulliSample, SystemSample
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
 from snowshu.logger import Logger

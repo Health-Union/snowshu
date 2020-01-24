@@ -1,5 +1,5 @@
 import pytest
-from snowshu.core.sample_methods import BernoulliSample
+from snowshu.core.sampling.sample_methods import BernoulliSample
 import snowshu.core.printable_result as pr
 
 

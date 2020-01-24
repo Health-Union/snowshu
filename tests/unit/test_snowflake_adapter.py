@@ -4,7 +4,7 @@ from tests.common import rand_string, query_equalize
 from snowshu.core.models.relation import Relation
 from snowshu.core.models.credentials import Credentials
 from snowshu.core.models.materializations import TABLE
-from snowshu.core.sample_methods import BernoulliSample
+from snowshu.core.sampling.sample_methods import BernoulliSample
 
 
 def test_conn_string_basic():

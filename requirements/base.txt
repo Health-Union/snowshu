@@ -6,7 +6,7 @@ coloredlogs==10.0
 networkx==2.4
 tabulate==0.8.6
 psycopg2-binary==2.8.4
-
+scipy==1.4.1
 
 
 #SNOWFLAKE
