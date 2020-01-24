@@ -65,7 +65,7 @@ class Configuration():
     include_outliers:bool
     max_number_of_outliers:int
     default_sample_method:SampleMethod
-    default_sampling: List[MatchPattern]   
+    general_relations: List[MatchPattern]   
     specified_relations:List[SpecifiedMatchPattern]
 
 
@@ -132,15 +132,15 @@ class ConfigurationParser:
                             get_sample_method_from_kwargs(**loaded['source']),
                             )
             
-            default_sampling=MatchPattern([MatchPattern.DatabasePattern(database['name'],
-                                                            [MatchPattern.SchemaPattern(schema['name'], 
+            general_relations=MatchPattern([MatchPattern.DatabasePattern(database['pattern'],
+                                                            [MatchPattern.SchemaPattern(schema['pattern'], 
                                                                                         [MatchPattern.RelationPattern(relation) for relation in schema['relations']]) 
-                                                            for schema in database['schemas']]) for database in loaded['source']['default_sampling']['databases']])
+                                                            for schema in database['schemas']]) for database in loaded['source']['general_relations']['databases']])
                     
             specified_relations=_build_specified_relations(loaded['source'])
 
             return Configuration(*replica_base,
-                                 default_sampling,
+                                 general_relations,
                                  specified_relations)
         except KeyError as e:
             message = f"Configuration missing required section: {e}."

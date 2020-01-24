@@ -6,11 +6,11 @@ long_description: this is for testing against a live db
 threads: 15
 source:
   profile: default
-  default_sampling:
+  general_relations:
     databases:
-    - name: 'SNOWSHU_DEVELOPMENT' # matches our test database
+    - pattern: 'SNOWSHU_DEVELOPMENT' # matches our test database
       schemas:
-      - name: '.*' # matches all schemas
+      - pattern: '.*' # matches all schemas
         relations:
         - '^(?!.+_VIEW).+$' # matches all relations that do not end with '_VIEW'
   
