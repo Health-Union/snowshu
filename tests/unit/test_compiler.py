@@ -40,32 +40,32 @@ def test_analyze_iso(stub_relation_set):
     result = compiler.compile_queries_for_relation(iso, dag, adapter, True)
     assert query_equalize(iso.compiled_query) == query_equalize(f"""
 WITH
-    __SNOWSHU_COUNT_POPULATION AS (
+    {iso.scoped_cte('SNOWSHU_COUNT_POPULATION')} AS (
 SELECT
     COUNT(*) AS population_size
 FROM
     {iso.quoted_dot_notation}
 )
-,__SNOWSHU_CORE_SAMPLE AS (
+,{iso.scoped_cte('SNOWSHU_CORE_SAMPLE')} AS (
 SELECT
     *
 FROM 
     {iso.quoted_dot_notation}
     SAMPLE BERNOULLI (10)
 )
-,__SNOWSHU_CORE_SAMPLE_COUNT AS (
+,{iso.scoped_cte('SNOWSHU_CORE_SAMPLE')}_COUNT AS (
 SELECT
     COUNT(*) AS sample_size
 FROM
-    __SNOWSHU_CORE_SAMPLE
+    {iso.scoped_cte('SNOWSHU_CORE_SAMPLE')}
 )
 SELECT
     s.sample_size AS sample_size
     ,p.population_size AS population_size
 FROM
-    __SNOWSHU_CORE_SAMPLE_COUNT s
+    {iso.scoped_cte('SNOWSHU_CORE_SAMPLE')}_COUNT s
 INNER JOIN
-    __SNOWSHU_COUNT_POPULATION p
+    {iso.scoped_cte('SNOWSHU_COUNT_POPULATION')} p
 ON
     1=1
 LIMIT 1
@@ -106,23 +106,23 @@ def test_run_deps_directional(stub_relation_set):
     assert query_equalize(downstream.compiled_query)==query_equalize(f"""
 
 WITH 
-__SNOWSHU_FINAL_SAMPLE AS ( 
+{downstream.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS ( 
 SELECT 
     * 
 FROM 
 {downstream.quoted_dot_notation}
 WHERE id IN (1,2,3) 
 )
-,__SNOWSHU_DIRECTIONAL_SAMPLE AS ( 
+,{downstream.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
 SELECT 
     * 
 FROM 
-__SNOWSHU_FINAL_SAMPLE SAMPLE BERNOULLI (10) 
+{downstream.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (10) 
 ) 
 SELECT 
     * 
 FROM 
-__SNOWSHU_DIRECTIONAL_SAMPLE
+{downstream.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
 """)
 
 
@@ -164,23 +164,23 @@ LIMIT 100)
 """)
 
     assert query_equalize(upstream.compiled_query)==query_equalize(f"""
-WITH __SNOWSHU_FINAL_SAMPLE AS ( 
+WITH {relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS ( 
 SELECT * FROM 
 {upstream.quoted_dot_notation} 
     WHERE id in (SELECT id 
        FROM 
 {downstream.quoted_dot_notation}) 
 )
-,__SNOWSHU_DIRECTIONAL_SAMPLE AS ( 
+,{relation.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
 SELECT 
     * 
 FROM 
-    __SNOWSHU_FINAL_SAMPLE SAMPLE BERNOULLI (10)
+    {relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (10)
 ) 
 SELECT 
     * 
 FROM 
-    __SNOWSHU_DIRECTIONAL_SAMPLE 
+    {relation.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} 
 UNION 
 (SELECT 
     * 
@@ -219,7 +219,7 @@ WHERE id IN (1,2,3)
 """)
 
     assert query_equalize(upstream.compiled_query)==query_equalize(f"""
-WITH __SNOWSHU_FINAL_SAMPLE AS ( 
+WITH {relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS ( 
 SELECT 
     * 
 FROM 
@@ -230,14 +230,14 @@ in (SELECT
         id 
     FROM 
         {downstream.quoted_dot_notation}) ) 
-,__SNOWSHU_DIRECTIONAL_SAMPLE AS ( 
+,{relation.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
     SELECT 
         * 
     FROM 
-        __SNOWSHU_FINAL_SAMPLE SAMPLE BERNOULLI (10) 
+        {relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (10) 
 ) 
 SELECT 
     * 
 FROM 
-__SNOWSHU_DIRECTIONAL_SAMPLE
+{relation.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
 """)

@@ -1,3 +1,4 @@
+import mock
 from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
 from tests.common import rand_string, query_equalize
 from snowshu.core.models.relation import Relation
@@ -81,28 +82,28 @@ def test_analyze_wrap_statement():
     statement = sf.analyze_wrap_statement(sql, relation)
     assert query_equalize(statement) == query_equalize(f"""
 WITH
-    __SNOWSHU_COUNT_POPULATION AS (
+    {relation.scoped_cte('SNOWSHU_COUNT_POPULATION')} AS (
 SELECT
     COUNT(*) AS population_size
 FROM
     {relation.quoted_dot_notation}
 )
-,__SNOWSHU_CORE_SAMPLE AS (
+,{relation.scoped_cte('SNOWSHU_CORE_SAMPLE')} AS (
 {sql}
 )
-,__SNOWSHU_CORE_SAMPLE_COUNT AS (
+,{relation.scoped_cte('SNOWSHU_CORE_SAMPLE_COUNT')} AS (
 SELECT
     COUNT(*) AS sample_size
 FROM
-    __SNOWSHU_CORE_SAMPLE
+    {relation.scoped_cte('SNOWSHU_CORE_SAMPLE')}
 )
 SELECT
     s.sample_size AS sample_size
     ,p.population_size AS population_size
 FROM
-    __SNOWSHU_CORE_SAMPLE_COUNT s
+    {relation.scoped_cte('SNOWSHU_CORE_SAMPLE_COUNT')} s
 INNER JOIN
-    __SNOWSHU_COUNT_POPULATION p
+    {relation.scoped_cte('SNOWSHU_COUNT_POPULATION')} p
 ON
     1=1
 LIMIT 1
@@ -113,20 +114,22 @@ def test_directionally_wrap_statement_directional():
     sf = SnowflakeAdapter()
     sampling = BernoulliSample(50)
     query = "SELECT * FROM highly_conditional_query"
-    assert query_equalize(sf.directionally_wrap_statement(query, sampling)) == query_equalize(f"""
+    relmock=mock.MagicMock()
+    relmock.scoped_cte=lambda x : x
+    assert query_equalize(sf.directionally_wrap_statement(query,relmock, sampling)) == query_equalize(f"""
 WITH
-    __SNOWSHU_FINAL_SAMPLE AS (
+    {relmock.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
 {query}
 )
-,__SNOWSHU_DIRECTIONAL_SAMPLE AS (
+,{relmock.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS (
 SELECT
     *
 FROM
-    __SNOWSHU_FINAL_SAMPLE
+    {relmock.scoped_cte('SNOWSHU_FINAL_SAMPLE')}
 SAMPLE BERNOULLI (50)
 )
 SELECT 
     *
 FROM 
-    __SNOWSHU_DIRECTIONAL_SAMPLE
+    {relmock.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
 """)

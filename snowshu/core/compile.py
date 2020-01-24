@@ -60,7 +60,7 @@ class RuntimeSourceCompiler:
             query=source_adapter.sample_statement_from_relation(relation, (None if predicates else relation.sample_method))
             if predicates:
                 query+= " WHERE " + ' AND '.join(predicates)
-                query=source_adapter.directionally_wrap_statement(query,(None if do_not_sample else relation.sample_method))
+                query=source_adapter.directionally_wrap_statement(query,relation,(None if do_not_sample else relation.sample_method))
             if unions:
                 query+= " UNION ".join(['']+unions)
         

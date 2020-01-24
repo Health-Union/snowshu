@@ -89,7 +89,7 @@ IF NOT EXISTS {relation.quoted_dot_notation}
             relation.data.to_sql(relation.name,
                                  engine,
                                  schema=relation.schema,
-                                 if_exists='append',
+                                 if_exists='replace',
                                  index=False,
                                  chunksize=DEFAULT_INSERT_CHUNK_SIZE,
                                  method='multi')

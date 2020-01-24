@@ -62,53 +62,55 @@ FROM
 """
 
     def directionally_wrap_statement(
-            self, sql: str, sample_type: Union[SampleMethod, None]) -> str:
+            self, sql: str, 
+            relation:Relation, 
+            sample_type: Union[SampleMethod, None]) -> str:
         if sample_type is None:
             return sql
 
         return f"""
 WITH
-    __SNOWSHU_FINAL_SAMPLE AS (
+{relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
 {sql}
 )
-,__SNOWSHU_DIRECTIONAL_SAMPLE AS (
+,{relation.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS (
 SELECT
     *
 FROM
-    __SNOWSHU_FINAL_SAMPLE
+{relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')}
 {self._sample_type_to_query_sql(sample_type)}
 )
 SELECT
     *
 FROM
-    __SNOWSHU_DIRECTIONAL_SAMPLE
+{relation.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
 """
 
     def analyze_wrap_statement(self, sql: str, relation: Relation) -> str:
         return f"""
 WITH
-    __SNOWSHU_COUNT_POPULATION AS (
+    {relation.scoped_cte('SNOWSHU_COUNT_POPULATION')} AS (
 SELECT
     COUNT(*) AS population_size
 FROM
     {relation.quoted_dot_notation}
 )
-,__SNOWSHU_CORE_SAMPLE AS (
+,{relation.scoped_cte('SNOWSHU_CORE_SAMPLE')} AS (
 {sql}
 )
-,__SNOWSHU_CORE_SAMPLE_COUNT AS (
+,{relation.scoped_cte('SNOWSHU_CORE_SAMPLE_COUNT')} AS (
 SELECT
     COUNT(*) AS sample_size
 FROM
-    __SNOWSHU_CORE_SAMPLE
+    {relation.scoped_cte('SNOWSHU_CORE_SAMPLE')}
 )
 SELECT
     s.sample_size AS sample_size
     ,p.population_size AS population_size
 FROM
-    __SNOWSHU_CORE_SAMPLE_COUNT s
+    {relation.scoped_cte('SNOWSHU_CORE_SAMPLE_COUNT')} s
 INNER JOIN
-    __SNOWSHU_COUNT_POPULATION p
+    {relation.scoped_cte('SNOWSHU_COUNT_POPULATION')} p
 ON
     1=1
 LIMIT 1

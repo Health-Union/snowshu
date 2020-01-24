@@ -5,16 +5,7 @@ from snowshu.core.replica.replica_factory import ReplicaFactory
 from snowshu.utils import PACKAGE_ROOT
 from snowshu.core.docker import SnowShuDocker
 
-
-@pytest.fixture(autouse=True)
-def spin_down_dockers():
-    shdocker = SnowShuDocker()
-    shdocker.remove_container('snowshu_target')
-    shdocker.remove_container('integration-test')
-    yield
-
-
-def test_analyze_unsampled():
+def test_analyze_unsampled(docker_flush):
 
     replica = ReplicaFactory()
 

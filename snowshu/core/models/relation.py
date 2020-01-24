@@ -64,6 +64,11 @@ class Relation:
     def relation(self, value: str) -> None:
         self.name = value
 
+    def scoped_cte(self,string:Optional[str]=None)->str:
+        """ returns a CTE name scoped to the relation.
+            If _string_ is provided, this will be suffixed to the name."""
+        return "__".join([self.database,self.schema,self.name,string])        
+ 
     def typed_columns(self, data_type_mappings: dict) -> str:
         """generates the column section of a create statement in format <attr>
         <datatype>"""

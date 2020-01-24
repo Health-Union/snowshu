@@ -115,28 +115,14 @@ class SnowShuGraph:
         # get isolates first
         isodags = [i for i in networkx.isolates(self.graph)]
         logger.debug(f'created {len(isodags)} isolate dags.')
-
         # assemble undirected graphs
         ugraph = self.graph.to_undirected()
         ugraph.remove_nodes_from(isodags)
-        node_collections = list()
-        for node in ugraph:
-            if len(node_collections) < 1:
-                node_collections.append(
-                    tuple(networkx.shortest_path(ugraph, node).keys()))
-            else:
-                for collection in node_collections:
-                    if node in collection:
-                        collection = collection + \
-                            tuple(n for n in networkx.shortest_path(
-                                ugraph, node).keys() if n not in collection)
-                        break
-                    else:
-                        node_collections.append(
-                            tuple(networkx.shortest_path(ugraph, node).keys()))
+        node_collections=self._split_dag_for_parallel(ugraph)
 
         dags = [networkx.DiGraph() for _ in range(len(isodags))]
         [g.add_node(n) for g, n in zip(dags, isodags)]
+
         [dags.append(networkx.subgraph(self.graph, collection))
          for collection in node_collections]
 
@@ -148,6 +134,12 @@ class SnowShuGraph:
                     (dag.contains_views, relation.is_view,))
 
         return tuple(dags)
+
+    def _split_dag_for_parallel(self,dag:networkx.DiGraph)->list:
+        ugraph = dag.to_undirected()
+        all_paths=set([frozenset(networkx.shortest_path(ugraph, node).keys()) for node in ugraph])
+        return list(tuple(node) for node in all_paths)
+
 
     def _build_sum_patterns_from_configs(
             self, config: Configuration) -> List[dict]:
@@ -184,3 +176,6 @@ class SnowShuGraph:
         relation.include_outliers=configs.include_outliers
         relation.max_number_of_outliers=configs.max_number_of_outliers
         return relation
+
+
+    

@@ -32,14 +32,17 @@ def any_appearance_of(string,strings):
     return any([string in line for line in strings])
 
 def test_reports_full_catalog_start(end_to_end):
+    print('test_reports_catalog')
     result_lines, _ = end_to_end
     assert any_appearance_of('Assessing full catalog...',result_lines)
 
 def test_finds_9_relations(end_to_end):
+    print('test_reports_9_relations')
     result_lines, _ = end_to_end
     assert any_appearance_of('Identified a total of 9 relations to sample based on the specified configurations.',result_lines)
 
 def test_replicates_order_items(end_to_end):
+    print('test_replicates_order_items')
     result_lines, _ = end_to_end
     assert any_appearance_of('Done replication of relation SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS',result_lines)
 
@@ -56,6 +59,7 @@ def test_snowshu_explain(end_to_end):
     assert datetime(response['created_at']) < datetime.now()
 
 def test_launches(end_to_end):
+    print('test_launches')
     _,launch_response=end_to_end
     EXPECTED_CONNECTION_STRINGS=(
         "snowshu:snowshu@localhost:9999/snowshu",
@@ -90,6 +94,7 @@ def test_stops(end_to_end):
     assert 'To start your replica again use command `snowshu start integration-test`' in response.output
 
 def test_bidirectional(end_to_end):
+    print('test_bidirectional')
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
 SELECT 
@@ -110,9 +115,9 @@ OR
     assert count == 0
 
 
-@pytest.mark.skip
-def test_directional(end_to_end, run_snowshu_launch):
-    conn = create_engine(REPLICA_STRING)
+def test_directional(end_to_end):
+    print('test_directional')
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
 WITH
 joined_roots AS (
@@ -137,16 +142,13 @@ SELECT
     # it is statistically very unlikely that NONE of the upstreams without a downstream will be included.
     assert downstream_missing == 0
 
-
-@pytest.mark.skip
-def test_view(end_to_end, run_snowshu_launch):
-
-    conn = create_engine(REPLICA_STRING)
+def test_view(end_to_end):
+    print('test_view')
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
 SELECT 
     (SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS_VIEW") /
     (SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS") AS delta
 """
-    time.sleep(5)
     q = conn.execute(query)
     assert len(set(q.fetchall()[0])) == 1
