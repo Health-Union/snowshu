@@ -68,20 +68,20 @@ def init(path: click.Path) -> None:
 
 @cli.command()
 @click.option(
-    '--tag',
-    default=datetime.utcnow().strftime(DEFAULT_TAG_FORMAT),
-    help="the image tag of the resulting replication image. Defaults to timestamp")
-@click.option(
     '--replica-file',
     type=click.Path(
         exists=True),
     default=REPLICA_DEFAULT,
     help="the Path, string or bytes object snowshu will use for your replica configuration file, default is ./replica.yml")
-def run(tag: str,
-        replica_file: click.Path):
+@click.option(
+    '--barf',
+    is_flag=True,
+    help="outputs the source query sql to a local folder snowshu_barf_output")
+def run(replica_file: click.Path,
+        barf:bool):
     replica = ReplicaFactory()
     replica.load_config(replica_file)
-    click.echo(replica.run(tag))
+    click.echo(replica.run(barf))
 
 
 @cli.command()
@@ -91,10 +91,13 @@ def run(tag: str,
         exists=True),
     default=REPLICA_DEFAULT,
     help="where snowshu will look for your replica configuration file, default is ./replica.yml")
-def analyze(replica_file: click.Path):
+@click.option('--barf','-b',
+    is_flag=True,
+    help="outputs the source query sql to a local folder snowshu_barf_output")
+def analyze(replica_file: click.Path,barf:bool):
     replica = ReplicaFactory()
     replica.load_config(replica_file)
-    click.echo(replica.analyze())
+    click.echo(replica.analyze(barf))
 
 
 @cli.command()

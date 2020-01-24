@@ -4,7 +4,7 @@ from snowshu.utils import PACKAGE_ROOT
 from snowshu.core.models.relation import Relation
 
 
-def test_gets_full_catalog():
+def test_gets_full_catalog(docker_flush):
     tp = ReplicaFactory()
     config = os.path.join(PACKAGE_ROOT, "snowshu", "templates", "replica.yml")
     tp.load_config(config)

@@ -62,53 +62,55 @@ FROM
 """
 
     def directionally_wrap_statement(
-            self, sql: str, sample_type: Union[SampleMethod, None]) -> str:
+            self, sql: str, 
+            relation:Relation, 
+            sample_type: Union[SampleMethod, None]) -> str:
         if sample_type is None:
             return sql
 
         return f"""
 WITH
-    __SNOWSHU_FINAL_SAMPLE AS (
+{relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
 {sql}
 )
-,___SNOWSHU_DIRECTIONAL_SAMPLE AS (
+,{relation.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS (
 SELECT
     *
 FROM
-    __SNOWSHU_FINAL_SAMPLE
+{relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')}
 {self._sample_type_to_query_sql(sample_type)}
 )
 SELECT
     *
 FROM
-    __SNOWSHU_DIRECTIONAL_SAMPLE
+{relation.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
 """
 
     def analyze_wrap_statement(self, sql: str, relation: Relation) -> str:
         return f"""
 WITH
-    __SNOWSHU_COUNT_POPULATION AS (
+    {relation.scoped_cte('SNOWSHU_COUNT_POPULATION')} AS (
 SELECT
     COUNT(*) AS population_size
 FROM
     {relation.quoted_dot_notation}
 )
-,__SNOWSHU_CORE_SAMPLE AS (
+,{relation.scoped_cte('SNOWSHU_CORE_SAMPLE')} AS (
 {sql}
 )
-,__SNOWSHU_CORE_SAMPLE_COUNT AS (
+,{relation.scoped_cte('SNOWSHU_CORE_SAMPLE_COUNT')} AS (
 SELECT
     COUNT(*) AS sample_size
 FROM
-    __SNOWSHU_CORE_SAMPLE
+    {relation.scoped_cte('SNOWSHU_CORE_SAMPLE')}
 )
 SELECT
     s.sample_size AS sample_size
     ,p.population_size AS population_size
 FROM
-    __SNOWSHU_CORE_SAMPLE_COUNT s
+    {relation.scoped_cte('SNOWSHU_CORE_SAMPLE_COUNT')} s
 INNER JOIN
-    __SNOWSHU_COUNT_POPULATION p
+    {relation.scoped_cte('SNOWSHU_COUNT_POPULATION')} p
 ON
     1=1
 LIMIT 1
@@ -127,14 +129,40 @@ FROM
             query += f"{self._sample_type_to_query_sql(sample_type)}"
         return query
 
-    def predicate_constraint_statement(
-            self,
-            relation: Relation,
-            analyze: bool,
-            local_key: str,
-            remote_key: str) -> str:
-        """builds 'where' strings."""
+    def union_constraint_statement( self,
+                                    subject:Relation,
+                                    constraint:Relation,
+                                    subject_key:str,
+                                    constraint_key:str,
+                                    max_number_of_outliers:int)->str:
+        return f"""       
+(SELECT
+    *
+FROM
+{subject.quoted_dot_notation}
+WHERE 
+    {subject_key}
+NOT IN 
+(SELECT
+    {constraint_key}
+FROM
+{constraint.quoted_dot_notation})
+LIMIT {max_number_of_outliers})
+"""
 
+    def upstream_constraint_statement(  self,
+                                        relation:Relation,
+                                        local_key:str,
+                                        remote_key:str)->str:
+        """ builds upstream where constraints against downstream full population"""
+        return f" {local_key} in (SELECT {remote_key} FROM {relation.quoted_dot_notation})" 
+
+    def predicate_constraint_statement( self,
+                                        relation:Relation,      
+                                        analyze:bool,
+                                        local_key:str,
+                                        remote_key:str)->str:
+        """builds 'where' strings"""
         constraint_sql = str()
         if analyze:
             constraint_sql = f" SELECT {remote_key} AS {local_key} FROM ({relation.core_query})"
@@ -162,7 +190,7 @@ FROM
                     f'failed to build predicates for {relation.dot_notation}: remote key {remote_key} not in dataframe columns ({relation.data.columns})')
                 raise e
 
-        return f"{local_key} IN ({constraint_sql})"
+        return f"{local_key} IN ({constraint_sql}) "
 
     def _sample_type_to_query_sql(self, sample_type: SampleMethod) -> str:
         if isinstance(sample_type, BernoulliSample):

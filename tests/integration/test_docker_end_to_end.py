@@ -1,6 +1,5 @@
 import pytest
 import time
-import docker
 from tests.common import rand_string
 from sqlalchemy import create_engine
 from snowshu.core.replica.replica_manager import ReplicaManager
@@ -12,18 +11,7 @@ Logger().set_log_level(0)
 
 TEST_NAME, TEST_TABLE = [rand_string(10) for _ in range(2)]
 
-
-@pytest.fixture
-def kill_docker(autouse=True):
-    shdocker = SnowShuDocker()
-    shdocker.remove_container('snowshu_target')
-    shdocker.remove_container(TEST_NAME)
-    yield
-    shdocker.remove_container('snowshu_target')
-    shdocker.remove_container(TEST_NAME)
-
-
-def test_creates_replica():
+def test_creates_replica(docker_flush):
     # build image
     # load it up with some data
     # convert it to a replica

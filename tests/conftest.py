@@ -1,10 +1,13 @@
 import pytest
+import docker
 from io import StringIO
 import tempfile
 import copy
 import json
 import yaml
 from snowshu.core.configuration_parser import ConfigurationParser
+from tests.conftest_modules.test_credentials import CREDENTIALS
+from tests.conftest_modules.test_configuration import CONFIGURATION
 from tests.common import rand_string
 from snowshu.core.models import Relation, Attribute
 import snowshu.core.models.data_types as dt
@@ -12,111 +15,6 @@ import snowshu.core.models.materializations as mz
 import networkx as nx
 import pandas as pd
 from dfmock import DFMock
-
-
-CREDENTIALS = {
-    "version": "1",
-    "sources": [
-        {
-            "name": "default",
-            "adapter": "snowflake",
-            "account": "nwa1992.us-east-1",
-            "password": "P@$$w0rD!",
-            "database": "SNOWSHU_DEVELOPMENT",
-            "user": "hanzgreuber"
-        }
-    ],
-    "targets": [
-        {
-            "name": "default",
-            "adapter": "postgres",
-            "host": "localhost",
-            "password": "postgres",
-            "port": "5432",
-            "user": "postgres"
-        }
-    ],
-    "storages": [
-        {
-            "name": "default",
-            "adapter": "aws-ecr",
-            "access_key": "aosufipaufp",
-            "access_key_id": "aiosfuaoifuafuiosf",
-            "account": "sasquach.us-east-1"
-        }
-    ]
-}
-
-
-CONFIGURATION = {
-    "version": "1",
-    "credpath": "tests/assets/integration/credentials.yml",
-    "name": "integration trail path",
-    "short_description": "this is a sample with LIVE CREDS for integration",
-    "long_description": "this is for testing against a live db",
-    "threads": 15,
-    "source": {
-        "profile": "default",
-        "default_sampling": {
-            "databases": [
-                {
-                    "name": "SNOWSHU_DEVELOPMENT",
-                    "schemas": [
-                        {
-                            "name": ".*",
-                            "relations": [
-                                "^(?!.+_VIEW).+$"
-                            ]
-                        }
-                    ]
-                }
-            ]
-        },
-        "include_outliers": True,
-        "sample_method": "bernoulli",
-        "probability": 30,
-        "specified_relations": [
-            {
-                "database": "SNOWSHU_DEVELOPMENT",
-                "schema": "SOURCE_SYSTEM",
-                "relation": "ORDERS",
-                "unsampled": True
-            },
-            {
-                "database": "SNOWSHU_DEVELOPMENT",
-                "schema": "SOURCE_SYSTEM",
-                "relation": "ORDER_ITEMS",
-                "relationships": {
-                    "bidirectional": [
-                        {
-                            "local_attribute": "PRODUCT_ID",
-                            "database": "SNOWSHU_DEVELOPMENT",
-                            "schema": "SOURCE_SYSTEM",
-                            "relation": "PRODUCTS",
-                            "remote_attribute": "ID"
-                        }
-                    ],
-                    "directional": [
-                        {
-                            "local_attribute": "ORDER_ID",
-                            "database": "SNOWSHU_DEVELOPMENT",
-                            "schema": "SOURCE_SYSTEM",
-                            "relation": "ORDERS",
-                            "remote_attribute": "ID"
-                        }
-                    ]
-                }
-            }
-        ]
-    },
-    "target": {
-        "adapter": "postgres"
-    },
-    "storage": {
-        "profile": "default"
-    }
-}
-
 
 @pytest.fixture
 def stub_creds():
@@ -223,3 +121,42 @@ def stub_graph_set() -> tuple:
                  local_attribute=vals.directional_key, remote_attribute=vals.directional_key)
 
     return [iso_graph, view_graph, dag], vals
+
+
+def sanitize_docker_environment():
+    client=docker.from_env()
+    def try_or_pass(statement,kwargs=dict()):
+        try:
+            statement(**kwargs)
+        except:
+            pass
+
+    def is_snowshu_related_container(container)->bool:
+        return any([val in container.name for val in ('snowshu__replica__',
+            'integration-test',
+            'snowshu_target',)])
+
+    def is_snowshu_related_image(image)->bool:
+        return any([val in image.tags[0] for val in ('snowshu__replica__',
+            'integration-test',
+            'snowshu_target',)])
+
+    for container in filter(is_snowshu_related_container,client.containers.list()):
+        try_or_pass(container.kill)
+        try_or_pass(container.remove,dict(force=True))
+    
+    for image in filter(is_snowshu_related_image,client.images.list()):
+        try_or_pass(client.images.remove,dict(image=image.tags[0],force=True))
+
+
+@pytest.fixture
+def docker_flush():
+    sanitize_docker_environment()
+    yield
+    sanitize_docker_environment()
+
+@pytest.fixture(scope="session")
+def docker_flush_session():
+    sanitize_docker_environment()
+    yield
+    sanitize_docker_environment()

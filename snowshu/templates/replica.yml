@@ -16,13 +16,13 @@ source:
   
   include_outliers: True
   sample_method: bernoulli
-  probability: 30 
+  probability: 5 
   
   # these are exceptions to the 'default' sampling above
   specified_relations: 
   - database: SNOWSHU_DEVELOPMENT
     schema: SOURCE_SYSTEM
-    relation: ORDERS
+    relation: 'ORDERS'
     unsampled: True
   - database: SNOWSHU_DEVELOPMENT
     schema: SOURCE_SYSTEM
@@ -36,13 +36,23 @@ source:
       - local_attribute: PRODUCT_ID 
         database: '' ## empty strings inherit from the downstream relation
         schema: ''
-        relation: PRODUCTS
+        relation: 'PRODUCTS'
         remote_attribute: ID
       directional: 
       - local_attribute: ORDER_ID
         database: SNOWSHU_DEVELOPMENT
         schema: SOURCE_SYSTEM
-        relation: ORDERS
+        relation: 'ORDERS'
+        remote_attribute: ID
+  - database: SNOWSHU_DEVELOPMENT
+    schema: SOURCE_SYSTEM
+    relation: 'USER_COOKIES'
+    relationships:
+      bidirectional: 
+      - local_attribute: USER_ID 
+        database: '' ## empty strings inherit from the downstream relation
+        schema: ''
+        relation: 'USERS'
         remote_attribute: ID
 
 target:

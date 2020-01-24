@@ -21,18 +21,20 @@ class SnowShuGraph:
                     full_catalog: Tuple[Relation]) -> networkx.DiGraph:
         """Builds a directed graph per replica config."""
         logger.debug('Building graphs from config...')
+
+        ## set defaults for all relations in the catalog
+        [self._set_globals_for_node(relation,configs) for relation in full_catalog]
+
         included_relations = self._filter_relations(
             full_catalog, self._build_sum_patterns_from_configs(configs))
 
         # build graph and add edges
         graph = networkx.DiGraph()
         graph.add_nodes_from(included_relations)
-        self.graph = self._apply_specifications(configs, graph, full_catalog)
-        # set default sampling at relation level
-        [self._set_sampling_method(relation, configs)
-         for relation in self.graph.nodes]
-        logger.info(
-            f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
+        self.graph=self._apply_specifications(configs,graph, full_catalog)
+
+        
+        logger.info(f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
 
         if not self.graph.is_directed():
             raise ValueError(
@@ -113,28 +115,14 @@ class SnowShuGraph:
         # get isolates first
         isodags = [i for i in networkx.isolates(self.graph)]
         logger.debug(f'created {len(isodags)} isolate dags.')
-
         # assemble undirected graphs
         ugraph = self.graph.to_undirected()
         ugraph.remove_nodes_from(isodags)
-        node_collections = list()
-        for node in ugraph:
-            if len(node_collections) < 1:
-                node_collections.append(
-                    tuple(networkx.shortest_path(ugraph, node).keys()))
-            else:
-                for collection in node_collections:
-                    if node in collection:
-                        collection = collection + \
-                            tuple(n for n in networkx.shortest_path(
-                                ugraph, node).keys() if n not in collection)
-                        break
-                    else:
-                        node_collections.append(
-                            tuple(networkx.shortest_path(ugraph, node).keys()))
+        node_collections=self._split_dag_for_parallel(ugraph)
 
         dags = [networkx.DiGraph() for _ in range(len(isodags))]
         [g.add_node(n) for g, n in zip(dags, isodags)]
+
         [dags.append(networkx.subgraph(self.graph, collection))
          for collection in node_collections]
 
@@ -146,6 +134,12 @@ class SnowShuGraph:
                     (dag.contains_views, relation.is_view,))
 
         return tuple(dags)
+
+    def _split_dag_for_parallel(self,dag:networkx.DiGraph)->list:
+        ugraph = dag.to_undirected()
+        all_paths=set([frozenset(networkx.shortest_path(ugraph, node).keys()) for node in ugraph])
+        return list(tuple(node) for node in all_paths)
+
 
     def _build_sum_patterns_from_configs(
             self, config: Configuration) -> List[dict]:
@@ -173,11 +167,15 @@ class SnowShuGraph:
         """applies patterns to the full catalog to build the filtered relation
         set."""
 
-        return set([filtered_relation for filtered_relation in set(filter(
-            lambda rel: at_least_one_full_pattern_match(rel, patterns), full_catalog))])
-
-    def _set_sampling_method(self, relation: Relation,
-                             configs: Configuration) -> Relation:
-        """for now sets all to default."""
-        relation.sample_method = configs.default_sample_method
+        return set([filtered_relation for filtered_relation in \
+            set(filter(lambda rel : at_least_one_full_pattern_match(rel,patterns), full_catalog))])
+    
+    def _set_globals_for_node(self,relation:Relation,configs:Configuration)->Relation:
+        """ for now sets all to default."""
+        relation.sample_method=configs.default_sample_method
+        relation.include_outliers=configs.include_outliers
+        relation.max_number_of_outliers=configs.max_number_of_outliers
         return relation
+
+
+    

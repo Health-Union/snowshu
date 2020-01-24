@@ -1,5 +1,6 @@
 from typing import List, Union, Optional
 from snowshu.core.utils import key_for_value
+from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.models import materializations as mz
 from snowshu.core.sample_methods import SampleMethod
 from snowshu.core.models.attribute import Attribute
@@ -10,16 +11,17 @@ logger = Logger().logger
 
 
 class Relation:
-
-    data: pd.DataFrame
-    compiled_query: str
-    core_query: str
-    population_size: int
-    sample_size: int
-    source_extracted: bool = False
-    target_loaded: bool = False
-    sample_method: Optional[SampleMethod]
-    unsampled = False
+    data:pd.DataFrame
+    compiled_query:str
+    core_query:str
+    population_size:int
+    sample_size:int
+    source_extracted:bool=False
+    target_loaded:bool=False
+    sample_method:Optional[SampleMethod]
+    unsampled:bool=False
+    include_outliers:bool=False
+    max_number_of_outliers:int=DEFAULT_MAX_NUMBER_OF_OUTLIERS
 
     def __init__(self,
                  database: str,
@@ -62,6 +64,11 @@ class Relation:
     def relation(self, value: str) -> None:
         self.name = value
 
+    def scoped_cte(self,string:Optional[str]=None)->str:
+        """ returns a CTE name scoped to the relation.
+            If _string_ is provided, this will be suffixed to the name."""
+        return "__".join([self.database,self.schema,self.name,string])        
+ 
     def typed_columns(self, data_type_mappings: dict) -> str:
         """generates the column section of a create statement in format <attr>
         <datatype>"""

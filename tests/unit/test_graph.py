@@ -85,5 +85,60 @@ def test_unsampled(stub_graph_set):
 
     modified_graph = shgraph._apply_specifications(
         config, nx.DiGraph(), full_catalog)
+    modified_graph=shgraph._apply_specifications(config,nx.DiGraph(),full_catalog)       
+ 
+    assert vals.iso_relation.unsampled==True
 
-    assert vals.iso_relation.unsampled == True
+def test_sets_outliers(stub_graph_set):
+    shgraph=SnowShuGraph()
+
+    _,vals = stub_graph_set
+
+    full_catalog=[  vals.iso_relation,
+                    vals.view_relation,
+                    vals.downstream_relation,
+                    vals.upstream_relation,
+                    vals.birelation_left,
+                    vals.birelation_right]
+
+    config_dict=copy.deepcopy(CONFIGURATION)
+    config_dict['source']['include_outliers']=True
+    config_dict['source']['max_number_of_outliers']=1000
+
+    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+    
+    modified_graph=shgraph.build_graph(config,full_catalog)       
+ 
+    assert vals.iso_relation.include_outliers==True
+    assert vals.iso_relation.max_number_of_outliers==1000
+
+
+def test_no_duplicates(stub_graph_set):
+    shgraph=SnowShuGraph()
+
+    _,vals = stub_graph_set
+
+    full_catalog=[  vals.iso_relation,
+                    vals.view_relation,
+                    vals.downstream_relation,
+                    vals.upstream_relation,
+                    vals.birelation_left,
+                    vals.birelation_right]
+
+    config_dict=copy.deepcopy(CONFIGURATION)
+
+    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+    
+    shgraph.build_graph(config,full_catalog)       
+    graphs = shgraph.get_graphs()
+
+    all_nodes=[node for graph in graphs for node in graph.nodes]
+    assert len(set(all_nodes)) == len(all_nodes)
+
+def test_split_dag_to_parallel():
+    shgraph=SnowShuGraph()
+    dag=nx.DiGraph()
+    dag.add_edges_from([(1,2,),(1,4,),(2,3,),(5,6,)])
+    split=shgraph._split_dag_for_parallel(dag)
+    
+    assert set([frozenset(val) for val in split]) == set([frozenset([1,2,4,3]),frozenset([5,6])])

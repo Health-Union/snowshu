@@ -27,26 +27,26 @@ class ReplicaFactory:
     def __init__(self):
         self._credentials = dict()
 
-    def run(self, tag: str) -> None:
+    def run(self, barf: bool) -> None:
         self.ANALYZE = False
-        return self._execute()
+        return self._execute(barf)
 
-    def analyze(self) -> None:
+    def analyze(self,barf:bool) -> None:
         self.ANALYZE = True
-        return self._execute()
+        return self._execute(barf=barf)
 
-    def _execute(self) -> None:
+    def _execute(self,barf:bool) -> None:
         self.graphs = self._build_uncompiled_graphs()
         if len(self.graphs) < 1:
             return "No relations found per provided replica configuration, exiting."
-
         self.target_adapter.initialize_replica()
         runner = GraphSetRunner()
         runner.execute_graph_set(self.graphs,
                                  self.source_adapter,
                                  self.target_adapter,
                                  threads=self.config.threads,
-                                 analyze=self.ANALYZE)
+                                 analyze=self.ANALYZE,
+                                 barf=barf)
 
         self.target_adapter.finalize_replica()
 
