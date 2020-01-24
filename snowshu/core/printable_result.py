@@ -2,7 +2,7 @@ from tabulate import tabulate
 import networkx as nx
 from dataclasses import dataclass
 from typing import Any, List, Union
-from snowshu.core.sample_methods import SampleMethod
+from snowshu.core.sampling.sample_methods import SampleMethod
 from snowshu.logger import Logger
 logger = Logger().logger
 

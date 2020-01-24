@@ -2,7 +2,7 @@ import pytest
 import mock
 import copy
 import pandas as pd
-from snowshu.core.sample_methods import BernoulliSample
+from snowshu.core.sampling.sample_methods import BernoulliSample
 from snowshu.core.graph_set_runner import GraphSetRunner, GraphExecutable
 from snowshu.logger import Logger
 from time import time
