@@ -9,13 +9,13 @@ CONFIGURATION = {
     "threads": 15,
     "source": {
         "profile": "default",
-        "default_sampling": {
+        "general_relations": {
             "databases": [
                 {
-                    "name": "SNOWSHU_DEVELOPMENT",
+                    "pattern": "SNOWSHU_DEVELOPMENT",
                     "schemas": [
                         {
-                            "name": ".*",
+                            "pattern": ".*",
                             "relations": [
                                 "^(?!.+_VIEW).+$"
                             ]

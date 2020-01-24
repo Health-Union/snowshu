@@ -148,7 +148,7 @@ class SnowShuGraph:
         logger.debug('building sum patterns for configs...')
         approved_default_patterns = [dict(database=d.database_pattern,
                                           schema=s.schema_pattern,
-                                          name=r.relation_pattern) for d in config.default_sampling.databases
+                                          name=r.relation_pattern) for d in config.general_relations.databases
                                      for s in d.schemas
                                      for r in s.relations]
 
