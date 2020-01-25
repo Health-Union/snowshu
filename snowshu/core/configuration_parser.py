@@ -1,10 +1,11 @@
 from pathlib import Path
 import yaml
-from typing import Union, TextIO, List, Optional
+from typing import Union, TextIO, List, Optional,Type
 from snowshu.logger import Logger
 from snowshu.configs import DEFAULT_THREAD_COUNT,DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from dataclasses import dataclass
 from snowshu.core.sampling.sample_methods import SampleMethod, get_sample_method_from_kwargs
+from snowshu.core.samplings import BaseSampling
 logger = Logger().logger
 
 
@@ -49,7 +50,7 @@ class SpecifiedMatchPattern():
     relation_pattern: str
     unsampled: bool
     relationships: Relationships
-
+    sampling:Optional[BaseSampling]=None
 
 @dataclass
 class Configuration():
@@ -63,6 +64,7 @@ class Configuration():
     target_adapter:str
     storage_profile:str
     include_outliers:bool
+    sampling:Type[BaseSampling]
     max_number_of_outliers:int
     default_sample_method:SampleMethod
     general_relations: List[MatchPattern]   
@@ -128,6 +130,7 @@ class ConfigurationParser:
                             loaded['target']['adapter'],
                             loaded['storage']['profile'],
                             loaded['source'].get('include_outliers',False),
+                            loaded['source']['sampling'],
                             loaded['source'].get('max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS),
                             get_sample_method_from_kwargs(**loaded['source']),
                             )
