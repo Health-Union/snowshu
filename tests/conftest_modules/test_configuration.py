@@ -9,6 +9,7 @@ CONFIGURATION = {
     "threads": 15,
     "source": {
         "profile": "default",
+        "sampling": "default",
         "general_relations": {
             "databases": [
                 {
@@ -57,6 +58,18 @@ CONFIGURATION = {
                             "remote_attribute": "ID"
                         }
                     ]
+                }
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "EXTERNAL_DATA",
+                "relation": "SOCIAL_USERS_IMPORT",
+                "sampling": {
+                    "default": {
+                        "margin_of_error": 0.05,
+                        "confidence": 0.95,
+                        "min_sample_size": 300
+                    }
                 }
             }
         ]
