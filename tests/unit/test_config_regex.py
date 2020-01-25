@@ -12,6 +12,7 @@ MOCKED_CONFIG = dict(name='test',
                      credpath='./',
                      source=dict(
                           profile='default',
+                          sampling='default',
                           sample_method='bernoulli',
                           probability=10,
                           general_relations=dict(databases=[dict(pattern='(?i)^snow.*',

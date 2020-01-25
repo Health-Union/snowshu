@@ -6,6 +6,7 @@ from snowshu.configs import DEFAULT_THREAD_COUNT,DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from dataclasses import dataclass
 from snowshu.core.sampling.sample_methods import SampleMethod, get_sample_method_from_kwargs
 from snowshu.core.samplings import BaseSampling
+from snowshu.samplings.utils import get_sampling_from_partial
 logger = Logger().logger
 
 
@@ -49,8 +50,8 @@ class SpecifiedMatchPattern():
     schema_pattern: str
     relation_pattern: str
     unsampled: bool
+    sampling:Union[BaseSampling,None]
     relationships: Relationships
-    sampling:Optional[BaseSampling]=None
 
 @dataclass
 class Configuration():
@@ -106,6 +107,7 @@ class ConfigurationParser:
                         rel['schema'],
                         rel['relation'],
                         rel.get('unsampled',False),
+                        rel.get('Sampling',None),
                         _build_relationships(rel)) for rel in specified_relations]
 
 
@@ -130,7 +132,7 @@ class ConfigurationParser:
                             loaded['target']['adapter'],
                             loaded['storage']['profile'],
                             loaded['source'].get('include_outliers',False),
-                            loaded['source']['sampling'],
+                            get_sampling_from_partial(loaded['source']['sampling']),
                             loaded['source'].get('max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS),
                             get_sample_method_from_kwargs(**loaded['source']),
                             )

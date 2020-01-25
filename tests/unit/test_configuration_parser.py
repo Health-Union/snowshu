@@ -44,4 +44,4 @@ def test_sets_sampling_for_all_patterns(stub_configs):
     mock_config_file = StringIO(yaml.dump(stub_configs))
     parsed=ConfigurationParser.from_file_or_path(mock_config_file)
 
-    assert parsed.sampling==DefaultSampling()
+    assert isinstance(parsed.sampling,DefaultSampling)
