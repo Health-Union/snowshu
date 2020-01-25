@@ -5,6 +5,6 @@ class BaseSampling:
     def sample_method(self):
         raise NotImplementedError()
 
-    def sample_size_method()
+    def sample_size_method(self):
         raise NotImplementedError()
 
