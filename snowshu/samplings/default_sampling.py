@@ -1,3 +1,4 @@
+import math
 from snowshu.core.samplings import BaseSampling
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from snowshu.samplings.sample_sizes import CochransSampleSize
@@ -16,6 +17,7 @@ class DefaultSampling(BaseSampling):
                  margin_of_error:float=0.02,
                  confidence:float=0.99,
                  min_sample_size:int=1000):
+        self.min_sample_size=min_sample_size
         self.sample_size_method=CochransSampleSize(margin_of_error,
                                                    confidence)
         
@@ -26,5 +28,6 @@ class DefaultSampling(BaseSampling):
     @population.setter
     def population(self,val)->None:
         self._population=math.ceil(val)
-        self.sample_method=BernoulliSampleMethod(self.sample_size_method.size(self.population),
-                           units='rows')
+        self.sample_method=BernoulliSampleMethod(
+                                        max(self.sample_size_method.size(self.population),self.min_sample_size),
+                                        units='rows')
