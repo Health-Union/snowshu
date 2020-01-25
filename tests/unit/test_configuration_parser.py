@@ -5,6 +5,7 @@ from io import StringIO
 import yaml
 from snowshu.core.configuration_parser import ConfigurationParser
 import os
+from snowshu.samplings import DefaultSampling
 
 
 def test_fills_in_empty_source_values(stub_replica_configuration):
@@ -37,3 +38,10 @@ def test_errors_on_missing_section(stub_configs):
     with pytest.raises(AttributeError):
         mock_config_file = StringIO(yaml.dump(stub_configs))
         ConfigurationParser.from_file_or_path(mock_config_file)
+
+def test_sets_sampling_for_all_patterns(stub_configs):
+    stub_configs = stub_configs()
+    mock_config_file = StringIO(yaml.dump(stub_configs))
+    parsed=ConfigurationParser.from_file_or_path(mock_config_file)
+
+    assert parsed.sampling==DefaultSampling()
