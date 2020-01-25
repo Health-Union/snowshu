@@ -17,3 +17,8 @@ def test_default_sampling_min():
     default=DefaultSampling(0.1,0.50)
     default.population=ONE_HUNDRED_THOUSAND_ROWS
     assert default.sample_method.rows == 1000
+
+def test_default_sampling_override_min():
+    default=DefaultSampling(0.1,0.50, 5000)
+    default.population=ONE_HUNDRED_THOUSAND_ROWS
+    assert default.sample_method.rows == 5000
