@@ -28,6 +28,7 @@ def get_sampling_from_partial(partial:Union[dict,str])->Type[BaseSampling]:
     def find_sampling_from_string(string:str)->Type[BaseSampling]:
         return all_samplings.__dict__[string.capitalize() + 'Sampling']
     try:
-        return find_sampling_from_string(list(partial.keys())[0])(**partial.items[0])
+        nested_dict=list(partial.keys())[0]
+        return find_sampling_from_string(nested_dict)(**partial[nested_dict])
     except AttributeError:
         return find_sampling_from_string(partial)()
