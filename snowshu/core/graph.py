@@ -4,6 +4,7 @@ from snowshu.core.models.relation import Relation
 from snowshu.core.configuration_parser import Configuration
 from typing import Tuple, Set, List
 from snowshu.logger import Logger
+from snowshu.samplings.utils import get_sampling_from_partial
 from snowshu.core.models.relation import at_least_one_full_pattern_match,\
     lookup_single_relation,\
     single_full_pattern_match
@@ -69,9 +70,8 @@ class SnowShuGraph:
                     pattern_val=getattr(pattern,attr,None)
                     relation.__dict__[attr]=pattern_val if pattern_val is not None else relation.__dict__[attr]
                 
-                raise ValueError(pattern)
                 if getattr(pattern,'sampling',None) is not None:
-                    relation.sampling=get_sampling_from_partial(pattern['sampling'])
+                    relation.sampling=pattern.sampling
         return relation            
 
         approved_specified_patterns = [
