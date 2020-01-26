@@ -63,9 +63,16 @@ class GraphSetRunner:
                 f"Executing graph with {len(executable.graph)} relations in it...")
             for i, relation in enumerate(
                     nx.algorithms.dag.topological_sort(executable.graph)):
-
                 logger.info(
                     f'Executing graph {i+1} of {len(executable.graph)} source query for relation {relation.dot_notation}...')
+
+                ## population size and sampling needs to be set before runtime compiler can execute
+                relation.population_size=executable.source_adapter.check_count_and_query(
+                                         executable.source_adapter.population_count_statement(relation),
+                                         MAX_ALLOWED_ROWS).iloc[0][0]
+
+                relation.sampling.population = relation.population_size
+                
                 relation = RuntimeSourceCompiler.compile_queries_for_relation(
                     relation, executable.graph, executable.source_adapter, executable.analyze)
 
@@ -112,7 +119,6 @@ class GraphSetRunner:
                             raise SystemError(
                                 f'Failed execution of extraction sql statement: {relation.compiled_query}')
 
-                        relation.population_size = 0  # TODO:fix this!
                         relation.sample_size = len(relation.data)
                         logger.info(
                             f'{relation.sample_size} records retrieved for relation {relation.dot_notation}.')

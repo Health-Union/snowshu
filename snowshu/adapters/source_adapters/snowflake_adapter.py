@@ -39,11 +39,20 @@ class SnowflakeAdapter(BaseSourceAdapter):
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.VIEW}
 
-    # TODO: this is the future, move buz logic to base and replace with these.
     GET_ALL_DATABASES_SQL = """ SELECT DISTINCT database_name
                                 FROM "UTIL_DB"."INFORMATION_SCHEMA"."DATABASES"
                                 WHERE is_transient = 'NO'
                                 AND database_name <> 'UTIL_DB'"""
+
+    def population_count_statement(self,relation:Relation)->str:
+        """creates the count * statement for a relation
+
+        Args:
+            relation: the :class:`Relation <snowshu.core.models.relation.Relation>` to create the statement for.
+        Returns:
+            a query that results in a single row, single column, integer value of the unsampled relation population size
+        """
+        return f"SELECT COUNT(*) FROM {relation.quoted_dot_notation}"
 
     def view_creation_statement(self, relation: Relation) -> str:
         return f"""
