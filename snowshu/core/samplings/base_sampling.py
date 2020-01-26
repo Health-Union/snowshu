@@ -1,4 +1,4 @@
-from snowshu.core.models import Relation
+from typing import Type
 from snowshu.adapters.source_adapters import BaseSourceAdapter
 class BaseSampling:
     """Base class for all executable sampling classes.
@@ -10,7 +10,7 @@ class BaseSampling:
     def sample_size_method(self):
         raise NotImplementedError()
 
-    def prepare(self,relation:Relation,source_adapter:Type[BaseSourceAdapter]):
+    def prepare(self,relation:'Relation',source_adapter:Type[BaseSourceAdapter]):
         """Runs all nessesary pre-activities and instanciates the sample method.
 
         Prepare will be called before primary query compile time, so it can be used
