@@ -2,6 +2,7 @@ from typing import List, Union, Optional
 from snowshu.core.utils import key_for_value
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.models import materializations as mz
+from snowshu.core.samplings import BaseSampling
 from snowshu.core.sampling.sample_methods import SampleMethod
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.configuration_parser import SpecifiedMatchPattern
@@ -19,6 +20,7 @@ class Relation:
     sample_size:int
     source_extracted:bool=False
     target_loaded:bool=False
+    sampling:Optional[BaseSampling]
     sample_method:Optional[SampleMethod]
     unsampled:bool=False
     include_outliers:bool=False

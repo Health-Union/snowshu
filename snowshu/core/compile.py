@@ -16,7 +16,6 @@ class RuntimeSourceCompiler:
                                      analyze: bool) -> Relation:
         """generates and populates the compiled sql for each relation in a
         dag."""
-
         query = str()
         if relation.is_view:
             relation.core_query, relation.compiled_query = [
@@ -57,10 +56,10 @@ class RuntimeSourceCompiler:
                                                                                   edge_data['remote_attribute'],
                                                                                   relation.max_number_of_outliers))
             
-            query=source_adapter.sample_statement_from_relation(relation, (None if predicates else relation.sample_method))
+            query=source_adapter.sample_statement_from_relation(relation, (None if predicates else relation.sampling.sample_method))
             if predicates:
                 query+= " WHERE " + ' AND '.join(predicates)
-                query=source_adapter.directionally_wrap_statement(query,relation,(None if do_not_sample else relation.sample_method))
+                query=source_adapter.directionally_wrap_statement(query,relation,(None if do_not_sample else relation.sampling.sample_method))
             if unions:
                 query+= " UNION ".join(['']+unions)
         
