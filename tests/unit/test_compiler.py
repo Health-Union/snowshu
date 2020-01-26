@@ -12,6 +12,7 @@ from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
 from snowshu.core.models.relation import Relation
 from snowshu.core.compile import RuntimeSourceCompiler
 from snowshu.core.sampling.sample_methods import BernoulliSample
+from snowshu.samplings import DefaultSampling
 from snowshu.core.models.attribute import Attribute
 import snowshu.core.models.data_types as dt
 
@@ -33,6 +34,9 @@ def test_analyze_unsampled(stub_relation_set):
 def test_analyze_iso(stub_relation_set):
     iso = stub_relation_set.iso_relation
     iso.sample_method = BernoulliSample(10)
+    iso.sampling=DefaultSampling()
+    iso.sampling.sample_method._rows == 1500
+    iso.sampling.sample_method._units == 'rows'
     dag = nx.DiGraph()
     dag.add_nodes_from([iso])
     compiler = RuntimeSourceCompiler()
@@ -51,7 +55,7 @@ SELECT
     *
 FROM 
     {iso.quoted_dot_notation}
-    SAMPLE BERNOULLI (10)
+    SAMPLE BERNOULLI (1500 ROWS)
 )
 ,{iso.scoped_cte('SNOWSHU_CORE_SAMPLE')}_COUNT AS (
 SELECT
@@ -75,6 +79,9 @@ LIMIT 1
 def test_run_iso(stub_relation_set):
     iso = stub_relation_set.iso_relation
     iso.sample_method = BernoulliSample(10)
+    iso.sampling=DefaultSampling()
+    iso.sampling.sample_method._rows == 1500
+    iso.sampling.sample_method._units == 'rows'
     dag = nx.DiGraph()
     dag.add_nodes_from([iso])
     compiler = RuntimeSourceCompiler()
@@ -85,7 +92,7 @@ SELECT
     *
 FROM 
     {iso.quoted_dot_notation}
-    SAMPLE BERNOULLI (10)
+    SAMPLE BERNOULLI (1500 ROWS)
 """)
 
 
@@ -96,6 +103,9 @@ def test_run_deps_directional(stub_relation_set):
     for relation in (downstream,upstream,):
         relation.attributes=[Attribute('id',dt.INTEGER)]
         relation.sample_method=BernoulliSample(10)
+        relation.sampling=DefaultSampling()
+        relation.sampling.sample_method._rows == 1500
+        relation.sampling.sample_method._units == 'rows'
     
     dag=nx.DiGraph()
     dag.add_edge(upstream,downstream,direction="directional",remote_attribute='id',local_attribute='id')
@@ -117,7 +127,7 @@ WHERE id IN (1,2,3)
 SELECT 
     * 
 FROM 
-{downstream.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (10) 
+{downstream.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (1500 ROWS) 
 ) 
 SELECT 
     * 
@@ -135,6 +145,9 @@ def test_run_deps_bidirectional_include_outliers(stub_relation_set):
         relation.sample_method=BernoulliSample(10)
         relation.include_outliers=True    
         relation.max_number_of_outliers=100
+        relation.sampling=DefaultSampling()
+        relation.sampling.sample_method._rows == 1500
+        relation.sampling.sample_method._units == 'rows'
 
     dag=nx.DiGraph()
     dag.add_edge(upstream,downstream,direction="bidirectional",remote_attribute='id',local_attribute='id')
@@ -175,7 +188,7 @@ SELECT * FROM
 SELECT 
     * 
 FROM 
-    {relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (10)
+    {relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (1500 ROWS)
 ) 
 SELECT 
     * 
@@ -203,6 +216,9 @@ def test_run_deps_bidirectional_exclude_outliers(stub_relation_set):
     for relation in (downstream,upstream,):
         relation.attributes=[Attribute('id',dt.INTEGER)]
         relation.sample_method=BernoulliSample(10)
+        relation.sampling=DefaultSampling()
+        relation.sampling.sample_method._rows == 1500
+        relation.sampling.sample_method._units == 'rows'
 
     dag=nx.DiGraph()
     dag.add_edge(upstream,downstream,direction="bidirectional",remote_attribute='id',local_attribute='id')
@@ -234,7 +250,7 @@ in (SELECT
     SELECT 
         * 
     FROM 
-        {relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (10) 
+        {relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (1500 ROWS) 
 ) 
 SELECT 
     * 
