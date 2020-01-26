@@ -7,11 +7,11 @@ class BruteForceSampling(BaseSampling):
     """Heuristic sampling using raw % size for sample size and :class:`Bernoulli <snowshu.samplings.sample_methods.bernoulli_sample_method.BernoulliSampleMethod>` sampling.
     
     Args:
-        probability: The % sample size desired in decimal format from 0.01 to 0.99.
+        probability: The % sample size desired in decimal format from 0.01 to 0.99. Default 10%.
         min_sample_size: The minimum number of records to retrieve from the population. Default 1000.
     """ 
     def __init__(self,
-                 probability:float,
+                 probability:float=0.10,
                  min_sample_size:int=1000):
         self.min_sample_size=min_sample_size
         self.sample_size_method=BruteForceSampleSize(probability)

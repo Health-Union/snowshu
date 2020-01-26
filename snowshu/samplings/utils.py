@@ -26,7 +26,7 @@ def get_sampling_from_partial(partial:Union[dict,str])->Type[BaseSampling]:
         The configured  :class:`DefaultSampling <snowshu.samplings.default_sampling.DefaultSampling>`.
     """
     def find_sampling_from_string(string:str)->Type[BaseSampling]:
-        return all_samplings.__dict__[string.capitalize() + 'Sampling']
+        return all_samplings.__dict__[''.join([substring.capitalize() for substring in string.split('_')]) + 'Sampling']
     try:
         nested_dict=list(partial.keys())[0]
         return find_sampling_from_string(nested_dict)(**partial[nested_dict])
