@@ -4,6 +4,7 @@ from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.models import materializations as mz
 from snowshu.core.sampling.sample_methods import SampleMethod
 from snowshu.core.models.attribute import Attribute
+from snowshu.core.configuration_parser import SpecifiedMatchPattern
 import pandas as pd
 import re
 from snowshu.logger import Logger
@@ -122,15 +123,28 @@ def lookup_relations(lookup: dict, relation_set: iter) -> Relation:
     return list(found)
 
 
-def single_full_pattern_match(rel: Relation, pattern: dict) -> bool:
-    """determines if a relation matches a regex pattern dictionary of
-    database,schema,name(relation)."""
+def single_full_pattern_match(rel: Relation, pattern:Union[dict,SpecifiedMatchPattern]) -> bool:
+    """determines if a relation matches a regex pattern.
+    
+    Pattern can be a dictionary of or a :class:`SpecifiedMatchPattern <snowshu.core.configuration_parser.SpecifiedMatchPattern>`.
+    
+    Args:
+        relation: The :class:`Relation <snowshu.core.models.relation.Relation>` to be tested. 
+        pattern: Either a dict of database,schema,name(relation) or a :class:`SpecifiedMatchPattern <snowshu.core.configuration_parser.SpecifiedMatchPattern>`.
+    
+    Returns:
+        If the pattern matches the relation.
+    """
     attributes = ('database', 'schema', 'name',)
-    if not all([pattern[attribute] for attribute in attributes]):
-        return False
-    return all([(lambda r, p: re.match(r, p))(pattern[attr],
+    try:
+        pattern=dict(database=pattern.database_pattern,
+                     schema=pattern.schema_pattern,
+                     name=pattern.relation_pattern)
+    except AttributeError:
+        if not all([pattern[attribute] for attribute in attributes]):
+            return False
+        return all([(lambda r, p: re.match(r, p))(pattern[attr],
                                               rel.__dict__[attr],) for attr in attributes])
-
 
 def at_least_one_full_pattern_match(rel: Relation, patterns: iter) -> bool:
     """determines if a relation matches any of a collection of pattern

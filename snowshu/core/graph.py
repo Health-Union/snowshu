@@ -19,11 +19,20 @@ class SnowShuGraph:
 
     def build_graph(self, configs: Configuration,
                     full_catalog: Tuple[Relation]) -> networkx.DiGraph:
-        """Builds a directed graph per replica config."""
+        """Builds a directed graph per replica config.
+        
+        Args:
+            configs: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object.
+            full_catalog: A collection of :class:`Relations <snowshu.core.models.relation.Relation>` to build the graph from.
+
+        Returns:
+            a directed graph of :class:`Relations <snowshu.core.models.relation.Relation>` with dependencies applied.
+        """
         logger.debug('Building graphs from config...')
 
         ## set defaults for all relations in the catalog
         [self._set_globals_for_node(relation,configs) for relation in full_catalog]
+        [self._set_overriding_params_for_node(relation,configs) for relation in full_catalog]
 
         included_relations = self._filter_relations(
             full_catalog, self._build_sum_patterns_from_configs(configs))
@@ -39,6 +48,33 @@ class SnowShuGraph:
         if not self.graph.is_directed():
             raise ValueError(
                 'The graph created by the specified trail path is not directed (circular reference detected).')
+
+    def _set_overriding_params_for_node(self,
+                                        relation:Relation,
+                                        configs:Configuration)->Relation:
+        """Finds and applies specific params from config.
+
+        If multiple conflicting specific params are found they will be applied in descending order from the originating replica file.
+
+        Args:
+            relation: A :class:`Relation <snowshu.core.models.relation.Relation>` to be tested for specific configs.
+            configs: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object to search for matches and specified params.
+        Returns:
+            The :class:`Relation <snowshu.core.models.relation.Relation>` with all updated params applied.
+        """
+        for pattern in configs.specified_relations:
+            if single_full_pattern_match(relation,
+                                         pattern):
+                for attr in ('sampling','unsampled','include_outliers',):
+                    pattern_val=getattr(pattern,attr,None)
+                    relation.__dict__[attr]=pattern_val if pattern_val is not None else relation.__dict__[attr]
+        return relation            
+
+        approved_specified_patterns = [
+            dict(
+                database=r.database_pattern,
+                schema=r.schema_pattern,
+                name=r.relation_pattern) for r in config.specified_relations]
 
     def _apply_specifications(
             self,
@@ -171,11 +207,19 @@ class SnowShuGraph:
             set(filter(lambda rel : at_least_one_full_pattern_match(rel,patterns), full_catalog))])
     
     def _set_globals_for_node(self,relation:Relation,configs:Configuration)->Relation:
-        """ for now sets all to default."""
+        """Sets the initial (default) node values from the config
+            
+        ARGS:
+            relation: the :class:`Relation <snowshu.core.models.relation>` to set values of.
+            configs: the :class"`Configuration <snowshu.core.configuration_parser.Configuration` object to derive default values from.
+        
+        Returns:
+            The updated :class:`Relation <snowshu.core.models.relation>`
+        """
+        relation.sampling=configs.sampling
         relation.sample_method=configs.default_sample_method
         relation.include_outliers=configs.include_outliers
         relation.max_number_of_outliers=configs.max_number_of_outliers
         return relation
-
 
     
