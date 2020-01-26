@@ -2,10 +2,7 @@ from typing import List, Union, Optional
 from snowshu.core.utils import key_for_value
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.models import materializations as mz
-from snowshu.core.samplings import BaseSampling
-from snowshu.core.sampling.sample_methods import SampleMethod
 from snowshu.core.models.attribute import Attribute
-from snowshu.core.configuration_parser import SpecifiedMatchPattern
 import pandas as pd
 import re
 from snowshu.logger import Logger
@@ -20,8 +17,8 @@ class Relation:
     sample_size:int
     source_extracted:bool=False
     target_loaded:bool=False
-    sampling:Optional[BaseSampling]
-    sample_method:Optional[SampleMethod]
+    sampling:Optional['BaseSampling']
+    sample_method:Optional['SampleMethod']
     unsampled:bool=False
     include_outliers:bool=False
     max_number_of_outliers:int=DEFAULT_MAX_NUMBER_OF_OUTLIERS
@@ -125,7 +122,7 @@ def lookup_relations(lookup: dict, relation_set: iter) -> Relation:
     return list(found)
 
 
-def single_full_pattern_match(rel: Relation, pattern:Union[dict,SpecifiedMatchPattern]) -> bool:
+def single_full_pattern_match(rel: Relation, pattern:Union[dict,'SpecifiedMatchPattern']) -> bool:
     """determines if a relation matches a regex pattern.
     
     Pattern can be a dictionary of or a :class:`SpecifiedMatchPattern <snowshu.core.configuration_parser.SpecifiedMatchPattern>`.
