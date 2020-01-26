@@ -28,6 +28,6 @@ def get_sampling_from_partial(partial:Union[dict,str])->Type[BaseSampling]:
     def find_sampling_from_string(string:str)->Type[BaseSampling]:
         return all_samplings.__dict__[string.capitalize() + 'Sampling']
     try:
-        return find_sampling_from_string(partial.keys()[0])(**partial)
+        return find_sampling_from_string(list(partial.keys())[0])(**partial.items[0])
     except AttributeError:
         return find_sampling_from_string(partial)()

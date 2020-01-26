@@ -51,6 +51,7 @@ class SpecifiedMatchPattern():
     relation_pattern: str
     unsampled: bool
     sampling:Union[BaseSampling,None]
+    include_outliers:Union[bool,None]
     relationships: Relationships
 
 @dataclass
@@ -103,11 +104,16 @@ class ConfigurationParser:
         def _build_specified_relations(source_config:dict)->SpecifiedMatchPattern:
             
             specified_relations=source_config.get('specified_relations',list())
+            def sampling_or_none(rel):
+                if rel.get('sampling'):
+                    return get_sampling_from_partial(rel['sampling'])
+                
             return [SpecifiedMatchPattern( rel['database'],
                         rel['schema'],
                         rel['relation'],
                         rel.get('unsampled',False),
-                        rel.get('Sampling',None),
+                        sampling_or_none(rel),
+                        rel.get('include_outliers',None),
                         _build_relationships(rel)) for rel in specified_relations]
 
         try:
@@ -134,7 +140,6 @@ class ConfigurationParser:
                             loaded['source'].get('max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS),
                             get_sample_method_from_kwargs(**loaded['source']),
                             )
-            
             general_relations=MatchPattern([MatchPattern.DatabasePattern(database['pattern'],
                                                             [MatchPattern.SchemaPattern(schema['pattern'], 
                                                                                         [MatchPattern.RelationPattern(relation) for relation in schema['relations']]) 

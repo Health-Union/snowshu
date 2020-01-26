@@ -65,9 +65,13 @@ class SnowShuGraph:
         for pattern in configs.specified_relations:
             if single_full_pattern_match(relation,
                                          pattern):
-                for attr in ('sampling','unsampled','include_outliers',):
+                for attr in ('unsampled','include_outliers',):
                     pattern_val=getattr(pattern,attr,None)
                     relation.__dict__[attr]=pattern_val if pattern_val is not None else relation.__dict__[attr]
+                
+                raise ValueError(pattern)
+                if getattr(pattern,'sampling',None) is not None:
+                    relation.sampling=get_sampling_from_partial(pattern['sampling'])
         return relation            
 
         approved_specified_patterns = [

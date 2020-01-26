@@ -143,10 +143,11 @@ def single_full_pattern_match(rel: Relation, pattern:Union[dict,SpecifiedMatchPa
                      schema=pattern.schema_pattern,
                      name=pattern.relation_pattern)
     except AttributeError:
-        if not all([pattern[attribute] for attribute in attributes]):
-            return False
-        return all([(lambda r, p: re.match(r, p))(pattern[attr],
-                                              rel.__dict__[attr],) for attr in attributes])
+        pass
+    if not all([pattern[attribute] for attribute in attributes]):
+        return False
+    return all([(lambda r, p: re.match(r, p))(pattern[attr],
+                                          rel.__dict__[attr],) for attr in attributes])
 
 def at_least_one_full_pattern_match(rel: Relation, patterns: iter) -> bool:
     """determines if a relation matches any of a collection of pattern
