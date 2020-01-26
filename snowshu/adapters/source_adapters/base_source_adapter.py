@@ -56,6 +56,20 @@ class BaseSourceAdapter(BaseSQLAdapter):
         """checks the count, if count passes returns results as a tuple."""
         raise NotImplementedError()
 
+    def scalar_query(self, query: str) -> Any:
+        """Returns only a single value.
+        
+        When the database is expected to return a single row with a single column, 
+        this method will return the raw value from that cell. Will throw a :class:`TooManyRecords <snowshu.exceptions.TooManyRecords>` exception. 
+        
+        Args:
+            query: the query to execute.
+
+        Returns:
+            the raw value from cell [0][0]
+        """
+        return check_count_and_query(query,1).iloc[0][0]           
+
     def _get_data_type(self, source_type: str) -> DataType:
         try:
             return self.DATA_TYPE_MAPPINGS[source_type.lower()]

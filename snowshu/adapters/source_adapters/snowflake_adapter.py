@@ -1,6 +1,7 @@
 import time
 import pandas as pd
 import sqlalchemy
+from snowshu.exceptions import TooManyRecords
 from sqlalchemy.pool import NullPool
 from typing import List, Union, Any, Optional
 from snowshu.core.models.attribute import Attribute
@@ -301,7 +302,7 @@ LIMIT {max_number_of_outliers})
             message = f'failed to execute query, result would have returned {count} rows but the max allowed rows for this type of query is {max_count}.'
             logger.error(message)
             logger.debug(f'failed sql: {query}')
-            raise ValueError(message)
+            raise TooManyRecords(message)
         response = self._safe_query(query)
         return response
 
