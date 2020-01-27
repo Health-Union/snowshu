@@ -2,7 +2,6 @@ from tabulate import tabulate
 import networkx as nx
 from dataclasses import dataclass
 from typing import Any, List, Union
-from snowshu.core.sampling.sample_methods import SampleMethod
 from snowshu.logger import Logger
 logger = Logger().logger
 
@@ -27,8 +26,7 @@ class ReportRow:
                 )
 
 
-def graph_to_result_list(graphs: nx.Graph,
-                         sample_method: SampleMethod) -> list:
+def graph_to_result_list(graphs: nx.Graph) -> list:
     report = list()
     for graph in graphs:
         try:

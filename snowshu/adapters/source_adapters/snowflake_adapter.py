@@ -7,10 +7,10 @@ from typing import List, Union, Any, Optional
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
 from snowshu.adapters.source_adapters import BaseSourceAdapter
-from snowshu.core.sampling.sample_methods import SampleMethod, BernoulliSample, SystemSample
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
 from snowshu.logger import Logger
+from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from snowshu.core.models.credentials import USER, PASSWORD, ACCOUNT, DATABASE, SCHEMA, ROLE, WAREHOUSE
 logger = Logger().logger
 
@@ -20,7 +20,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
     def __init__(self):
         super().__init__()
 
-    SUPPORTED_SAMPLE_METHODS = (BernoulliSample, SystemSample)
+    SUPPORTED_SAMPLE_METHODS = (BernoulliSampleMethod,)
     REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
     ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
 
@@ -203,12 +203,11 @@ LIMIT {max_number_of_outliers})
         return f"{local_key} IN ({constraint_sql}) "
 
     def _sample_type_to_query_sql(self, sample_type: SampleMethod) -> str:
-        #TODO: BernoulliSample is dead code, remove
         if sample_type.name == 'BERNOULLI':
             qualifier=sample_type.probability if sample_type.probability\
                         else str(sample_type.rows) + ' ROWS'
             return f"SAMPLE BERNOULLI ({qualifier})"
-        elif isinstance(sample_type, SystemSample):
+        elif sample_type.name == 'SYSTEM':
             return f"SAMPLE SYSTEM ({sample_type.probability})"
         else:
             message = f"{sample_type.name} is not supported for SnowflakeAdapter"

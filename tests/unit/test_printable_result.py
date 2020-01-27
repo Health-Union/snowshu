@@ -1,5 +1,4 @@
 import pytest
-from snowshu.core.sampling.sample_methods import BernoulliSample
 import snowshu.core.printable_result as pr
 
 
@@ -10,7 +9,7 @@ def test_graph_to_list(stub_graph_set):
         rel.populuation_size = 1000
         rel.sample_size = 10
 
-    report = pr.graph_to_result_list(graphs, BernoulliSample(probability=10))
+    report = pr.graph_to_result_list(graphs)
 
     assert isinstance(report, list)
     for row in report:

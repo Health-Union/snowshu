@@ -2,14 +2,9 @@ import pytest
 import mock
 import copy
 import pandas as pd
-from snowshu.core.sampling.sample_methods import BernoulliSample
-from snowshu.samplings import DefaultSampling
+from snowshu.samplings.samplings import DefaultSampling
 from snowshu.core.graph_set_runner import GraphSetRunner, GraphExecutable
-from snowshu.logger import Logger
 from time import time
-log_engine = Logger()
-# log_engine.set_log_level(10)
-logger = log_engine.logger
 
 
 def test_traverse_and_execute_analyze(stub_graph_set):
@@ -29,7 +24,6 @@ def test_traverse_and_execute_analyze(stub_graph_set):
         rel.unsampled=False
         rel.include_outliers=False
         rel.sampling=DefaultSampling()
-        rel.sample_method = BernoulliSample(10)
 
     dag_executable = GraphExecutable(dag, source_adapter, target_adapter, True)
 
@@ -44,7 +38,6 @@ def test_traverse_and_execute_analyze(stub_graph_set):
 
     # iso dag
     iso = copy.deepcopy(graph_set[0])  # first graph in the set is an iso
-    [node for node in iso.nodes][0].sample_method = BernoulliSample(10)
     [node for node in iso.nodes][0].sampling = DefaultSampling()
     [node for node in iso.nodes][0].unsampled=False
     [node for node in iso.nodes][0].include_outliers=False

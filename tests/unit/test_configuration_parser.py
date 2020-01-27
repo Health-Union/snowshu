@@ -5,7 +5,7 @@ from io import StringIO
 import yaml
 from snowshu.core.configuration_parser import ConfigurationParser
 import os
-from snowshu.samplings import DefaultSampling
+from snowshu.samplings.samplings import DefaultSampling
 
 
 def test_fills_in_empty_source_values(stub_replica_configuration):
