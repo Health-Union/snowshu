@@ -1,4 +1,4 @@
-from snowshu.core.samplings import BaseSampleSize
+from snowshu.core.samplings.bases.base_sample_size import BaseSampleSize
 
 class BruteForceSampleSize(BaseSampleSize):
     """Implements a static percentage sample size.

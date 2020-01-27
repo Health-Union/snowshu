@@ -1,6 +1,6 @@
 import snowshu.samplings.samplings as all_samplings
 from typing import Union,Type
-from snowshu.core.samplings import BaseSampling
+from snowshu.core.samplings.bases.base_sampling import BaseSampling
 
 def get_sampling_from_partial(partial:Union[dict,str])->Type[BaseSampling]:
     """takes a sampling config dict and returns an instance of :class:`BaseSampling <snowshu.core.samplings.base_sampling.BaseSampling>'

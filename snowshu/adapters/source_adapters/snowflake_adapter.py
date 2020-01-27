@@ -74,7 +74,7 @@ FROM
     def directionally_wrap_statement(
             self, sql: str, 
             relation:Relation, 
-            sample_type: Union[SampleMethod, None]) -> str:
+            sample_type: Union['BaseSampleMethod', None]) -> str:
         if sample_type is None:
             return sql
 
@@ -127,7 +127,7 @@ LIMIT 1
 """
 
     def sample_statement_from_relation(
-            self, relation: Relation, sample_type: Union[SampleMethod, None]) -> str:
+            self, relation: Relation, sample_type: Union['BaseSampleMethod', None]) -> str:
         """builds the base sample statment for a given relation."""
         query = f"""
 SELECT
@@ -202,7 +202,7 @@ LIMIT {max_number_of_outliers})
 
         return f"{local_key} IN ({constraint_sql}) "
 
-    def _sample_type_to_query_sql(self, sample_type: SampleMethod) -> str:
+    def _sample_type_to_query_sql(self, sample_type: 'BaseSampleMethod') -> str:
         if sample_type.name == 'BERNOULLI':
             qualifier=sample_type.probability if sample_type.probability\
                         else str(sample_type.rows) + ' ROWS'
