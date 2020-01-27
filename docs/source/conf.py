@@ -9,6 +9,7 @@ extensions = [
     "sphinx_rtd_theme",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
 ]
 
 html_theme = "sphinx_rtd_theme"

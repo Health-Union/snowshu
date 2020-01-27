@@ -68,7 +68,7 @@ class BaseSourceAdapter(BaseSQLAdapter):
         Returns:
             the raw value from cell [0][0]
         """
-        return check_count_and_query(query,1).iloc[0][0]           
+        return self.check_count_and_query(query,1).iloc[0][0]           
 
     def _get_data_type(self, source_type: str) -> DataType:
         try:
