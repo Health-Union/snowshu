@@ -203,8 +203,11 @@ LIMIT {max_number_of_outliers})
         return f"{local_key} IN ({constraint_sql}) "
 
     def _sample_type_to_query_sql(self, sample_type: SampleMethod) -> str:
-        if isinstance(sample_type, BernoulliSample):
-            return f"SAMPLE BERNOULLI ({sample_type.probability})"
+        #TODO: BernoulliSample is dead code, remove
+        if sample_type.name == 'BERNOULLI':
+            qualifier=sample_type.probability if sample_type.probability\
+                        else str(sample_type.rows) + ' ROWS'
+            return f"SAMPLE BERNOULLI ({qualifier})"
         elif isinstance(sample_type, SystemSample):
             return f"SAMPLE SYSTEM ({sample_type.probability})"
         else:
