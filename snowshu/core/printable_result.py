@@ -44,8 +44,8 @@ def graph_to_result_list(graphs: nx.Graph,
                 elif int(relation.population_size) < 1:
                     percent = 0
                 else:
-                    percent = round(
-                        100.0 * (relation.sample_size / target_sample_size))
+                    percent = int(round(
+                        100.0 * (relation.sample_size / target_sample_size)))
 
                 percent_is_acceptable = True if isinstance(percent, str) else abs(percent-100) <= 5
                 report.append(ReportRow(

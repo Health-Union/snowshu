@@ -28,25 +28,3 @@ class BernoulliSampleMethod(BaseSampleMethod):
     @property
     def probability(self)->int:
         return self._probability
-
-    def is_acceptable(self, value:Union[float,int]) -> bool:
-        """Given the specified value, is it within a tollerance of the specified size?
-
-        Args:
-            value: the value to test. Inherits units from the class instance.
-        
-        Returns:
-            if the value is within tollerance.    
-        """
-        tollerance=0.05
-        
-        if self.rows:
-            return tollerance >= (abs(value-self.rows) 
-                                  /
-                                  ((value+self.rows)/2.0))
-        elif self.probability:
-            return tollerance >= abs(value-self.probability)
-
-        else:
-            raise ValueError('BernoulliSampleMethod must have either rows or probability property.')
-
