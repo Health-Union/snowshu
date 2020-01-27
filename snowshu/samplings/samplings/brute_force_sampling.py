@@ -1,5 +1,5 @@
 import math
-from snowshu.core.samplings import BaseSampling
+from snowshu.core.samplings.bases.base_sampling import BaseSampling
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from snowshu.samplings.sample_sizes import BruteForceSampleSize
 

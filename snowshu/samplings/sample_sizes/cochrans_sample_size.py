@@ -1,5 +1,5 @@
 import math
-from snowshu.core.samplings import BaseSampleSize
+from snowshu.core.samplings.bases.base_sample_size import BaseSampleSize
 from scipy.stats import norm as normal
 
 class CochransSampleSize(BaseSampleSize):

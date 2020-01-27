@@ -1,5 +1,5 @@
 from typing import Union,Optional
-from snowshu.core.samplings import BaseSampleMethod
+from snowshu.core.samplings.bases.base_sample_method import BaseSampleMethod
 
 class BernoulliSampleMethod(BaseSampleMethod):
     """Sample selection using the Bernoulli sampling method. `https://en.wikipedia.org/wiki/Bernoulli_trial`

@@ -221,7 +221,6 @@ class SnowShuGraph:
             The updated :class:`Relation <snowshu.core.models.relation>`
         """
         relation.sampling=configs.sampling
-        relation.sample_method=configs.default_sample_method
         relation.include_outliers=configs.include_outliers
         relation.max_number_of_outliers=configs.max_number_of_outliers
         return relation
