@@ -2,7 +2,7 @@ from snowshu.adapters import BaseSQLAdapter
 import pandas as pd
 from typing import Tuple,Any
 from snowshu.core.models import Relation, DataType
-from snowshu.utils import MAX_ALLOWED_DATABASES, MAX_ALLOWED_ROWS
+from snowshu.configs import MAX_ALLOWED_DATABASES, MAX_ALLOWED_ROWS
 from snowshu.logger import Logger
 import time
 logger = Logger().logger
@@ -39,7 +39,7 @@ class BaseSourceAdapter(BaseSQLAdapter):
             conn = self.get_connection()
             cursor = conn.connect()
             # we make the STRONG assumption that all responses will be small enough to live in-memory (because sampling engine).
-            # further safety added by the constraints in snowshu.utils
+            # further safety added by the constraints in snowshu.configs
             # this allows the connection to return to the pool
             logger.debug(f'Executed query in {time.time()-start} seconds.')
             frame = pd.read_sql_query(query_sql, conn)
