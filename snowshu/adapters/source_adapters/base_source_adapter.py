@@ -42,7 +42,7 @@ class BaseSourceAdapter(BaseSQLAdapter):
             # further safety added by the constraints in snowshu.utils
             # this allows the connection to return to the pool
             logger.debug(f'Executed query in {time.time()-start} seconds.')
-            frame = pd.read_sql(query_sql, conn)
+            frame = pd.read_sql_query(query_sql, conn)
         finally:
             cursor.close()
             conn.dispose()
