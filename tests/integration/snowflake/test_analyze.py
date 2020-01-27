@@ -15,5 +15,5 @@ def test_analyze_unsampled(docker_flush):
     result.reverse()
     for line in result:
         if "ORDERS" in line:
-            assert '\x1b[0;32m100\x1b[0m' in line
+            assert '\x1b[0;32m100 %\x1b[0m' in line
             break
