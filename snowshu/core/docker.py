@@ -78,6 +78,7 @@ class SnowShuDocker:
                 start_command: str,
                 port: int,
                 target_adapter: str,
+                source_adapter: str,
                 envars: list,
                 protocol: str = "tcp") -> docker.models.containers.Container:
 
@@ -88,7 +89,9 @@ class SnowShuDocker:
             port,
             name=DOCKER_TARGET_CONTAINER,
             labels=dict(
-                target_adapter=target_adapter))
+                snowshu_replica='true',
+                target_adapter=target_adapter,
+                source_adapter=source_adapter))
         logger.info(
             f'Connecting {DOCKER_TARGET_CONTAINER} to bridge network..')
         self._connect_to_bridge_network(container)

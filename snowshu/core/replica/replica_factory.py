@@ -39,7 +39,7 @@ class ReplicaFactory:
         self.graphs = self._build_uncompiled_graphs()
         if len(self.graphs) < 1:
             return "No relations found per provided replica configuration, exiting."
-        self.target_adapter.initialize_replica()
+        self.target_adapter.initialize_replica(self.source_adapter.CLASSNAME)
         runner = GraphSetRunner()
         runner.execute_graph_set(self.graphs,
                                  self.source_adapter,
