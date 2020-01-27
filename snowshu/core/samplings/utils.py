@@ -1,4 +1,4 @@
-import snowshu.samplings as all_samplings
+import snowshu.samplings.samplings as all_samplings
 from typing import Union,Type
 from snowshu.core.samplings import BaseSampling
 

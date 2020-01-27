@@ -1,5 +1,5 @@
 import pytest
-from snowshu.samplings import DefaultSampling
+from snowshu.samplings.samplings import DefaultSampling
 import mock
 
 @pytest.fixture()

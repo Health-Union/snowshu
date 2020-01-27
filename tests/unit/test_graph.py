@@ -6,7 +6,7 @@ import copy
 import networkx as nx
 from snowshu.core.configuration_parser import ConfigurationParser
 from snowshu.core.graph import SnowShuGraph
-from snowshu.samplings import DefaultSampling,BruteForceSampling
+from snowshu.samplings.samplings import DefaultSampling,BruteForceSampling
 from snowshu.core.models import materializations as mz
 from snowshu.core.models import Relation
 

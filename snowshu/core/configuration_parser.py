@@ -4,9 +4,7 @@ from typing import Union, TextIO, List, Optional,Type
 from snowshu.logger import Logger
 from snowshu.configs import DEFAULT_THREAD_COUNT,DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from dataclasses import dataclass
-from snowshu.core.sampling.sample_methods import SampleMethod, get_sample_method_from_kwargs
-from snowshu.core.samplings import BaseSampling
-from snowshu.samplings.utils import get_sampling_from_partial
+from snowshu.core.samplings.utils import get_sampling_from_partial
 logger = Logger().logger
 
 
@@ -50,7 +48,7 @@ class SpecifiedMatchPattern():
     schema_pattern: str
     relation_pattern: str
     unsampled: bool
-    sampling:Union[BaseSampling,None]
+    sampling:Union['BaseSampling',None]
     include_outliers:Union[bool,None]
     relationships: Relationships
 
@@ -66,9 +64,8 @@ class Configuration():
     target_adapter:str
     storage_profile:str
     include_outliers:bool
-    sampling:Type[BaseSampling]
+    sampling:Type['BaseSampling']
     max_number_of_outliers:int
-    default_sample_method:SampleMethod
     general_relations: List[MatchPattern]   
     specified_relations:List[SpecifiedMatchPattern]
 
@@ -137,9 +134,8 @@ class ConfigurationParser:
                             loaded['storage']['profile'],
                             loaded['source'].get('include_outliers',False),
                             get_sampling_from_partial(loaded['source']['sampling']),
-                            loaded['source'].get('max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS),
-                            get_sample_method_from_kwargs(**loaded['source']),
-                            )
+                            loaded['source'].get('max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS))
+
             general_relations=MatchPattern([MatchPattern.DatabasePattern(database['pattern'],
                                                             [MatchPattern.SchemaPattern(schema['pattern'], 
                                                                                         [MatchPattern.RelationPattern(relation) for relation in schema['relations']]) 
