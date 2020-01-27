@@ -41,11 +41,12 @@ class BernoulliSampleMethod(BaseSampleMethod):
         tollerance=0.05
         
         if self.rows:
-            return tollerance <= (abs(value-self.rows) 
+            return tollerance >= (abs(value-self.rows) 
                                   /
                                   ((value+self.rows)/2.0))
         elif self.probability:
-            return tollerance <= abs(value-self.probability)
+            return tollerance >= abs(value-self.probability)
 
         else:
             raise ValueError('BernoulliSampleMethod must have either rows or probability property.')
+
