@@ -1,0 +1,1 @@
+from .base_storage_adapter import BaseStorageAdapter

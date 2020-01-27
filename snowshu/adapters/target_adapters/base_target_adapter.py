@@ -100,12 +100,16 @@ IF NOT EXISTS {relation.quoted_dot_notation}
         logger.info(
             f'Data loaded into relation {relation.quoted_dot_notation}')
 
-    def initialize_replica(self) -> None:
+    def initialize_replica(self,source_adapter_name:str) -> None:
         """shimming but will want to move _init_image public with this
-        interface."""
-        self._init_image()
+        interface.
+        
+        Args:
+            source_adapter_name: the classname of the source adapter
+        """
+        self._init_image(source_adapter_name)
 
-    def _init_image(self) -> None:
+    def _init_image(self, source_adapter_name:str) -> None:
         shdocker = SnowShuDocker()
         logger.info('Initializing target container...')
         self.container = shdocker.startup(
@@ -113,6 +117,7 @@ IF NOT EXISTS {relation.quoted_dot_notation}
             self.DOCKER_START_COMMAND,
             self.DOCKER_TARGET_PORT,
             self.CLASSNAME,
+            source_adapter_name,
             self._build_snowshu_envars(
                 self.DOCKER_SNOWSHU_ENVARS))
         logger.info('Container initialized.')
