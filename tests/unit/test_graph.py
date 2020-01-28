@@ -6,7 +6,9 @@ import copy
 import networkx as nx
 from snowshu.core.configuration_parser import ConfigurationParser
 from snowshu.core.graph import SnowShuGraph
-
+from snowshu.samplings.samplings import DefaultSampling,BruteForceSampling
+from snowshu.core.models import materializations as mz
+from snowshu.core.models import Relation
 
 def test_graph_builds_dags_correctly(stub_graph_set):
     shgraph = SnowShuGraph()
@@ -142,3 +144,28 @@ def test_split_dag_to_parallel():
     split=shgraph._split_dag_for_parallel(dag)
     
     assert set([frozenset(val) for val in split]) == set([frozenset([1,2,4,3]),frozenset([5,6])])
+
+
+def test_sets_only_existing_adapters():
+    shgraph=SnowShuGraph()
+    
+    test_relation=Relation(
+                 database='SNOWSHU_DEVELOPMENT',
+                 schema='SOURCE_SYSTEM',
+                 name='ORDER_ITEMS',
+                 materialization=mz.TABLE,
+                 attributes=[]
+                    )
+    test_relation.include_outliers, test_relation.unsampled = [False for _ in range(2)] 
+    test_relation.sampling=DefaultSampling()  
+    config_dict=copy.deepcopy(CONFIGURATION)
+    config_dict['source']['specified_relations'][1]['sampling']='lucky_guess'
+
+    with pytest.raises(AttributeError):
+        config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
+    assert isinstance(test_relation.sampling,DefaultSampling)
+    config_dict['source']['specified_relations'][1]['sampling']='brute_force'
+    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+    shgraph._set_overriding_params_for_node(test_relation,config)
+    assert isinstance(test_relation.sampling,BruteForceSampling)

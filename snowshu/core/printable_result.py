@@ -2,7 +2,6 @@ from tabulate import tabulate
 import networkx as nx
 from dataclasses import dataclass
 from typing import Any, List, Union
-from snowshu.core.sample_methods import SampleMethod
 from snowshu.logger import Logger
 logger = Logger().logger
 
@@ -11,41 +10,46 @@ logger = Logger().logger
 class ReportRow:
     dot_notation: str
     population_size: Union[int, str]
-    sample_size: Union[int, str]
+    target_sample_size:Union[int,str]
+    final_sample_size: Union[int, str]
     count_of_dependencies: str
-    percent: Any
+    percent_to_target: Any
     percent_is_acceptable: bool
 
     def to_tuple(self) -> list:
         return (self.dot_notation,
                 self.population_size,
-                self.sample_size,
+                self.target_sample_size,
+                self.final_sample_size,
                 self.count_of_dependencies,
-                self.percent,
+                self.percent_to_target,
                 )
 
 
-def graph_to_result_list(graphs: nx.Graph,
-                         sample_method: SampleMethod) -> list:
+def graph_to_result_list(graphs: nx.Graph) -> list:
     report = list()
     for graph in graphs:
         try:
             for relation in graph.nodes:
                 deps = len(nx.ancestors(graph, relation))
                 deps = " " if deps == 0 else str(deps)
+                target_sample_size=relation.population_size if\
+                    (relation.unsampled or relation.population_size < relation.sampling.size)\
+                    else relation.sampling.size
+                
                 if isinstance(relation.population_size, str):
                     percent = "N/A"
                 elif int(relation.population_size) < 1:
                     percent = 0
                 else:
-                    percent = round(
-                        100.0 * (relation.sample_size / relation.population_size))
+                    percent = int(round(
+                        100.0 * (relation.sample_size / target_sample_size)))
 
-                percent_is_acceptable = True if isinstance(percent, str) else any(
-                    (sample_method.is_acceptable(percent), (relation.unsampled and percent == 100),))
+                percent_is_acceptable = True if isinstance(percent, str) else abs(percent-100) <= 5
                 report.append(ReportRow(
                     relation.dot_notation,
                     relation.population_size,
+                    target_sample_size,
                     relation.sample_size,
                     deps,
                     percent,
@@ -64,12 +68,13 @@ def printable_result(report: List[ReportRow], analyze: str) -> str:
     printable = list()
     for row in report:
         formatter = 'green' if row.percent_is_acceptable else 'red'
-        row.percent = f"{colors[formatter]}{row.percent}{colors['reset']}"
+        row.percent_to_target = f"{colors[formatter]}{row.percent_to_target} %{colors['reset']}"
         printable.append(row.to_tuple())
 
-    headers = ('relation', 'population size', 'sample size',
-               'dependencies', 'aproximate %',)
-    column_alignment = ('left', 'right', 'right', 'center', 'right',)
+    headers = ('relation', 'population size', 'target sample size',
+               'final sample size',
+               'dependencies', 'aproximate % to target',)
+    column_alignment = ('left', 'right', 'right', 'right', 'center', 'right',)
     title = 'ANALYZE' if analyze else 'RUN'
     message_top = f"\n\n{title} RESULTS:\n\n"
     return message_top + \

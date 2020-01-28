@@ -4,7 +4,7 @@ from tests.common import rand_string, query_equalize
 from snowshu.core.models.relation import Relation
 from snowshu.core.models.credentials import Credentials
 from snowshu.core.models.materializations import TABLE
-from snowshu.core.sample_methods import BernoulliSample
+from snowshu.samplings.sample_methods import BernoulliSampleMethod
 
 
 def test_conn_string_basic():
@@ -30,7 +30,7 @@ def test_sample_statement():
                         name=TABLE,
                         materialization=TABLE,
                         attributes=[])
-    sample = sf.sample_statement_from_relation(relation, BernoulliSample(10))
+    sample = sf.sample_statement_from_relation(relation, BernoulliSampleMethod(10,units="probability"))
     assert query_equalize(sample) == query_equalize(f"""
 SELECT
     *
@@ -112,7 +112,7 @@ LIMIT 1
 
 def test_directionally_wrap_statement_directional():
     sf = SnowflakeAdapter()
-    sampling = BernoulliSample(50)
+    sampling = BernoulliSampleMethod(50,units='probability')
     query = "SELECT * FROM highly_conditional_query"
     relmock=mock.MagicMock()
     relmock.scoped_cte=lambda x : x

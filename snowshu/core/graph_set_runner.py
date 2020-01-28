@@ -63,9 +63,13 @@ class GraphSetRunner:
                 f"Executing graph with {len(executable.graph)} relations in it...")
             for i, relation in enumerate(
                     nx.algorithms.dag.topological_sort(executable.graph)):
-
+                relation.population_size=executable.source_adapter.scalar_query(
+                                         executable.source_adapter.population_count_statement(relation))
                 logger.info(
                     f'Executing graph {i+1} of {len(executable.graph)} source query for relation {relation.dot_notation}...')
+
+                relation.sampling.prepare(relation,
+                                          executable.source_adapter)
                 relation = RuntimeSourceCompiler.compile_queries_for_relation(
                     relation, executable.graph, executable.source_adapter, executable.analyze)
 
@@ -95,8 +99,7 @@ class GraphSetRunner:
                         relation.population_size = "N/A"
                         relation.sample_size = "N/A"
                         try:
-                            relation.view_ddl = executable.source_adapter.check_count_and_query(
-                                relation.compiled_query, MAX_ALLOWED_ROWS).iloc[0][0]
+                            relation.view_ddl = executable.source_adapter.scalar_query(relation.compiled_query)
                         except Exception:
                             raise SystemError(
                                 f'Failed to extract DDL statement: {relation.compiled_query}')
@@ -112,7 +115,6 @@ class GraphSetRunner:
                             raise SystemError(
                                 f'Failed execution of extraction sql statement: {relation.compiled_query}')
 
-                        relation.population_size = 0  # TODO:fix this!
                         relation.sample_size = len(relation.data)
                         logger.info(
                             f'{relation.sample_size} records retrieved for relation {relation.dot_notation}.')

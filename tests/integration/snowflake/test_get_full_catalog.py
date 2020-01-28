@@ -1,6 +1,6 @@
 import os
 from snowshu.core.replica.replica_factory import ReplicaFactory
-from snowshu.utils import PACKAGE_ROOT
+from snowshu.configs import PACKAGE_ROOT
 from snowshu.core.models.relation import Relation
 
 

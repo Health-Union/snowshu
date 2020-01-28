@@ -2,13 +2,9 @@ import pytest
 import mock
 import copy
 import pandas as pd
-from snowshu.core.sample_methods import BernoulliSample
+from snowshu.samplings.samplings import DefaultSampling
 from snowshu.core.graph_set_runner import GraphSetRunner, GraphExecutable
-from snowshu.logger import Logger
 from time import time
-log_engine = Logger()
-# log_engine.set_log_level(10)
-logger = log_engine.logger
 
 
 def test_traverse_and_execute_analyze(stub_graph_set):
@@ -23,9 +19,11 @@ def test_traverse_and_execute_analyze(stub_graph_set):
     source_adapter.check_count_and_query.return_value=pd.DataFrame([dict(population_size=1000,sample_size=100)])
     dag=copy.deepcopy(graph_set[-1]) # last graph in the set is the dag
     
-    ## stub in the sampling pop
+    ## stub in the sampling pop defaults
     for rel in dag.nodes:
-        rel.sample_method = BernoulliSample(10)
+        rel.unsampled=False
+        rel.include_outliers=False
+        rel.sampling=DefaultSampling()
 
     dag_executable = GraphExecutable(dag, source_adapter, target_adapter, True)
 
@@ -40,7 +38,11 @@ def test_traverse_and_execute_analyze(stub_graph_set):
 
     # iso dag
     iso = copy.deepcopy(graph_set[0])  # first graph in the set is an iso
-    [node for node in iso.nodes][0].sample_method = BernoulliSample(10)
+    [node for node in iso.nodes][0].sampling = DefaultSampling()
+    [node for node in iso.nodes][0].unsampled=False
+    [node for node in iso.nodes][0].include_outliers=False
+
+
     iso_executable = GraphExecutable(iso, source_adapter, target_adapter, True)
     assert not isinstance(
         getattr(vals.iso_relation, 'data', None), pd.DataFrame)

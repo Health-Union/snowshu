@@ -6,11 +6,12 @@ long_description: this is for testing against a live db
 threads: 15
 source:
   profile: default
-  default_sampling:
+  sampling: default
+  general_relations:
     databases:
-    - name: 'SNOWSHU_DEVELOPMENT' # matches our test database
+    - pattern: 'SNOWSHU_DEVELOPMENT' # matches our test database
       schemas:
-      - name: '.*' # matches all schemas
+      - pattern: '.*' # matches all schemas
         relations:
         - '^(?!.+_VIEW).+$' # matches all relations that do not end with '_VIEW'
   
@@ -54,6 +55,14 @@ source:
         schema: ''
         relation: 'USERS'
         remote_attribute: ID
+  - database: SNOWSHU_DEVELOPMENT
+    schema: EXTERNAL_DATA
+    relation: 'SOCIAL_USERS_IMPORT'
+    sampling:
+      default:
+        margin_of_error: 0.05
+        confidence: 0.95
+        min_sample_size: 300
 
 target:
   adapter: 'postgres'

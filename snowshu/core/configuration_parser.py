@@ -1,10 +1,10 @@
 from pathlib import Path
 import yaml
-from typing import Union, TextIO, List, Optional
+from typing import Union, TextIO, List, Optional,Type
 from snowshu.logger import Logger
 from snowshu.configs import DEFAULT_THREAD_COUNT,DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from dataclasses import dataclass
-from snowshu.core.sample_methods import SampleMethod, get_sample_method_from_kwargs
+from snowshu.core.samplings.utils import get_sampling_from_partial
 logger = Logger().logger
 
 
@@ -48,8 +48,9 @@ class SpecifiedMatchPattern():
     schema_pattern: str
     relation_pattern: str
     unsampled: bool
+    sampling:Union['BaseSampling',None]
+    include_outliers:Union[bool,None]
     relationships: Relationships
-
 
 @dataclass
 class Configuration():
@@ -63,9 +64,9 @@ class Configuration():
     target_adapter:str
     storage_profile:str
     include_outliers:bool
+    sampling:Type['BaseSampling']
     max_number_of_outliers:int
-    default_sample_method:SampleMethod
-    default_sampling: List[MatchPattern]   
+    general_relations: List[MatchPattern]   
     specified_relations:List[SpecifiedMatchPattern]
 
 
@@ -100,13 +101,17 @@ class ConfigurationParser:
         def _build_specified_relations(source_config:dict)->SpecifiedMatchPattern:
             
             specified_relations=source_config.get('specified_relations',list())
+            def sampling_or_none(rel):
+                if rel.get('sampling'):
+                    return get_sampling_from_partial(rel['sampling'])
+                
             return [SpecifiedMatchPattern( rel['database'],
                         rel['schema'],
                         rel['relation'],
                         rel.get('unsampled',False),
+                        sampling_or_none(rel),
+                        rel.get('include_outliers',None),
                         _build_relationships(rel)) for rel in specified_relations]
-
-
 
         try:
             with open(loadable) as f:
@@ -128,19 +133,18 @@ class ConfigurationParser:
                             loaded['target']['adapter'],
                             loaded['storage']['profile'],
                             loaded['source'].get('include_outliers',False),
-                            loaded['source'].get('max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS),
-                            get_sample_method_from_kwargs(**loaded['source']),
-                            )
-            
-            default_sampling=MatchPattern([MatchPattern.DatabasePattern(database['name'],
-                                                            [MatchPattern.SchemaPattern(schema['name'], 
+                            get_sampling_from_partial(loaded['source']['sampling']),
+                            loaded['source'].get('max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS))
+
+            general_relations=MatchPattern([MatchPattern.DatabasePattern(database['pattern'],
+                                                            [MatchPattern.SchemaPattern(schema['pattern'], 
                                                                                         [MatchPattern.RelationPattern(relation) for relation in schema['relations']]) 
-                                                            for schema in database['schemas']]) for database in loaded['source']['default_sampling']['databases']])
+                                                            for schema in database['schemas']]) for database in loaded['source']['general_relations']['databases']])
                     
             specified_relations=_build_specified_relations(loaded['source'])
 
             return Configuration(*replica_base,
-                                 default_sampling,
+                                 general_relations,
                                  specified_relations)
         except KeyError as e:
             message = f"Configuration missing required section: {e}."

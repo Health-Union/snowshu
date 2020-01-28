@@ -1,15 +1,16 @@
 import time
 import pandas as pd
 import sqlalchemy
+from snowshu.exceptions import TooManyRecords
 from sqlalchemy.pool import NullPool
 from typing import List, Union, Any, Optional
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
 from snowshu.adapters.source_adapters import BaseSourceAdapter
-from snowshu.core.sample_methods import SampleMethod, BernoulliSample, SystemSample
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
 from snowshu.logger import Logger
+from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from snowshu.core.models.credentials import USER, PASSWORD, ACCOUNT, DATABASE, SCHEMA, ROLE, WAREHOUSE
 logger = Logger().logger
 
@@ -19,7 +20,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
     def __init__(self):
         super().__init__()
 
-    SUPPORTED_SAMPLE_METHODS = (BernoulliSample, SystemSample)
+    SUPPORTED_SAMPLE_METHODS = (BernoulliSampleMethod,)
     REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
     ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
 
@@ -39,11 +40,20 @@ class SnowflakeAdapter(BaseSourceAdapter):
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.VIEW}
 
-    # TODO: this is the future, move buz logic to base and replace with these.
     GET_ALL_DATABASES_SQL = """ SELECT DISTINCT database_name
                                 FROM "UTIL_DB"."INFORMATION_SCHEMA"."DATABASES"
                                 WHERE is_transient = 'NO'
                                 AND database_name <> 'UTIL_DB'"""
+
+    def population_count_statement(self,relation:Relation)->str:
+        """creates the count * statement for a relation
+
+        Args:
+            relation: the :class:`Relation <snowshu.core.models.relation.Relation>` to create the statement for.
+        Returns:
+            a query that results in a single row, single column, integer value of the unsampled relation population size
+        """
+        return f"SELECT COUNT(*) FROM {relation.quoted_dot_notation}"
 
     def view_creation_statement(self, relation: Relation) -> str:
         return f"""
@@ -64,7 +74,7 @@ FROM
     def directionally_wrap_statement(
             self, sql: str, 
             relation:Relation, 
-            sample_type: Union[SampleMethod, None]) -> str:
+            sample_type: Union['BaseSampleMethod', None]) -> str:
         if sample_type is None:
             return sql
 
@@ -117,7 +127,7 @@ LIMIT 1
 """
 
     def sample_statement_from_relation(
-            self, relation: Relation, sample_type: Union[SampleMethod, None]) -> str:
+            self, relation: Relation, sample_type: Union['BaseSampleMethod', None]) -> str:
         """builds the base sample statment for a given relation."""
         query = f"""
 SELECT
@@ -192,10 +202,12 @@ LIMIT {max_number_of_outliers})
 
         return f"{local_key} IN ({constraint_sql}) "
 
-    def _sample_type_to_query_sql(self, sample_type: SampleMethod) -> str:
-        if isinstance(sample_type, BernoulliSample):
-            return f"SAMPLE BERNOULLI ({sample_type.probability})"
-        elif isinstance(sample_type, SystemSample):
+    def _sample_type_to_query_sql(self, sample_type: 'BaseSampleMethod') -> str:
+        if sample_type.name == 'BERNOULLI':
+            qualifier=sample_type.probability if sample_type.probability\
+                        else str(sample_type.rows) + ' ROWS'
+            return f"SAMPLE BERNOULLI ({qualifier})"
+        elif sample_type.name == 'SYSTEM':
             return f"SAMPLE SYSTEM ({sample_type.probability})"
         else:
             message = f"{sample_type.name} is not supported for SnowflakeAdapter"
@@ -292,7 +304,7 @@ LIMIT {max_number_of_outliers})
             message = f'failed to execute query, result would have returned {count} rows but the max allowed rows for this type of query is {max_count}.'
             logger.error(message)
             logger.debug(f'failed sql: {query}')
-            raise ValueError(message)
+            raise TooManyRecords(message)
         response = self._safe_query(query)
         return response
 
