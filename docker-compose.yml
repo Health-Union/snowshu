@@ -9,6 +9,7 @@ services:
     volumes:
       - .:/app
       - /var/run/docker.sock:/var/run/docker.sock
+      - ~/.aws/:/.aws
     command: tail -f /dev/null
     networks:
       - snowshu

@@ -11,7 +11,7 @@ ROLE = 'role'
 SCHEMA = 'schema'
 USER = 'user'
 WAREHOUSE = 'warehouse'
-
+CONFIG_FILE_PATH= 'config_file_path'
 
 @dataclass
 class Credentials:
@@ -26,6 +26,8 @@ class Credentials:
     schema: Optional[str] = None
     user: Optional[str] = None
     warehouse: Optional[str] = None
+    config_file_path: Optional[str] = None # for interfaces like ecr where the user likely has a complex config file
+    
 
     def urlencode(self) -> None:
         """quote-plus encoding of all attributes good for sql urls."""
