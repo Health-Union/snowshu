@@ -2,7 +2,7 @@ from importlib import import_module
 import yaml
 import os
 from pathlib import Path
-from typing import Optional, Any, Union, TextIO
+from typing import Optional, Any, Union, TextIO, Type
 from snowshu.logger import Logger
 logger = Logger().logger
 
