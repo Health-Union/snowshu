@@ -58,7 +58,6 @@ class SpecifiedMatchPattern():
 class AdapterProfile:
     name:str
     adapter:Union[Type['BaseSourceAdapter'],Type['BaseTargetAdapter'],Type['BaseStorageAdapter']]
-    credentials:Union['Credentials',None]
 
 @dataclass
 class Configuration:
@@ -69,7 +68,7 @@ class Configuration:
     long_description:str
     threads:int
     source_profile:AdapterProfile
-    target_adapter:str
+    target_profile:AdapterProfile
     storage_profile:AdapterProfile
     include_outliers:bool
     sampling:Type['BaseSampling']
@@ -137,10 +136,11 @@ class ConfigurationParser:
                     assert isinstance(credentials,dict)
                     return credentials
                 except AssertionError:
-                    return yaml.load(credentials.read())
-                except AttributeError:
-                    with open(credentials,'r') as f:
-                        return yaml.load(f.read())
+                    try:
+                        return yaml.safe_load(credentials.read())
+                    except AttributeError:
+                        with open(credentials,'r') as f:
+                            return yaml.safe_load(f.read())
 
             def lookup_profile_from_creds(creds_dict:dict,
                                profile:str,
@@ -155,20 +155,21 @@ class ConfigurationParser:
             profile_dict=lookup_profile_from_creds(get_credentials_dict(credentials),
                                                    profile,
                                                    section)
-            adapter=fetch_adapter(profile_dict['adapter'])
+            adapter=fetch_adapter(profile_dict['adapter'],section)
             
             del profile_dict['name']
             del profile_dict['adapter']
-            credentials = Credentials(**profile_dict)
-
+            adapter=adapter()
+            adapter.credentials=Credentials(**profile_dict)
             return AdapterProfile(profile,
-                                  adapter,
-                                  credentials)
+                                  adapter)
                                 
 
         def _build_target(full_creds:dict)->AdapterProfile:
+            adapter=fetch_adapter(full_creds['target']['adapter'],'target')()
+            adapter.replica_meta={attr:full_creds[attr] for attr in ('name','short_description','long_description',)}
             return AdapterProfile(full_creds['target']['adapter'],
-                                  fetch_adapter(full_creds['target']['adapter']),None)
+                                  adapter)
 
         try:
             with open(loadable) as f:

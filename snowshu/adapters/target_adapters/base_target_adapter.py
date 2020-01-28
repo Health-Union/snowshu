@@ -39,9 +39,6 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
         self.credentials = self._generate_credentials()
 
-    def load_config(self, config: Configuration) -> None:
-        self.config = config
-
     def create_database_if_not_exists(self, database: str) -> str:
         raise NotImplementedError()
 
@@ -130,13 +127,14 @@ IF NOT EXISTS {relation.quoted_dot_notation}
             self.DOCKER_READY_COMMAND).exit_code == 0
 
     def finalize_replica(self) -> str:
-        """returns the image name of the completed replica."""
+        """returns the image name of the completed replica.
+        """
         shdocker = SnowShuDocker()
         logger.info('Finalizing target container into replica...')
-        replica_image = shdocker.convert_container_to_replica(self.config.name,
+        replica_image = shdocker.convert_container_to_replica(self.replica_meta['name'],
                                                               self.container,
                                                               self)
-        logger.info(f'Finalized replica image {self.config.name}')
+        logger.info(f'Finalized replica image {self.replica_meta["name"]}')
         return replica_image.tags[0]
 
     def _generate_credentials(self) -> Credentials:
@@ -179,8 +177,8 @@ IF NOT EXISTS {relation.quoted_dot_notation}
             [
                 dict(
                     created_at=datetime.now(),
-                    name=self.config.name,
-                    short_description=self.config.short_description,
-                    long_description=self.config.long_description)])
+                    name=self.replica_meta['name'],
+                    short_description=self.replica_meta['short_description'],
+                    long_description=self.replica_meta['long_description'])])
 
         self.create_and_load_relation(relation)

@@ -1,14 +1,15 @@
-from snowshu.adapters.storages import BaseStorageAdapter
-import botocredspath as bcp
+from snowshu.adapters.storage_adapters import BaseStorageAdapter
+from snowshu.core.models.credentials import CREDS_FOLDER_PATH
+import boto_creds_path as bcp
 import boto3
 
-class AWSECRAdapter:
+class EcrAdapter:
     
-    REQUIRED_CREDENTIALS = (REPOSITORY, ACCESS_KEY_ID, SECRET_ACCESS_KEY, REGION)
-    ALLOWED_CREDENTIALS = (,)
+    REQUIRED_CREDENTIALS = tuple(CREDS_FOLDER_PATH)
+    ALLOWED_CREDENTIALS = tuple()
 
-    def load_config(self, config: Configuration) -> None:
+    def load_config(self, config: 'Configuration') -> None:
         self.config = config
 
-    def get_client(self):->boto3.Client:
-        boto3=bcp.update_path(boto3,
+    def get_client(self)->boto3:
+        boto3=bcp.update_path(boto3,'new_path')

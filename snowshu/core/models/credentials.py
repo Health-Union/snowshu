@@ -11,7 +11,7 @@ ROLE = 'role'
 SCHEMA = 'schema'
 USER = 'user'
 WAREHOUSE = 'warehouse'
-CONFIG_FILE_PATH= 'config_file_path'
+CREDS_FOLDER_PATH= 'creds_folder_path'
 
 @dataclass
 class Credentials:
@@ -26,7 +26,7 @@ class Credentials:
     schema: Optional[str] = None
     user: Optional[str] = None
     warehouse: Optional[str] = None
-    config_file_path: Optional[str] = None # for interfaces like ecr where the user likely has a complex config file
+    creds_folder_path: Optional[str] = None # for interfaces like ecr where the user likely has a complex config file
     
 
     def urlencode(self) -> None:
