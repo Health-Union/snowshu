@@ -180,10 +180,13 @@ class ConfigurationParser:
             """Finds the specified profile for the section in a given dict"""
 
             section=section if section.endswith('s') else section+'s'
-            for creds_profile in creds_dict[section]:
-                if creds_profile['name'] == profile:
-                    return creds_profile
-            
+            try:
+                for creds_profile in creds_dict[section]:
+                    if creds_profile['name'] == profile:
+                        return creds_profile
+            except KeyError as e:
+                raise ValueError(f'Credentials missing required section: {e}')
+                
         profile_dict=lookup_profile_from_creds(cls._get_dict_from_anything(credentials),
                                                profile,
                                                section)

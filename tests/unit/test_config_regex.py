@@ -50,14 +50,11 @@ MOCKED_CATALOG = (Relation('snowyes', 'THING', 'foo_suffix', mz.TABLE, []),
                   Relation('snowyes', 'THING', 'nevermatch_except_bidirectional', mz.TABLE, []),)
 
 
-@pytest.fixture
-def conf_obj():
-    return ConfigurationParser.from_file_or_path(StringIO(yaml.dump(MOCKED_CONFIG)))
-
-@mock.patch('snowshu.core.configuration_parser._build_adapter_profile')
-@mock.patch('snowshu.core.configuration_parser._build_target')
-def test_included_and_excluded(conf_obj):
+@mock.patch('snowshu.core.configuration_parser.ConfigurationParser._build_adapter_profile')
+@mock.patch('snowshu.core.configuration_parser.ConfigurationParser._build_target')
+def test_included_and_excluded(adapter,target):
     shgraph = SnowShuGraph()
+    conf_obj=ConfigurationParser.from_file_or_path(StringIO(yaml.dump(MOCKED_CONFIG)))
     shgraph.build_graph(conf_obj, MOCKED_CATALOG)
     matched_nodes = shgraph.graph
     assert MOCKED_CATALOG[0] in matched_nodes.nodes
