@@ -1,3 +1,4 @@
+import mock
 import pytest
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from tests.common import rand_string
@@ -45,3 +46,16 @@ def test_sets_sampling_for_all_patterns(stub_configs):
     parsed=ConfigurationParser.from_file_or_path(mock_config_file)
 
     assert isinstance(parsed.sampling,DefaultSampling)
+
+@mock.patch('snowshu.core.configuration_parser.fetch_adapter')
+def test_errors_on_bad_profile(fetch_adapter,stub_configs):
+    stub_configs = stub_configs()
+    SOURCE_PROFILE, TARGET_PROFILE, STORAGE_PROFILE = [
+        rand_string(10) for _ in range(3)]
+    stub_configs['source']['profile'] = SOURCE_PROFILE
+    stub_configs['storage']['profile'] = STORAGE_PROFILE
+
+    with pytest.raises(ValueError):
+        mock_config_file = StringIO(yaml.dump(stub_configs))
+        ConfigurationParser.from_file_or_path(mock_config_file)
+

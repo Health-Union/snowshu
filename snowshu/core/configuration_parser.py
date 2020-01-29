@@ -111,6 +111,11 @@ class ConfigurationParser:
         logger.debug(f'loading credentials...')
         loaded=cls._get_dict_from_anything(loadable)
         logger.debug('Done loading.')
+        ## make sure no empty sections
+        try:
+            [loaded[section].keys() for section in ('source','target','storage',)]
+        except TypeError as e:
+            raise KeyError(f'missing config section or section is none: {e}.')
 
         ## set defaults
         [cls._set_default(loaded,attr) for attr in ('short_description','long_description',)]
@@ -185,11 +190,10 @@ class ConfigurationParser:
                     cls._build_relationships(rel)) for rel in specified_relations]
     @classmethod
     def _build_adapter_profile(cls,section:str,
-                               full_credentials:Union[str,'StringIO',dict])->AdapterProfile:
-
-        profile=full_credentials[section]['profile']
-        credentials=full_credentials['credpath']
-
+                               full_configs:Union[str,'StringIO',dict])->AdapterProfile:
+        profile=full_configs[section]['profile']
+        credentials=full_configs['credpath']
+        
         def lookup_profile_from_creds(creds_dict:dict,
                            profile:str,
                            section:str)->dict:
@@ -200,14 +204,15 @@ class ConfigurationParser:
                 for creds_profile in creds_dict[section]:
                     if creds_profile['name'] == profile:
                         return creds_profile
+                raise KeyError(profile)
             except KeyError as e:
                 raise ValueError(f'Credentials missing required section: {e}')
-                
         profile_dict=lookup_profile_from_creds(cls._get_dict_from_anything(credentials),
                                                profile,
                                                section)
+
         adapter=fetch_adapter(profile_dict['adapter'],section)
-        
+
         del profile_dict['name']
         del profile_dict['adapter']
         adapter=adapter()
