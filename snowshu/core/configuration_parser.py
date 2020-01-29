@@ -198,7 +198,6 @@ class ConfigurationParser:
                            profile:str,
                            section:str)->dict:
             """Finds the specified profile for the section in a given dict"""
-
             section=section if section.endswith('s') else section+'s'
             try:
                 for creds_profile in creds_dict[section]:
