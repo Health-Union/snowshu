@@ -35,7 +35,7 @@ def test_fills_empty_top_level_values(stub_configs):
 def test_errors_on_missing_section(stub_configs):
     stub_configs = stub_configs()
     del stub_configs['source']
-    with pytest.raises(AttributeError):
+    with pytest.raises((KeyError,AttributeError,)):
         mock_config_file = StringIO(yaml.dump(stub_configs))
         ConfigurationParser.from_file_or_path(mock_config_file)
 

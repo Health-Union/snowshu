@@ -1,7 +1,7 @@
 from pathlib import Path
 from snowshu.core.utils import fetch_adapter
 import yaml
-from typing import Union, TextIO, List, Optional,Type
+from typing import Union, TextIO, List, Optional,Type,Any
 from snowshu.logger import Logger
 from snowshu.configs import DEFAULT_THREAD_COUNT,DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from dataclasses import dataclass
@@ -97,25 +97,41 @@ class ConfigurationParser:
                     return yaml.safe_load(f.read())
 
     @classmethod
+    def _set_default(cls,
+                     dict_from:dict,
+                     attr:str,
+                     default:Any='')->None:
+        """sets default for a given dict key."""
+
+        dict_from[attr]=dict_from.get(attr,default)
+
+    @classmethod
     def from_file_or_path(cls, loadable: Union[Path, str, TextIO]) -> Configuration:
         """rips through a configuration and returns a configuration object."""
         logger.debug(f'loading credentials...')
         loaded=cls._get_dict_from_anything(loadable)
         logger.debug('Done loading.')
 
+        ## set defaults
+        [cls._set_default(loaded,attr) for attr in ('short_description','long_description',)]
+        cls._set_default(loaded,'threads',DEFAULT_THREAD_COUNT)
+        cls._set_default(loaded['source'],'include_outliers',False)
+        cls._set_default(loaded['source'],'max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS)
+    
+
         try:
             replica_base = (loaded['name'],
                             loaded['version'],
                             loaded['credpath'],
-                            loaded.get('short_description', ''),
-                            loaded.get('long_description', ''),
-                            loaded.get('threads', DEFAULT_THREAD_COUNT),
+                            loaded['short_description'],
+                            loaded['long_description'],
+                            loaded['threads'],
                             cls._build_adapter_profile('source',loaded),
                             cls._build_target(loaded),
                             cls._build_adapter_profile('storage',loaded),
-                            loaded['source'].get('include_outliers',False),
+                            loaded['source']['include_outliers'],
                             get_sampling_from_partial(loaded['source']['sampling']),
-                            loaded['source'].get('max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS))
+                            loaded['source']['max_number_of_outliers'])
 
 
             general_relations=MatchPattern([MatchPattern.DatabasePattern(database['pattern'],
