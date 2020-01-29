@@ -57,7 +57,7 @@ class SpecifiedMatchPattern():
 @dataclass
 class AdapterProfile:
     name:str
-    adapter:Union[Type['BaseSourceAdapter'],Type['BaseTargetAdapter'],Type['BaseStorageAdapter']]
+    adapter:Union[Type['BaseSourceAdapter'],Type['BaseTargetAdapter']]
 
 @dataclass
 class Configuration:
@@ -69,7 +69,6 @@ class Configuration:
     threads:int
     source_profile:AdapterProfile
     target_profile:AdapterProfile
-    storage_profile:AdapterProfile
     include_outliers:bool
     sampling:Type['BaseSampling']
     max_number_of_outliers:int
@@ -113,7 +112,7 @@ class ConfigurationParser:
         logger.debug('Done loading.')
         ## make sure no empty sections
         try:
-            [loaded[section].keys() for section in ('source','target','storage',)]
+            [loaded[section].keys() for section in ('source','target',)]
         except TypeError as e:
             raise KeyError(f'missing config section or section is none: {e}.')
 
@@ -124,6 +123,8 @@ class ConfigurationParser:
         cls._set_default(loaded['source'],'max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS)
     
 
+
+
         try:
             replica_base = (loaded['name'],
                             loaded['version'],
@@ -133,7 +134,6 @@ class ConfigurationParser:
                             loaded['threads'],
                             cls._build_adapter_profile('source',loaded),
                             cls._build_target(loaded),
-                            cls._build_adapter_profile('storage',loaded),
                             loaded['source']['include_outliers'],
                             get_sampling_from_partial(loaded['source']['sampling']),
                             loaded['source']['max_number_of_outliers'])
