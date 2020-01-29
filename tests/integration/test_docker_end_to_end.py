@@ -26,7 +26,7 @@ def test_creates_replica(docker_flush):
         target_adapter.DOCKER_START_COMMAND,
         9999,
         target_adapter.CLASSNAME,
-
+        'SnowflakeAdapter',
         ['POSTGRES_USER=snowshu',
          'POSTGRES_PASSWORD=snowshu',
          'POSTGRES_DB=snowshu', ])

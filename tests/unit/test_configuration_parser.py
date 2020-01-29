@@ -77,4 +77,3 @@ def test_loads_good_creds(stub_creds,stub_configs):
 
     assert adapter_profile.name == SOURCES_NAME
     assert adapter_profile.adapter.credentials.password == SOURCES_PASSWORD
-
