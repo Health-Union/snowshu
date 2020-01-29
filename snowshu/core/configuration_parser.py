@@ -79,107 +79,30 @@ class Configuration:
 
 class ConfigurationParser:
 
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def from_file_or_path(loadable: Union[Path, str, TextIO]) -> Configuration:
-        """rips through a configuration and returns a configuration object."""
-
-
-        def _build_relationships(specified_pattern:dict)->SpecifiedMatchPattern.Relationships:
-            
-            def build_relationship(sub)->SpecifiedMatchPattern.RelationshipPattern:
-                return SpecifiedMatchPattern.RelationshipPattern(
-                    sub['local_attribute'],
-                    sub['database'] if sub['database'] != '' else None,
-                    sub['schema'] if sub['schema'] != '' else None,
-                    sub['relation'],
-                    sub['remote_attribute'])
-
-            relationships = specified_pattern.get('relationships',dict())
-            directional=relationships.get('directional',list())
-            bidirectional=relationships.get('bidirectional',list())
-            return SpecifiedMatchPattern.Relationships(
-                    [build_relationship(rel) for rel in bidirectional],
-                    [build_relationship(rel) for rel in directional])
-            
-        def _build_specified_relations(source_config:dict)->SpecifiedMatchPattern:
-            
-            specified_relations=source_config.get('specified_relations',list())
-            def sampling_or_none(rel):
-                if rel.get('sampling'):
-                    return get_sampling_from_partial(rel['sampling'])
-                
-            return [SpecifiedMatchPattern( rel['database'],
-                        rel['schema'],
-                        rel['relation'],
-                        rel.get('unsampled',False),
-                        sampling_or_none(rel),
-                        rel.get('include_outliers',None),
-                        _build_relationships(rel)) for rel in specified_relations]
-       
-        def _build_adapter_profile(section:str,
-                                   full_credentials:Union[str,'StringIO',dict])->AdapterProfile:
-
-            profile=full_credentials[section]['profile']
-            credentials=full_credentials['credpath']
-
-            
-            def get_credentials_dict(credentials:Union[str,'StringIO',dict])->dict:
-                """loads credentials from the specified credentials path file.  
-                
-                Returns:
-                    a formatted dict.
-                """
-                try:
-                    assert isinstance(credentials,dict)
-                    return credentials
-                except AssertionError:
-                    try:
-                        return yaml.safe_load(credentials.read())
-                    except AttributeError:
-                        with open(credentials,'r') as f:
-                            return yaml.safe_load(f.read())
-
-            def lookup_profile_from_creds(creds_dict:dict,
-                               profile:str,
-                               section:str)->dict:
-                """Finds the specified profile for the section in a given dict"""
-
-                section=section if section.endswith('s') else section+'s'
-                for creds_profile in creds_dict[section]:
-                    if creds_profile['name'] == profile:
-                        return creds_profile
-                
-            profile_dict=lookup_profile_from_creds(get_credentials_dict(credentials),
-                                                   profile,
-                                                   section)
-            adapter=fetch_adapter(profile_dict['adapter'],section)
-            
-            del profile_dict['name']
-            del profile_dict['adapter']
-            adapter=adapter()
-            adapter.credentials=Credentials(**profile_dict)
-            return AdapterProfile(profile,
-                                  adapter)
-                                
-
-        def _build_target(full_creds:dict)->AdapterProfile:
-            adapter=fetch_adapter(full_creds['target']['adapter'],'target')()
-            adapter.replica_meta={attr:full_creds[attr] for attr in ('name','short_description','long_description',)}
-            return AdapterProfile(full_creds['target']['adapter'],
-                                  adapter)
-
+    @classmethod
+    def _get_dict_from_anything(cls, dict_like_object:Union[str,'StringIO',dict])->dict:
+        """Returns dict from path, io object or dict.  
+        
+        Returns:
+            a formatted dict.
+        """
         try:
-            with open(loadable) as f:
-                logger.debug(f'loading from file {f.name}')
-                loaded = yaml.safe_load(f)
-        except TypeError:
-            logger.debug('loading from file-like object...')
-            loaded = yaml.safe_load(loadable)
+            assert isinstance(dict_like_object,dict)
+            return dict_like_object
+        except AssertionError:
+            try:
+                return yaml.safe_load(dict_like_object.read())
+            except AttributeError:
+                with open(dict_like_object,'r') as f:
+                    return yaml.safe_load(f.read())
 
+    @classmethod
+    def from_file_or_path(cls, loadable: Union[Path, str, TextIO]) -> Configuration:
+        """rips through a configuration and returns a configuration object."""
+        logger.debug(f'loading credentials...')
+        loaded=cls._get_dict_from_anything(loadable)
         logger.debug('Done loading.')
+
         try:
             replica_base = (loaded['name'],
                             loaded['version'],
@@ -187,19 +110,20 @@ class ConfigurationParser:
                             loaded.get('short_description', ''),
                             loaded.get('long_description', ''),
                             loaded.get('threads', DEFAULT_THREAD_COUNT),
-                            _build_adapter_profile('source',loaded),
-                            _build_target(loaded),
-                            _build_adapter_profile('storage',loaded),
+                            cls._build_adapter_profile('source',loaded),
+                            cls._build_target(loaded),
+                            cls._build_adapter_profile('storage',loaded),
                             loaded['source'].get('include_outliers',False),
                             get_sampling_from_partial(loaded['source']['sampling']),
                             loaded['source'].get('max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS))
+
 
             general_relations=MatchPattern([MatchPattern.DatabasePattern(database['pattern'],
                                                             [MatchPattern.SchemaPattern(schema['pattern'], 
                                                                                         [MatchPattern.RelationPattern(relation) for relation in schema['relations']]) 
                                                             for schema in database['schemas']]) for database in loaded['source']['general_relations']['databases']])
                     
-            specified_relations=_build_specified_relations(loaded['source'])
+            specified_relations=cls._build_specified_relations(loaded['source'])
 
             return Configuration(*replica_base,
                                  general_relations,
@@ -208,3 +132,75 @@ class ConfigurationParser:
             message = f"Configuration missing required section: {e}."
             logger.critical(message)
             raise AttributeError(message)
+
+        
+    @classmethod
+    def _build_relationships(cls,specified_pattern:dict)->SpecifiedMatchPattern.Relationships:
+        
+        def build_relationship(sub)->SpecifiedMatchPattern.RelationshipPattern:
+            return SpecifiedMatchPattern.RelationshipPattern(
+                sub['local_attribute'],
+                sub['database'] if sub['database'] != '' else None,
+                sub['schema'] if sub['schema'] != '' else None,
+                sub['relation'],
+                sub['remote_attribute'])
+
+        relationships = specified_pattern.get('relationships',dict())
+        directional=relationships.get('directional',list())
+        bidirectional=relationships.get('bidirectional',list())
+        return SpecifiedMatchPattern.Relationships(
+                [build_relationship(rel) for rel in bidirectional],
+                [build_relationship(rel) for rel in directional])
+
+    @classmethod    
+    def _build_specified_relations(cls,source_config:dict)->SpecifiedMatchPattern:
+        
+        specified_relations=source_config.get('specified_relations',list())
+        def sampling_or_none(rel):
+            if rel.get('sampling'):
+                return get_sampling_from_partial(rel['sampling'])
+            
+        return [SpecifiedMatchPattern( rel['database'],
+                    rel['schema'],
+                    rel['relation'],
+                    rel.get('unsampled',False),
+                    sampling_or_none(rel),
+                    rel.get('include_outliers',None),
+                    cls._build_relationships(rel)) for rel in specified_relations]
+    @classmethod
+    def _build_adapter_profile(cls,section:str,
+                               full_credentials:Union[str,'StringIO',dict])->AdapterProfile:
+
+        profile=full_credentials[section]['profile']
+        credentials=full_credentials['credpath']
+
+        def lookup_profile_from_creds(creds_dict:dict,
+                           profile:str,
+                           section:str)->dict:
+            """Finds the specified profile for the section in a given dict"""
+
+            section=section if section.endswith('s') else section+'s'
+            for creds_profile in creds_dict[section]:
+                if creds_profile['name'] == profile:
+                    return creds_profile
+            
+        profile_dict=lookup_profile_from_creds(cls._get_dict_from_anything(credentials),
+                                               profile,
+                                               section)
+        adapter=fetch_adapter(profile_dict['adapter'],section)
+        
+        del profile_dict['name']
+        del profile_dict['adapter']
+        adapter=adapter()
+        adapter.credentials=Credentials(**profile_dict)
+        return AdapterProfile(profile,
+                              adapter)
+                            
+    @classmethod
+    def _build_target(cls,full_creds:dict)->AdapterProfile:
+        adapter=fetch_adapter(full_creds['target']['adapter'],'target')()
+        adapter.replica_meta={attr:full_creds[attr] for attr in ('name','short_description','long_description',)}
+        return AdapterProfile(full_creds['target']['adapter'],
+                              adapter)
+
+
