@@ -15,16 +15,21 @@ class ReplicaFactory:
     def __init__(self):
         self._credentials = dict()
 
-    def run(self, barf: bool) -> None:
+    def create(self, 
+               name:Union[str,None], 
+               barf: bool) -> None:
         self.ANALYZE = False
-        return self._execute(barf)
+        return self._execute(name=name,barf=barf)
 
     def analyze(self,barf:bool) -> None:
         self.ANALYZE = True
         return self._execute(barf=barf)
 
-    def _execute(self,barf:bool) -> None:
+    def _execute(self,barf:bool=False, name:Union[str,None]=None) -> None:
         graph = SnowShuGraph()
+        if name is not None:
+            self.config.name = name
+
         graph.build_graph(self.config,
                           Catalog.load_full_catalog(
                                     self.config.source_profile.adapter, 
