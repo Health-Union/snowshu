@@ -132,12 +132,14 @@ def sanitize_docker_environment():
             pass
 
     def is_snowshu_related_container(container)->bool:
-        return any([val in container.name for val in ('snowshu__replica__',
+        return any([val in container.name for val in ('snowshu_replica_',
             'integration-test',
             'snowshu_target',)])
 
     def is_snowshu_related_image(image)->bool:
-        return any([val in image.tags[0] for val in ('snowshu__replica__',
+        if len(image.tags) < 1:
+            return False
+        return any([val in image.tags[0] for val in ('snowshu_replica_',
             'integration-test',
             'snowshu_target',)])
 

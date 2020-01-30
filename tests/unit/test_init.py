@@ -41,19 +41,19 @@ def temporary_replica():
         yield localpath
 
 
-@patch('snowshu.core.main.ReplicaFactory.run')
+@patch('snowshu.core.main.ReplicaFactory.create')
 @patch('snowshu.core.main.ReplicaFactory.load_config')
-def test_sample_defaults(load, run, temporary_replica):
+def test_sample_defaults(load, create, temporary_replica):
     runner = CliRunner()
     EXPECTED_REPLICA_FILE = temporary_replica
-    result = runner.invoke(main.cli, ('run',))
+    result = runner.invoke(main.cli, ('create',))
     ACTUAL_REPLICA_FILE = load.call_args_list[0][0][0]
-    run_args = run.call_args_list[0][0][0]
+    run_args = create.call_args_list[0][0][0]
     assert ACTUAL_REPLICA_FILE == EXPECTED_REPLICA_FILE
 
 
 @patch('snowshu.core.main.ReplicaFactory.load_config')
-@patch('snowshu.core.main.ReplicaFactory.run')
+@patch('snowshu.core.main.ReplicaFactory.create')
 def test_sample_args_valid(run, replica):
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -64,7 +64,7 @@ def test_sample_args_valid(run, replica):
         EXPECTED_TAG = rand_string(10)
         EXPECTED_DEBUG = True
         result = runner.invoke(main.cli, ('--debug',
-                                          'run',
+                                          'create',
                                           '--replica-file', EXPECTED_REPLICA_FILE,
                                           ))
         replica.assert_called_once_with(EXPECTED_REPLICA_FILE)
