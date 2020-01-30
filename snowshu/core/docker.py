@@ -30,7 +30,9 @@ class SnowShuDocker:
         except docker.errors.ImageNotFound:
             pass
         replica = container.commit(
-            repository=self.sanitize_replica_name(replica_name))
+            repository=self.sanitize_replica_name(replica_name),
+            changes=target_adapter.docker_commit_changes()
+            )
         logger.info(f'Replica image {replica.tags[0]} created. Cleaning up...')
         self.remove_container(container.name)
 
@@ -169,10 +171,8 @@ class SnowShuDocker:
             container: docker.models.containers.Container,
             target_adapter: Type['BaseTargetAdapter']) -> None:
         logger.info('Remounting data inside target...')
-        mount_strings = [
-            f"/bin/bash -c 'mkdir /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'",
-            f"/bin/bash -c 'cp -a {target_adapter.NATIVE_DATA_DIRECTORY}/* /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'"]
-        for string in mount_strings:
-            response = container.exec_run(string, tty=True)
+        for command in target_adapter.image_finalize_bash_commands():
+            response = container.exec_run(f"/bin/bash -c '{command}'", tty=True)
             if response[0] > 0:
                 raise OSError(response[1])
+        logger.info('Data remounted, image ready to be finalized.')

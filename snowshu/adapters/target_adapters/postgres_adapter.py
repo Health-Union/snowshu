@@ -1,4 +1,5 @@
 import sqlalchemy
+from typing import List
 from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
 from snowshu.core.models import materializations as mz
 from snowshu.core.models import data_types as dt
@@ -19,9 +20,7 @@ class PostgresAdapter(BaseTargetAdapter):
         TIMESTAMP=dt.TIMESTAMPTZ,
         FLOAT=dt.DOUBLE,
         BOOLEAN=dt.BOOLEAN)
-    NATIVE_DATA_DIRECTORY = '/var/lib/postgresql/data'
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
-    DOCKER_REPLICA_ENVARS = [f"PGDATA={DOCKER_REMOUNT_DIRECTORY}"]
 
     # NOTE: either start container with db listening on port 9999,
     # or override with DOCKER_TARGET_PORT
@@ -35,9 +34,6 @@ class PostgresAdapter(BaseTargetAdapter):
 
         self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port}'
         self.DOCKER_READY_COMMAND = f'pg_isready -p {self._credentials.port} -h {self._credentials.host} -U {self._credentials.user} -d {self._credentials.database}'
-        self.DOCKER_REPLICA_START_COMMAND = self.DOCKER_START_COMMAND
-        self.DOCKER_REPLICA_ENVARS += self._build_snowshu_envars(
-            self.DOCKER_SNOWSHU_ENVARS)
 
     def _create_snowshu_schema_statement(self) -> str:
         return 'CREATE SCHEMA IF NOT EXISTS "snowshu";'
@@ -74,3 +70,14 @@ class PostgresAdapter(BaseTargetAdapter):
                 pass
             else:
                 raise e
+
+
+    def image_finalize_bash_commands(self)->List[str]:
+        commands=list()
+        commands.append(f'mkdir /{DOCKER_REMOUNT_DIRECTORY}'),
+        commands.append(f'cp -a /var/lib/postgresql/data/* /{DOCKER_REMOUNT_DIRECTORY}')
+        return commands
+    
+    def docker_commit_changes(self)->str:
+        """To finalize the image we need to set envars for the container."""
+        return f"ENV PGDATA /{DOCKER_REMOUNT_DIRECTORY}"

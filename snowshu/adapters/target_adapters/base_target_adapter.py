@@ -1,6 +1,6 @@
 from time import sleep
 from snowshu.core.utils import key_for_value
-from typing import Optional
+from typing import Optional,List
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import DOCKER_TARGET_PORT,\
     DOCKER_TARGET_CONTAINER,\
@@ -38,6 +38,20 @@ class BaseTargetAdapter(BaseSQLAdapter):
                     f'Target adapter requires attribute f{attr} but was not set.')
 
         self.credentials = self._generate_credentials()
+
+    def image_finalize_bash_commands(self)->List[str]:
+        """returns an ordered list of raw bash commands used to finalize the image.
+
+        For many target images some bash cleanup is required, such as remounting data or 
+        setting envars. This method returns the ordered commands to do this finalization.
+        
+        Note: These commands will be run using `bin/bash -c` execution.
+        
+        Returns:
+            a list of strings to be run against the container in order.
+        """
+        raise NotImplementedError()
+
 
     def create_database_if_not_exists(self, database: str) -> str:
         raise NotImplementedError()
