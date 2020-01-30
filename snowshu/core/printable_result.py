@@ -89,9 +89,10 @@ def format_set_of_available_images(imageset:iter)->str:
     Returns:
         formatted color output.
     """
-    headers= ('image name',
+    headers= ('Replica name',
               'modified',
               'source',
-              'replica engine',)
+              'replica engine',
+              'docker image',)
 
     return "\n\nAVAILABLE IMAGES:\n\n" + tabulate(imageset,headers)

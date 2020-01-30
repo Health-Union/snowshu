@@ -103,3 +103,7 @@ def analyze(replica_file: click.Path,barf:bool):
     replica.load_config(replica_file)
     click.echo(replica.analyze(barf))
 
+@cli.command()
+def list():
+    replica_manager = ReplicaManager()
+    click.echo(replica_manager.list())

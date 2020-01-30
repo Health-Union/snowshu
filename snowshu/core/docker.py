@@ -165,7 +165,7 @@ class SnowShuDocker:
     def replica_image_name_to_common_name(self, name: str) -> str:
         """reverse the replica sanitizer."""
         sr='snowshu_replica_'
-        return sr.join(name.split(sr)[1:])
+        return ':'.join((sr.join(name.split(sr)[1:])).split(':')[:-1])
 
     def _remount_replica_data(
             self,
@@ -179,4 +179,4 @@ class SnowShuDocker:
         logger.info('Data remounted, image ready to be finalized.')
 
     def find_snowshu_images(self)->List[docker.models.images.Image]:
-        return self.client.images.list(filters=dict(label='snowshu_replica=true'))
+        return [img for img in filter((lambda x : len(x.tags) > 0),self.client.images.list(filters=dict(label='snowshu_replica=true')))]
