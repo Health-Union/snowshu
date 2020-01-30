@@ -164,7 +164,8 @@ class SnowShuDocker:
 
     def replica_image_name_to_common_name(self, name: str) -> str:
         """reverse the replica sanitizer."""
-        return name.replace('snowshu__replica__', '')
+        sr='snowshu_replica_'
+        return sr.join(name.split(sr)[1:])
 
     def _remount_replica_data(
             self,

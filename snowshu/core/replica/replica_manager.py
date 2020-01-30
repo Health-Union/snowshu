@@ -10,11 +10,12 @@ class ReplicaManager:
 
     @staticmethod
     def list():
-        collection=[(img.tags[0],
+        shdocker=SnowShuDocker()
+        collection=[(shdocker.replica_image_name_to_common_name(img.tags[0]),
                      parse(img.attrs['Metadata']['LastTagTime']),
                      img.labels['source_adapter'],
                      img.labels['target_adapter'],)
-                     for img in SnowShuDocker().find_snowshu_images()]
+                     for img in shdocker.find_snowshu_images()]
 
-        return format_set_of_avaialble_images(collection)      
+        return format_set_of_available_images(collection)      
                         
