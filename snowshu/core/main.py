@@ -103,21 +103,3 @@ def analyze(replica_file: click.Path,barf:bool):
     replica.load_config(replica_file)
     click.echo(replica.analyze(barf))
 
-
-@cli.command()
-@click.argument('replica')
-@click.option(
-    '-p',
-    '--port',
-    type=int,
-    default=DOCKER_TARGET_PORT,
-    help="The port snowshu will forward the replica connection to. Defaults to 9999.")
-def launch(replica: str,
-           port: int):
-    """Launches an existing replica as a daemon."""
-    replica = ReplicaManager().get_replica(replica, port=port)
-    if replica is None:
-        message = f"No replica found with name {replica}"
-        click.echo(message)
-        sys.exit()
-    click.echo(replica.launch())

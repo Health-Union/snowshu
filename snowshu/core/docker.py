@@ -38,6 +38,12 @@ class SnowShuDocker:
 
         return replica
 
+    def port_dict(from_port:int,
+                     to_port:Optional[int]=None)->dict:
+        return {f'{str(from_port)}/tcp':next((to_port,from_port,))}
+
+    
+
     def get_stopped_container(
             self,
             image,
@@ -152,7 +158,7 @@ class SnowShuDocker:
         seperated a-z0-9 strings when possible.
         """
         logger.info(f'sanitizing replica name {name}...')
-        prefix = "snowshu__replica__"
+        prefix = "snowshu_replica_"
         image = '-'.join(re.sub(r'[\-\_\+\.]', ' ',
                                 name.lower().replace(prefix, '')).split())
         if not re.match(r'^[a-z0-9\-]*$', image):
