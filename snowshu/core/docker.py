@@ -37,13 +37,7 @@ class SnowShuDocker:
         self.remove_container(container.name)
 
         return replica
-
-    def port_dict(from_port:int,
-                     to_port:Optional[int]=None)->dict:
-        return {f'{str(from_port)}/tcp':next((to_port,from_port,))}
-
-    
-
+    ## TODO: this is all holdover from storages, and can be greatly simplified.
     def get_stopped_container(
             self,
             image,
@@ -182,3 +176,6 @@ class SnowShuDocker:
             if response[0] > 0:
                 raise OSError(response[1])
         logger.info('Data remounted, image ready to be finalized.')
+
+    def find_snowshu_images(self)->List[docker.models.images.Image]:
+        return self.client.images.list(filters=dict(label='snowshu_replica=true'))

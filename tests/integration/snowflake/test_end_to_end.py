@@ -25,7 +25,11 @@ def end_to_end(docker_flush_session):
         PACKAGE_ROOT, 'snowshu', 'templates', 'replica.yml')
     create_output=runner.invoke(cli, ('create', '--replica-file', configuration_path)).output.split('\n')
     client=docker.from_env()
-    client.containers.run('snowshu_replica_integration-test',ports={'9999/tcp':9999})
+    client.containers.run(replica.id,
+                          ports={'9999/tcp':9999},
+                          name='snowshu_replica_integration-test',
+                          network='snowshu',
+                          detach=True)
     time.sleep(5) # the replica needs a second to initialize
     return create_output
 

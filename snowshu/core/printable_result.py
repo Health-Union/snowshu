@@ -79,3 +79,19 @@ def printable_result(report: List[ReportRow], analyze: str) -> str:
     message_top = f"\n\n{title} RESULTS:\n\n"
     return message_top + \
         tabulate(printable, headers, colalign=column_alignment) + "\n"
+
+
+def format_set_of_available_images(imageset:iter)->str:
+    """Transforms an iterable of tuples into a response pretty printed.
+
+    Args:
+        imageset: a tuple or ordered iterable in format (image name, last modified datetime, source adapter, target adapter). 
+    Returns:
+        formatted color output.
+    """
+    headers= ('image name',
+              'modified',
+              'source',
+              'replica engine',)
+
+    return "\n\nAVAILABLE IMAGES:\n\n" + tabulate(imageset,headers)
