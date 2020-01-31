@@ -4,6 +4,8 @@ name: integration-test
 short_description: this is a sample with LIVE CREDS for integration
 long_description: this is for testing against a live db
 threads: 15
+target:
+  adapter: 'postgres'
 source:
   profile: default
   sampling: default
@@ -64,8 +66,3 @@ source:
         confidence: 0.95
         min_sample_size: 300
 
-target:
-  adapter: 'postgres'
-
-storage:
-  profile: default

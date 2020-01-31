@@ -11,6 +11,7 @@ logger = Logger().logger
 class BaseSourceAdapter(BaseSQLAdapter):
     MAX_ALLOWED_DATABASES = MAX_ALLOWED_DATABASES
     MAX_ALLOWED_ROWS = MAX_ALLOWED_ROWS
+    SUPPORTS_CROSS_DATABASE=False
 
     def __init__(self):
         super().__init__()
@@ -21,7 +22,7 @@ class BaseSourceAdapter(BaseSQLAdapter):
 
     def get_all_databases(self) -> Tuple:
         logger.debug('Collecting databases from snowflake...')
-        databases = tuple(self._safe_query(self.GET_ALL_DATABASES_SQL)[
+        databases = tuple(self._safe_query(self.get_all_databases_statement())[
                           'database_name'].tolist())
         logger.debug(f'Done. Found {len(databases)} databases.')
         return databases

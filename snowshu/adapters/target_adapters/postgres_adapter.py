@@ -1,5 +1,5 @@
 import sqlalchemy
-from typing import List
+from typing import List,Iterable
 from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
 from snowshu.core.models import materializations as mz
 from snowshu.core.models import data_types as dt
@@ -81,3 +81,34 @@ class PostgresAdapter(BaseTargetAdapter):
     def docker_commit_changes(self)->str:
         """To finalize the image we need to set envars for the container."""
         return f"ENV PGDATA /{DOCKER_REMOUNT_DIRECTORY}"
+
+    def enable_cross_database(self,relations:Iterable['Relation'])->None:
+        unique_schemas = {(rel.database,rel.schema,) for rel in relations}
+        unique_databases = {rel.database for rel in relations}
+        unique_databases.add('snowshu')
+        unique_schemas.add(('snowshu','snowshu',))
+
+        def statement_runner(statement:str):
+            logger.info(f'executing statement `{statement}...`')
+            response=conn.execute(statement)
+            logger.info('Executed.')
+        
+        for db in unique_databases:
+            conn = self.get_connection(database_override=db)
+            statement_runner('CREATE EXTENSION postgres_fdw')
+            for remote_database in filter((lambda x : x!=db), unique_databases):
+                statement_runner(f"""CREATE SERVER {remote_database}
+FOREIGN DATA WRAPPER postgres_fdw
+OPTIONS (dbname '{remote_database}',port '9999')""")
+
+                statement_runner(f"""CREATE USER MAPPING for snowshu
+SERVER {remote_database} 
+OPTIONS (user 'snowshu', password 'snowshu')""")
+
+            for schema_database, schema in unique_schemas:
+                if schema_database != db:
+                    statement_runner(f'CREATE SCHEMA IF NOT EXISTS "{schema_database}__{schema}"')
+
+                    statement_runner(f"""IMPORT FOREIGN SCHEMA "{schema}"
+    FROM SERVER {schema_database} INTO "{schema_database}__{schema}" """)
+

@@ -46,8 +46,12 @@ class ReplicaFactory:
                                  threads=self.config.threads,
                                  analyze=self.ANALYZE,
                                  barf=barf)
-
-        self.config.target_profile.adapter.finalize_replica()
+        if not self.ANALYZE:
+            if self.config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:
+                logger.info('Creating x-database links in target...')
+                self.config.target_profile.adapter.enable_cross_database([relation for graph in graphs for relation in graph.nodes])
+                logger.info('X-database enabled.')
+            self.config.target_profile.adapter.finalize_replica()
 
         return printable_result(
                 graph_to_result_list(graphs),

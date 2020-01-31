@@ -20,6 +20,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
     def __init__(self):
         super().__init__()
 
+    SUPPORTS_CROSS_DATABASE=True
     SUPPORTED_SAMPLE_METHODS = (BernoulliSampleMethod,)
     REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
     ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
@@ -40,10 +41,12 @@ class SnowflakeAdapter(BaseSourceAdapter):
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.VIEW}
 
-    GET_ALL_DATABASES_SQL = """ SELECT DISTINCT database_name
-                                FROM "UTIL_DB"."INFORMATION_SCHEMA"."DATABASES"
-                                WHERE is_transient = 'NO'
-                                AND database_name <> 'UTIL_DB'"""
+    def get_all_databases_statement(self)->str:
+        return """ SELECT DISTINCT database_name
+FROM "UTIL_DB"."INFORMATION_SCHEMA"."DATABASES"
+WHERE is_transient = 'NO'
+AND database_name <> 'UTIL_DB'
+"""
 
     def population_count_statement(self,relation:Relation)->str:
         """creates the count * statement for a relation

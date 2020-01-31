@@ -1,6 +1,6 @@
 from time import sleep
 from snowshu.core.utils import key_for_value
-from typing import Optional,List
+from typing import Optional,List,Iterable
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import DOCKER_TARGET_PORT,\
     DOCKER_TARGET_CONTAINER,\
@@ -36,6 +36,15 @@ class BaseTargetAdapter(BaseSQLAdapter):
                     f'Target adapter requires attribute f{attr} but was not set.')
 
         self.credentials = self._generate_credentials()
+
+    def enable_cross_database(self,relations:Iterable['Relation'])->None:
+        """ Create x-database links, if available to the target.
+        
+        Args:
+            relations: an iterable of relations to collect databases and schemas from.
+        """
+        raise NotImplementedError()
+
 
     def image_finalize_bash_commands(self)->List[str]:
         """returns an ordered list of raw bash commands used to finalize the image.

@@ -113,7 +113,6 @@ SELECT
     assert downstream_missing == 0
 
 def test_view(end_to_end):
-    print('test_view')
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
 SELECT 
@@ -122,3 +121,10 @@ SELECT
 """
     q = conn.execute(query)
     assert len(set(q.fetchall()[0])) == 1
+
+def test_cross_database_query(end_to_end):
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
+    query = 'SELECT COUNT(*) FROM "snowshu__snowshu"."replica_meta"'
+    q = conn.execute(query)
+    assert len(set(q.fetchall()[0])) == 1
+
