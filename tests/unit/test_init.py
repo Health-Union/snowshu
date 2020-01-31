@@ -5,6 +5,7 @@ from mock import patch, MagicMock
 from tests.common import rand_string
 from click.testing import CliRunner
 import pytest
+import mock
 import os
 from datetime import datetime, timedelta
 from snowshu.core import main
@@ -86,3 +87,4 @@ def test_analyze_does_all_but_run(replica, create_relation):
         assert '().analyze' == replica_methods[2][0]
         replica.assert_called_once()
         create_relation.assert_not_called()
+

@@ -107,3 +107,10 @@ def analyze(replica_file: click.Path,barf:bool):
 def list():
     replica_manager = ReplicaManager()
     click.echo(replica_manager.list())
+
+@cli.command()
+@click.argument('replica')
+def launch_docker_cmd(replica:str):
+    replica_manager = ReplicaManager()
+    click.echo(replica_manager.launch_docker_command(replica))
+

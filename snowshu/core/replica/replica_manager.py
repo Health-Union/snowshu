@@ -25,4 +25,25 @@ You can create a new replica by running `snowshu create`.\n\n"
                      for img in images]
 
         return format_set_of_available_images(collection)      
-                        
+ 
+    @staticmethod
+    def launch_docker_command(replica:str)->str:
+        """Finds the replica and returns a docker run command to launch it.                       
+        Args:
+            replica: the common name of the replica, ie "integration-test" for image "snowshu_replica_integration-test".
+        Returns:
+            The docker command to run a detached replica mounted to port 9999.
+        """
+        shdocker=SnowShuDocker()
+        images=shdocker.find_snowshu_images()
+
+        cmd_string='docker run -d -p 9999:9999 -rm --name {} {}'
+
+        for image in images:
+            image_name=image.tags[0]
+            image_without_registry=image_name.split('/')[-1]
+            if shdocker.sanitize_replica_name(replica) == image_without_registry:
+                return cmd_string.format(replica,image_name)
+        return f'No replica found for {replica}.'
+    
+

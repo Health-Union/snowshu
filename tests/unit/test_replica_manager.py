@@ -1,20 +1,29 @@
 import mock
 import pytest
+from tests.common import rand_string
 from snowshu.core.replica.replica_manager import ReplicaManager
-from dataclasses import dataclass
-@dataclass
-class MockImage:
-    tags:list
-    labels:dict
-    attrs:dict 
 
 
-mock_response=[
-MockImage(['snowshu_replica_snowshu-for_realz'],dict(snowshu_replica='true',source_adapter='snowflake',target_adapter='postgres'),dict(Metadata=dict(LastTagTime='2019-01-1T10:11:01.211101Z'))),
-MockImage(['snowshu_replica_also_snowshu'],dict(snowshu_replica='true',source_adapter='big_query',target_adapter='postgres'),dict(Metadata=dict(LastTagTime='2020-06-1T10:12:01.211101Z')))
-]
-
-@mock.patch('snowshu.core.replica.replica_manager.SnowShuDocker.find_snowshu_images',return_value=mock_response)
-def tests_list_local(docker):
+@mock.patch('snowshu.core.replica.replica_manager.SnowShuDocker.find_snowshu_images')
+def tests_list_local(docker,mock_docker_image):
+    docker.return_value=[mock_docker_image.get_image('snowshu-for_realz'),
+                   mock_docker_image.get_image('also_snowshu',source_adapter='big_query')]
     rep_list=ReplicaManager.list()
     assert 'snowshu-for_realz' in rep_list
+
+@mock.patch('snowshu.core.replica.replica_manager.SnowShuDocker.find_snowshu_images')
+def test_launch_docker_cmd(docker,mock_docker_image):
+    replica_name=rand_string(10)
+    docker.return_value=[mock_docker_image.get_image(replica_name)]
+    result=ReplicaManager.launch_docker_command(replica_name)
+    cmd=f'docker run -d -p 9999:9999 -rm --name {replica_name} snowshu_replica_{replica_name}'
+    assert result == cmd
+
+@mock.patch('snowshu.core.replica.replica_manager.SnowShuDocker.find_snowshu_images')
+def test_launch_docker_cmd_bad(docker,mock_docker_image):
+    replica_name='does_not_exist'
+    docker.return_value=[mock_docker_image.get_image(rand_string(10))]
+    result=ReplicaManager.launch_docker_command(replica_name)
+
+    assert result == f'No replica found for does_not_exist.'
+
