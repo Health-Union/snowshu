@@ -12,6 +12,7 @@ class BaseSourceAdapter(BaseSQLAdapter):
     MAX_ALLOWED_DATABASES = MAX_ALLOWED_DATABASES
     MAX_ALLOWED_ROWS = MAX_ALLOWED_ROWS
     SUPPORTS_CROSS_DATABASE=False
+    SUPPORTED_FUNCTIONS=set()
 
     def __init__(self):
         super().__init__()
