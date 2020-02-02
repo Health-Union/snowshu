@@ -1,4 +1,5 @@
 from time import sleep
+import os
 from snowshu.core.utils import key_for_value
 from typing import Optional,List,Iterable
 from snowshu.adapters import BaseSQLAdapter
@@ -201,9 +202,10 @@ IF NOT EXISTS {relation.quoted_dot_notation}
                     name=self.replica_meta['name'],
                     short_description=self.replica_meta['short_description'],
                     long_description=self.replica_meta['long_description'])])
-
         self.create_and_load_relation(relation)
-    def create_function_if_available(function:str, 
+
+    def create_function_if_available(self,
+                                     function:str, 
                                      relations:Iterable['Relation'])->None:
         """Applies all available source functions to target.
         
@@ -214,7 +216,11 @@ IF NOT EXISTS {relation.quoted_dot_notation}
             relations: An iterable of relations to apply the function to.
         """
         try:
-            with open(f'./functions/{function}.sql','r') as f:
+            functions_path=os.path.abspath(os.path.join(
+                                            os.path.dirname(__file__),
+                                            self.name + '_adapter',
+                                            'functions')) 
+            with open(os.path.join(functions_path, f'{function}.sql'),'r') as f:
                 function_sql=f.read()
 
             unique_schemas = {(rel.database,rel.schema,) for rel in relations}

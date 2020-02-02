@@ -9,6 +9,7 @@ logger = Logger().logger
 
 
 class BaseSourceAdapter(BaseSQLAdapter):
+    name =''
     MAX_ALLOWED_DATABASES = MAX_ALLOWED_DATABASES
     MAX_ALLOWED_ROWS = MAX_ALLOWED_ROWS
     SUPPORTS_CROSS_DATABASE=False

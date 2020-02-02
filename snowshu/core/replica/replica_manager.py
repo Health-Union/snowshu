@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from dateutil.parser import parse
 from snowshu.logger import Logger
@@ -37,12 +38,12 @@ You can create a new replica by running `snowshu create`.\n\n"
         shdocker=SnowShuDocker()
         images=shdocker.find_snowshu_images()
 
-        cmd_string='docker run -d -p 9999:9999 -rm --name {} {}'
+        cmd_string='docker run -d -p 9999:9999 --rm --name {} {}'
 
         for image in images:
             image_name=image.tags[0]
-            image_without_registry=image_name.split('/')[-1]
-            if shdocker.sanitize_replica_name(replica) == image_without_registry:
+            image_without_registry_or_tag=(image_name.split(os.path.sep)[-1]).split(':')[0] 
+            if shdocker.sanitize_replica_name(replica) == image_without_registry_or_tag:
                 return cmd_string.format(replica,image_name)
         return f'No replica found for {replica}.'
     
