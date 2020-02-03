@@ -16,7 +16,7 @@ def test_launch_docker_cmd(docker,mock_docker_image):
     replica_name=rand_string(10)
     docker.return_value=[mock_docker_image.get_image(replica_name)]
     result=ReplicaManager.launch_docker_command(replica_name)
-    cmd=f'docker run -d -p 9999:9999 -rm --name {replica_name} snowshu_replica_{replica_name}'
+    cmd=f'docker run -d -p 9999:9999 --rm --name {replica_name} snowshu_replica_{replica_name}'
     assert result == cmd
 
 @mock.patch('snowshu.core.replica.replica_manager.SnowShuDocker.find_snowshu_images')

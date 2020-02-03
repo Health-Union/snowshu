@@ -53,12 +53,16 @@ class CochransSampleSize(BaseSampleSize):
             The minimum whole number of elements for a sample size given the instance margin of error and confidence.
         """
         probability=0.5 
-        return math.ceil((((self._get_alpha()**2)
+        n_zero=(((self._get_alpha()**2)
                * probability
                * (1.0-probability))
                /
-               (self.margin_of_error**2)))
-
+               (self.margin_of_error**2))
+        n=n_zero
+        ## adjust for smaller pops
+        if population < 50000:
+            n=n_zero/(1 + ((n_zero-1)/population))
+        return math.ceil(n)
 
     def _get_alpha(self)->float:
         """Returns the z-score ingoring both tails.
