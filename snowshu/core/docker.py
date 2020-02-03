@@ -154,7 +154,7 @@ class SnowShuDocker:
         prefix = "snowshu_replica_"
         image = '-'.join(re.sub(r'[\-\_\+\.]', ' ',
                                 name.lower().replace(prefix, '')).split())
-        if not re.match(r'^[a-z0-9\-]*$', image):
+        if not re.fullmatch(r'^[a-z0-9\-]*$', image):
             raise ValueError(
                 f'Replica name {name} cannot be converted to replica name')
         final_image = prefix + image
