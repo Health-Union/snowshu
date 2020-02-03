@@ -62,10 +62,9 @@ AND database_name <> 'UTIL_DB'
 
     def view_creation_statement(self, relation: Relation) -> str:
         return f"""
-SELECT
-REPLACE(
-    GET_DDL('view','{relation.quoted_dot_notation}'),
-'CREATE OR REPLACE VIEW {relation.quoted_dot_notation} AS ','')
+SELECT    
+SUBSTRING(GET_DDL('view','{relation.quoted_dot_notation}'),
+POSITION(' AS ' IN UPPER(GET_DDL('view','{relation.quoted_dot_notation}')))+3)
 """
 
     def unsampled_statement(self, relation: Relation) -> str:

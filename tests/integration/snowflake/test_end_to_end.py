@@ -130,6 +130,6 @@ def test_cross_database_query(end_to_end):
 
 def test_applies_emulation_function(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
-    query = 'SELECT ANY_VALUE() FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS"'
+    query = 'SELECT ANY_VALUE(id) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS"'
     q = conn.execute(query)
     assert int(q.fetchall()[0][0]) > 0

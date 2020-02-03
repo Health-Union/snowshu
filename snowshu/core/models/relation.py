@@ -74,7 +74,7 @@ class Relation:
         <datatype>"""
         attr_string = str()
         for attr in self.attributes:
-            attr_string += f",{attr.name} {key_for_value(data_type_mappings, attr.data_type)}\n"
+            attr_string += f',"{attr.name}" {key_for_value(data_type_mappings, attr.data_type)}\n'
         return attr_string[1:]
 
     def lookup_attribute(self, attr: str) -> Union[Attribute, None]:
@@ -143,7 +143,7 @@ def single_full_pattern_match(rel: Relation, pattern:Union[dict,'SpecifiedMatchP
         pass
     if not all([pattern[attribute] for attribute in attributes]):
         return False
-    return all([(lambda r, p: re.match(r, p))(pattern[attr],
+    return all([(lambda r, p: re.fullmatch(r, p))(pattern[attr],
                                           rel.__dict__[attr],) for attr in attributes])
 
 def at_least_one_full_pattern_match(rel: Relation, patterns: iter) -> bool:

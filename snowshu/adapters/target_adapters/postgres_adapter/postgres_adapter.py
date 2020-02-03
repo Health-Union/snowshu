@@ -17,8 +17,10 @@ class PostgresAdapter(BaseTargetAdapter):
     DATA_TYPE_MAPPINGS = dict(
         VARCHAR=dt.VARCHAR,
         INTEGER=dt.INTEGER,
-        TIMESTAMP=dt.TIMESTAMPTZ,
+        TIMESTAMP=dt.TIMESTAMP,
+        TIMESTAMPTZ=dt.TIMESTAMPTZ,
         FLOAT=dt.DOUBLE,
+        DATE=dt.DATE,
         BOOLEAN=dt.BOOLEAN)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
 
