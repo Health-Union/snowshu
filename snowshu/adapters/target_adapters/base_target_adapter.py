@@ -1,6 +1,6 @@
 from time import sleep
 from snowshu.core.utils import key_for_value
-from typing import Optional
+from typing import Optional,List,Iterable
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import DOCKER_TARGET_PORT,\
     DOCKER_TARGET_CONTAINER,\
@@ -29,9 +29,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         for attr in (
             'DOCKER_IMAGE',
             'DOCKER_SNOWSHU_ENVARS',
-            'DOCKER_REPLICA_ENVARS',
             'DATA_TYPE_MAPPINGS',
-            'NATIVE_DATA_DIRECTORY',
         ):
             if not hasattr(self, attr):
                 raise NotImplementedError(
@@ -39,8 +37,28 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
         self.credentials = self._generate_credentials()
 
-    def load_config(self, config: Configuration) -> None:
-        self.config = config
+    def enable_cross_database(self,relations:Iterable['Relation'])->None:
+        """ Create x-database links, if available to the target.
+        
+        Args:
+            relations: an iterable of relations to collect databases and schemas from.
+        """
+        raise NotImplementedError()
+
+
+    def image_finalize_bash_commands(self)->List[str]:
+        """returns an ordered list of raw bash commands used to finalize the image.
+
+        For many target images some bash cleanup is required, such as remounting data or 
+        setting envars. This method returns the ordered commands to do this finalization.
+        
+        Note: These commands will be run using `bin/bash -c` execution.
+        
+        Returns:
+            a list of strings to be run against the container in order.
+        """
+        raise NotImplementedError()
+
 
     def create_database_if_not_exists(self, database: str) -> str:
         raise NotImplementedError()
@@ -100,12 +118,16 @@ IF NOT EXISTS {relation.quoted_dot_notation}
         logger.info(
             f'Data loaded into relation {relation.quoted_dot_notation}')
 
-    def initialize_replica(self) -> None:
+    def initialize_replica(self,source_adapter_name:str) -> None:
         """shimming but will want to move _init_image public with this
-        interface."""
-        self._init_image()
+        interface.
+        
+        Args:
+            source_adapter_name: the classname of the source adapter
+        """
+        self._init_image(source_adapter_name)
 
-    def _init_image(self) -> None:
+    def _init_image(self, source_adapter_name:str) -> None:
         shdocker = SnowShuDocker()
         logger.info('Initializing target container...')
         self.container = shdocker.startup(
@@ -113,6 +135,7 @@ IF NOT EXISTS {relation.quoted_dot_notation}
             self.DOCKER_START_COMMAND,
             self.DOCKER_TARGET_PORT,
             self.CLASSNAME,
+            source_adapter_name,
             self._build_snowshu_envars(
                 self.DOCKER_SNOWSHU_ENVARS))
         logger.info('Container initialized.')
@@ -125,13 +148,14 @@ IF NOT EXISTS {relation.quoted_dot_notation}
             self.DOCKER_READY_COMMAND).exit_code == 0
 
     def finalize_replica(self) -> str:
-        """returns the image name of the completed replica."""
+        """returns the image name of the completed replica.
+        """
         shdocker = SnowShuDocker()
         logger.info('Finalizing target container into replica...')
-        replica_image = shdocker.convert_container_to_replica(self.config.name,
+        replica_image = shdocker.convert_container_to_replica(self.replica_meta['name'],
                                                               self.container,
                                                               self)
-        logger.info(f'Finalized replica image {self.config.name}')
+        logger.info(f'Finalized replica image {self.replica_meta["name"]}')
         return replica_image.tags[0]
 
     def _generate_credentials(self) -> Credentials:
@@ -174,8 +198,8 @@ IF NOT EXISTS {relation.quoted_dot_notation}
             [
                 dict(
                     created_at=datetime.now(),
-                    name=self.config.name,
-                    short_description=self.config.short_description,
-                    long_description=self.config.long_description)])
+                    name=self.replica_meta['name'],
+                    short_description=self.replica_meta['short_description'],
+                    long_description=self.replica_meta['long_description'])])
 
         self.create_and_load_relation(relation)

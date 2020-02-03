@@ -12,7 +12,6 @@ SCHEMA = 'schema'
 USER = 'user'
 WAREHOUSE = 'warehouse'
 
-
 @dataclass
 class Credentials:
     """Represents every accepted type of credential, attempting to bring some
@@ -26,6 +25,7 @@ class Credentials:
     schema: Optional[str] = None
     user: Optional[str] = None
     warehouse: Optional[str] = None
+    
 
     def urlencode(self) -> None:
         """quote-plus encoding of all attributes good for sql urls."""

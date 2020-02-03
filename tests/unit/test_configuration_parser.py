@@ -1,3 +1,6 @@
+import mock
+import tempfile
+import json
 import pytest
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from tests.common import rand_string
@@ -35,7 +38,7 @@ def test_fills_empty_top_level_values(stub_configs):
 def test_errors_on_missing_section(stub_configs):
     stub_configs = stub_configs()
     del stub_configs['source']
-    with pytest.raises(AttributeError):
+    with pytest.raises((KeyError,AttributeError,)):
         mock_config_file = StringIO(yaml.dump(stub_configs))
         ConfigurationParser.from_file_or_path(mock_config_file)
 
@@ -45,3 +48,32 @@ def test_sets_sampling_for_all_patterns(stub_configs):
     parsed=ConfigurationParser.from_file_or_path(mock_config_file)
 
     assert isinstance(parsed.sampling,DefaultSampling)
+
+def test_errors_on_bad_profile(stub_configs):
+    stub_configs = stub_configs()
+    SOURCE_PROFILE, TARGET_PROFILE, STORAGE_PROFILE = [
+        rand_string(10) for _ in range(3)]
+    stub_configs['source']['profile'] = SOURCE_PROFILE
+    stub_configs['storage']['profile'] = STORAGE_PROFILE
+
+    with pytest.raises(ValueError):
+        mock_config_file = StringIO(yaml.dump(stub_configs))
+        ConfigurationParser.from_file_or_path(mock_config_file)
+
+def test_loads_good_creds(stub_creds,stub_configs):
+    stub_creds = stub_creds()
+    stub_configs = stub_configs()
+    
+    SOURCES_NAME, SOURCES_PASSWORD, STORAGES_ACCOUNT = [
+        rand_string(10) for _ in range(3)]
+    with tempfile.NamedTemporaryFile(mode='w') as mock_file:
+        stub_creds['sources'][0]['name'] = SOURCES_NAME
+        stub_creds['sources'][0]['password'] = SOURCES_PASSWORD
+        stub_configs['source']['profile'] = SOURCES_NAME
+        json.dump(stub_creds, mock_file)
+        mock_file.seek(0)
+        stub_configs['credpath']=mock_file.name
+        adapter_profile=ConfigurationParser._build_adapter_profile('source',stub_configs)
+
+    assert adapter_profile.name == SOURCES_NAME
+    assert adapter_profile.adapter.credentials.password == SOURCES_PASSWORD

@@ -73,15 +73,19 @@ def init(path: click.Path) -> None:
         exists=True),
     default=REPLICA_DEFAULT,
     help="the Path, string or bytes object snowshu will use for your replica configuration file, default is ./replica.yml")
+@click.option('--name',
+    default=None,
+    help="Overrides the replica name found in replica.yml")
 @click.option(
     '--barf',
     is_flag=True,
     help="outputs the source query sql to a local folder snowshu_barf_output")
-def run(replica_file: click.Path,
+def create(replica_file: click.Path,
+        name:str,
         barf:bool):
     replica = ReplicaFactory()
     replica.load_config(replica_file)
-    click.echo(replica.run(barf))
+    click.echo(replica.create(name,barf))
 
 
 @cli.command()
@@ -99,21 +103,14 @@ def analyze(replica_file: click.Path,barf:bool):
     replica.load_config(replica_file)
     click.echo(replica.analyze(barf))
 
+@cli.command()
+def list():
+    replica_manager = ReplicaManager()
+    click.echo(replica_manager.list())
 
 @cli.command()
 @click.argument('replica')
-@click.option(
-    '-p',
-    '--port',
-    type=int,
-    default=DOCKER_TARGET_PORT,
-    help="The port snowshu will forward the replica connection to. Defaults to 9999.")
-def launch(replica: str,
-           port: int):
-    """Launches an existing replica as a daemon."""
-    replica = ReplicaManager().get_replica(replica, port=port)
-    if replica is None:
-        message = f"No replica found with name {replica}"
-        click.echo(message)
-        sys.exit()
-    click.echo(replica.launch())
+def launch_docker_cmd(replica:str):
+    replica_manager = ReplicaManager()
+    click.echo(replica_manager.launch_docker_command(replica))
+

@@ -1,8 +1,8 @@
 import pytest
 import time
+import docker
 from tests.common import rand_string
 from sqlalchemy import create_engine
-from snowshu.core.replica.replica_manager import ReplicaManager
 from snowshu.core.docker import SnowShuDocker
 from snowshu.adapters.target_adapters import PostgresAdapter
 
@@ -26,7 +26,7 @@ def test_creates_replica(docker_flush):
         target_adapter.DOCKER_START_COMMAND,
         9999,
         target_adapter.CLASSNAME,
-
+        'SnowflakeAdapter',
         ['POSTGRES_USER=snowshu',
          'POSTGRES_PASSWORD=snowshu',
          'POSTGRES_DB=snowshu', ])
@@ -46,13 +46,17 @@ def test_creates_replica(docker_flush):
     replica = shdocker.convert_container_to_replica(TEST_NAME,
                                                     target_container,
                                                     target_adapter)
-
     # get a new replica
-    test_replica = ReplicaManager().get_replica(TEST_NAME, 9999)
-    test_replica.launch()
+    client=docker.from_env()
+    
+    client.containers.run(replica.id,
+                          ports={'9999/tcp':9999},
+                          name=TEST_NAME,
+                          network='snowshu',
+                          detach=True)
     time.sleep(5)  # give pg a moment to spin up all the way
     engine = create_engine(
-        f'postgresql://snowshu:snowshu@{test_replica.name}:9999/snowshu')
+        f'postgresql://snowshu:snowshu@{TEST_NAME}:9999/snowshu')
     res = engine.execute(f'SELECT * FROM {TEST_TABLE}').fetchall()
     assert ('a', 1,) in res
     assert ('b', 2,) in res

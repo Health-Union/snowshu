@@ -23,27 +23,32 @@ def end_to_end(docker_flush_session):
     runner = CliRunner()
     configuration_path = os.path.join(
         PACKAGE_ROOT, 'snowshu', 'templates', 'replica.yml')
-    create_output=runner.invoke(cli, ('run', '--replica-file', configuration_path)).output.split('\n')
-    launch_output=runner.invoke(cli, ('launch', 'integration-test')).output.split('\n')
+    create_output=runner.invoke(cli, ('create', '--replica-file', configuration_path)).output.split('\n')
+    client=docker.from_env()
+    client.containers.run('snowshu_replica_integration-test',
+                          ports={'9999/tcp':9999},
+                          name='integration-test',
+                          network='snowshu',
+                          detach=True)
     time.sleep(5) # the replica needs a second to initialize
-    return create_output,launch_output
+    return create_output
 
 def any_appearance_of(string,strings):
     return any([string in line for line in strings])
 
 def test_reports_full_catalog_start(end_to_end):
     print('test_reports_catalog')
-    result_lines, _ = end_to_end
+    result_lines = end_to_end
     assert any_appearance_of('Assessing full catalog...',result_lines)
 
 def test_finds_9_relations(end_to_end):
     print('test_reports_9_relations')
-    result_lines, _ = end_to_end
+    result_lines= end_to_end
     assert any_appearance_of('Identified a total of 9 relations to sample based on the specified configurations.',result_lines)
 
 def test_replicates_order_items(end_to_end):
     print('test_replicates_order_items')
-    result_lines, _ = end_to_end
+    result_lines = end_to_end
     assert any_appearance_of('Done replication of relation SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS',result_lines)
 
 @pytest.mark.skip
@@ -57,41 +62,6 @@ def test_snowshu_explain(end_to_end):
     assert response['target_adapter'] == 'postgres'
     assert response['source_adapter'] == 'snowflake'
     assert datetime(response['created_at']) < datetime.now()
-
-def test_launches(end_to_end):
-    print('test_launches')
-    _,launch_response=end_to_end
-    EXPECTED_CONNECTION_STRINGS=(
-        "snowshu:snowshu@localhost:9999/snowshu",
-        "snowshu:snowshu@integration-test:9999/snowshu",)
-    for conn in EXPECTED_CONNECTION_STRINGS:
-        assert any_appearance_of(conn, launch_response)
-    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
-    q = conn.execute(
-        'SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."EXTERNAL_DATA"."ADDRESS_REGION_ATTRIBUTES"')
-    count = q.fetchall()[0][0]
-    assert count > 100
-
-
-@pytest.mark.skip
-def test_stops_and_starts(end_to_end):
-    runner = CliRunner()
-    response = runner.invoke(cli, 'start', 'integration-test')
-    assert 'ReplicaFactory integration-test restarted.' in response.output
-    assert 'You can connect to this replica with connection string: postgresql://snowshu:snowshu@snowshu:9999/snowshu' in response.output
-    assert 'To stop your replica temporarily, use command `snowshu stop integration-test`' in response.output
-    assert 'To spin down your replica, use command `snowshu down integration-test`' in response.output
-    # cleanup
-    runner.invoke(cli, 'down', 'integration-test')
-
-
-@pytest.mark.skip
-def test_stops(end_to_end):
-    runner = CliRunner()
-    response = runner.invoke(cli, 'stop', 'integration-test')
-    assert 'ReplicaFactory integration-test stopped.' in response.output
-    assert 'You can connect to this replica with connection string: postgresql://snowshu:snowshu@snowshu:9999/snowshu' not in response.output
-    assert 'To start your replica again use command `snowshu start integration-test`' in response.output
 
 def test_bidirectional(end_to_end):
     print('test_bidirectional')
@@ -143,7 +113,6 @@ SELECT
     assert downstream_missing == 0
 
 def test_view(end_to_end):
-    print('test_view')
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
 SELECT 
@@ -152,3 +121,10 @@ SELECT
 """
     q = conn.execute(query)
     assert len(set(q.fetchall()[0])) == 1
+
+def test_cross_database_query(end_to_end):
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
+    query = 'SELECT COUNT(*) FROM "snowshu__snowshu"."replica_meta"'
+    q = conn.execute(query)
+    assert len(set(q.fetchall()[0])) == 1
+

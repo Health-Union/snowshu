@@ -8,6 +8,8 @@ import yaml
 from snowshu.core.configuration_parser import ConfigurationParser
 from tests.conftest_modules.test_credentials import CREDENTIALS
 from tests.conftest_modules.test_configuration import CONFIGURATION
+from tests.conftest_modules.mock_docker_images import MockImageFactory
+
 from tests.common import rand_string
 from snowshu.core.models import Relation, Attribute
 import snowshu.core.models.data_types as dt
@@ -132,12 +134,14 @@ def sanitize_docker_environment():
             pass
 
     def is_snowshu_related_container(container)->bool:
-        return any([val in container.name for val in ('snowshu__replica__',
+        return any([val in container.name for val in ('snowshu_replica_',
             'integration-test',
             'snowshu_target',)])
 
     def is_snowshu_related_image(image)->bool:
-        return any([val in image.tags[0] for val in ('snowshu__replica__',
+        if len(image.tags) < 1:
+            return False
+        return any([val in image.tags[0] for val in ('snowshu_replica_',
             'integration-test',
             'snowshu_target',)])
 
@@ -160,3 +164,8 @@ def docker_flush_session():
     sanitize_docker_environment()
     yield
     sanitize_docker_environment()
+
+
+@pytest.fixture
+def mock_docker_image():
+    return MockImageFactory()

@@ -9,12 +9,10 @@ from snowshu.core.graph import SnowShuGraph
 
 MOCKED_CONFIG = dict(name='test',
                      version='1',
-                     credpath='./',
+                     credpath=dict(), ## not concerned with credentials parsing here
                      source=dict(
                           profile='default',
                           sampling='default',
-                          sample_method='bernoulli',
-                          probability=10,
                           general_relations=dict(databases=[dict(pattern='(?i)^snow.*',
                                                                 schemas=[dict(pattern='THING',
                                                                               relations=['.*suffix$'])])]),
@@ -33,8 +31,8 @@ MOCKED_CONFIG = dict(name='test',
                                                                                          schema='THING',
                                                                                          relation='matches_in_directional')]
                                                                        ))]),
-                     target=dict(adapter=''),
-                     storage=dict(profile=''))
+                     target=dict(adapter='default'),
+                     storage=dict(profile='default'))
 
 
 MOCKED_CATALOG = (Relation('snowyes', 'THING', 'foo_suffix', mz.TABLE, []),
@@ -52,13 +50,11 @@ MOCKED_CATALOG = (Relation('snowyes', 'THING', 'foo_suffix', mz.TABLE, []),
                   Relation('snowyes', 'THING', 'nevermatch_except_bidirectional', mz.TABLE, []),)
 
 
-@pytest.fixture
-def conf_obj():
-    return ConfigurationParser.from_file_or_path(StringIO(yaml.dump(MOCKED_CONFIG)))
-
-
-def test_included_and_excluded(conf_obj):
+@mock.patch('snowshu.core.configuration_parser.ConfigurationParser._build_adapter_profile')
+@mock.patch('snowshu.core.configuration_parser.ConfigurationParser._build_target')
+def test_included_and_excluded(adapter,target):
     shgraph = SnowShuGraph()
+    conf_obj=ConfigurationParser.from_file_or_path(StringIO(yaml.dump(MOCKED_CONFIG)))
     shgraph.build_graph(conf_obj, MOCKED_CATALOG)
     matched_nodes = shgraph.graph
     assert MOCKED_CATALOG[0] in matched_nodes.nodes

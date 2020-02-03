@@ -1,7 +1,8 @@
+from importlib import import_module
 import yaml
 import os
 from pathlib import Path
-from typing import Optional, Any, Union, TextIO
+from typing import Optional, Any, Union, TextIO, Type
 from snowshu.logger import Logger
 logger = Logger().logger
 
@@ -38,3 +39,22 @@ def load_from_file_or_path(loadable: Union[Path, str, TextIO]) -> dict:
         loaded = yaml.safe_load(loadable)
     logger.debug('Done loading.')
     return loaded
+
+
+
+def fetch_adapter( name:str,
+                   section:str)->Union[Type['BaseSourceAdapter'],Type['BaseTargetAdapter'],Type['BaseStorageAdapter']]:
+    """Locates and returns the specified adapter.
+    
+    Args:
+        name: The name of the adapter to look up.
+        section: One of ('source','target','storage').
+    Returns:
+        The adapter if found, raises :class:`AdapterNotFound <snowshu.exceptions.AdapterNotFound>`.
+    """
+    try:
+        return getattr(import_module(f'snowshu.adapters.{section}_adapters'),
+                       name.capitalize() + 'Adapter')
+    except AttributeError as e:
+        logger.critical(f'No {section} adapter found by the name of {name}')
+        raise e

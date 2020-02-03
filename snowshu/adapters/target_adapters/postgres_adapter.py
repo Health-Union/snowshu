@@ -1,4 +1,5 @@
 import sqlalchemy
+from typing import List,Iterable
 from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
 from snowshu.core.models import materializations as mz
 from snowshu.core.models import data_types as dt
@@ -19,9 +20,7 @@ class PostgresAdapter(BaseTargetAdapter):
         TIMESTAMP=dt.TIMESTAMPTZ,
         FLOAT=dt.DOUBLE,
         BOOLEAN=dt.BOOLEAN)
-    NATIVE_DATA_DIRECTORY = '/var/lib/postgresql/data'
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
-    DOCKER_REPLICA_ENVARS = [f"PGDATA={DOCKER_REMOUNT_DIRECTORY}"]
 
     # NOTE: either start container with db listening on port 9999,
     # or override with DOCKER_TARGET_PORT
@@ -35,9 +34,6 @@ class PostgresAdapter(BaseTargetAdapter):
 
         self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port}'
         self.DOCKER_READY_COMMAND = f'pg_isready -p {self._credentials.port} -h {self._credentials.host} -U {self._credentials.user} -d {self._credentials.database}'
-        self.DOCKER_REPLICA_START_COMMAND = self.DOCKER_START_COMMAND
-        self.DOCKER_REPLICA_ENVARS += self._build_snowshu_envars(
-            self.DOCKER_SNOWSHU_ENVARS)
 
     def _create_snowshu_schema_statement(self) -> str:
         return 'CREATE SCHEMA IF NOT EXISTS "snowshu";'
@@ -74,3 +70,45 @@ class PostgresAdapter(BaseTargetAdapter):
                 pass
             else:
                 raise e
+
+
+    def image_finalize_bash_commands(self)->List[str]:
+        commands=list()
+        commands.append(f'mkdir /{DOCKER_REMOUNT_DIRECTORY}'),
+        commands.append(f'cp -a /var/lib/postgresql/data/* /{DOCKER_REMOUNT_DIRECTORY}')
+        return commands
+    
+    def docker_commit_changes(self)->str:
+        """To finalize the image we need to set envars for the container."""
+        return f"ENV PGDATA /{DOCKER_REMOUNT_DIRECTORY}"
+
+    def enable_cross_database(self,relations:Iterable['Relation'])->None:
+        unique_schemas = {(rel.database,rel.schema,) for rel in relations}
+        unique_databases = {rel.database for rel in relations}
+        unique_databases.add('snowshu')
+        unique_schemas.add(('snowshu','snowshu',))
+
+        def statement_runner(statement:str):
+            logger.info(f'executing statement `{statement}...`')
+            response=conn.execute(statement)
+            logger.info('Executed.')
+        
+        for db in unique_databases:
+            conn = self.get_connection(database_override=db)
+            statement_runner('CREATE EXTENSION postgres_fdw')
+            for remote_database in filter((lambda x : x!=db), unique_databases):
+                statement_runner(f"""CREATE SERVER {remote_database}
+FOREIGN DATA WRAPPER postgres_fdw
+OPTIONS (dbname '{remote_database}',port '9999')""")
+
+                statement_runner(f"""CREATE USER MAPPING for snowshu
+SERVER {remote_database} 
+OPTIONS (user 'snowshu', password 'snowshu')""")
+
+            for schema_database, schema in unique_schemas:
+                if schema_database != db:
+                    statement_runner(f'CREATE SCHEMA IF NOT EXISTS "{schema_database}__{schema}"')
+
+                    statement_runner(f"""IMPORT FOREIGN SCHEMA "{schema}"
+    FROM SERVER {schema_database} INTO "{schema_database}__{schema}" """)
+

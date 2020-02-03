@@ -30,12 +30,14 @@ class SnowShuDocker:
         except docker.errors.ImageNotFound:
             pass
         replica = container.commit(
-            repository=self.sanitize_replica_name(replica_name))
+            repository=self.sanitize_replica_name(replica_name),
+            changes=target_adapter.docker_commit_changes()
+            )
         logger.info(f'Replica image {replica.tags[0]} created. Cleaning up...')
         self.remove_container(container.name)
 
         return replica
-
+    ## TODO: this is all holdover from storages, and can be greatly simplified.
     def get_stopped_container(
             self,
             image,
@@ -78,6 +80,7 @@ class SnowShuDocker:
                 start_command: str,
                 port: int,
                 target_adapter: str,
+                source_adapter: str,
                 envars: list,
                 protocol: str = "tcp") -> docker.models.containers.Container:
 
@@ -88,7 +91,9 @@ class SnowShuDocker:
             port,
             name=DOCKER_TARGET_CONTAINER,
             labels=dict(
-                target_adapter=target_adapter))
+                snowshu_replica='true',
+                target_adapter=target_adapter,
+                source_adapter=source_adapter))
         logger.info(
             f'Connecting {DOCKER_TARGET_CONTAINER} to bridge network..')
         self._connect_to_bridge_network(container)
@@ -147,7 +152,7 @@ class SnowShuDocker:
         seperated a-z0-9 strings when possible.
         """
         logger.info(f'sanitizing replica name {name}...')
-        prefix = "snowshu__replica__"
+        prefix = "snowshu_replica_"
         image = '-'.join(re.sub(r'[\-\_\+\.]', ' ',
                                 name.lower().replace(prefix, '')).split())
         if not re.match(r'^[a-z0-9\-]*$', image):
@@ -159,17 +164,19 @@ class SnowShuDocker:
 
     def replica_image_name_to_common_name(self, name: str) -> str:
         """reverse the replica sanitizer."""
-        return name.replace('snowshu__replica__', '')
+        sr='snowshu_replica_'
+        return ':'.join((sr.join(name.split(sr)[1:])).split(':')[:-1])
 
     def _remount_replica_data(
             self,
             container: docker.models.containers.Container,
             target_adapter: Type['BaseTargetAdapter']) -> None:
         logger.info('Remounting data inside target...')
-        mount_strings = [
-            f"/bin/bash -c 'mkdir /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'",
-            f"/bin/bash -c 'cp -a {target_adapter.NATIVE_DATA_DIRECTORY}/* /{target_adapter.DOCKER_REMOUNT_DIRECTORY}'"]
-        for string in mount_strings:
-            response = container.exec_run(string, tty=True)
+        for command in target_adapter.image_finalize_bash_commands():
+            response = container.exec_run(f"/bin/bash -c '{command}'", tty=True)
             if response[0] > 0:
                 raise OSError(response[1])
+        logger.info('Data remounted, image ready to be finalized.')
+
+    def find_snowshu_images(self)->List[docker.models.images.Image]:
+        return [img for img in filter((lambda x : len(x.tags) > 0),self.client.images.list(filters=dict(label='snowshu_replica=true')))]
