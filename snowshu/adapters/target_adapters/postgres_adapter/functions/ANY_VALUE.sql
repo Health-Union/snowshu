@@ -1,3 +1,6 @@
+/* Emulates as GREATEST (ie MAX value) */
+
+
 create or replace function any_value_mock (anynonarray, anynonarray) returns anynonarray
 
     language sql as $$
