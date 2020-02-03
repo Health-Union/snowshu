@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Type, Optional
+from typing import Type, Optional,List
 import docker
 import re
 from snowshu.configs import DOCKER_NETWORK,\
@@ -151,7 +151,6 @@ class SnowShuDocker:
         ReplicaFactory names are coerced into ASCII lowercase, dash-
         seperated a-z0-9 strings when possible.
         """
-        logger.info(f'sanitizing replica name {name}...')
         prefix = "snowshu_replica_"
         image = '-'.join(re.sub(r'[\-\_\+\.]', ' ',
                                 name.lower().replace(prefix, '')).split())
@@ -159,7 +158,6 @@ class SnowShuDocker:
             raise ValueError(
                 f'Replica name {name} cannot be converted to replica name')
         final_image = prefix + image
-        logger.info(f'Replica name sanitized to {final_image}')
         return final_image
 
     def replica_image_name_to_common_name(self, name: str) -> str:

@@ -72,13 +72,14 @@ You can start and launch one of the replicas like this:
 
 and then connect using your normal sql workflow. By default your replica will be on ``localhost`` port 9999. The default database, schema, user and password are all ``snowshu``. 
 
-Contents
-========
+User Resources
+==============
 
 .. toctree::
-   :maxdepth: 1
-   
+   :numbered:
+
    philosophy_statement
+   snowflake_function_emulation
 
 Developer Resources
 ===================

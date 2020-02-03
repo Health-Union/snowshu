@@ -20,7 +20,9 @@ class SnowflakeAdapter(BaseSourceAdapter):
     def __init__(self):
         super().__init__()
 
+    name='snowflake'
     SUPPORTS_CROSS_DATABASE=True
+    SUPPORTED_FUNCTIONS=set(['ANY_VALUE'])
     SUPPORTED_SAMPLE_METHODS = (BernoulliSampleMethod,)
     REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
     ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
@@ -77,7 +79,7 @@ FROM
     def directionally_wrap_statement(
             self, sql: str, 
             relation:Relation, 
-            sample_type: Union['BaseSampleMethod', None]) -> str:
+            sample_type: Union['snowshu.core.samplings.bases.BaseSampleMethod', None]) -> str:
         if sample_type is None:
             return sql
 

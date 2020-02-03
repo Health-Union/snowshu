@@ -1,4 +1,5 @@
 from time import sleep
+import os
 from snowshu.core.utils import key_for_value
 from typing import Optional,List,Iterable
 from snowshu.adapters import BaseSQLAdapter
@@ -201,5 +202,34 @@ IF NOT EXISTS {relation.quoted_dot_notation}
                     name=self.replica_meta['name'],
                     short_description=self.replica_meta['short_description'],
                     long_description=self.replica_meta['long_description'])])
-
         self.create_and_load_relation(relation)
+
+    def create_function_if_available(self,
+                                     function:str, 
+                                     relations:Iterable['Relation'])->None:
+        """Applies all available source functions to target.
+        
+        Looks for a function sql file in ./functions, executes against target for each db if it is.
+
+        Args:
+            function: The name of the function, must match the sql file name exactly.
+            relations: An iterable of relations to apply the function to.
+        """
+        try:
+            functions_path=os.path.abspath(os.path.join(
+                                            os.path.dirname(__file__),
+                                            self.name + '_adapter',
+                                            'functions')) 
+            with open(os.path.join(functions_path, f'{function}.sql'),'r') as f:
+                function_sql=f.read()
+
+            unique_schemas = {(rel.database,rel.schema,) for rel in relations}
+            for db,schema in unique_schemas:
+                conn = self.get_connection(database_override=db,
+                                           schema_override=schema)
+                logger.info(f'Applying function {function} to "{db}"."{schema}"...')
+                conn.execute(function_sql)
+                logger.info(f'Function {function} added.')
+        except FileNotFoundError:
+            logger.info(f'Function {function} is not implemented for target {self.CLASSNAME}.')
+            return    

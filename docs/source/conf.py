@@ -7,6 +7,7 @@ sys.path.insert(0,(os.path.abspath(os.path.join('..','..','snowshu'))))
 
 extensions = [
     "sphinx_rtd_theme",
+    "sphinxcontrib.fulltoc",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
@@ -14,3 +15,4 @@ extensions = [
 
 html_theme = "sphinx_rtd_theme"
 project= "SnowShu"
+

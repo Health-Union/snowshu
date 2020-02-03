@@ -9,7 +9,7 @@ logger = Logger().logger
 
 
 class PostgresAdapter(BaseTargetAdapter):
-
+    name = 'postgres'
     dialect = 'postgres'
     DATA_TYPE_MAPPINGS: dict = None
     DOCKER_IMAGE = 'postgres:12'
