@@ -1,5 +1,6 @@
-snowshu package
-===============
+==================
+Code Documentation
+==================
 
 Subpackages
 -----------
@@ -9,6 +10,7 @@ Subpackages
    snowshu.adapters
    snowshu.core
    snowshu.samplings
+   snowshu.storages
 
 Submodules
 ----------
@@ -41,14 +43,6 @@ snowshu.logger module
 ---------------------
 
 .. automodule:: snowshu.logger
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-snowshu.utils module
---------------------
-
-.. automodule:: snowshu.utils
    :members:
    :undoc-members:
    :show-inheritance:

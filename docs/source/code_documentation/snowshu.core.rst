@@ -8,7 +8,7 @@ Subpackages
 
    snowshu.core.models
    snowshu.core.replica
-   snowshu.core.sampling
+   snowshu.core.samplings
 
 Submodules
 ----------

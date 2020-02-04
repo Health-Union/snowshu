@@ -7,7 +7,6 @@ Subpackages
 .. toctree::
 
    snowshu.adapters.source_adapters
-   snowshu.adapters.storage_adapters
    snowshu.adapters.target_adapters
 
 Submodules

@@ -10,7 +10,7 @@
 .. role:: bolditalic
   :class: bolditalic
 
-.. image:: ../assets/snowshu_logo.png 
+.. image:: ../../assets/snowshu_logo.png 
 
 ====================
 Philosophy Statement

@@ -4,14 +4,6 @@ snowshu.core.replica package
 Submodules
 ----------
 
-snowshu.core.replica.replica module
------------------------------------
-
-.. automodule:: snowshu.core.replica.replica
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 snowshu.core.replica.replica\_factory module
 --------------------------------------------
 

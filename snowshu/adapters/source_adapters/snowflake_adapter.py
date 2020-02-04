@@ -78,7 +78,7 @@ FROM
     def directionally_wrap_statement(
             self, sql: str, 
             relation:Relation, 
-            sample_type: Union['snowshu.core.samplings.bases.BaseSampleMethod', None]) -> str:
+            sample_type: Union['BaseSampleMethod', None]) -> str:
         if sample_type is None:
             return sql
 
