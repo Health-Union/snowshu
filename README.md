@@ -5,17 +5,8 @@ _by Health Union_
 ![Pipeline](https://bitbucket.org/healthunion/snowshu/downloads/pipeline.svg)
 
 SnowShu enables data developers to author transforms and models in a highly performant, fully local environment. It is designed to make true red-green TDD not only possible for data development, but painless and blazingly fast.
-![Photo by Jaanus Jagomägi on Unsplash](docs/assets/drift.jpeg)
+![SnowShu Logo](docs/assets/snowshu_logo.png)
 
-## Table of Contents
+*TODO*: need a quick start here! 
 
-### Using SnowShu
-- [SnowShu Philosophical Statement](docs/philosopy.md)
-- [Getting Started With SnowShu](docs/getting_started.md)
-- [Configuring A Replica File](docs/replicas.md)
-
-### Contributing to SnowShu
-
-- [Introduction to Development](docs/development.md)
-- [Creating a New Adapter](docs/creating_adapters.md)
-
+Check out the full documentation [here](snowshu.readthedocs.org)

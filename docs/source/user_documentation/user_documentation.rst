@@ -12,6 +12,8 @@ User Documentation
  
 Getting Started
 ===============
+Installing SnowShu
+------------------
 Snowshu can be installed via pip
 
 >>> pip3 install snowshu
@@ -21,6 +23,8 @@ or built `from source <'https://bitbucket.org/healthunion/snowshu/src/master/'>`
 Note that SnowShu uses Docker build replicas, so **if you don't already have Docker installed you will need to do that first**.
 You can download and install the latest version of Docker Desktop `here <'https://docs.docker.com/install/'>`__.
 
+Setting Up SnowShu
+------------------
 Once you have installed SnowShu you will want to create a `replica.yml <replica_dot_yaml_file.html>`__ for your project. Creating yaml files from scratch is no fun, so 
 SnowShu comes with a built-in helper command to get you started.
 
@@ -39,6 +43,9 @@ Now you probably want to see how well the replica settings will work in practice
 >>> snowshu analyze 
 
 This will output the proposed relations and sampling sizes. You can tweak your ``replica.yml`` file until you are satisifed with your analyze output.
+
+Creating A Replica
+------------------
 When you are ready, you can create your replica with 
 
 >>> snowshu create
