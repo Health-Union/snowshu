@@ -10,14 +10,14 @@ replicas are *highly insecure* and infosec policies should reflect this. Control
 to a replica is the only reliable way to protect the data inside.  
 
 ... But What If I Need To Run Multiple Replicas Side-By-Side?
------------------------------------------------------
+-------------------------------------------------------------
 Since replicas are docker images, the 9999 port can be
 re-mapped as needed for multiple parallel replicas - so you could have one sample on 9999, 
 a second one on 9998, and a third on 9997, all logging in with ``snowshu`` as the username and password. 
 
 My Tests Pass In SnowShu But Fail In CI, Does SnowShu Not Work? 
 ===============================================================
-This is covered in you_only_need_one_, but TLDR; SnowShu is not intended to be the end-all testing for your data development. 
+This is covered in it_only_takes_one_, but TLDR; SnowShu is not intended to be the end-all testing for your data development. 
 Check out our suggested_data_workflows_ for direction on how you can make the most of SnowShu in your data devops.  
 
 Why Did You Name It SnowShu?

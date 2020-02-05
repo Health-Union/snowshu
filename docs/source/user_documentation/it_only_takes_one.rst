@@ -1,3 +1,5 @@
+.. _it_only_takes_one.yml:
+
 =================
 It Only Takes One
 =================
@@ -7,7 +9,7 @@ One of the base challenges in programming is that computers think in absolutes.
 When we define a transforming condition to be applied to a dataset, that transforming condition *must be successful*
 for every last memeber of the dataset or the program will fail. For example:
 
-.. code_block:: SQL
+.. code-block:: SQL
 
    SELECT user_identifier::int FROM ONE_TRILLION_ROW_TABLE;
 
