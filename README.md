@@ -10,4 +10,4 @@ SnowShu enables data developers to author transforms and models in a highly perf
 
 *TODO*: need a quick start here! 
 
-Check out the full documentation [here](snowshu.readthedocs.org)
+Check out the full documentation [here](https://snowshu.readthedocs.org)
