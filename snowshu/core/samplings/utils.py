@@ -3,7 +3,7 @@ from typing import Union,Type
 from snowshu.core.samplings.bases.base_sampling import BaseSampling
 
 def get_sampling_from_partial(partial:Union[dict,str])->Type[BaseSampling]:
-    """takes a sampling config dict and returns an instance of :class:`BaseSampling <snowshu.core.samplings.base_sampling.BaseSampling>'
+    """takes a sampling config dict and returns an instance of :class:`BaseSampling <snowshu.core.samplings.base_sampling.BaseSampling>`
 
     This will accept either a string name of a sampling to invoke it with no params, or a dict to invoke with the params passed. 
 

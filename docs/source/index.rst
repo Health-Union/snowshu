@@ -76,13 +76,10 @@ User Resources
 ==============
 
 .. toctree::
-   :numbered:
+   :maxdepth: 2
 
-   philosophy_statement
-   snowflake_function_emulation
+   user_documentation/user_documentation
+   developer_documentation/developer_documentation
+   code_documentation/code_documentation
 
-Developer Resources
-===================
 
-* :ref:`genindex`
-* :ref:`modindex`

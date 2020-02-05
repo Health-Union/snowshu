@@ -16,10 +16,7 @@ source:
       - pattern: '.*' # matches all schemas
         relations:
         - '^(?!.+_VIEW).+$' # matches all relations that do not end with '_VIEW'
-  
   include_outliers: True
-  sample_method: bernoulli
-  probability: 5 
   
   # these are exceptions to the 'default' sampling above
   specified_relations: 

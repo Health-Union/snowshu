@@ -6,19 +6,9 @@ Subpackages
 
 .. toctree::
 
+   snowshu.samplings.sample_methods
    snowshu.samplings.sample_sizes
-
-Submodules
-----------
-
-snowshu.samplings.default\_sampling module
-------------------------------------------
-
-.. automodule:: snowshu.samplings.default_sampling
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
+   snowshu.samplings.samplings
 
 Module contents
 ---------------
