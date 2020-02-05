@@ -1,19 +1,17 @@
 ==================
 User Documentation
 ==================
-
 .. toctree::
    :titlesonly:
 
+   faq
    philosophy_statement
+   it_only_takes_one
+   replica.yml file <replica_dot_yaml_file>
    function_emulations
-
-CLI (command line) User Interface
-=================================
-
+ 
 Getting Started
----------------
-
+===============
 Snowshu can be installed via pip
 
 >>> pip3 install snowshu
@@ -47,7 +45,7 @@ When you are ready, you can create your replica with
 
 SnowShu will report details of the created replica once completed. 
 
-.. image:: ../assets/completed_replica.png 
+.. image:: /../assets/completed_replica.png 
 
 Using Your Replica
 ------------------
@@ -61,12 +59,14 @@ docker run -d -p 9999:9999 --rm --name hamburger-sandwich snowshu_replica_hambur
 
 When running in bash you can easily wrap this command to execute, ie
 
->> $(snowshu launch-docker-cmd hamburger-sandwich)
+>>> $(snowshu launch-docker-cmd hamburger-sandwich)
 
 Now you can connect to the replica using a standard connection string. 
 
-.. Info:: ``snowshu`` is the default username, password and database for all replicas. 9999 is the port. These cannot be changed, `for good reason <faq.html#why-cant>`__
+.. note:: ``snowshu`` is the default username, password and database for all replicas. 9999 is the port. These cannot be changed, `for good reason <faq.html#why-cant>`__
  
+
+
 
 
 
