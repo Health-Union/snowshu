@@ -105,11 +105,16 @@ IF NOT EXISTS {relation.quoted_dot_notation}
         logger.info(
             f'Loading data into relation {relation.quoted_dot_notation}...')
         try:
+            type_map=dict()
+            for attribute in relation.attributes:
+                type_map[attribute.name] = attribute.data_type.sqlalchemy_type
+
             relation.data.to_sql(relation.name,
                                  engine,
                                  schema=relation.schema,
                                  if_exists='replace',
                                  index=False,
+                                 dtype=type_map,
                                  chunksize=DEFAULT_INSERT_CHUNK_SIZE,
                                  method='multi')
         except Exception as e:
@@ -183,7 +188,7 @@ IF NOT EXISTS {relation.quoted_dot_notation}
         self.create_database_if_not_exists('snowshu')
         self.create_schema_if_not_exists('snowshu', 'snowshu')
         attributes = [
-            Attribute('created_at', dt.TIMESTAMPTZ),
+            Attribute('created_at', dt.TIMESTAMP_TZ),
             Attribute('name', dt.VARCHAR),
             Attribute('short_description', dt.VARCHAR),
             Attribute('long_description', dt.VARCHAR)]
