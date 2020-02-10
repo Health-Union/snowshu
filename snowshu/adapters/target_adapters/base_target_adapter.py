@@ -30,7 +30,6 @@ class BaseTargetAdapter(BaseSQLAdapter):
         for attr in (
             'DOCKER_IMAGE',
             'DOCKER_SNOWSHU_ENVARS',
-            'DATA_TYPE_MAPPINGS',
         ):
             if not hasattr(self, attr):
                 raise NotImplementedError(
@@ -68,34 +67,32 @@ class BaseTargetAdapter(BaseSQLAdapter):
         raise NotImplementedError()
 
     def create_and_load_relation(self, relation) -> None:
-        self.create_relation_if_not_exists(relation)
-        if not relation.is_view:
+        if relation.is_view:
+            self.create_or_replace_view(relation)
+        else:
             self.load_data_into_relation(relation)
 
-    def create_relation_if_not_exists(self, relation: Relation) -> None:
-        engine = self.get_connection(database_override=relation.database,
-                                     schema_override=relation.schema)
+    def create_or_replace_view(self,relation)->None:
+        """Creates a view of the specified relation in the target adapter.
 
-        materialization = key_for_value(
-            self.MATERIALIZATION_MAPPINGS, relation.materialization)
-        logger.info(f'Creating relation {relation.quoted_dot_notation}')
-        ddl_statement = f"CREATE {materialization} "
-        if relation.is_view:
-            ddl_statement += f"""
+        Relation must have a valid ``view_ddl`` value that can be executed as a SELECT statement.        
+
+        Args:
+            relation: the :ref:`Relation <snowshu.core.models.relation.Relation>`__ object to be created as a view.
+    
+        """
+        ddl_statement = f"""CREATE OR REPLACE VIEW
 {relation.quoted_dot_notation}
 AS
 {relation.view_ddl}
-"""
-        else:
-            ddl_statement += f"""
-IF NOT EXISTS {relation.quoted_dot_notation}
-({relation.typed_columns(self.DATA_TYPE_MAPPINGS)})
-"""
+""" 
+        engine = self.get_connection(database_override=relation.database,
+                                     schema_override=relation.schema)
         try:
             engine.execute(ddl_statement)
         except Exception as e:
             logger.info(
-                f"Failed to create {materialization} {relation.quoted_dot_notation}:{e}")
+                f"Failed to create {relation.materialization.name} {relation.quoted_dot_notation}:{e}")
             raise e
         logger.info(f'Created relation {relation.quoted_dot_notation}')
 
@@ -105,11 +102,14 @@ IF NOT EXISTS {relation.quoted_dot_notation}
         logger.info(
             f'Loading data into relation {relation.quoted_dot_notation}...')
         try:
+            type_map={attr.name:attr.data_type.sqlalchemy_type for attr in relation.attributes}
+
             relation.data.to_sql(relation.name,
                                  engine,
                                  schema=relation.schema,
                                  if_exists='replace',
                                  index=False,
+                                 dtype=type_map,
                                  chunksize=DEFAULT_INSERT_CHUNK_SIZE,
                                  method='multi')
         except Exception as e:
@@ -183,7 +183,7 @@ IF NOT EXISTS {relation.quoted_dot_notation}
         self.create_database_if_not_exists('snowshu')
         self.create_schema_if_not_exists('snowshu', 'snowshu')
         attributes = [
-            Attribute('created_at', dt.TIMESTAMPTZ),
+            Attribute('created_at', dt.TIMESTAMP_TZ),
             Attribute('name', dt.VARCHAR),
             Attribute('short_description', dt.VARCHAR),
             Attribute('long_description', dt.VARCHAR)]

@@ -12,7 +12,7 @@ class BaseSQLAdapter:
     def __init__(self):
         self.CLASSNAME = self.__class__.__name__
         for attr in ('REQUIRED_CREDENTIALS', 'ALLOWED_CREDENTIALS',
-                     'DATA_TYPE_MAPPINGS', 'MATERIALIZATION_MAPPINGS',):
+                     'MATERIALIZATION_MAPPINGS',):
             if not hasattr(self, attr):
                 raise NotImplementedError(
                     f'SQL adapter requires attribute {attr} but was not set.')
