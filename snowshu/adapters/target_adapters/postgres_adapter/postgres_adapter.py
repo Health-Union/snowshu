@@ -11,19 +11,8 @@ logger = Logger().logger
 class PostgresAdapter(BaseTargetAdapter):
     name = 'postgres'
     dialect = 'postgres'
-    DATA_TYPE_MAPPINGS: dict = None
     DOCKER_IMAGE = 'postgres:12'
     MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, VIEW=mz.VIEW)
-    DATA_TYPE_MAPPINGS = dict(
-        VARCHAR=dt.VARCHAR,
-        INTEGER=dt.INTEGER,
-        NUMERIC=dt.NUMERIC,
-        TIMESTAMP=dt.TIMESTAMP_NTZ,
-        TIMESTAMPTZ=dt.TIMESTAMP_TZ,
-        FLOAT=dt.FLOAT,
-        DATE=dt.DATE,
-        BOOLEAN=dt.BOOLEAN)
-
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
 
     # NOTE: either start container with db listening on port 9999,

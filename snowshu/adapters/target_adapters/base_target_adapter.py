@@ -30,7 +30,6 @@ class BaseTargetAdapter(BaseSQLAdapter):
         for attr in (
             'DOCKER_IMAGE',
             'DOCKER_SNOWSHU_ENVARS',
-            'DATA_TYPE_MAPPINGS',
         ):
             if not hasattr(self, attr):
                 raise NotImplementedError(
