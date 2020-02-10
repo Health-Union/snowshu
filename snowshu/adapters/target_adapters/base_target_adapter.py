@@ -103,9 +103,7 @@ AS
         logger.info(
             f'Loading data into relation {relation.quoted_dot_notation}...')
         try:
-            type_map=dict()
-            for attribute in relation.attributes:
-                type_map[attribute.name] = attribute.data_type.sqlalchemy_type
+            type_map={attr.name:attr.data_type.sqlalchemy_type for attr in relation.attributes}
 
             relation.data.to_sql(relation.name,
                                  engine,
