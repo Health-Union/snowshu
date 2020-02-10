@@ -17,11 +17,13 @@ class PostgresAdapter(BaseTargetAdapter):
     DATA_TYPE_MAPPINGS = dict(
         VARCHAR=dt.VARCHAR,
         INTEGER=dt.INTEGER,
-        TIMESTAMP=dt.TIMESTAMP,
-        TIMESTAMPTZ=dt.TIMESTAMPTZ,
-        FLOAT=dt.DOUBLE,
+        NUMERIC=dt.NUMERIC,
+        TIMESTAMP=dt.TIMESTAMP_NTZ,
+        TIMESTAMPTZ=dt.TIMESTAMP_TZ,
+        FLOAT=dt.FLOAT,
         DATE=dt.DATE,
         BOOLEAN=dt.BOOLEAN)
+
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
 
     # NOTE: either start container with db listening on port 9999,

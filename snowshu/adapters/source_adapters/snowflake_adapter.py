@@ -27,18 +27,41 @@ class SnowflakeAdapter(BaseSourceAdapter):
     REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
     ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
 
-    DATA_TYPE_MAPPINGS = dict(number=dtypes.INTEGER,
-                              float=dtypes.DOUBLE,
-                              text=dtypes.VARCHAR,
-                              boolean=dtypes.BOOLEAN,
-                              date=dtypes.DATE,
-                              timestamp_ntz=dtypes.TIMESTAMP,
-                              timestamp_ltz=dtypes.TIMESTAMPTZ,
-                              timestamp_tz=dtypes.TIMESTAMPTZ,
-                              variant=dtypes.JSON,
-                              object=dtypes.OBJECT,
-                              array=dtypes.ARRAY,
-                              binary=dtypes.BINARY)
+
+
+    DATA_TYPE_MAPPINGS={
+        "array":dtypes.JSON,
+        "bigint":dtypes.INTEGER,
+        "binary":dtypes.BINARY,
+        "boolean":dtypes.BOOLEAN,
+        "char":dtypes.CHAR,
+        "character":dtypes.CHAR,
+        "date":dtypes.DATE,
+        "datetime":dtypes.DATETIME,
+        "decimal":dtypes.DECIMAL,
+        "double":dtypes.FLOAT,
+        "double precision":dtypes.FLOAT,
+        "float":dtypes.FLOAT,
+        "float4":dtypes.FLOAT,
+        "float8":dtypes.FLOAT,
+        "int":dtypes.INTEGER,
+        "integer":dtypes.INTEGER,
+        "number":dtypes.INTEGER,
+        "numeric":dtypes.NUMERIC,
+        "object":dtypes.JSON,
+        "real":dtypes.FLOAT,
+        "smallint":dtypes.INTEGER,
+        "string":dtypes.VARCHAR,
+        "text":dtypes.VARCHAR,
+        "time":dtypes.TIME,
+        "timestamp":dtypes.TIMESTAMP_NTZ,
+        "timestamp_ntz":dtypes.TIMESTAMP_NTZ,
+        "timestamp_ltz":dtypes.TIMESTAMP_TZ,
+        "timestamp_tz":dtypes.TIMESTAMP_TZ,
+        "varbinary":dtypes.BINARY,
+        "varchar":dtypes.VARCHAR,
+        "variant":dtypes.JSON}
+
 
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.VIEW}
