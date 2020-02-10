@@ -68,9 +68,35 @@ class BaseTargetAdapter(BaseSQLAdapter):
         raise NotImplementedError()
 
     def create_and_load_relation(self, relation) -> None:
-        self.create_relation_if_not_exists(relation)
+        #self.create_relation_if_not_exists(relation)
         if not relation.is_view:
             self.load_data_into_relation(relation)
+        else:
+            self.create_or_replace_view(relation)
+
+    def create_or_replace_view(self,relation)->None:
+        """Creates a view of the specified relation in the target adapter.
+
+        Relation must have a valid ``view_ddl`` value that can be executed as a SELECT statement.        
+
+        Args:
+            relation: the :ref:`Relation <snowshu.core.models.relation.Relation>`__ object to be created as a view.
+    
+        """
+        ddl_statement = f"""CREATE OR REPLACE VIEW
+{relation.quoted_dot_notation}
+AS
+{relation.view_ddl}
+""" 
+        engine = self.get_connection(database_override=relation.database,
+                                     schema_override=relation.schema)
+        try:
+            engine.execute(ddl_statement)
+        except Exception as e:
+            logger.info(
+                f"Failed to create {relation.materialization.name} {relation.quoted_dot_notation}:{e}")
+            raise e
+        logger.info(f'Created relation {relation.quoted_dot_notation}')
 
     def create_relation_if_not_exists(self, relation: Relation) -> None:
         engine = self.get_connection(database_override=relation.database,
