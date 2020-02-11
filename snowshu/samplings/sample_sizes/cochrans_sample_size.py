@@ -52,6 +52,9 @@ class CochransSampleSize(BaseSampleSize):
         Returns:
             The minimum whole number of elements for a sample size given the instance margin of error and confidence.
         """
+        if population < 1:
+            return 0 
+
         probability=0.5 
         n_zero=(((self._get_alpha()**2)
                * probability

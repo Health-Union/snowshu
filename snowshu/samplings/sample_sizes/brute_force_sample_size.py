@@ -1,3 +1,4 @@
+import math
 from snowshu.core.samplings.bases.base_sample_size import BaseSampleSize
 
 class BruteForceSampleSize(BaseSampleSize):
