@@ -114,6 +114,7 @@ class GraphSetRunner:
                         except Exception:
                             raise SystemError(
                                 f'Failed execution of extraction sql statement: {relation.compiled_query}')
+                        logger.critical(f'relation data types are : {[(attr.name,attr.data_type.sqlalchemy_type,) for attr in relation.attributes]}')
 
                         relation.sample_size = len(relation.data)
                         logger.info(

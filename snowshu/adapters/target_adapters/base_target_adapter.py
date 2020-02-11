@@ -103,7 +103,8 @@ AS
             f'Loading data into relation {relation.quoted_dot_notation}...')
         try:
             type_map={attr.name:attr.data_type.sqlalchemy_type for attr in relation.attributes}
-
+            logger.critical(f"mapping to postgres: {type_map}")
+            logger.critical(f"relation data: {relation.data}")
             relation.data.to_sql(relation.name,
                                  engine,
                                  schema=relation.schema,

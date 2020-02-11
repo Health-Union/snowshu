@@ -1,0 +1,20 @@
+version: "1"
+credpath: "./tests/assets/integration/credentials.yml" 
+name: wordpress-logs-patch
+short_description: Here we go..
+long_description: This is going to happen..
+threads: 15
+target: 
+  adapter: 'postgres'
+source:
+  profile: default
+  sampling: default
+  general_relations:
+    databases:
+    - pattern: HU_DATA 
+      schemas:
+      - pattern: WORDPRESS 
+        relations:
+        -  'ALZ_COMMENTS_LOG' 
+  include_outliers: True
+
