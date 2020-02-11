@@ -104,8 +104,6 @@ AS
         try:
             attribute_type_map={attr.name:attr.data_type.sqlalchemy_type for attr in relation.attributes}
             data_type_map={col:case_insensitive_dict_value(attribute_type_map,col) for col in relation.data.columns.to_list()}
-            logger.critical(f"mapping to postgres: {data_type_map}")
-            logger.critical(f"relation data: {relation.data}")
             relation.data.to_sql(relation.name,
                                  engine,
                                  schema=relation.schema,

@@ -58,10 +58,7 @@ class ReplicaFactory:
                 self.config.target_profile.adapter.create_function_if_available(function,relations) 
             logger.info('Emulation functions applied.')
             self.config.target_profile.adapter.finalize_replica()
-
         
-        for relation in [relation for graph in graphs for relation in graph.nodes]:
-            logger.critical(f"Relation {relation.dot_notation} attributes: {[(attribute.name,attribute.data_type.sqlalchemy_type,) for attribute in relation.attributes]}")
         return printable_result(
                 graph_to_result_list(graphs),
                 self.ANALYZE)
