@@ -58,7 +58,7 @@ class ReplicaFactory:
                 self.config.target_profile.adapter.create_function_if_available(function,relations) 
             logger.info('Emulation functions applied.')
             self.config.target_profile.adapter.finalize_replica()
-
+        
         return printable_result(
                 graph_to_result_list(graphs),
                 self.ANALYZE)

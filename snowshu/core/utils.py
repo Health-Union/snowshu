@@ -7,6 +7,22 @@ from snowshu.logger import Logger
 logger = Logger().logger
 
 
+def case_insensitive_dict_value(dictionary,caseless_key)->Any:
+    """finds a key in a dict without case sensitivity, returns value.
+
+    Searches for the FIRST match (insensitive dict keys can have multiple matches) and returns that value.
+
+    ARGS:
+        - dictionary: The dictionary to traverse.
+        - caseless_key: The key case-insensitive search the dictionary for.
+    RETURNS:
+        the value of insensitive key. Raises KeyError if not found.
+    """
+    lowered={key.lower():key for key in dictionary.keys()}
+    return dictionary[lowered[caseless_key.lower()]]    
+
+
+
 def key_for_value(dictionary, value):
     """finds the key for a given value in a dict."""
     return list(dictionary.keys())[list(dictionary.values()).index(value)]

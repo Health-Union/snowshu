@@ -1,6 +1,6 @@
 from time import sleep
 import os
-from snowshu.core.utils import key_for_value
+from snowshu.core.utils import key_for_value, case_insensitive_dict_value
 from typing import Optional,List,Iterable
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import DOCKER_TARGET_PORT,\
@@ -102,14 +102,14 @@ AS
         logger.info(
             f'Loading data into relation {relation.quoted_dot_notation}...')
         try:
-            type_map={attr.name:attr.data_type.sqlalchemy_type for attr in relation.attributes}
-
+            attribute_type_map={attr.name:attr.data_type.sqlalchemy_type for attr in relation.attributes}
+            data_type_map={col:case_insensitive_dict_value(attribute_type_map,col) for col in relation.data.columns.to_list()}
             relation.data.to_sql(relation.name,
                                  engine,
                                  schema=relation.schema,
                                  if_exists='replace',
                                  index=False,
-                                 dtype=type_map,
+                                 dtype=data_type_map,
                                  chunksize=DEFAULT_INSERT_CHUNK_SIZE,
                                  method='multi')
         except Exception as e:
