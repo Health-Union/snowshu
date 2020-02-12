@@ -50,9 +50,8 @@ pipelines:
         - step: *run-tests
   tags:
     '**':
-      - parallel:
-        - step: *code-analysis
-        - step: *run-tests
+      - step: *code-analysis
+      - step: *run-tests
       - step:
         name: 'Publish to PyPi'
         script:
