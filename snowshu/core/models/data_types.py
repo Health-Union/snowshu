@@ -35,11 +35,12 @@ quoted_types = (
     ("VARCHAR", types.VARCHAR(),),)
 
 unquoted_types = (
-    ("BINARY",types.BINARY(),),
-    ("BOOLEAN",types.BOOLEAN(),),
+    ("BINARY",types.LargeBinary(),),
+    ("BOOLEAN",types.Boolean(),),
     ("DECIMAL",types.DECIMAL(),),
     ("FLOAT",types.FLOAT(),),
     ("INTEGER",types.INTEGER(),),
+    ("BIGINT",types.BIGINT(),),
     ("NUMERIC",types.NUMERIC(),),)
 
 

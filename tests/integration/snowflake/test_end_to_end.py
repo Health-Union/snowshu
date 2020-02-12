@@ -37,17 +37,14 @@ def any_appearance_of(string,strings):
     return any([string in line for line in strings])
 
 def test_reports_full_catalog_start(end_to_end):
-    print('test_reports_catalog')
     result_lines = end_to_end
     assert any_appearance_of('Assessing full catalog...',result_lines)
 
-def test_finds_9_relations(end_to_end):
-    print('test_reports_9_relations')
+def test_finds_10_relations(end_to_end):
     result_lines= end_to_end
-    assert any_appearance_of('Identified a total of 9 relations to sample based on the specified configurations.',result_lines)
+    assert any_appearance_of('Identified a total of 10 relations to sample based on the specified configurations.',result_lines)
 
 def test_replicates_order_items(end_to_end):
-    print('test_replicates_order_items')
     result_lines = end_to_end
     assert any_appearance_of('Done replication of relation SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS',result_lines)
 
@@ -133,3 +130,53 @@ def test_applies_emulation_function(end_to_end):
     query = 'SELECT ANY_VALUE(id) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS"'
     q = conn.execute(query)
     assert int(q.fetchall()[0][0]) > 0
+
+def test_data_types(end_to_end):
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
+    query = """
+SELECT 
+    COLUMN_NAME,
+    DATA_TYPE
+FROM 
+    "SNOWSHU_DEVELOPMENT".information_schema.columns 
+WHERE 
+    TABLE_SCHEMA = 'TESTS_DATA' 
+AND 
+    TABLE_NAME='DATA_TYPES'"""
+
+    q = conn.execute(query)
+    type_mappings = q.fetchall()
+    EXPECTED_DATA_TYPES={
+"array_col":"json",
+"bigint_col":"bigint",
+"binary_col":"bytea",
+"boolean_col":"boolean",
+"char_col":"character varying",
+"character_col":"character varying",
+"date_col":"date",
+"datetime_col":"timestamp without time zone",
+"decimal_col":"bigint",
+"double_col":"double precision",
+"doubleprecision_col":"double precision",
+"float_col":"double precision",
+"float4_col":"double precision",
+"float8_col":"double precision",
+"int_col":"bigint",
+"integer_col":"bigint",
+"number_col":"bigint",
+"numeric_col":"bigint",
+"object_col":"json",
+"real_col":"double precision",
+"smallint_col":"bigint",
+"string_col":"character varying",
+"text_col":"character varying",
+"time_col":"time without time zone",
+"timestamp_col":"timestamp without time zone",
+"timestamp_ntz_col":"timestamp without time zone",
+"timestamp_ltz_col":"timestamp with time zone",
+"timestamp_tz_col":"timestamp with time zone",
+"varbinary_col":"bytea",
+"varchar_col":"character varying",
+"variant_col":"json"
+}
+    assert {t[0]:t[1] for t in type_mappings} == EXPECTED_DATA_TYPES

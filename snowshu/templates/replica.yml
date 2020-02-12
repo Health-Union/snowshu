@@ -22,12 +22,17 @@ source:
   specified_relations: 
   - database: SNOWSHU_DEVELOPMENT
     schema: SOURCE_SYSTEM
-    relation: 'ORDERS'
+    relation: ORDERS
     unsampled: True
   - database: SNOWSHU_DEVELOPMENT
     schema: SOURCE_SYSTEM
-    relation: 'ORDER_ITEMS_VIEW'
+    relation: ORDER_ITEMS_VIEW
     unsampled: True
+  - database: SNOWSHU_DEVELOPMENT
+    schema: TESTS_DATA
+    relation: DATA_TYPES
+    unsampled: True
+      
   - database: SNOWSHU_DEVELOPMENT
     schema: SOURCE_SYSTEM
     relation: '^ORDER_ITEMS$'
@@ -36,13 +41,13 @@ source:
       - local_attribute: PRODUCT_ID 
         database: '' ## empty strings inherit from the downstream relation
         schema: ''
-        relation: 'PRODUCTS'
+        relation: PRODUCTS
         remote_attribute: ID
       directional: 
       - local_attribute: ORDER_ID
         database: SNOWSHU_DEVELOPMENT
         schema: SOURCE_SYSTEM
-        relation: 'ORDERS'
+        relation: ORDERS
         remote_attribute: ID
   - database: SNOWSHU_DEVELOPMENT
     schema: SOURCE_SYSTEM
