@@ -39,10 +39,6 @@ definitions:
           - coverage.svg
           - pipeline.svg
 pipelines:
-  default:
-    - parallel:
-      - step: *code-analysis
-      - step: *run-tests
   pull-requests:
     '**':
       - parallel:
@@ -50,13 +46,14 @@ pipelines:
         - step: *run-tests
   tags:
     '**':
-      - step: *code-analysis
-      - step: *run-tests
+      - parallel:
+        - step: *code-analysis
+        - step: *run-tests
       - step:
-        name: 'Publish to PyPi'
-        script:
-          - echo 'Attempting to deploy to PyPi using atlassian/pypi-publish:0.2.11'
-          - pipe: atlassian/pypi-publish:0.2.11
-            variables:
-              PYPI_USERNAME: 'HealthUnion'
-              PYPI_PASSWORD: $PYPI_PASSWORD
+          name: 'Publish to PyPi'
+          script:
+            - echo 'Attempting to deploy to PyPi using atlassian/pypi-publish:0.2.11'
+            - pipe: atlassian/pypi-publish:0.2.11
+              variables:
+                PYPI_USERNAME: 'HealthUnion'
+                PYPI_PASSWORD: $PYPI_PASSWORD
