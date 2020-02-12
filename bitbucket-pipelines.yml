@@ -18,7 +18,7 @@ definitions:
           - pip
         script:
           - echo $CREDENTIALS | base64 --decode > tests/assets/integration/credentials.yml ## injects the credentials file
-          - pip install --no-cache-dir docker-compose 
+          - pip install --no-cache-dir docker-compose
           - pip install coverage-badge anybadge
           - docker-compose up -d
           - docker-compose exec -T snowshu py.test --cov=snowshu tests/unit --junitxml=test-results/junit_$BITBUCKET_BUILD_NUMBER.xml
@@ -48,4 +48,12 @@ pipelines:
       - parallel:
         - step: *code-analysis
         - step: *run-tests
-
+  tags:
+    '**':
+      - parallel:
+        - step: *code-analysis
+        - step: *run-tests
+      - pipe: atlassian/pypi-publish:0.2.11
+        variables:
+          PYPI_USERNAME: 'HealthUnion'
+          PYPI_PASSWORD: $PYPI_PASSWORD
