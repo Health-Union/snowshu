@@ -55,6 +55,7 @@ pipelines:
       - step:
         name: 'Publish to PyPi'
         script:
+          - echo 'Attempting to deploy to PyPi using atlassian/pypi-publish:0.2.11'
           - pipe: atlassian/pypi-publish:0.2.11
             variables:
               PYPI_USERNAME: 'HealthUnion'
