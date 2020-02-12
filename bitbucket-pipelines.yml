@@ -53,7 +53,10 @@ pipelines:
       - parallel:
         - step: *code-analysis
         - step: *run-tests
-      - pipe: atlassian/pypi-publish:0.2.11
-        variables:
-          PYPI_USERNAME: 'HealthUnion'
-          PYPI_PASSWORD: $PYPI_PASSWORD
+      - step:
+        name: 'Publish to PyPi'
+        script:
+          - pipe: atlassian/pypi-publish:0.2.11
+            variables:
+              PYPI_USERNAME: 'HealthUnion'
+              PYPI_PASSWORD: $PYPI_PASSWORD
