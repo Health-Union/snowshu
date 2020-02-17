@@ -8,8 +8,11 @@ from snowshu.logger import Logger
 logger = Logger().logger
 
 def correct_case(val:str, upper:bool=True):
-    #if re.fullmatch('')
-    pass
+    if any({val.isupper(),val.islower(),}) and \
+       re.fullmatch('^(\w|\s)*$',val):
+        return val.upper() if upper else val.lower()
+    else:
+        return val      
 
 
 

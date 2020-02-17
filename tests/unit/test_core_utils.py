@@ -9,8 +9,8 @@ def test_case_insensitive_search():
 
 def test_correct_case():
 
-    correct=['upper','LOWER','SNAKE_CASED']
-    leave=['Upper','lOWER','Space Cased','^regex$']
+    correct=['upper','LOWER','SNAKE_CASED','lower_snake']
+    leave=['Upper','lOWER','Space Cased','^regex$','Other_snake']
 
     def correct_test_suite(under_test,upper):
         for item in under_test:
@@ -19,7 +19,7 @@ def test_correct_case():
 
     def leave_test_suite(under_test,upper):
         for item in under_test:
-            passed.append(correct_case(item,upper)== item)
+            correct_case(item,upper)== item
 
     [correct_test_suite(correct,x) for x in (True,False,)]
     [leave_test_suite(leave,x) for x in (True,False,)]
