@@ -1,9 +1,11 @@
 from pathlib import Path
-from snowshu.core.utils import fetch_adapter
+from snowshu.core.utils import fetch_adapter,correct_case
 import yaml
 from typing import Union, TextIO, List, Optional,Type,Any
 from snowshu.logger import Logger
-from snowshu.configs import DEFAULT_THREAD_COUNT,DEFAULT_MAX_NUMBER_OF_OUTLIERS
+from snowshu.configs import DEFAULT_THREAD_COUNT, \
+DEFAULT_MAX_NUMBER_OF_OUTLIERS, \
+DEFAULT_PRESERVE_CASE
 from dataclasses import dataclass
 from snowshu.core.samplings.utils import get_sampling_from_partial
 from snowshu.core.models import Credentials
@@ -67,6 +69,7 @@ class Configuration:
     short_description:str
     long_description:str
     threads:int
+    preserve_case:bool
     source_profile:AdapterProfile
     target_profile:AdapterProfile
     include_outliers:bool
@@ -78,8 +81,7 @@ class Configuration:
 
 class ConfigurationParser:
 
-    @classmethod
-    def _get_dict_from_anything(cls, dict_like_object:Union[str,'StringIO',dict])->dict:
+    def _get_dict_from_anything(self, dict_like_object:Union[str,'StringIO',dict])->dict:
         """Returns dict from path, io object or dict.  
         
         Returns:
@@ -95,8 +97,7 @@ class ConfigurationParser:
                 with open(dict_like_object,'r') as f:
                     return yaml.safe_load(f.read())
 
-    @classmethod
-    def _set_default(cls,
+    def _set_default(self,
                      dict_from:dict,
                      attr:str,
                      default:Any='')->None:
@@ -104,12 +105,35 @@ class ConfigurationParser:
 
         dict_from[attr]=dict_from.get(attr,default)
 
-    @classmethod
-    def from_file_or_path(cls, loadable: Union[Path, str, TextIO]) -> Configuration:
+    def case(self,val:str)->str:
+        """Does the up-front case correction.
+        SnowShu uses the default source case as the "case insensitive" fold.
+        Args:
+            val: The value to case correct.
+        Returns:
+            The corrected string.
+        """
+        if self.preserve_case:
+            return val
+        else:
+            return correct_case(val,self.default_case == 'upper')
+
+    ## TODO: now that there's an instance dependency on preserve_case and correct_case, 
+    ## this should be migrated to an init
+    def from_file_or_path(self, loadable: Union[Path, str, TextIO]) -> Configuration:
         """rips through a configuration and returns a configuration object."""
         logger.debug(f'loading credentials...')
-        loaded=cls._get_dict_from_anything(loadable)
+        loaded=self._get_dict_from_anything(loadable)
         logger.debug('Done loading.')
+
+        ## we need the source adapter first to case-correct everything else
+        self.preserve_case=self._set_default(loaded,'preserve_case',DEFAULT_PRESERVE_CASE)
+        source_adapter_profile=self._build_adapter_profile('source',loaded)
+        self.default_case = source_adapter_profile.adapter.DEFAULT_CASE
+
+        def case(val:str)->str:
+            self.case(val)
+
         ## make sure no empty sections
         try:
             [loaded[section].keys() for section in ('source','target',)]
@@ -117,13 +141,10 @@ class ConfigurationParser:
             raise KeyError(f'missing config section or section is none: {e}.')
 
         ## set defaults
-        [cls._set_default(loaded,attr) for attr in ('short_description','long_description',)]
-        cls._set_default(loaded,'threads',DEFAULT_THREAD_COUNT)
-        cls._set_default(loaded['source'],'include_outliers',False)
-        cls._set_default(loaded['source'],'max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS)
-    
-
-
+        [self._set_default(loaded,attr) for attr in ('short_description','long_description',)]
+        self._set_default(loaded,'threads',DEFAULT_THREAD_COUNT)
+        self._set_default(loaded['source'],'include_outliers',False)
+        self._set_default(loaded['source'],'max_number_of_outliers',DEFAULT_MAX_NUMBER_OF_OUTLIERS)
 
         try:
             replica_base = (loaded['name'],
@@ -132,19 +153,20 @@ class ConfigurationParser:
                             loaded['short_description'],
                             loaded['long_description'],
                             loaded['threads'],
-                            cls._build_adapter_profile('source',loaded),
-                            cls._build_target(loaded),
+                            self.preserve_case,
+                            source_adapter_profile,
+                            self._build_target(loaded),
                             loaded['source']['include_outliers'],
                             get_sampling_from_partial(loaded['source']['sampling']),
                             loaded['source']['max_number_of_outliers'])
 
 
-            general_relations=MatchPattern([MatchPattern.DatabasePattern(database['pattern'],
-                                                            [MatchPattern.SchemaPattern(schema['pattern'], 
-                                                                                        [MatchPattern.RelationPattern(relation) for relation in schema['relations']]) 
+            general_relations=MatchPattern([MatchPattern.DatabasePattern(case(database['pattern']),
+                                                            [MatchPattern.SchemaPattern(case(schema['pattern']), 
+                                                                                        [MatchPattern.RelationPattern(case(relation)) for relation in schema['relations']]) 
                                                             for schema in database['schemas']]) for database in loaded['source']['general_relations']['databases']])
                     
-            specified_relations=cls._build_specified_relations(loaded['source'])
+            specified_relations=self._build_specified_relations(loaded['source'])
 
             return Configuration(*replica_base,
                                  general_relations,
@@ -155,16 +177,16 @@ class ConfigurationParser:
             raise AttributeError(message)
 
         
-    @classmethod
-    def _build_relationships(cls,specified_pattern:dict)->SpecifiedMatchPattern.Relationships:
+    
+    def _build_relationships(self,specified_pattern:dict)->SpecifiedMatchPattern.Relationships:
         
         def build_relationship(sub)->SpecifiedMatchPattern.RelationshipPattern:
             return SpecifiedMatchPattern.RelationshipPattern(
-                sub['local_attribute'],
-                sub['database'] if sub['database'] != '' else None,
-                sub['schema'] if sub['schema'] != '' else None,
-                sub['relation'],
-                sub['remote_attribute'])
+                self.case(sub['local_attribute']),
+                self.case(sub['database']) if sub['database'] != '' else None,
+                self.case(sub['schema']) if sub['schema'] != '' else None,
+                self.case(sub['relation']),
+                self.case(sub['remote_attribute']))
 
         relationships = specified_pattern.get('relationships',dict())
         directional=relationships.get('directional',list())
@@ -173,23 +195,23 @@ class ConfigurationParser:
                 [build_relationship(rel) for rel in bidirectional],
                 [build_relationship(rel) for rel in directional])
 
-    @classmethod    
-    def _build_specified_relations(cls,source_config:dict)->SpecifiedMatchPattern:
+        
+    def _build_specified_relations(self,source_config:dict)->SpecifiedMatchPattern:
         
         specified_relations=source_config.get('specified_relations',list())
         def sampling_or_none(rel):
             if rel.get('sampling'):
                 return get_sampling_from_partial(rel['sampling'])
             
-        return [SpecifiedMatchPattern( rel['database'],
-                    rel['schema'],
-                    rel['relation'],
+        return [SpecifiedMatchPattern( self.case(rel['database']),
+                    self.case(rel['schema']),
+                    self.case(rel['relation']),
                     rel.get('unsampled',False),
                     sampling_or_none(rel),
                     rel.get('include_outliers',None),
-                    cls._build_relationships(rel)) for rel in specified_relations]
-    @classmethod
-    def _build_adapter_profile(cls,section:str,
+                    self._build_relationships(rel)) for rel in specified_relations]
+    
+    def _build_adapter_profile(self,section:str,
                                full_configs:Union[str,'StringIO',dict])->AdapterProfile:
         profile=full_configs[section]['profile']
         credentials=full_configs['credpath']
@@ -206,7 +228,7 @@ class ConfigurationParser:
                 raise KeyError(profile)
             except KeyError as e:
                 raise ValueError(f'Credentials missing required section: {e}')
-        profile_dict=lookup_profile_from_creds(cls._get_dict_from_anything(credentials),
+        profile_dict=lookup_profile_from_creds(self._get_dict_from_anything(credentials),
                                                profile,
                                                section)
 
@@ -219,8 +241,8 @@ class ConfigurationParser:
         return AdapterProfile(profile,
                               adapter)
                             
-    @classmethod
-    def _build_target(cls,full_creds:dict)->AdapterProfile:
+    
+    def _build_target(self,full_creds:dict)->AdapterProfile:
         adapter=fetch_adapter(full_creds['target']['adapter'],'target')()
         adapter.replica_meta={attr:full_creds[attr] for attr in ('name','short_description','long_description',)}
         return AdapterProfile(full_creds['target']['adapter'],
