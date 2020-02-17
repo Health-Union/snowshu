@@ -102,7 +102,7 @@ class ConfigurationParser:
                      attr:str,
                      default:Any='')->None:
         """sets default for a given dict key."""
-
+            
         dict_from[attr]=dict_from.get(attr,default)
 
     def case(self,val:str)->str:
@@ -127,7 +127,8 @@ class ConfigurationParser:
         logger.debug('Done loading.')
 
         ## we need the source adapter first to case-correct everything else
-        self.preserve_case=self._set_default(loaded,'preserve_case',DEFAULT_PRESERVE_CASE)
+        self._set_default(loaded,'preserve_case',DEFAULT_PRESERVE_CASE)
+        self.preserve_case=loaded['preserve_case']
         source_adapter_profile=self._build_adapter_profile('source',loaded)
         self.default_case = source_adapter_profile.adapter.DEFAULT_CASE
 
