@@ -16,7 +16,7 @@ from snowshu.core.main import cli
 
 BASE_CONN='postgresql://snowshu:snowshu@integration-test:9999/{}'
 SNOWSHU_META_STRING=BASE_CONN.format('snowshu')
-SNOWSHU_DEVELOPMENT_STRING=BASE_CONN.format('SNOWSHU_DEVELOPMENT')
+SNOWSHU_DEVELOPMENT_STRING=BASE_CONN.format('snowshu_development')
 
 @pytest.fixture(scope="session", autouse=True)
 def end_to_end(docker_flush_session):
@@ -67,9 +67,9 @@ def test_bidirectional(end_to_end):
 SELECT 
     COUNT(*) 
 FROM 
-    "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."USER_COOKIES" uc
+    SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.USER_COOKIES uc
 FULL OUTER JOIN
-     "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."USERS" u
+     SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.USERS u
 ON 
     uc.user_id=u.id
 WHERE 
@@ -93,9 +93,9 @@ SELECT
     ,oi.order_id AS oi_order_id
     ,o.id AS o_id
 FROM 
-    "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS" oi
+    SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS oi
 FULL OUTER JOIN
-     "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDERS" o
+     SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDERS o
 ON 
     oi.order_id = o.id
 )
@@ -113,21 +113,21 @@ def test_view(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
 SELECT 
-    (SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS_VIEW") /
-    (SELECT COUNT(*) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS") AS delta
+    (SELECT COUNT(*) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS_VIEW) /
+    (SELECT COUNT(*) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS) AS delta
 """
     q = conn.execute(query)
     assert len(set(q.fetchall()[0])) == 1
 
 def test_cross_database_query(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
-    query = 'SELECT COUNT(*) FROM "snowshu__snowshu"."replica_meta"'
+    query = 'SELECT COUNT(*) FROM snowshu__snowshu.replica_meta'
     q = conn.execute(query)
     assert len(set(q.fetchall()[0])) == 1
 
 def test_applies_emulation_function(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
-    query = 'SELECT ANY_VALUE(id) FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS"'
+    query = 'SELECT ANY_VALUE(id) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS'
     q = conn.execute(query)
     assert int(q.fetchall()[0][0]) > 0
 
@@ -138,7 +138,7 @@ SELECT
     COLUMN_NAME,
     DATA_TYPE
 FROM 
-    "SNOWSHU_DEVELOPMENT".information_schema.columns 
+    SNOWSHU_DEVELOPMENT.information_schema.columns 
 WHERE 
     TABLE_SCHEMA = 'TESTS_DATA' 
 AND 
