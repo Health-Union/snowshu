@@ -1,5 +1,5 @@
 from typing import List, Union, Optional
-from snowshu.core.utils import key_for_value
+from snowshu.core.utils import key_for_value,correct_case
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
@@ -10,7 +10,7 @@ logger = Logger().logger
 
 
 class Relation:
-    data:pd.DataFrame
+    _data:pd.DataFrame
     compiled_query:str
     core_query:str
     population_size:int
@@ -38,6 +38,20 @@ class Relation:
 
     def __repr__(self) -> str:
         return f"<Relation object {self.database}.{self.schema}.{self.name}>"
+
+    @property
+    def data(self)->pd.DataFrame:
+        return self._data
+
+    @data.setter
+    def data(self,val:pd.DataFrame)->None:
+        """Adjust data columns to match corrected attribute names."""
+        lowered_columns=[correct_case(col,False) for col in val.columns.to_list()]
+        attrs=[attr.name for attr in self.attributes]
+        lowered_attrs=[attr.lower() for attr in attrs]
+        val.columns=[attrs[lowered_attrs.index(col)] for col in lowered_columns]
+        self._data=val      
+
 
     @property
     def dot_notation(self) -> str:

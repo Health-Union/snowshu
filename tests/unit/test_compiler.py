@@ -97,11 +97,10 @@ FROM
 def test_run_deps_directional(stub_relation_set):
     upstream=stub_relation_set.upstream_relation
     downstream=stub_relation_set.downstream_relation
-    upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
     for relation in (downstream,upstream,):
         relation.attributes=[Attribute('id',dt.INTEGER)]
         relation=stub_out_sampling(relation)
-    
+    upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
     dag=nx.DiGraph()
     dag.add_edge(upstream,downstream,direction="directional",remote_attribute='id',local_attribute='id')
     compiler=RuntimeSourceCompiler()
@@ -134,12 +133,12 @@ FROM
 def test_run_deps_bidirectional_include_outliers(stub_relation_set):
     upstream=stub_relation_set.upstream_relation
     downstream=stub_relation_set.downstream_relation
-    upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
     for relation in (downstream,upstream,):
         relation.attributes=[Attribute('id',dt.INTEGER)]
         relation.include_outliers=True    
         relation.max_number_of_outliers=100
         relation=stub_out_sampling(relation)
+    upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
 
     dag=nx.DiGraph()
     dag.add_edge(upstream,downstream,direction="bidirectional",remote_attribute='id',local_attribute='id')
@@ -204,10 +203,10 @@ NOT IN
 def test_run_deps_bidirectional_exclude_outliers(stub_relation_set):
     upstream=stub_relation_set.upstream_relation
     downstream=stub_relation_set.downstream_relation
-    upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
     for relation in (downstream,upstream,):
         relation.attributes=[Attribute('id',dt.INTEGER)]
         relation=stub_out_sampling(relation)
+    upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
 
     dag=nx.DiGraph()
     dag.add_edge(upstream,downstream,direction="bidirectional",remote_attribute='id',local_attribute='id')
