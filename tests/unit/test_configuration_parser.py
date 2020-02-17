@@ -79,8 +79,3 @@ def test_loads_good_creds(stub_creds,stub_configs):
     assert adapter_profile.adapter.credentials.password == SOURCES_PASSWORD
 
 
-def test_case_correction(stub_creds,stub_configs):
-    stub_creds = stub_creds()
-    stub_configs = stub_configs()
-    
-    

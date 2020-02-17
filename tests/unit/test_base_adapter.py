@@ -45,16 +45,4 @@ def test_default_conn_string():
     assert base._build_conn_string(
     ) == f'postgres://{creds.user}:{creds.password}@{creds.host}/{creds.database}?account={creds.account}'
 
-def test_case_corrects():
-    base = TestAdapter()
-    base.DEFAULT_CASE='lower'
-    base.PRESERVE_CASES=False
 
-    should_be_lower=['UPPER','lower']
-    should_be_unchanged=['Caps','CamelCase','Includes Spaces', '^[regex]$']
-    
-    test=[base.correct_case(attr) for attr in should_be_lower]
-    assert test == ['upper','lower']
-    
-    test=[base.correct_case(attr) for attr in should_be_unchanged]
-    assert test=should_be_unchanged
