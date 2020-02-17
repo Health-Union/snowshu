@@ -16,7 +16,8 @@ class BaseSourceAdapter(BaseSQLAdapter):
     SUPPORTS_CROSS_DATABASE=False
     SUPPORTED_FUNCTIONS=set()
 
-    def __init__(self):
+    def __init__(self, preserve_case:bool=False):
+        self.preserve_case=preserve_case
         super().__init__()
         for attr in ('DATA_TYPE_MAPPINGS', 'SUPPORTED_SAMPLE_METHODS',):
             if not hasattr(self, attr):
@@ -51,6 +52,11 @@ class BaseSourceAdapter(BaseSQLAdapter):
             cursor.close()
             conn.dispose()
         return frame
+
+    def _correct_case(self,val:str)->str:
+        """The base case correction method for a source adapter.
+        """
+        return val if self.preserve_case else case_correct(val,self.DEFAULT_CASE=='upper') 
 
     def _count_query(self) -> int:
         """wraps any query in a COUNT statement, returns that integer."""

@@ -16,9 +16,14 @@ logger = Logger().logger
 
 
 class SnowflakeAdapter(BaseSourceAdapter):
-
-    def __init__(self):
-        super().__init__()
+    """The Snowflake Data Warehouse source adapter.
+    
+    Args:
+        preserve_case: By default the adapter folds case-insensitive strings to lowercase.
+                       If preserve_case is True,SnowShu will __not__ alter cases (dangerous!).
+    """ 
+    def __init__(self,preserve_case:bool=False):
+        super().__init__(preserve_case)
 
     name='snowflake'
     SUPPORTS_CROSS_DATABASE=True
@@ -296,13 +301,13 @@ LIMIT {max_number_of_outliers})
                     f'adding attribute {attribute.attribute} to relation..')
                 attributes.append(
                     Attribute(
-                        attribute.attribute,
+                        self._correct_case(attribute.attribute),
                         self._get_data_type(attribute.data_type)
                     ))
 
-            relation = Relation(database,
-                                attribute.schema,
-                                attribute.relation,
+            relation = Relation(self._correct_case(database),
+                                self._correct_case(attribute.schema),
+                                self._correct_case(attribute.relation),
                                 self.MATERIALIZATION_MAPPINGS[attribute.materialization],
                                 attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')
