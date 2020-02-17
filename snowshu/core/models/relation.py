@@ -48,7 +48,7 @@ class Relation:
         """Adjust data columns to match corrected attribute names."""
         lowered_columns=[correct_case(col,False) for col in val.columns.to_list()]
         attrs=[attr.name for attr in self.attributes]
-        lowered_attrs=[attr.lower() for attr in attrs]
+        lowered_attrs=[correct_case(attr,False) for attr in attrs]
         val.columns=[attrs[lowered_attrs.index(col)] for col in lowered_columns]
         self._data=val      
 

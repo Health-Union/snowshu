@@ -112,9 +112,9 @@ class GraphSetRunner:
                         try:
                             relation.data = executable.source_adapter.check_count_and_query(
                                 relation.compiled_query, MAX_ALLOWED_ROWS)
-                        except Exception:
+                        except Exception as e:
                             raise SystemError(
-                                f'Failed execution of extraction sql statement: {relation.compiled_query}')
+                                f'Failed execution of extraction sql statement: {relation.compiled_query} {e}')
 
                         relation.sample_size = len(relation.data)
                         logger.info(
