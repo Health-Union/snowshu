@@ -40,13 +40,13 @@ def test_reports_full_catalog_start(end_to_end):
     result_lines = end_to_end
     assert any_appearance_of('Assessing full catalog...',result_lines)
 
-def test_finds_10_relations(end_to_end):
+def test_finds_11_relations(end_to_end):
     result_lines= end_to_end
-    assert any_appearance_of('Identified a total of 10 relations to sample based on the specified configurations.',result_lines)
+    assert any_appearance_of('Identified a total of 11 relations to sample based on the specified configurations.',result_lines)
 
 def test_replicates_order_items(end_to_end):
     result_lines = end_to_end
-    assert any_appearance_of('Done replication of relation SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS',result_lines)
+    assert any_appearance_of('Done replication of relation snowshu_development.source_system.order_items',result_lines)
 
 @pytest.mark.skip
 def test_snowshu_explain(end_to_end):
@@ -140,9 +140,9 @@ SELECT
 FROM 
     SNOWSHU_DEVELOPMENT.information_schema.columns 
 WHERE 
-    TABLE_SCHEMA = 'TESTS_DATA' 
+    TABLE_SCHEMA = 'tests_data' 
 AND 
-    TABLE_NAME='DATA_TYPES'"""
+    TABLE_NAME='data_types'"""
 
     q = conn.execute(query)
     type_mappings = q.fetchall()
