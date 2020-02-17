@@ -1,4 +1,5 @@
 from importlib import import_module
+import re
 import yaml
 import os
 from pathlib import Path
@@ -7,6 +8,7 @@ from snowshu.logger import Logger
 logger = Logger().logger
 
 def correct_case(val:str, upper:bool=True):
+    #if re.fullmatch('')
     pass
 
 
