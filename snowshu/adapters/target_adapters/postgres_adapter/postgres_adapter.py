@@ -29,7 +29,7 @@ class PostgresAdapter(BaseTargetAdapter):
         self.DOCKER_READY_COMMAND = f'pg_isready -p {self._credentials.port} -h {self._credentials.host} -U {self._credentials.user} -d {self._credentials.database}'
 
     def _create_snowshu_schema_statement(self) -> str:
-        return 'CREATE SCHEMA IF NOT EXISTS "snowshu";'
+        return 'CREATE SCHEMA IF NOT EXISTS snowshu;'
 
     def create_database_if_not_exists(self, database: str) -> str:
         """Postgres doesn't have great CINE support.
@@ -37,14 +37,14 @@ class PostgresAdapter(BaseTargetAdapter):
         So ask for forgiveness instead.
         """
         conn = self.get_connection()
-        statement = f'CREATE DATABASE "{database}"'
+        statement = f'CREATE DATABASE {database}'
         try:
             conn.execute(statement)
         except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as e:
             if (f'database "{database}" already exists' in str(e)) or (
                     'duplicate key value violates unique constraint ' in str(e)):
                 logger.debug(
-                    f'Database "{database}" already exists, skipping.')
+                    f'Database {database} already exists, skipping.')
                 pass
             else:
                 raise e
@@ -52,14 +52,14 @@ class PostgresAdapter(BaseTargetAdapter):
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
         conn = self.get_connection(database_override=database)
-        statement = f'CREATE SCHEMA IF NOT EXISTS "{schema}"'
+        statement = f'CREATE SCHEMA IF NOT EXISTS {schema}'
         try:
             conn.execute(statement)
         except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as e:
             if (f'Key (nspname)=({schema}) already exists' in str(e)) or (
                     'duplicate key value violates unique constraint ' in str(e)):
                 logger.debug(
-                    f'Schema "{database}"."{schema}" already exists, skipping.')
+                    f'Schema {database}.{schema} already exists, skipping.')
                 pass
             else:
                 raise e
@@ -100,8 +100,8 @@ OPTIONS (user 'snowshu', password 'snowshu')""")
 
             for schema_database, schema in unique_schemas:
                 if schema_database != db:
-                    statement_runner(f'CREATE SCHEMA IF NOT EXISTS "{schema_database}__{schema}"')
+                    statement_runner(f'CREATE SCHEMA IF NOT EXISTS {schema_database}__{schema}')
 
-                    statement_runner(f"""IMPORT FOREIGN SCHEMA "{schema}"
-    FROM SERVER {schema_database} INTO "{schema_database}__{schema}" """)
+                    statement_runner(f"""IMPORT FOREIGN SCHEMA {schema}
+    FROM SERVER {schema_database} INTO {schema_database}__{schema} """)
 

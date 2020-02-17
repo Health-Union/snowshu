@@ -90,9 +90,10 @@ class GraphSetRunner:
                             f'Analysis of relation {relation.dot_notation} completed in {duration(start_time)}.')
                 else:
                     executable.target_adapter.create_database_if_not_exists(
-                        relation.database)
+                        relation.quoted(relation.database))
                     executable.target_adapter.create_schema_if_not_exists(
-                        relation.database, relation.schema)
+                        relation.quoted(relation.database), 
+                        relation.quoted(relation.schema))
                     if relation.is_view:
                         logger.info(
                             f'Retrieving DDL statement for view {relation.dot_notation} in source...')

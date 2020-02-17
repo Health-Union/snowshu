@@ -1,4 +1,5 @@
 from snowshu.adapters import BaseSQLAdapter
+from snowshu.core.utils import correct_case
 import pandas as pd
 from typing import Tuple,Any
 from snowshu.core.models import Relation, DataType
@@ -56,7 +57,7 @@ class BaseSourceAdapter(BaseSQLAdapter):
     def _correct_case(self,val:str)->str:
         """The base case correction method for a source adapter.
         """
-        return val if self.preserve_case else case_correct(val,self.DEFAULT_CASE=='upper') 
+        return val if self.preserve_case else correct_case(val,self.DEFAULT_CASE=='upper') 
 
     def _count_query(self) -> int:
         """wraps any query in a COUNT statement, returns that integer."""

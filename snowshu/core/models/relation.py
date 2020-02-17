@@ -59,7 +59,7 @@ class Relation:
 
     @property
     def quoted_dot_notation(self) -> str:
-        return f'"{self.database}"."{self.schema}"."{self.name}"'
+        return '.'.join([self.quoted(getattr(self,x)) for x in ('database','schema','name',)])
 
     @property
     def star(self) -> str:
@@ -78,6 +78,11 @@ class Relation:
     def relation(self, value: str) -> None:
         self.name = value
 
+    def quoted(self,val:str)->str:
+        """Returns quoted value if appropriate."""
+        return f'"{val}"' if all({val.isupper(),
+                                 val.islower(),}) and ' ' not in val else val
+        
     def scoped_cte(self,string:Optional[str]=None)->str:
         """ returns a CTE name scoped to the relation.
             If _string_ is provided, this will be suffixed to the name."""
@@ -88,7 +93,7 @@ class Relation:
         <datatype>"""
         attr_string = str()
         for attr in self.attributes:
-            attr_string += f',"{attr.name}" {key_for_value(data_type_mappings, attr.data_type)}\n'
+            attr_string += f',{self.quoted(attr.name)} {key_for_value(data_type_mappings, attr.data_type)}\n'
         return attr_string[1:]
 
     def lookup_attribute(self, attr: str) -> Union[Attribute, None]:
@@ -149,6 +154,7 @@ def single_full_pattern_match(rel: Relation, pattern:Union[dict,'SpecifiedMatchP
         If the pattern matches the relation.
     """
     attributes = ('database', 'schema', 'name',)
+
     try:
         pattern=dict(database=pattern.database_pattern,
                      schema=pattern.schema_pattern,
@@ -162,7 +168,7 @@ def single_full_pattern_match(rel: Relation, pattern:Union[dict,'SpecifiedMatchP
 
 def at_least_one_full_pattern_match(rel: Relation, patterns: iter) -> bool:
     """determines if a relation matches any of a collection of pattern
-    dictionaries (database,schema,name)."""
+    dictionaries (database,schema,name).""" 
     patterns = list(filter(lambda p: all(
         p[attr] for attr in ('database', 'schema', 'name',)), patterns))
     return any([single_full_pattern_match(rel, pattern)

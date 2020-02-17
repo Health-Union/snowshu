@@ -133,7 +133,8 @@ class ConfigurationParser:
         self.default_case = source_adapter_profile.adapter.DEFAULT_CASE
 
         def case(val:str)->str:
-            self.case(val)
+            return self.case(val)
+            
 
         ## make sure no empty sections
         try:

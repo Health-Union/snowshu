@@ -31,7 +31,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
     SUPPORTED_SAMPLE_METHODS = (BernoulliSampleMethod,)
     REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
     ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
-
+    DEFAULT_CASE='lower' ## snowflake in-db is UPPER, but connector is actually lower :(
 
 
     DATA_TYPE_MAPPINGS={
@@ -213,19 +213,9 @@ LIMIT {max_number_of_outliers})
             def quoted(val: Any) -> str:
                 return f"'{val}'" if relation.lookup_attribute(
                     remote_key).data_type.requires_quotes else str(val)
-
-            def case_insensitive_column_lookup(column_name: str) -> str:
-                """gets you the case-corrected column name for a given
-                remote_key."""
-                for col in relation.data.columns:
-                    return col if col.lower() == column_name.lower() else False
             try:
-                column_name = case_insensitive_column_lookup(remote_key)
-                if not column_name:
-                    raise KeyError(
-                        f'No column found in dataframe columns matching remote_key {remote_key}')
                 constraint_set = [
-                    quoted(val) for val in relation.data[column_name].unique()]
+                    quoted(val) for val in relation.data[remote_key].unique()]
                 constraint_sql = ','.join(constraint_set)
             except KeyError as e:
                 logger.critical(
@@ -270,9 +260,9 @@ LIMIT {max_number_of_outliers})
                                     c.ordinal_position AS ordinal,
                                     c.data_type AS data_type
                                  FROM
-                                    "{database}"."INFORMATION_SCHEMA"."TABLES" m
+                                    {database}.INFORMATION_SCHEMA.TABLES m
                                  INNER JOIN
-                                    "{database}"."INFORMATION_SCHEMA"."COLUMNS" c
+                                    {database}.INFORMATION_SCHEMA.COLUMNS c
                                  ON
                                     c.table_schema = m.table_schema
                                  AND
