@@ -6,6 +6,10 @@ from typing import Optional, Any, Union, TextIO, Type
 from snowshu.logger import Logger
 logger = Logger().logger
 
+def correct_case(val:str, upper:bool=True):
+    pass
+
+
 
 def case_insensitive_dict_value(dictionary,caseless_key)->Any:
     """finds a key in a dict without case sensitivity, returns value.

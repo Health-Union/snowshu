@@ -19,12 +19,7 @@ def test_correct_case():
 
     def leave_test_suite(under_test,upper):
         for item in under_test:
-            assert correct_case(item,upper)== item
+            passed.append(correct_case(item,upper)== item)
 
-    for item in correct:
-        correct_test_suite(item,True)
-        correct_test_suite(item,False)
-
-    for item in leave:
-        leave_test_suite(item,True)
-        leave_test_suite(item,False)
+    [correct_test_suite(correct,x) for x in (True,False,)]
+    [leave_test_suite(leave,x) for x in (True,False,)]
