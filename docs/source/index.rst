@@ -46,34 +46,42 @@ SnowShu makes it easy to create a catalog of sampled data from your larger produ
 How Do I Use SnowShu?
 =====================
 
-You install snowshu like this:
+With SnowShu you simply select the source databases, schemas and relations (tables and views) you need for development. SnowShu creates a localized emulator of that data, called a replica, that you can query directly during development.
 
->>> pip3 install snowshu
+To use SnowShu replicas you need to first create them. A guide to getting started with that in the full `user documentation <user_documentation/user_documentation>`__.
+Since SnowShu replicas are essentially configured Docker containers, you do not actually need SnowShu installed to use them (though installing SnowShu does provide a handful of helper tools even when you are not building replicas).
+To install:
 
+>>> pip install snowshu
 
-and set up your SnowShu config files like this:
-
->>> snowshu init
-
-With SnowShu you simply select the source databases, schemas and relations (tables and views) you need for development. SnowShu creates a localized emulator of that data, called a replica, that you can query directly during development. You create your replica like this:
-
->>> snowshu create
-
-This replica can be instantly available to everyone on your team with a shared image registry (all configured in your initial SnowShu setup), so working from the same initial dataset is a breeze. You can see all your available replicas like this:
+To find a list of replicas available to your Docker instance:
 
 >>> snowshu list
-our-first-replica
-five-percent
-ten-percent-no-users
+    AVAILABLE IMAGES:
+    Replica name    modified             source    replica engine    docker image
+    --------------  -------------------  --------  ----------------  -----------------------------------------------------------------------------
+    warehouse       0001-01-01 00:00:00  default   PostgresAdapter   19920719.dkr.ecr.us-east-1.amazonaws.com/snowshu_replica_warehouse:latest
 
-You can start and launch one of the replicas like this:
+You can configure your replica with normal Docker commands (or with ``docker-compose``). SnowShu replicas listen on port ``9999`` and use ``snowshu`` as the user, password, and default database. To make connection easier SnowShu comes with the command:
 
->>> snowshu launch five-percent
+>>> snowshu launch-docker-cmd warehouse # in this example the replica name is "warehouse"
+    docker run -d -p 9999:9999 --rm --name warehouse 19920719.dkr.ecr.us-east-1.amazonaws.com/snowshu_replica_warehouse:latest
 
-and then connect using your normal sql workflow. By default your replica will be on ``localhost`` port 9999. The default database, schema, user and password are all ``snowshu``. 
+For bash users this makes starting a replica as easy as:
 
-User Resources
-==============
+>>> $(snowshu launch-docker-cmd warehouse)
+    b6d4d600bd46be997fd9d9bfkfc4d8b6cfdfk660a4ee76db60fka9fkfkad9dadeac7f # returns hash of running container
+
+How Do I Get Help?
+==================
+
+- Check out the `user documentation <user_documentation/user_documentation>`__ for tips and tricks on how to get rolling with SnowShu. 
+- Connect with SnowShu users and developers in our `Slack Workspace <https://snowshu.slack.com>`__.
+- Found a bug? Let us know in the `SnowShu Project <https://bitbucket.org/healthunion/snowshu/issues?status=new&status=open>`__.
+
+
+Additional Resources
+--------------------
 
 .. toctree::
    :maxdepth: 2
