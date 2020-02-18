@@ -1,5 +1,5 @@
 from typing import List, Union, Optional
-from snowshu.core.utils import key_for_value
+from snowshu.core.utils import key_for_value,correct_case
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
@@ -10,7 +10,7 @@ logger = Logger().logger
 
 
 class Relation:
-    data:pd.DataFrame
+    _data:pd.DataFrame
     compiled_query:str
     core_query:str
     population_size:int
@@ -40,12 +40,26 @@ class Relation:
         return f"<Relation object {self.database}.{self.schema}.{self.name}>"
 
     @property
+    def data(self)->pd.DataFrame:
+        return self._data
+
+    @data.setter
+    def data(self,val:pd.DataFrame)->None:
+        """Adjust data columns to match corrected attribute names."""
+        lowered_columns=[correct_case(col,False) for col in val.columns.to_list()]
+        attrs=[attr.name for attr in self.attributes]
+        lowered_attrs=[correct_case(attr,False) for attr in attrs]
+        val.columns=[attrs[lowered_attrs.index(col)] for col in lowered_columns]
+        self._data=val      
+
+
+    @property
     def dot_notation(self) -> str:
         return f"{self.database}.{self.schema}.{self.name}"
 
     @property
     def quoted_dot_notation(self) -> str:
-        return f'"{self.database}"."{self.schema}"."{self.name}"'
+        return '.'.join([self.quoted(getattr(self,x)) for x in ('database','schema','name',)])
 
     @property
     def star(self) -> str:
@@ -64,6 +78,11 @@ class Relation:
     def relation(self, value: str) -> None:
         self.name = value
 
+    def quoted(self,val:str)->str:
+        """Returns quoted value if appropriate."""
+        return f'"{val}"' if all({val.isupper(),
+                                 val.islower(),}) and ' ' not in val else val
+        
     def scoped_cte(self,string:Optional[str]=None)->str:
         """ returns a CTE name scoped to the relation.
             If _string_ is provided, this will be suffixed to the name."""
@@ -74,7 +93,7 @@ class Relation:
         <datatype>"""
         attr_string = str()
         for attr in self.attributes:
-            attr_string += f',"{attr.name}" {key_for_value(data_type_mappings, attr.data_type)}\n'
+            attr_string += f',{self.quoted(attr.name)} {key_for_value(data_type_mappings, attr.data_type)}\n'
         return attr_string[1:]
 
     def lookup_attribute(self, attr: str) -> Union[Attribute, None]:
@@ -135,6 +154,7 @@ def single_full_pattern_match(rel: Relation, pattern:Union[dict,'SpecifiedMatchP
         If the pattern matches the relation.
     """
     attributes = ('database', 'schema', 'name',)
+
     try:
         pattern=dict(database=pattern.database_pattern,
                      schema=pattern.schema_pattern,
@@ -148,7 +168,7 @@ def single_full_pattern_match(rel: Relation, pattern:Union[dict,'SpecifiedMatchP
 
 def at_least_one_full_pattern_match(rel: Relation, patterns: iter) -> bool:
     """determines if a relation matches any of a collection of pattern
-    dictionaries (database,schema,name)."""
+    dictionaries (database,schema,name).""" 
     patterns = list(filter(lambda p: all(
         p[attr] for attr in ('database', 'schema', 'name',)), patterns))
     return any([single_full_pattern_match(rel, pattern)

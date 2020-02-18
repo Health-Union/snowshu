@@ -199,7 +199,7 @@ class SnowShuGraph:
                 name=r.relation_pattern) for r in config.specified_relations]
 
         all_patterns = approved_default_patterns + approved_specified_patterns
-        logger.debug(f'All config primary primary: {all_patterns}')
+        logger.debug(f'All config primary patterns: {all_patterns}')
         return all_patterns
 
     def _filter_relations(self, full_catalog: iter,

@@ -35,7 +35,7 @@ def test_sample_statement():
 SELECT
     *
 FROM 
-    "{DATABASE}"."{SCHEMA}"."{TABLE}"
+    {DATABASE}.{SCHEMA}.{TABLE}
     SAMPLE BERNOULLI (10)
 """)
 
@@ -53,7 +53,7 @@ def test_directional_statement():
 SELECT
     *
 FROM 
-    "{DATABASE}"."{SCHEMA}"."{TABLE}"
+    {DATABASE}.{SCHEMA}.{TABLE}
     SAMPLE BERNOULLI (10)
 """
     statement = sf.predicate_constraint_statement(
@@ -67,7 +67,7 @@ FROM
 SELECT
     *
 FROM 
-    "{DATABASE}"."{SCHEMA}"."{TABLE}"
+    {DATABASE}.{SCHEMA}.{TABLE}
     SAMPLE BERNOULLI (10)
 ))
 """)

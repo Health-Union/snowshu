@@ -44,3 +44,5 @@ def test_default_conn_string():
 
     assert base._build_conn_string(
     ) == f'postgres://{creds.user}:{creds.password}@{creds.host}/{creds.database}?account={creds.account}'
+
+

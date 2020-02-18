@@ -28,7 +28,7 @@ def test_fills_empty_top_level_values(stub_configs):
         if attr in stub_configs['source'].keys():
             del stub_configs['source'][attr]
     mock_config_file=StringIO(yaml.dump(stub_configs))   
-    parsed = ConfigurationParser.from_file_or_path(mock_config_file)
+    parsed = ConfigurationParser().from_file_or_path(mock_config_file)
 
     assert parsed.long_description == ''
     assert parsed.include_outliers==False
@@ -40,12 +40,12 @@ def test_errors_on_missing_section(stub_configs):
     del stub_configs['source']
     with pytest.raises((KeyError,AttributeError,)):
         mock_config_file = StringIO(yaml.dump(stub_configs))
-        ConfigurationParser.from_file_or_path(mock_config_file)
+        ConfigurationParser().from_file_or_path(mock_config_file)
 
 def test_sets_sampling_for_all_patterns(stub_configs):
     stub_configs = stub_configs()
     mock_config_file = StringIO(yaml.dump(stub_configs))
-    parsed=ConfigurationParser.from_file_or_path(mock_config_file)
+    parsed=ConfigurationParser().from_file_or_path(mock_config_file)
 
     assert isinstance(parsed.sampling,DefaultSampling)
 
@@ -58,7 +58,7 @@ def test_errors_on_bad_profile(stub_configs):
 
     with pytest.raises(ValueError):
         mock_config_file = StringIO(yaml.dump(stub_configs))
-        ConfigurationParser.from_file_or_path(mock_config_file)
+        ConfigurationParser().from_file_or_path(mock_config_file)
 
 def test_loads_good_creds(stub_creds,stub_configs):
     stub_creds = stub_creds()
@@ -73,7 +73,9 @@ def test_loads_good_creds(stub_creds,stub_configs):
         json.dump(stub_creds, mock_file)
         mock_file.seek(0)
         stub_configs['credpath']=mock_file.name
-        adapter_profile=ConfigurationParser._build_adapter_profile('source',stub_configs)
+        adapter_profile=ConfigurationParser()._build_adapter_profile('source',stub_configs)
 
     assert adapter_profile.name == SOURCES_NAME
     assert adapter_profile.adapter.credentials.password == SOURCES_PASSWORD
+
+

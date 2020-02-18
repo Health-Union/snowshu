@@ -1,10 +1,18 @@
 from importlib import import_module
+import re
 import yaml
 import os
 from pathlib import Path
 from typing import Optional, Any, Union, TextIO, Type
 from snowshu.logger import Logger
 logger = Logger().logger
+
+def correct_case(val:str, upper:bool=True):
+    if any({val.isupper(),val.islower(),}) and \
+       re.fullmatch('^(\w|\s)*$',val):
+        val = val.upper() if upper else val.lower()
+    return val      
+
 
 
 def case_insensitive_dict_value(dictionary,caseless_key)->Any:

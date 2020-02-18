@@ -9,14 +9,14 @@ target:
 source:
   profile: default
   sampling: default
+  include_outliers: True
   general_relations:
     databases:
-    - pattern: 'SNOWSHU_DEVELOPMENT' # matches our test database
+    - pattern: SNOWSHU_DEVELOPMENT # matches our test database
       schemas:
       - pattern: '.*' # matches all schemas
         relations:
-        - '^(?!.+_VIEW).+$' # matches all relations that do not end with '_VIEW'
-  include_outliers: True
+        - '^(?i).*[^_view]$' # matches all relations that do not end with '_VIEW'
   
   # these are exceptions to the 'default' sampling above
   specified_relations: 
@@ -35,7 +35,7 @@ source:
       
   - database: SNOWSHU_DEVELOPMENT
     schema: SOURCE_SYSTEM
-    relation: '^ORDER_ITEMS$'
+    relation: ORDER_ITEMS
     relationships:
       bidirectional: 
       - local_attribute: PRODUCT_ID 
@@ -51,17 +51,17 @@ source:
         remote_attribute: ID
   - database: SNOWSHU_DEVELOPMENT
     schema: SOURCE_SYSTEM
-    relation: 'USER_COOKIES'
+    relation: USER_COOKIES
     relationships:
       bidirectional: 
       - local_attribute: USER_ID 
         database: '' ## empty strings inherit from the downstream relation
         schema: ''
-        relation: 'USERS'
+        relation: USERS
         remote_attribute: ID
   - database: SNOWSHU_DEVELOPMENT
     schema: EXTERNAL_DATA
-    relation: 'SOCIAL_USERS_IMPORT'
+    relation: SOCIAL_USERS_IMPORT
     sampling:
       default:
         margin_of_error: 0.05

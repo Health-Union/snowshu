@@ -156,16 +156,17 @@ def test_sets_only_existing_adapters():
                  materialization=mz.TABLE,
                  attributes=[]
                     )
-    test_relation.include_outliers, test_relation.unsampled = [False for _ in range(2)] 
-    test_relation.sampling=DefaultSampling()  
+    test_relation.include_outliers, test_relation.unsampled = [False for _ in range(2)]   
+    test_relation.sampling=DefaultSampling()
     config_dict=copy.deepcopy(CONFIGURATION)
+    config_dict['preserve_case'] = True
     config_dict['source']['specified_relations'][1]['sampling']='lucky_guess'
-
     with pytest.raises(AttributeError):
         config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
     assert isinstance(test_relation.sampling,DefaultSampling)
     config_dict['source']['specified_relations'][1]['sampling']='brute_force'
     config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
-    shgraph._set_overriding_params_for_node(test_relation,config)
-    assert isinstance(test_relation.sampling,BruteForceSampling)
+    
+    assert isinstance(shgraph._set_overriding_params_for_node(test_relation,config).sampling,
+                      BruteForceSampling)

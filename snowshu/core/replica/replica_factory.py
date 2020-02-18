@@ -68,6 +68,6 @@ class ReplicaFactory:
         object usable."""
         logger.info('Loading credentials...')
         start_timer = time.time()
-        self.config = ConfigurationParser.from_file_or_path(config)
+        self.config = ConfigurationParser().from_file_or_path(config)
         logger.info(f'Credentials loaded in {duration(start_timer)}.')
 
