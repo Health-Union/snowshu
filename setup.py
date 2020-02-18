@@ -15,7 +15,7 @@ packagedata['author']="Health Union Data Team"
 packagedata['author_email']='data@health-union.com'
 packagedata['url']='https://snowshu.readthedocs.io/en/master/index.html'
 packagedata['description']="Sample image management for data transform TDD."
-packagedata['classifiers']=['Development Status :: 3 - Alpha', "License :: OSI Approved :: MIT License", "Operating System :: OS Independent"]
+packagedata['classifiers']=["Development Status :: 2 - Pre-Alpha", "License :: OSI Approved :: Apache Software License", "Operating System :: OS Independent"]
 packagedata['python_requires']=f'>={PYTHON_REQUIRES}'
 packagedata['install_requires']=list()
 packagedata['packages']=find_packages(exclude=['tests',])
