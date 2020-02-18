@@ -25,6 +25,7 @@ REPLICA_DEFAULT = os.path.join(os.getcwd(), 'replica.yml')
 @click.option('--debug', '-d', is_flag=True, default=False,
               help="run commands in debug mode")
 def cli(debug: bool):
+    """SnowShu is a sampling engine designed to support testing in data development."""
     log_level = logging.DEBUG if debug else logging.INFO
     log_engine = Logger()
     log_engine.initialize_logger()
@@ -38,7 +39,12 @@ def cli(debug: bool):
 @click.argument('path', default=os.getcwd(), type=click.Path(exists=True))
 def init(path: click.Path) -> None:
     """generates sample replica.yml and credentials.yml files in the current
-    directory."""
+    directory.
+
+    Args:
+        path: The full or relative path to where the files should be generated, defaults to current dir.
+    """
+
     logger = Logger().logger
     templates = os.path.join(Path(__file__).parent.parent, 'templates')
 
@@ -83,6 +89,8 @@ def init(path: click.Path) -> None:
 def create(replica_file: click.Path,
         name:str,
         barf:bool):
+    """Generate a new replica from a replica.yml file.
+    """
     replica = ReplicaFactory()
     replica.load_config(replica_file)
     click.echo(replica.create(name,barf))
@@ -99,18 +107,22 @@ def create(replica_file: click.Path,
     is_flag=True,
     help="outputs the source query sql to a local folder snowshu_barf_output")
 def analyze(replica_file: click.Path,barf:bool):
+    """Perform a "dry run" of the replica creation without actually executing, and return the expected results."""
+
     replica = ReplicaFactory()
     replica.load_config(replica_file)
     click.echo(replica.analyze(barf))
 
 @cli.command()
 def list():
+    """List all the available SnowShu replicas found on this computer."""
     replica_manager = ReplicaManager()
     click.echo(replica_manager.list())
 
 @cli.command()
 @click.argument('replica')
 def launch_docker_cmd(replica:str):
+    """Return the docker command line string to start a given replica."""
     replica_manager = ReplicaManager()
     click.echo(replica_manager.launch_docker_command(replica))
 
