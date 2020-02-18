@@ -11,6 +11,6 @@ scipy==1.4.1
 
 #SNOWFLAKE
 snowflake-connector-python==2.1.1
-snowflake-sqlalchemy==1.1.18
+snowflake-sqlalchemy==1.2.0
 python-dateutil==2.8.0 #gross back-pin for snowflake-sqlalchemy :(
 docutils==0.15.2 #gross back-pin for botocore :(
