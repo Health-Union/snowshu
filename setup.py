@@ -3,7 +3,7 @@
 import os
 from setuptools import setup, find_packages
 
-VERSION='0.0.1-a1'
+VERSION='0.0.1-b1'
 PYTHON_REQUIRES='3.7'
 
 packagedata=dict()
@@ -15,7 +15,7 @@ packagedata['author']="Health Union Data Team"
 packagedata['author_email']='data@health-union.com'
 packagedata['url']='https://snowshu.readthedocs.io/en/master/index.html'
 packagedata['description']="Sample image management for data transform TDD."
-packagedata['classifiers']=["Development Status :: 2 - Pre-Alpha", "License :: OSI Approved :: Apache Software License", "Operating System :: OS Independent"]
+packagedata['classifiers']=["Development Status :: 4 - Beta", "License :: OSI Approved :: Apache Software License", "Operating System :: OS Independent"]
 packagedata['python_requires']=f'>={PYTHON_REQUIRES}'
 packagedata['install_requires']=list()
 packagedata['packages']=find_packages(exclude=['tests',])
