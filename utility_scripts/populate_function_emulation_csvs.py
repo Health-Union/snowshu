@@ -78,6 +78,7 @@ class PGScraper:
         function_files=[f for f in filter((lambda x : x.endswith('.sql')),all_files)]
         function_comments=[]
         for function in function_files:
+            print(f'Found emulation {function}.')
             in_comment=False
             with open(pg_function_filepath+function,'r') as f:
                 comment=''
@@ -129,11 +130,11 @@ def main():
         row='`{snowflake_function} <{snowflake_url}>`__,{postgres_val},{emulation_val},"{comment_val}"\n'.format(snowflake_function=k,
                                                                                                        snowflake_url=v,
                                                                                                        postgres_val=(scraper.find_with_url(scraper.pg_methods,k)),
-                                                                                                       emulation_val=(scraper.find_with_url(scraper.snowshu_emulations,k,0)),
-                                                                                                       comment_val=(scraper.find_comment(scraper.snowshu_emulations,k,1)))
+                                                                                                       emulation_val=(scraper.find_with_url(scraper.snowshu_emulations,k.upper(),0)),
+                                                                                                       comment_val=(scraper.find_comment(scraper.snowshu_emulations,k.upper(),1)))
         meshed.append(row)
     
-    with open('docs/source/snowflake_function_map.csv','w') as f:
+    with open('docs/source/user_documentation/snowflake_function_map.csv','w') as f:
         f.write('"Snowflake Function","Postgresql Function","Replica Emulation","Notes"\n')
         for row in meshed:
             f.write(row)
