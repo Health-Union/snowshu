@@ -1,1 +1,1 @@
-git push https://ethanknox:${BB_API_TOKEN}@bitbucket.org/healthunion/snowshu.git
+git push https://ethanknox:$1@bitbucket.org/healthunion/snowshu.git
