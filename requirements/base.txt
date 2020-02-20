@@ -1,8 +1,8 @@
-pyyaml==5.2
-pandas==0.25.3
-docker==4.1.0
+pyyaml==5.3
+pandas==1.0.1
+docker==4.2.0
 click==7.0
-coloredlogs==10.0
+coloredlogs==14.0
 networkx==2.4
 tabulate==0.8.6
 psycopg2-binary==2.8.4
@@ -10,8 +10,8 @@ scipy==1.4.1
 
 
 #SNOWFLAKE
-snowflake-connector-python==2.1.1
-snowflake-sqlalchemy==1.2.0
-python-dateutil==2.8.0 # gross back-pin for snowflake-sqlalchemy :(
+snowflake-connector-python==2.2.1
+snowflake-sqlalchemy==1.2.1
+#python-dateutil==2.8.1 # gross back-pin for snowflake-sqlalchemy :(
 docutils==0.15.2 # gross back-pin for botocore :(
-idna==2.8.0 # backpin for requests :(
+#idna==2.9 # backpin for requests :(
