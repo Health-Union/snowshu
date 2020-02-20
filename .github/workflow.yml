@@ -1,0 +1,15 @@
+name: bitbucket_sync_master
+
+on: 
+  push:
+    branches: 
+      - master
+jobs:
+  push_to_bitbucket:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: Health-Union/snowshu/.github/action@master
+      with:
+        bb_api_token: ${{ secrets.bb_api_token }}

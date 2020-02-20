@@ -1,0 +1,12 @@
+name: bitbucket_sync
+description: 'clones and pushes to bb'
+inputs:
+  bb_api_token:  
+    description: 'auth for user ethanmknox'
+    required: true
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.bb_api_token }}
+
