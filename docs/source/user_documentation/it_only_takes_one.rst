@@ -7,7 +7,7 @@ It Only Takes One
 
 One of the base challenges in programming is that computers think in absolutes.
 When we define a transforming condition to be applied to a dataset, that transforming condition *must be successful*
-for every last memeber of the dataset or the program will fail. For example:
+for every last member of the dataset or the program will fail. For example:
 
 .. code-block:: SQL
 
