@@ -1,0 +1,24 @@
+## because snowflake has loose pins on _everything_ the connectors break constantly. 
+## this hard pins the requirements for snowflake-connector-python so we can manage them. 
+
+snowflake-sqlalchemy==1.2.1 # sqlalchemy & snowflake-connector-python are both weakly pinned here.
+sqlalchemy==1.3.13 
+snowflake-connector-python==2.2.1 
+azure-common==1.1.24
+azure-storage-blob==2.1.0
+boto3==1.11.17
+botocore==1.14.17
+docutils==0.15.2 # back-pin for botocore 
+requests==2.22.0
+urllib3==1.25.8
+certifi==2019.11.28
+pytz==2019.3
+pycryptodomex==3.9.6
+pyOpenSSL==19.1.0
+cffi==1.13.2
+cryptography==2.8
+ijson==2.6.1
+pyjwt==1.7.1
+idna==2.8
+oscrypto==1.2.0
+asn1crypto==1.3.0

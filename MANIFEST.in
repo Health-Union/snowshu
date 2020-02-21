@@ -1,3 +1,4 @@
 include docs/*.md
+include requirements/*
 include snowshu/templates/*
 include snowshu/adapters/target_adapters/*/functions/*.sql

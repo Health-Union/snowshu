@@ -13,7 +13,6 @@ User Documentation
  
 Getting Started
 ===============
-
 Installing SnowShu
 ------------------
 Snowshu can be installed via pip
@@ -139,6 +138,7 @@ Now you can connect to the replica using a standard connection string.
 
 .. note:: ``snowshu`` is the default username, password and database for all replicas. 9999 is the port. These cannot be changed, `for good reason <faq.html#why-cant>`__
  
+
 
 
 
