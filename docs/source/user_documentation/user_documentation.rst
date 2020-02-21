@@ -32,7 +32,7 @@ Running SnowShu inside a Docker container is easy and solves a _lot_ of environm
 
 Once you are in the correct directory, run this docker command to generate your ``replica.yml`` and ``credentials.yml`` templates:
 
->>> docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}:/workspace health-union/snowshu init 
+>>> docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}:/workspace hutech/snowshu init 
 
 The ``docker.sock`` mount is so your container can use the running docker daemon on the metal of your machine. 
 
@@ -49,7 +49,7 @@ Configure your `replica.yml <replica_dot_yaml_file.html>`__ and ``credentials.ym
 
 You can now create replicas from these files with 
 
->>> docker run -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}/replica.yml:/workspace/replica.yml -v ${PWD}/credentials.yml:/worksplace/credentials.yml health-union/snowshu create 
+>>> docker run -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}/replica.yml:/workspace/replica.yml -v ${PWD}/credentials.yml:/worksplace/credentials.yml hutech/snowshu create 
 
 This will create the replica. To confirm, check your images:
 
@@ -58,7 +58,7 @@ snowshu_replica_whatever_you_named_your_image
 
 You can now start the replica with:
 
->>> $(docker run --rm -v /var/run/docker.sock:/var/run/docker.sock health-union/snowshu launch-docker-cmd <whatever_you_named_your_replica>)
+>>> $(docker run --rm -v /var/run/docker.sock:/var/run/docker.sock hutech/snowshu launch-docker-cmd <whatever_you_named_your_replica>)
 
 Using docker-compose
 --------------------
@@ -70,7 +70,7 @@ The above commands can get a little laborious. To do your work inside a configur
    version: "3.5"
    services:
      snowshu:
-       image: health-union/snowshu
+       image: hutech/snowshu
        volumes:
          - .:/app
          - /var/run/docker.sock:/var/run/docker.sock
