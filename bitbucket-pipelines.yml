@@ -39,15 +39,10 @@ definitions:
           - coverage.svg
           - pipeline.svg
 
-    - step: &push-master-to-github
-        name: "Push Master To Github"
+    - step: &push-to-github
+        name: "Push To Github"
         script:
-          - apt-get update -y 
-          - apt-get install -y git
-          - git config --global user.name "sync bot"
-          - git config --global user.email "data@health-union.com"
-          - git clone https://bitbucket.org/healthunion/snowshu.git  
-          - git push https://norton120:$GITHUB_API_TOKEN@github.com/Health-Union/snowshu.git
+          - git push https://norton120:$GITHUB_API_TOKEN@github.com/Health-Union/snowshu.git $BITBUCKET_BRANCH
 
 
 pipelines:
@@ -70,8 +65,13 @@ pipelines:
               variables:
                 PYPI_USERNAME: 'HealthUnion'
                 PYPI_PASSWORD: $PYPI_PASSWORD
+      - step:
+          name: 'Tags to Github'
+          script:
+            - git push https://norton120:$GITHUB_API_TOKEN@github.com/Health-Union/snowshu.git --follow-tags
 
   branches:
+    'release/*':
+      - step: *push-to-github
     master:
-      - step: *push-master-to-github
-    
+      - step: *push-to-github
