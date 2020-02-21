@@ -3,7 +3,7 @@
 import os
 from setuptools import setup, find_packages
 
-VERSION='0.0.1-b1'
+VERSION='0.0.1-b2'
 PYTHON_REQUIRES='3.7'
 
 packagedata=dict()
