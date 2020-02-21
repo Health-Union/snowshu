@@ -10,8 +10,4 @@ scipy==1.4.1
 
 
 #SNOWFLAKE
-snowflake-connector-python==2.2.1
-snowflake-sqlalchemy==1.2.1
-#python-dateutil==2.8.1 # gross back-pin for snowflake-sqlalchemy :(
-docutils==0.15.2 # gross back-pin for botocore :(
-#idna==2.9 # backpin for requests :(
+-r snowflake_pins.txt
