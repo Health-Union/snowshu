@@ -5,9 +5,10 @@ User Documentation
    :titlesonly:
 
    faq
+   replica.yml file <replica_dot_yaml_file>
    philosophy_statement
    it_only_takes_one
-   replica.yml file <replica_dot_yaml_file>
+   writing_cross_database_sql
    function_emulations
  
 Getting Started
