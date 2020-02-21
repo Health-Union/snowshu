@@ -5,9 +5,10 @@ User Documentation
    :titlesonly:
 
    faq
+   replica.yml file <replica_dot_yaml_file>
    philosophy_statement
    it_only_takes_one
-   replica.yml file <replica_dot_yaml_file>
+   writing_cross_database_sql
    function_emulations
  
 Getting Started
@@ -23,8 +24,73 @@ or built `from source <'https://bitbucket.org/healthunion/snowshu/src/master/'>`
 Note that SnowShu uses Docker build replicas, so **if you don't already have Docker installed you will need to do that first**.
 You can download and install the latest version of Docker Desktop `here <'https://docs.docker.com/install/'>`__.
 
-Setting Up SnowShu
-------------------
+Using SnowShu in Docker
+-----------------------
+Running SnowShu inside a Docker container is easy and solves a _lot_ of environmental problems. To get started, change directories to the directory where you will keep your ``replica.yml`` file.
+
+*Hint*: this can be a distinct project just for making SnowShu replicas, but is probably easier to maintain inside the project repository you will use SnowShu with. For example, if you are using SnowShu to speed testing of a DBT project, you will want to run these commands in the root folder of that project. 
+
+Once you are in the correct directory, run this docker command to generate your ``replica.yml`` and ``credentials.yml`` templates:
+
+>>> docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}:/workspace hutech/snowshu init 
+
+The ``docker.sock`` mount is so your container can use the running docker daemon on the metal of your machine. 
+
+You should now have template files: 
+
+>>> ls
+replica.yml
+credentials.yml
+... # other files already in the folder
+
+Configure your `replica.yml <replica_dot_yaml_file.html>`__ and ``credentials.yml`` files. 
+
+.. warning:: If you are keeing the ``credentials.yml`` file in your project repository, don't forget to add it to your ``.gitignore`` file before you commit. Otherwise you could share passwords with the world by accident, which would be bad. 
+
+You can now create replicas from these files with 
+
+>>> docker run -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}/replica.yml:/workspace/replica.yml -v ${PWD}/credentials.yml:/worksplace/credentials.yml hutech/snowshu create 
+
+This will create the replica. To confirm, check your images:
+
+>>> docker image ls -a 
+snowshu_replica_whatever_you_named_your_image
+
+You can now start the replica with:
+
+>>> $(docker run --rm -v /var/run/docker.sock:/var/run/docker.sock hutech/snowshu launch-docker-cmd <whatever_you_named_your_replica>)
+
+Using docker-compose
+--------------------
+The above commands can get a little laborious. To do your work inside a configured container instead, you can use this docker-compose.yml file. 
+
+.. code:: yaml
+   
+   ## docker-compose.yml
+   version: "3.5"
+   services:
+     snowshu:
+       image: hutech/snowshu
+       volumes:
+         - .:/app
+         - /var/run/docker.sock:/var/run/docker.sock
+       command: tail -f /dev/null
+       networks:
+         - snowshu
+   networks:
+     snowshu:
+       name: snowshu
+       driver: bridge
+
+Then jump in with 
+
+>>> docker-compose up -d && docker-compose exec snowshu /bin/bash
+
+and you can run all your SnowShu commands from inside. 
+
+
+Setting Up SnowShu On The Metal
+-------------------------------
 Once you have installed SnowShu you will want to create a `replica.yml <replica_dot_yaml_file.html>`__ for your project. Creating yaml files from scratch is no fun, so 
 SnowShu comes with a built-in helper command to get you started.
 
@@ -72,6 +138,7 @@ Now you can connect to the replica using a standard connection string.
 
 .. note:: ``snowshu`` is the default username, password and database for all replicas. 9999 is the port. These cannot be changed, `for good reason <faq.html#why-cant>`__
  
+
 
 
 
