@@ -1,0 +1,10 @@
+# Required
+version: 2
+
+sphinx:
+  configuration: docs/conf.py
+
+formats: html
+
+python:
+  version: 3.7
