@@ -4,6 +4,7 @@ import sys, os
 sys.path.insert(0,(os.path.abspath(os.path.join('..','snowshu'))))
 sys.path.insert(0,(os.path.abspath('..')))
 
+master_doc = 'index'
 
 
 extensions = [
