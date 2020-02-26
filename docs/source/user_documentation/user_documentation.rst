@@ -1,6 +1,11 @@
 ==================
 User Documentation
 ==================
+
+.. Tip:: You can now join the conversation on `Slack <'https://join.slack.com/t/snowshu/shared_invite/enQtOTcwNTA4MDk1Mzc2LTE5YzhkZTZjNDFkYmIzY2RkNDE4MDFiMzBhYTQxZWJhNzA5ZDgyZjY4ODZkM2RhZmY5Njc0OGQ2MjEyNTEzZTU'>`__!
+
+
+
 .. toctree::
    :titlesonly:
 

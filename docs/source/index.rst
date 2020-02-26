@@ -76,7 +76,7 @@ How Do I Get Help?
 ==================
 
 - Check out the `user documentation <user_documentation/user_documentation>`__ for tips and tricks on how to get rolling with SnowShu. 
-- Connect with SnowShu users and developers in our `Slack Workspace <https://snowshu.slack.com>`__.
+- Connect with SnowShu users and developers in our `Slack Workspace <https://join.slack.com/t/snowshu/shared_invite/enQtOTcwNTA4MDk1Mzc2LTE5YzhkZTZjNDFkYmIzY2RkNDE4MDFiMzBhYTQxZWJhNzA5ZDgyZjY4ODZkM2RhZmY5Njc0OGQ2MjEyNTEzZTU>`__.
 - Found a bug? Let us know in the `SnowShu Project <https://bitbucket.org/healthunion/snowshu/issues?status=new&status=open>`__.
 
 
