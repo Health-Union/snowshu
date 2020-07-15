@@ -71,12 +71,14 @@ class SnowflakeAdapter(BaseSourceAdapter):
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.VIEW}
 
-    def get_all_databases_statement(self)->str:
-        return """ SELECT DISTINCT database_name
-FROM "UTIL_DB"."INFORMATION_SCHEMA"."DATABASES"
-WHERE is_transient = 'NO'
-AND database_name <> 'UTIL_DB'
-"""
+    def get_all_databases(self) -> str:
+        """ Use the SHOW api to get all the available db structures."""
+        logger.debug('Collecting databases from snowflake...')
+        show_result = tuple(self._safe_query("SHOW TERSE DATABASES")['name'].tolist())
+        databases = list(set(show_result))
+        logger.debug(f'Done. Found {len(databases)} databases.')
+        return databases
+
 
     def population_count_statement(self,relation:Relation)->str:
         """creates the count * statement for a relation
