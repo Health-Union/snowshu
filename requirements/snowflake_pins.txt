@@ -16,7 +16,7 @@ pytz==2019.3
 pycryptodomex==3.9.6
 pyOpenSSL==19.1.0
 cffi==1.13.2
-cryptography==2.8
+cryptography==3.2
 ijson==2.6.1
 pyjwt==1.7.1
 idna==2.8
