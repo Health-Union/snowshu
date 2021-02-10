@@ -8,6 +8,7 @@ build/
 *.log
 *.log.*
 snowshu_barf_output/
+keyfile.json
 
 tests/assets/integration/trail-path.yml
 tests/assets/integration/credentials.yml
