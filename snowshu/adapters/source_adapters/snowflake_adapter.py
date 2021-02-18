@@ -1,15 +1,16 @@
+from concurrent.futures import ThreadPoolExecutor
 import time
 import pandas as pd
 import sqlalchemy
 from snowshu.exceptions import TooManyRecords
 from sqlalchemy.pool import NullPool
-from typing import List, Union, Any, Optional
+from typing import List, Union, Any, Optional, Iterable
 from snowshu.core.models.attribute import Attribute
-from snowshu.core.models.relation import Relation
+from snowshu.core.models.relation import Relation, at_least_one_full_pattern_match
 from snowshu.adapters.source_adapters import BaseSourceAdapter
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
-from snowshu.logger import Logger
+from snowshu.logger import Logger, duration
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from snowshu.core.models.credentials import USER, PASSWORD, ACCOUNT, DATABASE, SCHEMA, ROLE, WAREHOUSE
 logger = Logger().logger
@@ -71,7 +72,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.VIEW}
 
-    def get_all_databases(self) -> str:
+    def _get_all_databases(self) -> str:
         """ Use the SHOW api to get all the available db structures."""
         logger.debug('Collecting databases from snowflake...')
         show_result = tuple(self._safe_query("SHOW TERSE DATABASES")['name'].tolist())
@@ -79,6 +80,73 @@ class SnowflakeAdapter(BaseSourceAdapter):
         logger.debug(f'Done. Found {len(databases)} databases.')
         return databases
 
+    def _get_all_schemas(self, database: str) -> str:
+        logger.debug(f'Collecting schemas from {database} in snowflake...')
+        show_result = self._safe_query(f'SHOW TERSE SCHEMAS IN DATABASE {database}')['name'].tolist()
+        schemas = set(show_result)
+        logger.debug(f'Done. Found {len(schemas)} schemas in {database} database.')
+        return schemas
+
+    def _get_filtered_schemas(self, filters: Iterable[dict]):
+        """ Get all of the filtered schema structures based on the provided filters. """
+        db_filters = []
+        schema_filters = []
+        for f in filters:
+            new_filter = f.copy()
+            new_filter["name"] = ".*"
+            if schema_filters.count(new_filter) == 0:
+                schema_filters.append(new_filter)
+        for f in schema_filters:
+            new_filter = f.copy()
+            new_filter["schema"] = ".*"
+            if db_filters.count(new_filter) == 0:
+                db_filters.append(new_filter)
+
+        databases = self._get_all_databases()
+        database_relations = [Relation(self._correct_case(database), "", "", None, None) for database in databases]
+        filtered_databases = [rel for rel in database_relations if at_least_one_full_pattern_match(rel, db_filters)]
+
+        # get all schemas in all databases
+        filtered_schemas = []
+        for db_rel in filtered_databases:
+            schemas = self._get_all_schemas(database=db_rel.quoted(db_rel.database))
+            # TODO switch over to some internal class struct for this
+            schema_dicts = [
+                {
+                    "relation": Relation(db_rel.database, self._correct_case(schema), "", None, None),
+                    "raw_schema": schema
+                }
+                for schema in schemas
+            ]
+            filtered_schemas += [d for d in schema_dicts if at_least_one_full_pattern_match(d["relation"], schema_filters)]
+
+        return filtered_schemas
+
+    # TODO patterns is the same as _build_sum_patterns_from_config in graph.py
+    def build_catalog(self, patterns, thread_workers: int = 4):
+        filtered_schemas = self._get_filtered_schemas(patterns)
+
+        def accumulate_relations(schema_dict: dict, accumulator):
+            try:
+                rel = schema_dict["relation"]
+                quoted_db = rel.quoted(rel.database)
+                raw_schema = schema_dict["raw_schema"]
+                accumulator += self._get_relations_from_database(quoted_db, raw_schema)
+            except Exception as e:
+                logger.critical(e)
+                raise e
+
+        # get all columns for filtered db/schema
+        catalog = []
+        logger.info('Building filtered catalog...')
+        start_time = time.time()
+        with ThreadPoolExecutor(max_workers=thread_workers) as executor:
+            {executor.submit(accumulate_relations, d, catalog)
+            for d in filtered_schemas}
+
+        logger.info(
+            f'Done building catalog. Found a total of {len(catalog)} relations from the source in {duration(start_time)}.')
+        return tuple(catalog)
 
     def population_count_statement(self,relation:Relation)->str:
         """creates the count * statement for a relation
@@ -252,7 +320,7 @@ LIMIT {max_number_of_outliers})
         get_string = "?" + "&".join([arg for arg in get_args])
         return (''.join(conn_parts)) + get_string
 
-    def get_relations_from_database(self, database: str) -> List[Relation]:
+    def _get_relations_from_database(self, database: str, schema: str) -> List[Relation]:
         relations_sql = f"""
                                  SELECT
                                     m.table_schema AS schema,
@@ -270,7 +338,8 @@ LIMIT {max_number_of_outliers})
                                  AND
                                     c.table_name = m.table_name
                                  WHERE
-                                    m.table_schema <> 'INFORMATION_SCHEMA'
+                                    m.table_schema = '{schema}'
+                                    AND m.table_schema <> 'INFORMATION_SCHEMA'
                               """
 
         logger.debug(
