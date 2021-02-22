@@ -2,7 +2,6 @@ import time
 from typing import TextIO, List, Union
 import networkx
 from snowshu.core.graph import SnowShuGraph
-from snowshu.core.catalog import Catalog
 from snowshu.logger import Logger, duration
 from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.configuration_parser import ConfigurationParser
