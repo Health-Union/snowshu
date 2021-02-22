@@ -57,7 +57,8 @@ class BaseSourceAdapter(BaseSQLAdapter):
 
         def accumulate_relations(schema_obj: BaseSourceAdapter._DatabaseObject, accumulator):
             try:
-                accumulator += self._get_relations_from_database(schema_obj)
+                relations = self._get_relations_from_database(schema_obj)
+                accumulator += [r for r in relations if at_least_one_full_pattern_match(r, patterns)]
             except Exception as e:
                 logger.critical(e)
                 raise e
