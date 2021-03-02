@@ -16,7 +16,7 @@ source:
       schemas:
       - pattern: '.*' # matches all schemas
         relations:
-        - '^(?i).*[^_view]$' # matches all relations that do not end with '_VIEW'
+        - '^(?i).*(?<!_view)$' # matches all relations that do not end with '_VIEW'
   
   # these are exceptions to the 'default' sampling above
   specified_relations: 

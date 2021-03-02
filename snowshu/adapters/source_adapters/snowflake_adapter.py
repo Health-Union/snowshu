@@ -1,15 +1,16 @@
 import time
 import pandas as pd
 import sqlalchemy
+from overrides import overrides
 from snowshu.exceptions import TooManyRecords
 from sqlalchemy.pool import NullPool
-from typing import List, Union, Any, Optional
+from typing import List, Union, Any, Optional, Iterable, Tuple
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
 from snowshu.adapters.source_adapters import BaseSourceAdapter
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
-from snowshu.logger import Logger
+from snowshu.logger import Logger, duration
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from snowshu.core.models.credentials import USER, PASSWORD, ACCOUNT, DATABASE, SCHEMA, ROLE, WAREHOUSE
 logger = Logger().logger
@@ -71,7 +72,8 @@ class SnowflakeAdapter(BaseSourceAdapter):
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.VIEW}
 
-    def get_all_databases(self) -> str:
+    @overrides
+    def _get_all_databases(self) -> List[str]:
         """ Use the SHOW api to get all the available db structures."""
         logger.debug('Collecting databases from snowflake...')
         show_result = tuple(self._safe_query("SHOW TERSE DATABASES")['name'].tolist())
@@ -79,6 +81,13 @@ class SnowflakeAdapter(BaseSourceAdapter):
         logger.debug(f'Done. Found {len(databases)} databases.')
         return databases
 
+    @overrides
+    def _get_all_schemas(self, database: str) -> List[str]:
+        logger.debug(f'Collecting schemas from {database} in snowflake...')
+        show_result = self._safe_query(f'SHOW TERSE SCHEMAS IN DATABASE {database}')['name'].tolist()
+        schemas = set(show_result)
+        logger.debug(f'Done. Found {len(schemas)} schemas in {database} database.')
+        return schemas
 
     def population_count_statement(self,relation:Relation)->str:
         """creates the count * statement for a relation
@@ -238,6 +247,7 @@ LIMIT {max_number_of_outliers})
             logger.error(message)
             raise NotImplementedError(message)
 
+    @overrides
     def _build_conn_string(self, overrides: Optional[dict] = {}) -> str:
         """overrides the base conn string."""
         conn_parts = [
@@ -252,7 +262,11 @@ LIMIT {max_number_of_outliers})
         get_string = "?" + "&".join([arg for arg in get_args])
         return (''.join(conn_parts)) + get_string
 
-    def get_relations_from_database(self, database: str) -> List[Relation]:
+    @overrides
+    def _get_relations_from_database(self, schema_obj: BaseSourceAdapter._DatabaseObject) -> List[Relation]:
+        quoted_database = schema_obj.full_relation.quoted(schema_obj.full_relation.database)  # quoted db name
+        relation_database = schema_obj.full_relation.database  # case corrected db name
+        case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schame name
         relations_sql = f"""
                                  SELECT
                                     m.table_schema AS schema,
@@ -262,29 +276,30 @@ LIMIT {max_number_of_outliers})
                                     c.ordinal_position AS ordinal,
                                     c.data_type AS data_type
                                  FROM
-                                    {database}.INFORMATION_SCHEMA.TABLES m
+                                    {quoted_database}.INFORMATION_SCHEMA.TABLES m
                                  INNER JOIN
-                                    {database}.INFORMATION_SCHEMA.COLUMNS c
+                                    {quoted_database}.INFORMATION_SCHEMA.COLUMNS c
                                  ON
                                     c.table_schema = m.table_schema
                                  AND
                                     c.table_name = m.table_name
                                  WHERE
-                                    m.table_schema <> 'INFORMATION_SCHEMA'
+                                    m.table_schema = '{case_sensitive_schema}'
+                                    AND m.table_schema <> 'INFORMATION_SCHEMA'
                               """
 
         logger.debug(
-            f'Collecting detailed relations from database {database}...')
+            f'Collecting detailed relations from database {quoted_database}...')
         relations_frame = self._safe_query(relations_sql)
         unique_relations = (
             relations_frame['schema'] +
             '.' +
             relations_frame['relation']).unique().tolist()
         logger.debug(
-            f'Done collecting relations. Found a total of {len(unique_relations)} unique relations in database {database}')
+            f'Done collecting relations. Found a total of {len(unique_relations)} unique relations in database {quoted_database}')
         relations = list()
         for relation in unique_relations:
-            logger.debug(f'Building relation { database + "." + relation }...')
+            logger.debug(f'Building relation { quoted_database + "." + relation }...')
             attributes = list()
 
             for attribute in relations_frame.loc[(
@@ -297,7 +312,7 @@ LIMIT {max_number_of_outliers})
                         self._get_data_type(attribute.data_type)
                     ))
 
-            relation = Relation(self._correct_case(database),
+            relation = Relation(relation_database,
                                 self._correct_case(attribute.schema),
                                 self._correct_case(attribute.relation),
                                 self.MATERIALIZATION_MAPPINGS[attribute.materialization],
@@ -306,14 +321,16 @@ LIMIT {max_number_of_outliers})
             relations.append(relation)
 
         logger.debug(
-            f'Acquired {len(relations)} total relations from database {database}.')
+            f'Acquired {len(relations)} total relations from database {quoted_database}.')
         return relations
 
+    @overrides
     def _count_query(self, query: str) -> int:
         count_sql = f"WITH __SNOWSHU__COUNTABLE__QUERY as ({query}) SELECT COUNT(*) AS count FROM __SNOWSHU__COUNTABLE__QUERY"
         count = int(self._safe_query(count_sql).iloc[0]['count'])
         return count
 
+    @overrides
     def check_count_and_query(self, query: str,
                               max_count: int) -> pd.DataFrame:
         """checks the count, if count passes returns results as a dataframe."""
@@ -332,6 +349,7 @@ LIMIT {max_number_of_outliers})
         response = self._safe_query(query)
         return response
 
+    @overrides
     def get_connection(
             self,
             database_override: Optional[str] = None,

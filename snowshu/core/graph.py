@@ -18,8 +18,8 @@ class SnowShuGraph:
         self.dag: tuple = None
         self.graph: networkx.Graph = None
 
-    def build_graph(self, configs: Configuration,
-                    full_catalog: Tuple[Relation]) -> networkx.DiGraph:
+    # TODO remove extra filtering of relations when building graph
+    def build_graph(self, configs: Configuration) -> networkx.DiGraph:
         """Builds a directed graph per replica config.
         
         Args:
@@ -31,6 +31,9 @@ class SnowShuGraph:
         """
         logger.debug('Building graphs from config...')
 
+        full_catalog = configs.source_profile.adapter.build_catalog(
+            patterns=self._build_sum_patterns_from_configs(configs),
+            thread_workers=configs.threads)
         ## set defaults for all relations in the catalog
         [self._set_globals_for_node(relation,configs) for relation in full_catalog]
         [self._set_overriding_params_for_node(relation,configs) for relation in full_catalog]

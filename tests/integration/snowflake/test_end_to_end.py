@@ -38,11 +38,11 @@ def any_appearance_of(string,strings):
 
 def test_reports_full_catalog_start(end_to_end):
     result_lines = end_to_end
-    assert any_appearance_of('Assessing full catalog...',result_lines)
+    assert any_appearance_of('Building filtered catalog...',result_lines)
 
-def test_finds_45_relations(end_to_end):
+def test_finds_n_relations(end_to_end):
     result_lines= end_to_end
-    assert any_appearance_of('Identified a total of 45 relations to sample based on the specified configurations.',result_lines)
+    assert any_appearance_of('Identified a total of 11 relations to sample based on the specified configurations.',result_lines)
 
 def test_replicates_order_items(end_to_end):
     result_lines = end_to_end

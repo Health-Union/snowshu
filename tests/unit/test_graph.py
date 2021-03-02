@@ -1,4 +1,5 @@
 import pytest
+import mock
 from tests.conftest import CONFIGURATION
 from io import StringIO
 import yaml
@@ -109,8 +110,11 @@ def test_sets_outliers(stub_graph_set):
 
     config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
     
-    modified_graph=shgraph.build_graph(config,full_catalog)       
- 
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = full_catalog
+        config.source_profile.adapter = adapter_mock
+        _ = shgraph.build_graph(config)
+
     assert vals.iso_relation.include_outliers==True
     assert vals.iso_relation.max_number_of_outliers==1000
 
@@ -131,8 +135,11 @@ def test_no_duplicates(stub_graph_set):
 
     config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
     
-    shgraph.build_graph(config,full_catalog)       
-    graphs = shgraph.get_graphs()
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = full_catalog
+        config.source_profile.adapter = adapter_mock
+        shgraph.build_graph(config)
+        graphs = shgraph.get_graphs()
 
     all_nodes=[node for graph in graphs for node in graph.nodes]
     assert len(set(all_nodes)) == len(all_nodes)

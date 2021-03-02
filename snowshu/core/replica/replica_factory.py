@@ -2,7 +2,6 @@ import time
 from typing import TextIO, List, Union
 import networkx
 from snowshu.core.graph import SnowShuGraph
-from snowshu.core.catalog import Catalog
 from snowshu.logger import Logger, duration
 from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.configuration_parser import ConfigurationParser
@@ -30,11 +29,8 @@ class ReplicaFactory:
         if name is not None:
             self.config.name = name
 
-        graph.build_graph(self.config,
-                          Catalog.load_full_catalog(
-                                    self.config.source_profile.adapter, 
-                                    self.config.threads))
-        graphs = graph.get_graphs()    
+        graph.build_graph(self.config)
+        graphs = graph.get_graphs()
         if len(graphs) < 1:
             return "No relations found per provided replica configuration, exiting."
 

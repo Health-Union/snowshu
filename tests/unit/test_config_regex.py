@@ -52,15 +52,18 @@ MOCKED_CATALOG = (Relation('snowyes', 'thing', 'foo_suffix', mz.TABLE, []),
 
 @mock.patch('snowshu.core.configuration_parser.ConfigurationParser._build_adapter_profile')
 @mock.patch('snowshu.core.configuration_parser.ConfigurationParser._build_target')
-def test_included_and_excluded(adapter,target):
+def test_included_and_excluded(target, adapter):
     shgraph = SnowShuGraph()
     conf_obj=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(MOCKED_CONFIG)))
-    shgraph.build_graph(conf_obj, MOCKED_CATALOG)
-    matched_nodes = shgraph.graph
-    assert MOCKED_CATALOG[0] in matched_nodes.nodes
-    assert MOCKED_CATALOG[1] in matched_nodes.nodes
-    assert MOCKED_CATALOG[2] not in matched_nodes.nodes
-    assert MOCKED_CATALOG[3] not in matched_nodes.nodes
-    assert MOCKED_CATALOG[4] not in matched_nodes.nodes
-    assert MOCKED_CATALOG[5] not in matched_nodes.nodes
-    assert MOCKED_CATALOG[6] in matched_nodes.nodes
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = MOCKED_CATALOG
+        conf_obj.source_profile.adapter = adapter_mock
+        shgraph.build_graph(conf_obj)
+        matched_nodes = shgraph.graph
+        assert MOCKED_CATALOG[0] in matched_nodes.nodes
+        assert MOCKED_CATALOG[1] in matched_nodes.nodes
+        assert MOCKED_CATALOG[2] not in matched_nodes.nodes
+        assert MOCKED_CATALOG[3] not in matched_nodes.nodes
+        assert MOCKED_CATALOG[4] not in matched_nodes.nodes
+        assert MOCKED_CATALOG[5] not in matched_nodes.nodes
+        assert MOCKED_CATALOG[6] in matched_nodes.nodes
