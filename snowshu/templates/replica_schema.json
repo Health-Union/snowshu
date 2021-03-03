@@ -1,0 +1,236 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "credpath": {
+      "type": "string"
+    },
+    "long_description": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "short_description": {
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/definitions/source"
+    },
+    "target": {
+      "$ref": "#/definitions/target"
+    },
+    "threads": {
+      "type": "integer"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "credpath",
+    "name",
+    "short_description",
+    "source",
+    "target",
+    "threads",
+    "version"
+  ],
+  "definitions": {
+    "target": {
+      "type": "object",
+      "properties": {
+        "adapter": { "type": "string"}
+      },
+      "required": [
+          "adapter"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "general_relations": {
+          "$ref": "#/definitions/general_relations"
+        },
+        "include_outliers": {
+          "type": "boolean"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "sampling": {
+          "type": "string"
+        },
+        "specified_relations": {
+          "$ref": "#/definitions/specified_relations"
+        }
+      },
+      "required": [
+        "general_relations",
+        "include_outliers",
+        "profile",
+        "sampling"
+      ]
+    },
+    "general_relations": {
+      "type": "object",
+      "properties": {
+        "databases": {
+          "$ref": "#/definitions/_database"
+        }
+      },
+      "required": [
+        "databases"
+      ]
+    },
+    "_database": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "properties": {
+            "pattern": {
+              "type": "string"
+            },
+            "schemas": {
+              "$ref": "#/definitions/_db_schema"
+            }
+          },
+          "required": [
+            "pattern",
+            "schemas"
+          ]
+        }
+      ]
+    },
+    "_db_schema": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "properties": {
+            "pattern": {
+              "type": "string"
+            },
+            "relations": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": [
+            "pattern",
+            "relations"
+          ]
+        }
+      ]
+    },
+    "specified_relations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/single_specified_relation"
+      }
+    },
+    "single_specified_relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "database": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "relation": {
+          "type": "string"
+        },
+        "unsampled": {
+          "type": "boolean"
+        },
+        "relationships": {
+          "$ref": "#/definitions/relationship_object"
+        }
+      },
+      "required": [
+        "database",
+        "schema",
+        "relation"
+      ]
+    },
+    "relationship_object": {
+      "type": "object",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/directional"
+        },
+        {
+          "$ref": "#/definitions/bidirectional"
+        }
+      ]
+    },
+    "directional": {
+      "type": "object",
+      "properties": {
+        "directional": {
+          "type": "array",
+          "items": [
+            {
+              "$ref": "#/definitions/_directional_relationship_object"
+            }
+          ]
+        }
+      },
+      "required":[
+        "directional"
+      ]
+    },
+    "bidirectional": {
+      "type": "object",
+      "properties": {
+        "bidirectional": {
+          "type": "array",
+          "items": [
+            {
+              "$ref": "#/definitions/_directional_relationship_object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "bidirectional"
+      ]
+    },
+    "_directional_relationship_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "local_attribute": {
+          "type": "string"
+        },
+        "database": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "relation": {
+          "type": "string"
+        },
+        "remote_attribute": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "local_attribute",
+        "database",
+        "schema",
+        "relation",
+        "remote_attribute"
+      ]
+    }
+  }
+}
