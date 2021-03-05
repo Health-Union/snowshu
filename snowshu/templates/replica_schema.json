@@ -1,5 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Validation schema for replica.yml",
+  "description": "Based on https://snowshu.readthedocs.io/en/latest/user_documentation/replica_dot_yaml_file.html",
   "type": "object",
   "properties": {
     "credpath": {
@@ -30,10 +32,8 @@
   "required": [
     "credpath",
     "name",
-    "short_description",
     "source",
     "target",
-    "threads",
     "version"
   ],
   "definitions": {
@@ -56,6 +56,10 @@
         "include_outliers": {
           "type": "boolean"
         },
+        "max_outliers": {
+          "type": "integer",
+          "default": 100
+        },
         "profile": {
           "type": "string"
         },
@@ -68,7 +72,6 @@
       },
       "required": [
         "general_relations",
-        "include_outliers",
         "profile",
         "sampling"
       ]
@@ -153,6 +156,9 @@
         },
         "relationships": {
           "$ref": "#/definitions/relationship_object"
+        },
+        "sampling": {
+          "$ref": "#/definitions/sampling_object"
         }
       },
       "required": [
@@ -231,6 +237,56 @@
         "relation",
         "remote_attribute"
       ]
+    },
+    "sampling_object": {
+      "type": "object",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/default_sampling"
+        },
+        {
+          "$ref": "#/definitions/brute_force_sampling"
+        }
+      ]
+    },
+    "default_sampling": {
+      "type": "object",
+      "properties": {
+        "default": {
+          "$ref": "#/definitions/_sampling_params"
+        }
+      },
+      "required": [
+        "default"
+      ]
+    },
+    "brute_force_sampling": {
+      "type": "object",
+      "properties": {
+        "brute_force": {
+          "$ref": "#/definitions/_sampling_params"
+        }
+      },
+      "required": [
+        "brute_force"
+      ]
+    },
+    "_sampling_params": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      },
+      "properties": {
+        "margin_of_error": {
+          "type": "number"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "min_sample_size": {
+          "type": "integer"
+        }
+      }
     }
   }
 }
