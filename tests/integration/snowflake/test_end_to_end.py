@@ -17,7 +17,7 @@ from snowshu.core.main import cli
 BASE_CONN='postgresql://snowshu:snowshu@integration-test:9999/{}'
 SNOWSHU_META_STRING=BASE_CONN.format('snowshu')
 SNOWSHU_DEVELOPMENT_STRING=BASE_CONN.format('snowshu_development')
-DOCKER_SPIN_UP_TIMEOUT = 10
+DOCKER_SPIN_UP_TIMEOUT = 5
 
 @pytest.fixture(scope="session", autouse=True)
 def end_to_end(docker_flush_session):
@@ -31,35 +31,8 @@ def end_to_end(docker_flush_session):
                           name='integration-test',
                           network='snowshu',
                           detach=True)
-    wait_for_spin_up() # the replica needs a second to initialize
+    time.sleep(DOCKER_SPIN_UP_TIMEOUT) # the replica needs a second to initialize
     return create_output
-
-def wait_for_spin_up(container_name: str = None) -> docker.models.containers.Container:
-    """ Waits for the system to get the snowshu related docker container ready.
-
-        Args:
-            container_name: Specific container name. If not provided, waits for the containers
-                            created by default settings in the test module
-    """
-    start_time = time.time()
-    client = docker.from_env()
-    snowshu_related_containers = ('snowshu_replica_',
-                                  'integration-test',
-                                  'snowshu_target',)
-    possible_containers = (container_name,) if container_name else snowshu_related_containers
-    found_container = None
-    while not found_container and time.time() - start_time < DOCKER_SPIN_UP_TIMEOUT:
-        for container in possible_containers:
-            try:
-                found_container = client.containers.get(container)
-            except docker.errors.NotFound:
-                pass
-        time.sleep(1)
-
-    if not found_container:
-        raise Exception("Unable to start up docker containers.")
-
-    return found_container
 
 def any_appearance_of(string,strings):
     return any([string in line for line in strings])
