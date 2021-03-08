@@ -84,7 +84,7 @@ class PostgresAdapter(BaseTargetAdapter):
         def statement_runner(statement:str):
             logger.info(f'executing statement `{statement}...`')
             response=conn.execute(statement)
-            logger.info('Executed.')
+            logger.debug('Executed.')
         
         for db in unique_databases:
             conn = self.get_connection(database_override=db)
