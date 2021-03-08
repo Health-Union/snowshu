@@ -98,38 +98,25 @@ class ConfigurationParser:
             try:
                 return yaml.safe_load(dict_like_object.read())
             except AttributeError:
-                return self._load_and_verify_file(dict_like_object, **kwargs)
+                with open(dict_like_object, 'r') as f:
+                    instance = yaml.safe_load(f.read())
+                return self._verify_schema(instance, Path(dict_like_object), **kwargs)
 
-    def _load_and_verify_file(self,
-                              file_path,
-                              verify: bool = True,
-                              templates_path: Path = Path(os.path.dirname(__file__)).parent / 'templates',
-                              schema_path: Path = None):
+    def _verify_schema(self,
+                        instance,
+                        file_path: Path,
+                        templates_path: Path = Path(os.path.dirname(__file__)).parent / 'templates',
+                        schema_path: Path = None):
         logger.debug("Parsing file at %s", file_path)
-        if not schema_path:
-            schema_path = templates_path / f'{Path(file_path).stem}_schema.json'
-        if not os.path.isfile(schema_path):
-            logger.warning("Loading from %s, but no schema (%s) found to verify it.",
-                            file_path, schema_path)
-            verify = False
+        schema_path = templates_path / f'{file_path.stem}_schema.json' if not schema_path else schema_path
+        with open(schema_path) as schema_file:
+            schema = yaml.safe_load(schema_file.read())
 
-        # Load data
         try:
-            with open(file_path, 'r') as instance_file:
-                instance = yaml.safe_load(instance_file.read())
-        except FileNotFoundError as exc:
-            exc.strerror = f'Error when loading YAML config at {file_path}' + exc.strerror
-            raise
-
-        # Load schema and verify
-        if verify:
-            try:
-                with open(schema_path) as schema_file:
-                    schema = yaml.safe_load(schema_file.read())
-                jsonschema.validate(instance=instance, schema=schema)
-            except ValidationError as exc:
-                logger.error('Invalid object %s', exc)
-                raise exc
+            jsonschema.validate(instance=instance, schema=schema)
+        except ValidationError as exc:
+            logger.error('Invalid object %s', exc)
+            raise exc
 
         return instance
 

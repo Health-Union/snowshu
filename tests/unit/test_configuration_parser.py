@@ -82,13 +82,13 @@ def test_loads_good_creds(stub_creds,stub_configs):
 def test_schema_verification_errors(stub_creds, stub_configs):
     stub_creds = stub_creds()
     stub_configs = stub_configs()
+    # create type error in replica.yml
     stub_creds['sources'][0]['password'] = True
 
     with tempfile.NamedTemporaryFile(mode='w') as mock_file:
         json.dump(stub_creds, mock_file)
         mock_file.seek(0)
         stub_configs['credpath']=mock_file.name
-        stub_configs['include_outliers']=10
         with pytest.raises(ValidationError) as exc:
             ConfigurationParser()._build_adapter_profile('source', stub_configs,
                             schema_path=Path("/app/snowshu/templates/credentials_schema.json"))
