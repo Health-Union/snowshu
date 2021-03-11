@@ -5,6 +5,7 @@ from tests.common import rand_string
 from sqlalchemy import create_engine
 from snowshu.core.docker import SnowShuDocker
 from snowshu.adapters.target_adapters import PostgresAdapter
+from tests.integration.snowflake.test_end_to_end import DOCKER_SPIN_UP_TIMEOUT
 
 from snowshu.logger import Logger
 Logger().set_log_level(0)
@@ -32,7 +33,7 @@ def test_creates_replica(docker_flush):
          'POSTGRES_DB=snowshu', ])
 
     # load test data
-    time.sleep(5)  # give pg a moment to spin up all the way
+    time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # give pg a moment to spin up all the way
     engine = create_engine(
         'postgresql://snowshu:snowshu@snowshu_target:9999/snowshu')
     engine.execute(
@@ -54,7 +55,7 @@ def test_creates_replica(docker_flush):
                           name=TEST_NAME,
                           network='snowshu',
                           detach=True)
-    time.sleep(5)  # give pg a moment to spin up all the way
+    time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # give pg a moment to spin up all the way
     engine = create_engine(
         f'postgresql://snowshu:snowshu@{TEST_NAME}:9999/snowshu')
     res = engine.execute(f'SELECT * FROM {TEST_TABLE}').fetchall()

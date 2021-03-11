@@ -1,0 +1,292 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "Validation schema for replica.yml",
+  "description": "Based on https://snowshu.readthedocs.io/en/latest/user_documentation/replica_dot_yaml_file.html",
+  "type": "object",
+  "properties": {
+    "credpath": {
+      "type": "string"
+    },
+    "long_description": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "short_description": {
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/definitions/source"
+    },
+    "target": {
+      "$ref": "#/definitions/target"
+    },
+    "threads": {
+      "type": "integer"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "credpath",
+    "name",
+    "source",
+    "target",
+    "version"
+  ],
+  "definitions": {
+    "target": {
+      "type": "object",
+      "properties": {
+        "adapter": { "type": "string"}
+      },
+      "required": [
+          "adapter"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "general_relations": {
+          "$ref": "#/definitions/general_relations"
+        },
+        "include_outliers": {
+          "type": "boolean"
+        },
+        "max_outliers": {
+          "type": "integer",
+          "default": 100
+        },
+        "profile": {
+          "type": "string"
+        },
+        "sampling": {
+          "type": "string"
+        },
+        "specified_relations": {
+          "$ref": "#/definitions/specified_relations"
+        }
+      },
+      "required": [
+        "general_relations",
+        "profile",
+        "sampling"
+      ]
+    },
+    "general_relations": {
+      "type": "object",
+      "properties": {
+        "databases": {
+          "$ref": "#/definitions/_database"
+        }
+      },
+      "required": [
+        "databases"
+      ]
+    },
+    "_database": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "properties": {
+            "pattern": {
+              "type": "string"
+            },
+            "schemas": {
+              "$ref": "#/definitions/_db_schema"
+            }
+          },
+          "required": [
+            "pattern",
+            "schemas"
+          ]
+        }
+      ]
+    },
+    "_db_schema": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "properties": {
+            "pattern": {
+              "type": "string"
+            },
+            "relations": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "required": [
+            "pattern",
+            "relations"
+          ]
+        }
+      ]
+    },
+    "specified_relations": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/single_specified_relation"
+      }
+    },
+    "single_specified_relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "database": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "relation": {
+          "type": "string"
+        },
+        "unsampled": {
+          "type": "boolean"
+        },
+        "relationships": {
+          "$ref": "#/definitions/relationship_object"
+        },
+        "sampling": {
+          "$ref": "#/definitions/sampling_object"
+        }
+      },
+      "required": [
+        "database",
+        "schema",
+        "relation"
+      ]
+    },
+    "relationship_object": {
+      "type": "object",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/directional"
+        },
+        {
+          "$ref": "#/definitions/bidirectional"
+        }
+      ]
+    },
+    "directional": {
+      "type": "object",
+      "properties": {
+        "directional": {
+          "type": "array",
+          "items": [
+            {
+              "$ref": "#/definitions/_directional_relationship_object"
+            }
+          ]
+        }
+      },
+      "required":[
+        "directional"
+      ]
+    },
+    "bidirectional": {
+      "type": "object",
+      "properties": {
+        "bidirectional": {
+          "type": "array",
+          "items": [
+            {
+              "$ref": "#/definitions/_directional_relationship_object"
+            }
+          ]
+        }
+      },
+      "required": [
+        "bidirectional"
+      ]
+    },
+    "_directional_relationship_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "local_attribute": {
+          "type": "string"
+        },
+        "database": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "relation": {
+          "type": "string"
+        },
+        "remote_attribute": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "local_attribute",
+        "database",
+        "schema",
+        "relation",
+        "remote_attribute"
+      ]
+    },
+    "sampling_object": {
+      "type": "object",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/default_sampling"
+        },
+        {
+          "$ref": "#/definitions/brute_force_sampling"
+        }
+      ]
+    },
+    "default_sampling": {
+      "type": "object",
+      "properties": {
+        "default": {
+          "$ref": "#/definitions/_sampling_params"
+        }
+      },
+      "required": [
+        "default"
+      ]
+    },
+    "brute_force_sampling": {
+      "type": "object",
+      "properties": {
+        "brute_force": {
+          "$ref": "#/definitions/_sampling_params"
+        }
+      },
+      "required": [
+        "brute_force"
+      ]
+    },
+    "_sampling_params": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "number"
+      },
+      "properties": {
+        "margin_of_error": {
+          "type": "number"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "min_sample_size": {
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

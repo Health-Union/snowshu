@@ -5,6 +5,8 @@ import pytest
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from tests.common import rand_string
 from io import StringIO
+from pathlib import Path
+from jsonschema.exceptions import ValidationError
 import yaml
 from snowshu.core.configuration_parser import ConfigurationParser
 import os
@@ -12,7 +14,6 @@ from snowshu.samplings.samplings import DefaultSampling
 
 
 def test_fills_in_empty_source_values(stub_replica_configuration):
-
     for rel in stub_replica_configuration.specified_relations:
         assert isinstance(rel.unsampled, bool)
         assert isinstance(rel.relationships.bidirectional, list)
@@ -78,4 +79,23 @@ def test_loads_good_creds(stub_creds,stub_configs):
     assert adapter_profile.name == SOURCES_NAME
     assert adapter_profile.adapter.credentials.password == SOURCES_PASSWORD
 
+def test_schema_verification_errors(stub_creds, stub_configs):
+    stub_creds = stub_creds()
+    stub_configs = stub_configs()
+    # create type error in replica.yml
+    stub_creds['sources'][0]['password'] = True
 
+    with tempfile.NamedTemporaryFile(mode='w') as mock_file:
+        json.dump(stub_creds, mock_file)
+        mock_file.seek(0)
+        stub_configs['credpath']=mock_file.name
+        with pytest.raises(ValidationError) as exc:
+            ConfigurationParser()._build_adapter_profile('source', stub_configs,
+                            schema_path=Path("/app/snowshu/templates/credentials_schema.json"))
+    assert "True is not of type 'string'" in str(exc.value)
+
+    # config with missing credentials file
+    with pytest.raises(FileNotFoundError) as fnf_err:
+        mock_config_file = StringIO(yaml.dump(stub_configs))
+        ConfigurationParser().from_file_or_path(mock_config_file)
+    assert "Credentials specified in replica.yml not found" in fnf_err.value.strerror

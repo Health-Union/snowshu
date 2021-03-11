@@ -227,9 +227,9 @@ AS
             for db,schema in unique_schemas:
                 conn = self.get_connection(database_override=db,
                                            schema_override=schema)
-                logger.info(f'Applying function {function} to "{db}"."{schema}"...')
+                logger.debug(f'Applying function {function} to "{db}"."{schema}"...')
                 conn.execute(function_sql)
-                logger.info(f'Function {function} added.')
+                logger.debug(f'Function {function} added.')
         except FileNotFoundError:
             logger.info(f'Function {function} is not implemented for target {self.CLASSNAME}.')
             return    

@@ -6,6 +6,8 @@ from coloredlogs import ColoredFormatter
 from typing import Optional
 from logging.handlers import RotatingFileHandler
 
+# Tone down snowflake.connector log noise by only outputting warnings and higher level messages
+logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
 
 def duration(start: int) -> str:
     dur = round(time.time() - start, 2)

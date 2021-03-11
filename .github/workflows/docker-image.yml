@@ -1,0 +1,22 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+
+  build-and-test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: install docker-compose
+      run: pip install --no-cache-dir docker-compose
+    - name: Build the Docker image
+      run: docker-compose up -d -f docker-compose.yml
+    - name: Run Test
+      run: docker-compose exec -f docker-compose.yml -T snowshu py.test --cov=snowshu tests/unit

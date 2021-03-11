@@ -1,6 +1,9 @@
 from pathlib import Path
 from snowshu.core.utils import fetch_adapter,correct_case
+import os
 import yaml
+import jsonschema
+from jsonschema.exceptions import ValidationError
 from typing import Union, TextIO, List, Optional,Type,Any
 from snowshu.logger import Logger
 from snowshu.configs import DEFAULT_THREAD_COUNT, \
@@ -81,7 +84,8 @@ class Configuration:
 
 class ConfigurationParser:
 
-    def _get_dict_from_anything(self, dict_like_object:Union[str,'StringIO',dict])->dict:
+    def _get_dict_from_anything(self, dict_like_object:Union[str,'StringIO',dict],
+                                **kwargs)->dict:
         """Returns dict from path, io object or dict.  
         
         Returns:
@@ -94,8 +98,28 @@ class ConfigurationParser:
             try:
                 return yaml.safe_load(dict_like_object.read())
             except AttributeError:
-                with open(dict_like_object,'r') as f:
-                    return yaml.safe_load(f.read())
+                with open(dict_like_object, 'r') as f:
+                    instance = yaml.safe_load(f.read())
+                return self._verify_schema(instance, Path(dict_like_object), **kwargs)
+
+    def _verify_schema(self,
+                        instance,
+                        file_path: Path,
+                        templates_path: Path = Path(os.path.dirname(__file__)).parent / 'templates',
+                        schema_path: Path = None):
+        logger.debug("Parsing file at %s", file_path)
+        schema_path = templates_path / f'{file_path.stem}_schema.json' if not schema_path else schema_path
+        with open(schema_path) as schema_file:
+            schema = yaml.safe_load(schema_file.read())
+
+        try:
+            jsonschema.validate(instance=instance, schema=schema)
+        except ValidationError as exc:
+            logger.error('Invalid object %s', exc)
+            raise exc
+
+        return instance
+
 
     def _set_default(self,
                      dict_from:dict,
@@ -214,7 +238,8 @@ class ConfigurationParser:
                     self._build_relationships(rel)) for rel in specified_relations]
     
     def _build_adapter_profile(self,section:str,
-                               full_configs:Union[str,'StringIO',dict])->AdapterProfile:
+                               full_configs:Union[str,'StringIO',dict],
+                               **kwargs)->AdapterProfile:
         profile=full_configs[section]['profile']
         credentials=full_configs['credpath']
         
@@ -230,9 +255,13 @@ class ConfigurationParser:
                 raise KeyError(profile)
             except KeyError as e:
                 raise ValueError(f'Credentials missing required section: {e}')
-        profile_dict=lookup_profile_from_creds(self._get_dict_from_anything(credentials),
-                                               profile,
-                                               section)
+        try:
+            profile_dict=lookup_profile_from_creds(self._get_dict_from_anything(credentials, **kwargs),
+                                                profile,
+                                                section)
+        except FileNotFoundError as err:
+            err.strerror = "Credentials specified in replica.yml not found. " + err.strerror
+            raise
 
         adapter=fetch_adapter(profile_dict['adapter'],section)
 

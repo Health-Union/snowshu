@@ -8,6 +8,7 @@ tabulate==0.8.6
 psycopg2-binary==2.8.4
 scipy==1.4.1
 overrides==3.1.0
+jsonschema==3.2.0
 
 
 #SNOWFLAKE
