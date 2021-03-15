@@ -4,7 +4,6 @@ from snowshu.core.models.relation import Relation
 from snowshu.core.configuration_parser import Configuration
 from typing import Tuple, Set, List
 from snowshu.logger import Logger
-from snowshu.core.samplings.utils import get_sampling_from_partial
 from snowshu.core.models.relation import at_least_one_full_pattern_match,\
     lookup_single_relation,\
     single_full_pattern_match
@@ -48,7 +47,7 @@ class SnowShuGraph:
         
         logger.info(f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
 
-        if not self.graph.is_directed():
+        if not networkx.algorithms.is_directed_acyclic_graph(self.graph):
             raise ValueError(
                 'The graph created by the specified trail path is not directed (circular reference detected).')
 
@@ -138,9 +137,6 @@ class SnowShuGraph:
                                    direction=edge['direction'],
                                    remote_attribute=edge['remote_attribute'],
                                    local_attribute=edge['local_attribute'])
-        if not graph.is_directed():
-            raise ValueError(
-                'The graph created by the specified trail path is not directed (circular reference detected).')
         return graph
 
     def get_graphs(self) -> tuple:
