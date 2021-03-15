@@ -17,7 +17,6 @@ class SnowShuGraph:
         self.dag: tuple = None
         self.graph: networkx.Graph = None
 
-    # TODO remove extra filtering of relations when building graph
     def build_graph(self, configs: Configuration) -> networkx.DiGraph:
         """Builds a directed graph per replica config.
         
