@@ -27,7 +27,7 @@ class RuntimeSourceCompiler:
             do_not_sample=False
             predicates=list()
             unions=list()
-            for child in [c for c in dag.successors(relation)]:
+            for child in dag.successors(relation):
                 for edge in dag.edges((relation,child),True):
                     edge_data=edge[2]
                     if edge_data['direction']=='bidirectional':
@@ -41,7 +41,7 @@ class RuntimeSourceCompiler:
                                                                                 edge_data['local_attribute'],
                                                                                 relation.max_number_of_outliers))
 
-            for parent in [p for p in dag.predecessors(relation)]:
+            for parent in dag.predecessors(relation):
                 for edge in dag.edges((parent,relation,),True):
                     edge_data=edge[2]
                     do_not_sample=edge_data['direction']=='bidirectional'

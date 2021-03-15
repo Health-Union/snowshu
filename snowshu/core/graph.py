@@ -4,7 +4,6 @@ from snowshu.core.models.relation import Relation
 from snowshu.core.configuration_parser import Configuration
 from typing import Tuple, Set, List
 from snowshu.logger import Logger
-from snowshu.core.samplings.utils import get_sampling_from_partial
 from snowshu.core.models.relation import at_least_one_full_pattern_match,\
     lookup_single_relation,\
     single_full_pattern_match
@@ -18,13 +17,11 @@ class SnowShuGraph:
         self.dag: tuple = None
         self.graph: networkx.Graph = None
 
-    # TODO remove extra filtering of relations when building graph
     def build_graph(self, configs: Configuration) -> networkx.DiGraph:
         """Builds a directed graph per replica config.
         
         Args:
             configs: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object.
-            full_catalog: A collection of :class:`Relations <snowshu.core.models.relation.Relation>` to build the graph from.
 
         Returns:
             a directed graph of :class:`Relations <snowshu.core.models.relation.Relation>` with dependencies applied.
@@ -49,7 +46,7 @@ class SnowShuGraph:
         
         logger.info(f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
 
-        if not self.graph.is_directed():
+        if not networkx.algorithms.is_directed_acyclic_graph(self.graph):
             raise ValueError(
                 'The graph created by the specified trail path is not directed (circular reference detected).')
 
@@ -76,12 +73,6 @@ class SnowShuGraph:
                 if getattr(pattern,'sampling',None) is not None:
                     relation.sampling=pattern.sampling
         return relation            
-
-        approved_specified_patterns = [
-            dict(
-                database=r.database_pattern,
-                schema=r.schema_pattern,
-                name=r.relation_pattern) for r in config.specified_relations]
 
     def _apply_specifications(
             self,
@@ -145,9 +136,6 @@ class SnowShuGraph:
                                    direction=edge['direction'],
                                    remote_attribute=edge['remote_attribute'],
                                    local_attribute=edge['local_attribute'])
-        if not graph.is_directed():
-            raise ValueError(
-                'The graph created by the specified trail path is not directed (circular reference detected).')
         return graph
 
     def get_graphs(self) -> tuple:
@@ -201,7 +189,16 @@ class SnowShuGraph:
                 schema=r.schema_pattern,
                 name=r.relation_pattern) for r in config.specified_relations]
 
-        all_patterns = approved_default_patterns + approved_specified_patterns
+        approved_second_level_specified_patterns = [
+            dict(
+                database=lower_level.database_pattern if lower_level.database_pattern else upper_level.database_pattern,
+                schema=lower_level.schema_pattern if lower_level.schema_pattern else upper_level.schema_pattern,
+                name=lower_level.relation_pattern
+            ) for upper_level in config.specified_relations
+            for lower_level in upper_level.relationships.bidirectional + upper_level.relationships.directional
+        ]
+
+        all_patterns = approved_default_patterns + approved_specified_patterns +approved_second_level_specified_patterns
         logger.debug(f'All config primary patterns: {all_patterns}')
         return all_patterns
 
