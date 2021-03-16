@@ -10,7 +10,7 @@ class BernoulliSampleMethod(BaseSampleMethod):
 
     Example:
         ``BernoulliSampleMethod(30)`` would give you a sample derived of aprox. 30 rows.
-        ``BernoulliSampleMethod(0.3,units='probability') would give you a sample aprox. 30% of the population size.
+        ``BernoulliSampleMethod(0.3,units='probability')`` would give you a sample aprox. 30% of the population size.
     """
     name = 'BERNOULLI'
 

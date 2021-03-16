@@ -4,8 +4,10 @@ from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from snowshu.samplings.sample_sizes import BruteForceSampleSize
 
 class BruteForceSampling(BaseSampling):
-    """Heuristic sampling using raw % size for sample size and :class:`Bernoulli <snowshu.samplings.sample_methods.bernoulli_sample_method.BernoulliSampleMethod>` sampling.
-    
+    """
+    Heuristic sampling using raw % size for sample size and :class:`Bernoulli
+    <snowshu.samplings.sample_methods.bernoulli_sample_method.BernoulliSampleMethod>` sampling.
+
     Args:
         probability: The % sample size desired in decimal format from 0.01 to 0.99. Default 10%.
         min_sample_size: The minimum number of records to retrieve from the population. Default 1000.

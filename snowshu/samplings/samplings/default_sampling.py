@@ -4,10 +4,13 @@ from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from snowshu.samplings.sample_sizes import CochransSampleSize
 
 class DefaultSampling(BaseSampling):
-    """Basic sampling using :class:`Cochrans <snowshu.samplings.sample_sizes.cochrans_sample_size.CochransSampleSize>` theorum for sample size and :class:`Bernoulli <snowshu.samplings.sample_methods.bernoulli_sample_method.BernoulliSampleMethod>` sampling.
-    
-    This default sampling assumes high volitility in the population
-    
+    """
+    Basic sampling using :class:`Cochrans <snowshu.samplings.sample_sizes.cochrans_sample_size.CochransSampleSize>`
+    theorem for sample size and :class:`Bernoulli
+    <snowshu.samplings.sample_methods.bernoulli_sample_method.BernoulliSampleMethod>` sampling.
+
+    This default sampling assumes high volatility in the population
+
     Args:
         margin_of_error: The acceptable error % expressed in a decimal from 0.01 to 0.10 (1% to 10%). Default 0.02 (2%). `https://en.wikipedia.org/wiki/Margin_of_error`
         confidence: The confidence interval to be observed for the sample expressed in a decimal from 0.01 to 0.99 (1% to 99%). Default 0.99 (99%). `http://www.stat.yale.edu/Courses/1997-98/101/confint.htm`

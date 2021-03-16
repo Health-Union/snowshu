@@ -52,7 +52,8 @@ class BaseTargetAdapter(BaseSQLAdapter):
         For many target images some bash cleanup is required, such as remounting data or 
         setting envars. This method returns the ordered commands to do this finalization.
         
-        Note: These commands will be run using `bin/bash -c` execution.
+        .. note::
+            These commands will be run using `bin/bash -c` execution.
         
         Returns:
             a list of strings to be run against the container in order.
@@ -75,10 +76,10 @@ class BaseTargetAdapter(BaseSQLAdapter):
     def create_or_replace_view(self,relation)->None:
         """Creates a view of the specified relation in the target adapter.
 
-        Relation must have a valid ``view_ddl`` value that can be executed as a SELECT statement.        
+        Relation must have a valid ``view_ddl`` value that can be executed as a SELECT statement.
 
         Args:
-            relation: the :ref:`Relation <snowshu.core.models.relation.Relation>`__ object to be created as a view.
+            relation: the :class:`Relation <snowshu.core.models.relation.Relation>` object to be created as a view.
     
         """
         ddl_statement = f"""CREATE OR REPLACE VIEW

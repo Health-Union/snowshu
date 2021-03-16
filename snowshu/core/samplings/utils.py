@@ -7,7 +7,8 @@ if TYPE_CHECKING:
 
 
 def get_sampling_from_partial(partial: Union[dict, str]) -> Type["BaseSampling"]:
-    """takes a sampling config dict and returns an instance of
+    """
+    Takes a sampling config dict and returns an instance of
     :class:`BaseSampling <snowshu.core.samplings.base_sampling.BaseSampling>`
 
     This will accept either a string name of a sampling to invoke it with no params,
@@ -17,16 +18,11 @@ def get_sampling_from_partial(partial: Union[dict, str]) -> Type["BaseSampling"]
         partial: the portion of the configuration dict that creates the sampling.
 
     Example:
-        Invoking with a partial of ``"default"`` will return an instance of 
-        :class:`DefaultSampling <snowshu.samplings.default_sampling.DefaultSampling>` with all default values.
-        Invoking with a partial of 
-            ``{
-                "default":{
-                    "margin_of_error":0.03
-                }
-              }``
-        will return an instance of 
-        :class:`DefaultSampling <snowshu.samplings.default_sampling.DefaultSampling>` with margin_of_error set to 3%.
+        * Invoking with a partial of ``"default"`` will return an instance of
+          :class:`DefaultSampling <snowshu.samplings.default_sampling.DefaultSampling>` with all default values.
+        * Invoking with a partial of ``{"default": {"margin_of_error": 0.03}}``
+          will return an instance of
+          :class:`DefaultSampling <snowshu.samplings.default_sampling.DefaultSampling>` with margin_of_error set to 3%.
 
     Returns:
         The configured  :class:`DefaultSampling <snowshu.samplings.default_sampling.DefaultSampling>`.
