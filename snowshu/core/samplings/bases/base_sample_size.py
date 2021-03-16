@@ -4,7 +4,7 @@ class BaseSampleSize:
     """
 
     @property
-    def size(self)->int:
+    def size(self) -> int:
         """The sample size.
 
         Must return the sample size (integer count of elements) caluclated

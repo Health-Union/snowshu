@@ -1,21 +1,32 @@
 from importlib import import_module
 import re
-import yaml
 import os
 from pathlib import Path
-from typing import Optional, Any, Union, TextIO, Type
+from typing import Optional, \
+    Any, \
+    Union, \
+    TextIO, \
+    Type, \
+    TYPE_CHECKING
+import yaml
 from snowshu.logger import Logger
+if TYPE_CHECKING:
+    from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
+    from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
+    from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
+
+
 logger = Logger().logger
 
-def correct_case(val:str, upper:bool=True):
-    if any({val.isupper(),val.islower(),}) and \
-       re.fullmatch('^(\w|\s)*$',val):
+
+def correct_case(val: str, upper: bool = True):
+    if any({val.isupper(), val.islower()}) and \
+       re.fullmatch(r'^(\w|\s)*$', val):
         val = val.upper() if upper else val.lower()
     return val      
 
 
-
-def case_insensitive_dict_value(dictionary,caseless_key)->Any:
+def case_insensitive_dict_value(dictionary, caseless_key) -> Any:
     """finds a key in a dict without case sensitivity, returns value.
 
     Searches for the FIRST match (insensitive dict keys can have multiple matches) and returns that value.
@@ -26,9 +37,8 @@ def case_insensitive_dict_value(dictionary,caseless_key)->Any:
     RETURNS:
         the value of insensitive key. Raises KeyError if not found.
     """
-    lowered={key.lower():key for key in dictionary.keys()}
+    lowered = {key.lower(): key for key in dictionary.keys()}
     return dictionary[lowered[caseless_key.lower()]]    
-
 
 
 def key_for_value(dictionary, value):
@@ -43,21 +53,21 @@ def get_config_value(
         parent_name: Optional[str] = None) -> Any:
     try:
         return parent[key]
-    except KeyError as e:
+    except KeyError as err:
         if envar is not None and os.getenv(envar) is not None:
             return os.getenv(envar)
-        else:
-            message = f'Config issue: missing required attribute \
-{key+" from object "+parent_name if parent_name is not None else key}.'
+
+        message = (f'Config issue: missing required attribute'
+                   f'{key + " from object " + parent_name if parent_name is not None else key}.')
         logger.error(message)
-        raise e
+        raise err
 
 
 def load_from_file_or_path(loadable: Union[Path, str, TextIO]) -> dict:
     try:
-        with open(loadable) as f:
-            logger.debug(f'loading from file {f.name}')
-            loaded = yaml.safe_load(f)
+        with open(loadable) as file_obj:
+            logger.debug('loading from file %s', file_obj.name)
+            loaded = yaml.safe_load(file_obj)
     except TypeError:
         logger.debug('loading from file-like object...')
         loaded = yaml.safe_load(loadable)
@@ -65,11 +75,10 @@ def load_from_file_or_path(loadable: Union[Path, str, TextIO]) -> dict:
     return loaded
 
 
-
-def fetch_adapter( name:str,
-                   section:str)->Union[Type['BaseSourceAdapter'],Type['BaseTargetAdapter'],Type['BaseStorageAdapter']]:
+def fetch_adapter(name: str,
+                  section: str) -> Union[Type['BaseSourceAdapter'], Type['BaseTargetAdapter'], Type['BaseSQLAdapter']]:
     """Locates and returns the specified adapter.
-    
+
     Args:
         name: The name of the adapter to look up.
         section: One of ('source','target','storage').
@@ -79,6 +88,6 @@ def fetch_adapter( name:str,
     try:
         return getattr(import_module(f'snowshu.adapters.{section}_adapters'),
                        name.capitalize() + 'Adapter')
-    except AttributeError as e:
-        logger.critical(f'No {section} adapter found by the name of {name}')
-        raise e
+    except AttributeError as err:
+        logger.critical('No %s adapter found by the name of %s', section, name)
+        raise err

@@ -1,4 +1,3 @@
-from typing import Any
 
 
 class BaseSampleMethod:
@@ -9,4 +8,4 @@ class BaseSampleMethod:
         raise NotImplementedError("SampleMethod instances must have a name.")
 
     def __repr__(self) -> str:
-        return f"<SampleMethod self.name>"
+        return "<SampleMethod self.name>"

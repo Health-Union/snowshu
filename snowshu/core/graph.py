@@ -43,7 +43,6 @@ class SnowShuGraph:
         graph.add_nodes_from(included_relations)
         self.graph=self._apply_specifications(configs,graph, full_catalog)
 
-        
         logger.info(f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
 
         if not networkx.algorithms.is_directed_acyclic_graph(self.graph):
