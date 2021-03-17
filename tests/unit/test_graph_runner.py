@@ -29,7 +29,7 @@ def test_traverse_and_execute_analyze(stub_graph_set):
     dag_executable = GraphExecutable(dag, source_adapter, target_adapter, True)
 
     # longer dag
-    runner._traverse_and_execute(dag_executable, time())
+    runner._traverse_and_execute(dag_executable)
     for rel in dag.nodes:
         assert not isinstance(getattr(rel, 'data', None), pd.DataFrame)
         assert rel.source_extracted is True
@@ -47,7 +47,7 @@ def test_traverse_and_execute_analyze(stub_graph_set):
     iso_executable = GraphExecutable(iso, source_adapter, target_adapter, True)
     assert not isinstance(
         getattr(vals.iso_relation, 'data', None), pd.DataFrame)
-    runner._traverse_and_execute(iso_executable, time())
+    runner._traverse_and_execute(iso_executable)
     iso_relation = [node for node in iso.nodes][0]
     assert iso_relation.source_extracted is True
     assert iso_relation.target_loaded is False
