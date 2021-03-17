@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Development Workflow
 
 on:
   push:
@@ -17,6 +17,8 @@ jobs:
     - name: install docker-compose
       run: pip install --no-cache-dir docker-compose
     - name: Build the Docker image
-      run: docker-compose up -d -f docker-compose.yml
+      run: docker-compose up -d
     - name: Run Test
-      run: docker-compose exec -f docker-compose.yml -T snowshu py.test --cov=snowshu tests/unit
+      run: docker-compose exec -T snowshu py.test --cov=snowshu tests/unit
+    - name: Run Linter
+      run: docker-compose exec -T snowshu prospector
