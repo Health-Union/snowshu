@@ -15,7 +15,7 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: install docker-compose
+    - name: Install docker-compose
       run: pip install --no-cache-dir docker-compose
     - name: Build the Docker image
       run: docker-compose up -d
