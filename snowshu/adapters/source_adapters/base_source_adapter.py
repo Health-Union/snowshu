@@ -119,6 +119,8 @@ class BaseSourceAdapter(BaseSQLAdapter):
         """runs the query and closes the connection."""
         logger.debug('Beginning query execution...')
         start = time.time()
+        conn = None
+        cursor = None
         try:
             conn = self.get_connection()
             cursor = conn.connect()
