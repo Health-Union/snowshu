@@ -1,12 +1,14 @@
+from typing import List, Set
+
 import networkx
-from snowshu.exceptions import InvalidRelationshipException
-from snowshu.core.models.relation import Relation
+
 from snowshu.core.configuration_parser import Configuration
-from typing import Tuple, Set, List
+from snowshu.core.models.relation import (Relation,
+                                          at_least_one_full_pattern_match,
+                                          lookup_single_relation,
+                                          single_full_pattern_match)
+from snowshu.exceptions import InvalidRelationshipException
 from snowshu.logger import Logger
-from snowshu.core.models.relation import at_least_one_full_pattern_match,\
-    lookup_single_relation,\
-    single_full_pattern_match
 
 logger = Logger().logger
 
@@ -19,7 +21,7 @@ class SnowShuGraph:
 
     def build_graph(self, configs: Configuration) -> networkx.DiGraph:
         """Builds a directed graph per replica config.
-        
+
         Args:
             configs: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object.
 
@@ -31,9 +33,10 @@ class SnowShuGraph:
         full_catalog = configs.source_profile.adapter.build_catalog(
             patterns=self._build_sum_patterns_from_configs(configs),
             thread_workers=configs.threads)
-        ## set defaults for all relations in the catalog
-        [self._set_globals_for_node(relation,configs) for relation in full_catalog]
-        [self._set_overriding_params_for_node(relation,configs) for relation in full_catalog]
+        # set defaults for all relations in the catalog
+        for relation in full_catalog:
+            self._set_globals_for_node(relation, configs)
+            self._set_overriding_params_for_node(relation, configs)
 
         included_relations = self._filter_relations(
             full_catalog, self._build_sum_patterns_from_configs(configs))
@@ -41,40 +44,44 @@ class SnowShuGraph:
         # build graph and add edges
         graph = networkx.DiGraph()
         graph.add_nodes_from(included_relations)
-        self.graph=self._apply_specifications(configs,graph, full_catalog)
+        self.graph = self._apply_specifications(configs, graph, full_catalog)
 
-        logger.info(f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
+        logger.info(
+            f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
 
         if not networkx.algorithms.is_directed_acyclic_graph(self.graph):
             raise ValueError(
                 'The graph created by the specified trail path is not directed (circular reference detected).')
 
-    def _set_overriding_params_for_node(self,
-                                        relation:Relation,
-                                        configs:Configuration)->Relation:
+    @staticmethod
+    def _set_overriding_params_for_node(relation: Relation,
+                                        configs: Configuration) -> Relation:
         """Finds and applies specific params from config.
 
-        If multiple conflicting specific params are found they will be applied in descending order from the originating replica file.
+        If multiple conflicting specific params are found they will be applied in descending order from
+        the originating replica file.
 
         Args:
             relation: A :class:`Relation <snowshu.core.models.relation.Relation>` to be tested for specific configs.
-            configs: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object to search for matches and specified params.
+            configs: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object to search for
+                matches and specified params.
         Returns:
             The :class:`Relation <snowshu.core.models.relation.Relation>` with all updated params applied.
         """
         for pattern in configs.specified_relations:
             if single_full_pattern_match(relation,
                                          pattern):
-                for attr in ('unsampled','include_outliers',):
-                    pattern_val=getattr(pattern,attr,None)
-                    relation.__dict__[attr]=pattern_val if pattern_val is not None else relation.__dict__[attr]
-                
-                if getattr(pattern,'sampling',None) is not None:
-                    relation.sampling=pattern.sampling
-        return relation            
+                for attr in ('unsampled', 'include_outliers',):
+                    pattern_val = getattr(pattern, attr, None)
+                    relation.__dict__[
+                        attr] = pattern_val if pattern_val is not None else relation.__dict__[attr]
 
+                if getattr(pattern, 'sampling', None) is not None:
+                    relation.sampling = pattern.sampling
+        return relation
+
+    @staticmethod   # noqa mccabe: disable=MC0001
     def _apply_specifications(
-            self,
             configs: Configuration,
             graph: networkx.DiGraph,
             available_nodes: Set[Relation]) -> networkx.DiGraph:
@@ -90,7 +97,7 @@ class SnowShuGraph:
                     filter(
                         lambda x: single_full_pattern_match(
                             x,
-                            relation_dict),
+                            relation_dict),     # noqa pylint: disable=cell-var-from-loop
                         available_nodes))
                 for rel in unsampled_relations:
                     rel.unsampled = True
@@ -113,7 +120,7 @@ class SnowShuGraph:
                     filter(
                         lambda x: single_full_pattern_match(
                             x,
-                            relation_dict),
+                            relation_dict),     # noqa  pylint: disable=cell-var-from-loop
                         available_nodes))
                 for rel in downstream_relations:
                     # populate any string wildcard upstreams
@@ -124,10 +131,15 @@ class SnowShuGraph:
                         edge, available_nodes)
                     if upstream_relation is None:
                         raise ValueError(
-                            f'It looks like the wildcard relation {edge["database"]}.{edge["schema"]}.{edge["relation"]} was specified as a dependency, but it does not exist.')
+                            f'It looks like the wildcard relation '
+                            f'{edge["database"]}.{edge["schema"]}.{edge["relation"]} '
+                            f'was specified as a dependency, but it does not exist.')
                     if upstream_relation.is_view:
                         raise InvalidRelationshipException(
-                            f'Relation {upstream_relation.quoted_dot_notation} is a view, but has been specified as an upstream dependency for relation {relation.quoted_dot_notation}. View dependencies are not allowed by SnowShu.')
+                            f'Relation {upstream_relation.quoted_dot_notation} is a view, '
+                            f'but has been specified as an upstream dependency for '
+                            f'relation {relation.quoted_dot_notation}. '
+                            f'View dependencies are not allowed by SnowShu.')
                     if upstream_relation == rel:
                         continue
                     graph.add_edge(upstream_relation,
@@ -143,18 +155,19 @@ class SnowShuGraph:
             raise ValueError(
                 'Graph must be built before SnowShuGraph can get graphs from it.')
         # get isolates first
-        isodags = [i for i in networkx.isolates(self.graph)]
+        isodags = list(networkx.isolates(self.graph))
         logger.debug(f'created {len(isodags)} isolate dags.')
         # assemble undirected graphs
         ugraph = self.graph.to_undirected()
         ugraph.remove_nodes_from(isodags)
-        node_collections=self._split_dag_for_parallel(ugraph)
+        node_collections = self._split_dag_for_parallel(ugraph)
 
         dags = [networkx.DiGraph() for _ in range(len(isodags))]
-        [g.add_node(n) for g, n in zip(dags, isodags)]
+        for graph, node in zip(dags, isodags):
+            graph.add_node(node)
 
-        [dags.append(networkx.subgraph(self.graph, collection))
-         for collection in node_collections]
+        for collection in node_collections:
+            dags.append(networkx.subgraph(self.graph, collection))
 
         # set the views flag
         for dag in dags:
@@ -165,16 +178,21 @@ class SnowShuGraph:
 
         return tuple(dags)
 
-    def _split_dag_for_parallel(self,dag:networkx.DiGraph)->list:
+    @staticmethod
+    def _split_dag_for_parallel(dag: networkx.DiGraph) -> list:
         ugraph = dag.to_undirected()
-        all_paths=set([frozenset(networkx.shortest_path(ugraph, node).keys()) for node in ugraph])
+        all_paths = set(frozenset(networkx.shortest_path(ugraph, node).keys())
+                        for node in ugraph)
         return list(tuple(node) for node in all_paths)
 
-
-    def _build_sum_patterns_from_configs(
-            self, config: Configuration) -> List[dict]:
+    @staticmethod
+    def _build_sum_patterns_from_configs(config: Configuration) -> List[dict]:
         """creates pattern dictionaries to filter with to build the total
-        filtered catalog."""
+        filtered catalog.
+
+        Args:
+            config: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object.
+        """
         logger.debug('building sum patterns for configs...')
         approved_default_patterns = [dict(database=d.database_pattern,
                                           schema=s.schema_pattern,
@@ -197,31 +215,33 @@ class SnowShuGraph:
             for lower_level in upper_level.relationships.bidirectional + upper_level.relationships.directional
         ]
 
-        all_patterns = approved_default_patterns + approved_specified_patterns +approved_second_level_specified_patterns
+        all_patterns = approved_default_patterns + \
+            approved_specified_patterns + approved_second_level_specified_patterns
         logger.debug(f'All config primary patterns: {all_patterns}')
         return all_patterns
 
-    def _filter_relations(self, full_catalog: iter,
+    @staticmethod
+    def _filter_relations(full_catalog: iter,
                           patterns: dict) -> Set[Relation]:
         """applies patterns to the full catalog to build the filtered relation
         set."""
 
-        return set([filtered_relation for filtered_relation in \
-            set(filter(lambda rel : at_least_one_full_pattern_match(rel,patterns), full_catalog))])
-    
-    def _set_globals_for_node(self,relation:Relation,configs:Configuration)->Relation:
+        return set(filter(lambda rel: at_least_one_full_pattern_match(rel, patterns),
+                          full_catalog))
+
+    @staticmethod
+    def _set_globals_for_node(relation: Relation, configs: Configuration) -> Relation:
         """Sets the initial (default) node values from the config
-            
+
         ARGS:
             relation: the :class:`Relation <snowshu.core.models.relation>` to set values of.
-            configs: the :class"`Configuration <snowshu.core.configuration_parser.Configuration` object to derive default values from.
-        
+            configs: the :class:`Configuration <snowshu.core.configuration_parser.Configuration`
+                object to derive default values from.
+
         Returns:
             The updated :class:`Relation <snowshu.core.models.relation>`
         """
-        relation.sampling=configs.sampling
-        relation.include_outliers=configs.include_outliers
-        relation.max_number_of_outliers=configs.max_number_of_outliers
+        relation.sampling = configs.sampling
+        relation.include_outliers = configs.include_outliers
+        relation.max_number_of_outliers = configs.max_number_of_outliers
         return relation
-
-    

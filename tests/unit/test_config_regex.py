@@ -1,11 +1,13 @@
-import pytest
-import mock
 from io import StringIO
+
+import mock
+import pytest
 import yaml
-from snowshu.core.models import materializations as mz
-from snowshu.core.models import Relation
+
 from snowshu.core.configuration_parser import ConfigurationParser
 from snowshu.core.graph import SnowShuGraph
+from snowshu.core.models import Relation
+from snowshu.core.models import materializations as mz
 
 MOCKED_CONFIG = dict(name='test',
                      version='1',

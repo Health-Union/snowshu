@@ -1,10 +1,15 @@
+from typing import TYPE_CHECKING, Iterable, List
+
 import sqlalchemy
-from typing import List,Iterable
+
+from snowshu.adapters.target_adapters import BaseTargetAdapter
 from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
 from snowshu.core.models import materializations as mz
-from snowshu.core.models import data_types as dt
-from snowshu.adapters.target_adapters import BaseTargetAdapter
 from snowshu.logger import Logger
+
+if TYPE_CHECKING:
+    from snowshu.core.models.relation import Relation
+
 logger = Logger().logger
 
 
@@ -25,10 +30,14 @@ class PostgresAdapter(BaseTargetAdapter):
     def __init__(self):
         super().__init__()
 
-        self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port}'
-        self.DOCKER_READY_COMMAND = f'pg_isready -p {self._credentials.port} -h {self._credentials.host} -U {self._credentials.user} -d {self._credentials.database}'
+        self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port}' # noqa pylint: disable=invalid-name
+        self.DOCKER_READY_COMMAND = (f'pg_isready -p {self._credentials.port} ' # noqa pylint: disable=invalid-name
+                                     f'-h {self._credentials.host} '
+                                     f'-U {self._credentials.user} '
+                                     f'-d {self._credentials.database}')
 
-    def _create_snowshu_schema_statement(self) -> str:
+    @staticmethod
+    def _create_snowshu_schema_statement() -> str:
         return 'CREATE SCHEMA IF NOT EXISTS snowshu;'
 
     def create_database_if_not_exists(self, database: str) -> str:
@@ -40,14 +49,12 @@ class PostgresAdapter(BaseTargetAdapter):
         statement = f'CREATE DATABASE {database}'
         try:
             conn.execute(statement)
-        except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as e:
-            if (f'database "{database}" already exists' in str(e)) or (
-                    'duplicate key value violates unique constraint ' in str(e)):
-                logger.debug(
-                    f'Database {database} already exists, skipping.')
-                pass
+        except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as sql_errs:
+            if (f'database "{database}" already exists' in str(sql_errs)) or (
+                    'duplicate key value violates unique constraint ' in str(sql_errs)):
+                logger.debug('Database %s already exists, skipping.', database)
             else:
-                raise e
+                raise sql_errs
         return database
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
@@ -55,41 +62,40 @@ class PostgresAdapter(BaseTargetAdapter):
         statement = f'CREATE SCHEMA IF NOT EXISTS {schema}'
         try:
             conn.execute(statement)
-        except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as e:
-            if (f'Key (nspname)=({schema}) already exists' in str(e)) or (
-                    'duplicate key value violates unique constraint ' in str(e)):
-                logger.debug(
-                    f'Schema {database}.{schema} already exists, skipping.')
-                pass
+        except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as sql_errs:
+            if (f'Key (nspname)=({schema}) already exists' in str(sql_errs)) or (
+                    'duplicate key value violates unique constraint ' in str(sql_errs)):
+                logger.debug('Schema %s.%s already exists, skipping.', database, schema)
             else:
-                raise e
+                raise sql_errs
 
-
-    def image_finalize_bash_commands(self)->List[str]:
-        commands=list()
-        commands.append(f'mkdir /{DOCKER_REMOUNT_DIRECTORY}'),
+    @staticmethod
+    def image_finalize_bash_commands() -> List[str]:
+        commands = list()
+        commands.append(f'mkdir /{DOCKER_REMOUNT_DIRECTORY}')
         commands.append(f'cp -a /var/lib/postgresql/data/* /{DOCKER_REMOUNT_DIRECTORY}')
         return commands
-    
-    def docker_commit_changes(self)->str:
+
+    @staticmethod
+    def docker_commit_changes() -> str:
         """To finalize the image we need to set envars for the container."""
         return f"ENV PGDATA /{DOCKER_REMOUNT_DIRECTORY}"
 
-    def enable_cross_database(self,relations:Iterable['Relation'])->None:
-        unique_schemas = {(rel.database,rel.schema,) for rel in relations}
+    def enable_cross_database(self, relations: Iterable['Relation']) -> None:
+        unique_schemas = {(rel.database, rel.schema,) for rel in relations}
         unique_databases = {rel.database for rel in relations}
         unique_databases.add('snowshu')
-        unique_schemas.add(('snowshu','snowshu',))
+        unique_schemas.add(('snowshu', 'snowshu',))
 
-        def statement_runner(statement:str):
-            logger.info(f'executing statement `{statement}...`')
-            response=conn.execute(statement)
+        def statement_runner(statement: str):
+            logger.info('executing statement `%s...`', statement)
+            conn.execute(statement)
             logger.debug('Executed.')
-        
-        for db in unique_databases:
-            conn = self.get_connection(database_override=db)
+
+        for u_db in unique_databases:
+            conn = self.get_connection(database_override=u_db)
             statement_runner('CREATE EXTENSION postgres_fdw')
-            for remote_database in filter((lambda x : x!=db), unique_databases):
+            for remote_database in filter((lambda x: x != u_db), unique_databases): # noqa pylint: disable=cell-var-from-loop
                 statement_runner(f"""CREATE SERVER {remote_database}
 FOREIGN DATA WRAPPER postgres_fdw
 OPTIONS (dbname '{remote_database}',port '9999')""")
@@ -99,9 +105,8 @@ SERVER {remote_database}
 OPTIONS (user 'snowshu', password 'snowshu')""")
 
             for schema_database, schema in unique_schemas:
-                if schema_database != db:
+                if schema_database != u_db:
                     statement_runner(f'CREATE SCHEMA IF NOT EXISTS {schema_database}__{schema}')
 
                     statement_runner(f"""IMPORT FOREIGN SCHEMA {schema}
     FROM SERVER {schema_database} INTO {schema_database}__{schema} """)
-

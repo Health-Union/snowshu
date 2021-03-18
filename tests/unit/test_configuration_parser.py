@@ -1,16 +1,18 @@
-import mock
-import tempfile
 import json
-import pytest
-from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
-from tests.common import rand_string
+import os
+import tempfile
 from io import StringIO
 from pathlib import Path
-from jsonschema.exceptions import ValidationError
+
+import mock
+import pytest
 import yaml
+from jsonschema.exceptions import ValidationError
+
+from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.configuration_parser import ConfigurationParser
-import os
 from snowshu.samplings.samplings import DefaultSampling
+from tests.common import rand_string
 
 
 def test_fills_in_empty_source_values(stub_replica_configuration):

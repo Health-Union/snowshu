@@ -1,6 +1,8 @@
-import pytest
-from snowshu.samplings.samplings import DefaultSampling
 import mock
+import pytest
+
+from snowshu.samplings.samplings import DefaultSampling
+
 
 @pytest.fixture()
 def mock_args():

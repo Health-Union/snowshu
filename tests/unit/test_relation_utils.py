@@ -1,4 +1,5 @@
 import pytest
+
 from snowshu.core.models import relation
 from snowshu.core.models.materializations import TABLE
 

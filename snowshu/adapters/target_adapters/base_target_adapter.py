@@ -1,21 +1,26 @@
-from time import sleep
 import os
-from snowshu.core.utils import key_for_value, case_insensitive_dict_value
-from typing import Optional,List,Iterable
-from snowshu.adapters import BaseSQLAdapter
-from snowshu.configs import DOCKER_TARGET_PORT,\
-    DOCKER_TARGET_CONTAINER,\
-    DEFAULT_INSERT_CHUNK_SIZE,\
-    IS_IN_DOCKER
-from snowshu.core.models.credentials import USER, PASSWORD, HOST, PORT, DATABASE
-from snowshu.core.configuration_parser import Configuration
-from snowshu.core.models import Relation, Credentials, Attribute
-from snowshu.core.models import materializations as mz
-from snowshu.core.models import data_types as dt
-from snowshu.core.docker import SnowShuDocker
-from snowshu.logger import Logger
 from datetime import datetime
+from time import sleep
+from typing import TYPE_CHECKING, Iterable, List, Optional
+
 import pandas as pd
+
+from snowshu.adapters import BaseSQLAdapter
+from snowshu.configs import (DEFAULT_INSERT_CHUNK_SIZE,
+                             DOCKER_TARGET_CONTAINER, DOCKER_TARGET_PORT,
+                             IS_IN_DOCKER)
+from snowshu.core.docker import SnowShuDocker
+from snowshu.core.models import Attribute, Credentials, Relation
+from snowshu.core.models import data_types as dt
+from snowshu.core.models import materializations as mz
+from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, PORT,
+                                             USER)
+from snowshu.core.utils import case_insensitive_dict_value
+from snowshu.logger import Logger
+
+if TYPE_CHECKING:
+    from docker.models.containers import Container
+
 logger = Logger().logger
 
 
@@ -24,6 +29,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
     REQUIRED_CREDENTIALS = [USER, PASSWORD, HOST, PORT, DATABASE]
     ALLOWED_CREDENTIALS = list()
     DOCKER_TARGET_PORT = DOCKER_TARGET_PORT
+    container: Optional["Container"] = None
 
     def __init__(self):
         super().__init__()
@@ -37,29 +43,27 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
         self.credentials = self._generate_credentials()
 
-    def enable_cross_database(self,relations:Iterable['Relation'])->None:
+    def enable_cross_database(self, relations: Iterable['Relation']) -> None:
         """ Create x-database links, if available to the target.
-        
+
         Args:
             relations: an iterable of relations to collect databases and schemas from.
         """
         raise NotImplementedError()
 
-
-    def image_finalize_bash_commands(self)->List[str]:
+    def image_finalize_bash_commands(self) -> List[str]:
         """returns an ordered list of raw bash commands used to finalize the image.
 
         For many target images some bash cleanup is required, such as remounting data or 
         setting envars. This method returns the ordered commands to do this finalization.
-        
+
         .. note::
             These commands will be run using `bin/bash -c` execution.
-        
+
         Returns:
             a list of strings to be run against the container in order.
         """
         raise NotImplementedError()
-
 
     def create_database_if_not_exists(self, database: str) -> str:
         raise NotImplementedError()
@@ -73,14 +77,14 @@ class BaseTargetAdapter(BaseSQLAdapter):
         else:
             self.load_data_into_relation(relation)
 
-    def create_or_replace_view(self,relation)->None:
+    def create_or_replace_view(self, relation) -> None:
         """Creates a view of the specified relation in the target adapter.
 
         Relation must have a valid ``view_ddl`` value that can be executed as a SELECT statement.
 
         Args:
             relation: the :class:`Relation <snowshu.core.models.relation.Relation>` object to be created as a view.
-    
+
         """
         ddl_statement = f"""CREATE OR REPLACE VIEW
 {relation.quoted_dot_notation}
@@ -91,20 +95,22 @@ AS
                                      schema_override=relation.schema)
         try:
             engine.execute(ddl_statement)
-        except Exception as e:
-            logger.info(
-                f"Failed to create {relation.materialization.name} {relation.quoted_dot_notation}:{e}")
-            raise e
-        logger.info(f'Created relation {relation.quoted_dot_notation}')
+        except Exception as exc:
+            logger.info("Failed to create %s %s:%s", relation.materialization.name,
+                        relation.quoted_dot_notation,
+                        exc)
+            raise exc
+        logger.info('Created relation %s', relation.quoted_dot_notation)
 
     def load_data_into_relation(self, relation: Relation) -> None:
         engine = self.get_connection(database_override=relation.database,
                                      schema_override=relation.schema)
-        logger.info(
-            f'Loading data into relation {relation.quoted_dot_notation}...')
+        logger.info('Loading data into relation %s...', relation.quoted_dot_notation)
         try:
-            attribute_type_map={attr.name:attr.data_type.sqlalchemy_type for attr in relation.attributes}
-            data_type_map={col:case_insensitive_dict_value(attribute_type_map,col) for col in relation.data.columns.to_list()}
+            attribute_type_map = {attr.name: attr.data_type.sqlalchemy_type
+                                  for attr in relation.attributes}
+            data_type_map = {col: case_insensitive_dict_value(attribute_type_map, col)
+                             for col in relation.data.columns.to_list()}
             relation.data.to_sql(relation.name,
                                  engine,
                                  schema=relation.schema,
@@ -113,23 +119,21 @@ AS
                                  dtype=data_type_map,
                                  chunksize=DEFAULT_INSERT_CHUNK_SIZE,
                                  method='multi')
-        except Exception as e:
-            logger.info(
-                f"Failed to load data into {relation.quoted_dot_notation}:{e}")
-            raise e
-        logger.info(
-            f'Data loaded into relation {relation.quoted_dot_notation}')
+        except Exception as exc:
+            logger.info("Failed to load data into %s:%s", relation.quoted_dot_notation, exc)
+            raise exc
+        logger.info('Data loaded into relation %s', relation.quoted_dot_notation)
 
-    def initialize_replica(self,source_adapter_name:str) -> None:
+    def initialize_replica(self, source_adapter_name: str) -> None:
         """shimming but will want to move _init_image public with this
         interface.
-        
+
         Args:
             source_adapter_name: the classname of the source adapter
         """
         self._init_image(source_adapter_name)
 
-    def _init_image(self, source_adapter_name:str) -> None:
+    def _init_image(self, source_adapter_name: str) -> None:
         shdocker = SnowShuDocker()
         logger.info('Initializing target container...')
         self.container = shdocker.startup(
@@ -157,7 +161,7 @@ AS
         replica_image = shdocker.convert_container_to_replica(self.replica_meta['name'],
                                                               self.container,
                                                               self)
-        logger.info(f'Finalized replica image {self.replica_meta["name"]}')
+        logger.info('Finalized replica image %s', self.replica_meta["name"])
         return replica_image.tags[0]
 
     def _generate_credentials(self) -> Credentials:
@@ -173,10 +177,12 @@ AS
     def _build_conn_string_partial(
             self, dialect: str, database: Optional[str] = None) -> str:
         database = database if database is not None else self._credentials.database
-        conn_string = f"{self.dialect}://{self._credentials.user}:{self._credentials.password}@{self._credentials.host}:{self.DOCKER_TARGET_PORT}/{database}?"
+        conn_string = (f"{self.dialect}://{self._credentials.user}:{self._credentials.password}"
+                       f"@{self._credentials.host}:{self.DOCKER_TARGET_PORT}/{database}?")
         return conn_string, {USER, PASSWORD, HOST, PORT, DATABASE, }
 
-    def _build_snowshu_envars(self, snowshu_envars: list) -> list:
+    @staticmethod
+    def _build_snowshu_envars(snowshu_envars: list) -> list:
         """helper method to populate envars with `snowshu`"""
         return [f"{envar}=snowshu" for envar in snowshu_envars]
 
@@ -206,10 +212,10 @@ AS
         self.create_and_load_relation(relation)
 
     def create_function_if_available(self,
-                                     function:str, 
-                                     relations:Iterable['Relation'])->None:
+                                     function: str,
+                                     relations: Iterable['Relation']) -> None:
         """Applies all available source functions to target.
-        
+
         Looks for a function sql file in ./functions, executes against target for each db if it is.
 
         Args:
@@ -217,20 +223,20 @@ AS
             relations: An iterable of relations to apply the function to.
         """
         try:
-            functions_path=os.path.abspath(os.path.join(
-                                            os.path.dirname(__file__),
-                                            self.name + '_adapter',
-                                            'functions')) 
-            with open(os.path.join(functions_path, f'{function}.sql'),'r') as f:
-                function_sql=f.read()
+            functions_path = os.path.abspath(os.path.join(
+                                             os.path.dirname(__file__),
+                                             self.name + '_adapter',
+                                             'functions'))
+            with open(os.path.join(functions_path, f'{function}.sql'), 'r') as function_file:
+                function_sql = function_file.read()
 
-            unique_schemas = {(rel.database,rel.schema,) for rel in relations}
-            for db,schema in unique_schemas:
+            unique_schemas = {(rel.database, rel.schema,) for rel in relations}
+            for db, schema in unique_schemas:   # noqa pylint: disable=invalid-name
                 conn = self.get_connection(database_override=db,
                                            schema_override=schema)
-                logger.debug(f'Applying function {function} to "{db}"."{schema}"...')
+                logger.debug('Applying function %s to "%s"."%s"...', function, db, schema)
                 conn.execute(function_sql)
-                logger.debug(f'Function {function} added.')
+                logger.debug('Function %s added.', function)
         except FileNotFoundError:
-            logger.info(f'Function {function} is not implemented for target {self.CLASSNAME}.')
+            logger.info('Function %s is not implemented for target %s.', function, self.CLASSNAME)
             return    

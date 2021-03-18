@@ -1,9 +1,10 @@
 #!/usr/local/python3
+import logging
+import os
+
 import pandas as pd
 import sqlalchemy
 import yaml
-import logging
-import os
 
 raise NotImplementedError('THIS IS A WORK IN PROGRESS, DO NOT USE!')
 

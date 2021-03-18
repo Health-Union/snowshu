@@ -1,73 +1,76 @@
 import time
+from typing import TYPE_CHECKING, Any, List, Optional, Union
+
 import pandas as pd
 import sqlalchemy
 from overrides import overrides
-from snowshu.exceptions import TooManyRecords
 from sqlalchemy.pool import NullPool
-from typing import List, Union, Any, Optional, Iterable, Tuple
-from snowshu.core.models.attribute import Attribute
-from snowshu.core.models.relation import Relation
-from snowshu.adapters.source_adapters import BaseSourceAdapter
+
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
-from snowshu.logger import Logger, duration
+from snowshu.adapters.source_adapters import BaseSourceAdapter
+from snowshu.core.models.attribute import Attribute
+from snowshu.core.models.credentials import (ACCOUNT, DATABASE, PASSWORD, ROLE,
+                                             SCHEMA, USER, WAREHOUSE)
+from snowshu.core.models.relation import Relation
+from snowshu.exceptions import TooManyRecords
+from snowshu.logger import Logger
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
-from snowshu.core.models.credentials import USER, PASSWORD, ACCOUNT, DATABASE, SCHEMA, ROLE, WAREHOUSE
+
+if TYPE_CHECKING:
+    from snowshu.core.samplings.bases.base_sample_method import BaseSampleMethod
 logger = Logger().logger
 
 
 class SnowflakeAdapter(BaseSourceAdapter):
     """The Snowflake Data Warehouse source adapter.
-    
+
     Args:
         preserve_case: By default the adapter folds case-insensitive strings to lowercase.
                        If preserve_case is True,SnowShu will __not__ alter cases (dangerous!).
-    """ 
-    def __init__(self,preserve_case:bool=False):
-        super().__init__(preserve_case)
+    """
 
-    name='snowflake'
-    SUPPORTS_CROSS_DATABASE=True
-    SUPPORTED_FUNCTIONS=set(['ANY_VALUE','RLIKE'])
+    name = 'snowflake'
+    SUPPORTS_CROSS_DATABASE = True
+    SUPPORTED_FUNCTIONS = set(['ANY_VALUE', 'RLIKE'])
     SUPPORTED_SAMPLE_METHODS = (BernoulliSampleMethod,)
     REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
     ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
-    DEFAULT_CASE='lower' ## snowflake in-db is UPPER, but connector is actually lower :(
+    # snowflake in-db is UPPER, but connector is actually lower :(
+    DEFAULT_CASE = 'lower'
 
-
-    DATA_TYPE_MAPPINGS={
-        "array":dtypes.JSON,
-        "bigint":dtypes.BIGINT,
-        "binary":dtypes.BINARY,
-        "boolean":dtypes.BOOLEAN,
-        "char":dtypes.CHAR,
-        "character":dtypes.CHAR,
-        "date":dtypes.DATE,
-        "datetime":dtypes.DATETIME,
-        "decimal":dtypes.DECIMAL,
-        "double":dtypes.FLOAT,
-        "double precision":dtypes.FLOAT,
-        "float":dtypes.FLOAT,
-        "float4":dtypes.FLOAT,
-        "float8":dtypes.FLOAT,
-        "int":dtypes.BIGINT,
-        "integer":dtypes.BIGINT,
-        "number":dtypes.BIGINT,
-        "numeric":dtypes.NUMERIC,
-        "object":dtypes.JSON,
-        "real":dtypes.FLOAT,
-        "smallint":dtypes.BIGINT,
-        "string":dtypes.VARCHAR,
-        "text":dtypes.VARCHAR,
-        "time":dtypes.TIME,
-        "timestamp":dtypes.TIMESTAMP_NTZ,
-        "timestamp_ntz":dtypes.TIMESTAMP_NTZ,
-        "timestamp_ltz":dtypes.TIMESTAMP_TZ,
-        "timestamp_tz":dtypes.TIMESTAMP_TZ,
-        "varbinary":dtypes.BINARY,
-        "varchar":dtypes.VARCHAR,
-        "variant":dtypes.JSON}
-
+    DATA_TYPE_MAPPINGS = {
+        "array": dtypes.JSON,
+        "bigint": dtypes.BIGINT,
+        "binary": dtypes.BINARY,
+        "boolean": dtypes.BOOLEAN,
+        "char": dtypes.CHAR,
+        "character": dtypes.CHAR,
+        "date": dtypes.DATE,
+        "datetime": dtypes.DATETIME,
+        "decimal": dtypes.DECIMAL,
+        "double": dtypes.FLOAT,
+        "double precision": dtypes.FLOAT,
+        "float": dtypes.FLOAT,
+        "float4": dtypes.FLOAT,
+        "float8": dtypes.FLOAT,
+        "int": dtypes.BIGINT,
+        "integer": dtypes.BIGINT,
+        "number": dtypes.BIGINT,
+        "numeric": dtypes.NUMERIC,
+        "object": dtypes.JSON,
+        "real": dtypes.FLOAT,
+        "smallint": dtypes.BIGINT,
+        "string": dtypes.VARCHAR,
+        "text": dtypes.VARCHAR,
+        "time": dtypes.TIME,
+        "timestamp": dtypes.TIMESTAMP_NTZ,
+        "timestamp_ntz": dtypes.TIMESTAMP_NTZ,
+        "timestamp_ltz": dtypes.TIMESTAMP_TZ,
+        "timestamp_tz": dtypes.TIMESTAMP_TZ,
+        "varbinary": dtypes.BINARY,
+        "varchar": dtypes.VARCHAR,
+        "variant": dtypes.JSON}
 
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.VIEW}
@@ -76,7 +79,8 @@ class SnowflakeAdapter(BaseSourceAdapter):
     def _get_all_databases(self) -> List[str]:
         """ Use the SHOW api to get all the available db structures."""
         logger.debug('Collecting databases from snowflake...')
-        show_result = tuple(self._safe_query("SHOW TERSE DATABASES")['name'].tolist())
+        show_result = tuple(self._safe_query(
+            "SHOW TERSE DATABASES")['name'].tolist())
         databases = list(set(show_result))
         logger.debug(f'Done. Found {len(databases)} databases.')
         return databases
@@ -84,12 +88,15 @@ class SnowflakeAdapter(BaseSourceAdapter):
     @overrides
     def _get_all_schemas(self, database: str) -> List[str]:
         logger.debug(f'Collecting schemas from {database} in snowflake...')
-        show_result = self._safe_query(f'SHOW TERSE SCHEMAS IN DATABASE {database}')['name'].tolist()
+        show_result = self._safe_query(f'SHOW TERSE SCHEMAS IN DATABASE {database}')[
+            'name'].tolist()
         schemas = set(show_result)
-        logger.debug(f'Done. Found {len(schemas)} schemas in {database} database.')
+        logger.debug(
+            f'Done. Found {len(schemas)} schemas in {database} database.')
         return schemas
 
-    def population_count_statement(self,relation:Relation)->str:
+    @staticmethod
+    def population_count_statement(relation: Relation) -> str:
         """creates the count * statement for a relation
 
         Args:
@@ -99,14 +106,16 @@ class SnowflakeAdapter(BaseSourceAdapter):
         """
         return f"SELECT COUNT(*) FROM {relation.quoted_dot_notation}"
 
-    def view_creation_statement(self, relation: Relation) -> str:
+    @staticmethod
+    def view_creation_statement(relation: Relation) -> str:
         return f"""
-SELECT    
+SELECT
 SUBSTRING(GET_DDL('view','{relation.quoted_dot_notation}'),
 POSITION(' AS ' IN UPPER(GET_DDL('view','{relation.quoted_dot_notation}')))+3)
 """
 
-    def unsampled_statement(self, relation: Relation) -> str:
+    @staticmethod
+    def unsampled_statement(relation: Relation) -> str:
         return f"""
 SELECT
     *
@@ -114,10 +123,10 @@ FROM
     {relation.quoted_dot_notation}
 """
 
-    def directionally_wrap_statement(
-            self, sql: str, 
-            relation:Relation, 
-            sample_type: Union['BaseSampleMethod', None]) -> str:
+    def directionally_wrap_statement(self,
+                                     sql: str,
+                                     relation: Relation,
+                                     sample_type: Optional['BaseSampleMethod']) -> str:
         if sample_type is None:
             return sql
 
@@ -139,7 +148,8 @@ FROM
 {relation.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
 """
 
-    def analyze_wrap_statement(self, sql: str, relation: Relation) -> str:
+    @staticmethod
+    def analyze_wrap_statement(sql: str, relation: Relation) -> str:
         return f"""
 WITH
     {relation.scoped_cte('SNOWSHU_COUNT_POPULATION')} AS (
@@ -182,20 +192,20 @@ FROM
             query += f"{self._sample_type_to_query_sql(sample_type)}"
         return query
 
-    def union_constraint_statement( self,
-                                    subject:Relation,
-                                    constraint:Relation,
-                                    subject_key:str,
-                                    constraint_key:str,
-                                    max_number_of_outliers:int)->str:
-        return f"""       
+    @staticmethod
+    def union_constraint_statement(subject: Relation,
+                                   constraint: Relation,
+                                   subject_key: str,
+                                   constraint_key: str,
+                                   max_number_of_outliers: int) -> str:
+        return f"""
 (SELECT
     *
 FROM
 {subject.quoted_dot_notation}
-WHERE 
+WHERE
     {subject_key}
-NOT IN 
+NOT IN
 (SELECT
     {constraint_key}
 FROM
@@ -203,18 +213,18 @@ FROM
 LIMIT {max_number_of_outliers})
 """
 
-    def upstream_constraint_statement(  self,
-                                        relation:Relation,
-                                        local_key:str,
-                                        remote_key:str)->str:
+    @staticmethod
+    def upstream_constraint_statement(relation: Relation,
+                                      local_key: str,
+                                      remote_key: str) -> str:
         """ builds upstream where constraints against downstream full population"""
-        return f" {local_key} in (SELECT {remote_key} FROM {relation.quoted_dot_notation})" 
+        return f" {local_key} in (SELECT {remote_key} FROM {relation.quoted_dot_notation})"
 
-    def predicate_constraint_statement( self,
-                                        relation:Relation,      
-                                        analyze:bool,
-                                        local_key:str,
-                                        remote_key:str)->str:
+    @staticmethod
+    def predicate_constraint_statement(relation: Relation,
+                                       analyze: bool,
+                                       local_key: str,
+                                       remote_key: str) -> str:
         """builds 'where' strings"""
         constraint_sql = str()
         if analyze:
@@ -228,30 +238,32 @@ LIMIT {max_number_of_outliers})
                 constraint_set = [
                     quoted(val) for val in relation.data[remote_key].unique()]
                 constraint_sql = ','.join(constraint_set)
-            except KeyError as e:
+            except KeyError as err:
                 logger.critical(
-                    f'failed to build predicates for {relation.dot_notation}: remote key {remote_key} not in dataframe columns ({relation.data.columns})')
-                raise e
+                    f'failed to build predicates for {relation.dot_notation}: '
+                    f'remote key {remote_key} not in dataframe columns ({relation.data.columns})')
+                raise err
 
         return f"{local_key} IN ({constraint_sql}) "
 
-    def _sample_type_to_query_sql(self, sample_type: 'BaseSampleMethod') -> str:
+    @staticmethod
+    def _sample_type_to_query_sql(sample_type: 'BaseSampleMethod') -> str:
         if sample_type.name == 'BERNOULLI':
-            qualifier=sample_type.probability if sample_type.probability\
-                        else str(sample_type.rows) + ' ROWS'
+            qualifier = sample_type.probability if sample_type.probability\
+                else str(sample_type.rows) + ' ROWS'
             return f"SAMPLE BERNOULLI ({qualifier})"
-        elif sample_type.name == 'SYSTEM':
+        if sample_type.name == 'SYSTEM':
             return f"SAMPLE SYSTEM ({sample_type.probability})"
-        else:
-            message = f"{sample_type.name} is not supported for SnowflakeAdapter"
-            logger.error(message)
-            raise NotImplementedError(message)
+
+        message = f"{sample_type.name} is not supported for SnowflakeAdapter"
+        logger.error(message)
+        raise NotImplementedError(message)
 
     @overrides
-    def _build_conn_string(self, overrides: Optional[dict] = {}) -> str:
+    def _build_conn_string(self, overrides: Optional[dict] = None) -> str:  # noqa pylint: disable=redefined-outer-name
         """overrides the base conn string."""
-        conn_parts = [
-            f"snowflake://{self.credentials.user}:{self.credentials.password}@{self.credentials.account}/{self.credentials.database}/"]
+        conn_parts = [f"snowflake://{self.credentials.user}:{self.credentials.password}"
+                      f"@{self.credentials.account}/{self.credentials.database}/"]
         conn_parts.append(
             self.credentials.schema if self.credentials.schema is not None else '')
         get_args = list()
@@ -259,12 +271,14 @@ LIMIT {max_number_of_outliers})
             if self.credentials.__dict__[arg] is not None:
                 get_args.append(f"{arg}={self.credentials.__dict__[arg]}")
 
-        get_string = "?" + "&".join([arg for arg in get_args])
+        get_string = "?" + "&".join(get_args)
         return (''.join(conn_parts)) + get_string
 
     @overrides
-    def _get_relations_from_database(self, schema_obj: BaseSourceAdapter._DatabaseObject) -> List[Relation]:
-        quoted_database = schema_obj.full_relation.quoted(schema_obj.full_relation.database)  # quoted db name
+    def _get_relations_from_database(
+            self, schema_obj: BaseSourceAdapter._DatabaseObject) -> List[Relation]:
+        quoted_database = schema_obj.full_relation.quoted(
+            schema_obj.full_relation.database)  # quoted db name
         relation_database = schema_obj.full_relation.database  # case corrected db name
         case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schame name
         relations_sql = f"""
@@ -296,7 +310,8 @@ LIMIT {max_number_of_outliers})
             '.' +
             relations_frame['relation']).unique().tolist()
         logger.debug(
-            f'Done collecting relations. Found a total of {len(unique_relations)} unique relations in database {quoted_database}')
+            f'Done collecting relations. Found a total of {len(unique_relations)} '
+            f'unique relations in database {quoted_database}')
         relations = list()
         for relation in unique_relations:
             logger.debug(f'Building relation { quoted_database + "." + relation }...')
@@ -313,9 +328,9 @@ LIMIT {max_number_of_outliers})
                     ))
 
             relation = Relation(relation_database,
-                                self._correct_case(attribute.schema),
-                                self._correct_case(attribute.relation),
-                                self.MATERIALIZATION_MAPPINGS[attribute.materialization],
+                                self._correct_case(attribute.schema),   # noqa pylint: disable=undefined-loop-variable
+                                self._correct_case(attribute.relation),   # noqa pylint: disable=undefined-loop-variable
+                                self.MATERIALIZATION_MAPPINGS[attribute.materialization],   # noqa pylint: disable=undefined-loop-variable
                                 attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')
             relations.append(relation)
@@ -326,7 +341,8 @@ LIMIT {max_number_of_outliers})
 
     @overrides
     def _count_query(self, query: str) -> int:
-        count_sql = f"WITH __SNOWSHU__COUNTABLE__QUERY as ({query}) SELECT COUNT(*) AS count FROM __SNOWSHU__COUNTABLE__QUERY"
+        count_sql = f"WITH __SNOWSHU__COUNTABLE__QUERY as ({query}) \
+                    SELECT COUNT(*) AS count FROM __SNOWSHU__COUNTABLE__QUERY"
         count = int(self._safe_query(count_sql).iloc[0]['count'])
         return count
 
@@ -342,7 +358,8 @@ LIMIT {max_number_of_outliers})
             logger.debug(
                 f'Query count safe at {count} rows in {time.time()-start_time} seconds.')
         except AssertionError:
-            message = f'failed to execute query, result would have returned {count} rows but the max allowed rows for this type of query is {max_count}.'
+            message = (f'failed to execute query, result would have returned {count} rows '
+                       f'but the max allowed rows for this type of query is {max_count}.')
             logger.error(message)
             logger.debug(f'failed sql: {query}')
             raise TooManyRecords(message)
@@ -364,7 +381,7 @@ LIMIT {max_number_of_outliers})
                 'Adapter.get_connection called before setting Adapter.credentials')
 
         logger.debug(f'Aquiring {self.CLASSNAME} connection...')
-        overrides = dict(
+        overrides = dict(       # noqa pylint: disable=redefined-outer-name 
             (k,
              v) for (
                 k,

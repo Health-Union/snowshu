@@ -1,7 +1,7 @@
+from datetime import datetime, timedelta
+from random import randrange
 from string import ascii_lowercase
-from random import randrange
-from datetime import datetime,timedelta
-from random import randrange
+
 
 def rand_string(length: int) -> str:
     result = list()

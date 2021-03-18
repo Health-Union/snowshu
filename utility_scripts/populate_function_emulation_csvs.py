@@ -6,8 +6,9 @@ CSV mappings between our emulations and the functions.
 """
 
 import os
-from bs4 import BeautifulSoup
+
 import requests
+from bs4 import BeautifulSoup
 
 
 class PGScraper:
@@ -54,13 +55,14 @@ class PGScraper:
             return "{res}".format(res=res)
         return ""
 
-    def get_pg_methods(self): 
-        pg_command_content = self.scrape('https://www.postgresql.org/docs/current/sql-commands.html')
+    def get_pg_methods(self):
+        pg_command_content = self.scrape(
+            'https://www.postgresql.org/docs/current/sql-commands.html')
         self.pg_methods = dict(self.uppers(
             [(sql.text.strip(), f'https://www.postgresql.org/docs/current/{sql["href"]}',)
              for sql in pg_command_content.find_all("div", class_="toc")[0].find_all('a', href=True)]))
 
-        def subindexes(url):
+        def _subindexes(url):
             url_scrape = self.scrape(url)
             tuples = []
             for table in url_scrape.find_all('table'):
@@ -69,7 +71,9 @@ class PGScraper:
             tuples = self.uppers(tuples)
             for key, value in tuples:
                 self.pg_methods[key] = value
-        [subindexes(index) for index in self.subindex_urls] # noqa pylint: disable=expression-not-assigned
+
+        for index in self.subindex_urls:
+            _subindexes(index)
 
     def get_snowshu_emulations(self):
         pg_function_filepath = 'snowshu/adapters/target_adapters/postgres_adapter/functions/'
@@ -88,13 +92,15 @@ class PGScraper:
                         comment += line
                     if '*/' in line:
                         in_comment = False
-                        continue      
-                function_comments.append(comment.replace('/*', '').replace('*/', ''))
+                        continue
+                function_comments.append(
+                    comment.replace('/*', '').replace('*/', ''))
 
         function_keys = map(lambda x: x[:-4], function_files)
         bb_prefix = 'https://bitbucket.org/healthunion/snowshu/src/master/snowshu/adapters/target_adapters/functions/'
         function_urls = map(lambda x: bb_prefix + x, function_files)
-        self.snowshu_emulations = dict(zip(function_keys, zip(function_urls, function_comments)))
+        self.snowshu_emulations = dict(
+            zip(function_keys, zip(function_urls, function_comments)))
 
     @staticmethod
     def scrape(url):
@@ -110,7 +116,8 @@ def main():
 
     scraper = PGScraper()
 
-    snowflake = scraper.scrape('https://docs.snowflake.net/manuals/sql-reference/functions-all.html')
+    snowflake = scraper.scrape(
+        'https://docs.snowflake.net/manuals/sql-reference/functions-all.html')
     chained = [(sql.text.strip(), f'https://docs.snowflake.net/manuals/sql-reference/{sql.parent["href"]}',)
                for sql in snowflake.find_all("table")[0].find_all('span', class_="doc")]
     unchained = set()
@@ -118,8 +125,10 @@ def main():
         splits = text.split(',')
         degenerated = {(sp, url,) for sp in splits}
         unchained = unchained.union(degenerated)
-    unchained = set(map((lambda x: (x[0].replace('[ NOT ]', '').strip(), x[1],)), unchained))
-    snowflake_methods = dict(scraper.uppers(filter((lambda x: 'Functions' not in x[0]), unchained)))
+    unchained = set(
+        map((lambda x: (x[0].replace('[ NOT ]', '').strip(), x[1],)), unchained))
+    snowflake_methods = dict(scraper.uppers(
+        filter((lambda x: 'Functions' not in x[0]), unchained)))
     meshed = []
     in_order = sorted(snowflake_methods.items(), key=lambda x: x[0])
 
@@ -129,7 +138,8 @@ def main():
                '{emulation_val},'
                '"{comment_val}"\n').format(snowflake_function=key,
                                            snowflake_url=value,
-                                           postgres_val=scraper.find_with_url(scraper.pg_methods, key),
+                                           postgres_val=scraper.find_with_url(
+                                               scraper.pg_methods, key),
                                            emulation_val=scraper.find_with_url(scraper.snowshu_emulations,
                                                                                key.upper(), 0),
                                            comment_val=scraper.find_comment(scraper.snowshu_emulations,
@@ -137,7 +147,8 @@ def main():
         meshed.append(row)
 
     with open('docs/source/user_documentation/snowflake_function_map.csv', 'w') as docs_file:
-        docs_file.write('"Snowflake Function","Postgresql Function","Replica Emulation","Notes"\n')
+        docs_file.write(
+            '"Snowflake Function","Postgresql Function","Replica Emulation","Notes"\n')
         for row in meshed:
             docs_file.write(row)
 

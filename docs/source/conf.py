@@ -1,6 +1,8 @@
+import os
+import sys
+
 import sphinx_rtd_theme
 
-import sys, os
 sys.path.insert(0,(os.path.abspath(os.path.join('..','snowshu'))))
 sys.path.insert(0,(os.path.abspath('..')))
 
@@ -16,4 +18,3 @@ extensions = [
 
 html_theme = "sphinx_rtd_theme"
 project= "SnowShu"
-

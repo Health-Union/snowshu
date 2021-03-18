@@ -1,6 +1,8 @@
 from dataclasses import dataclass
-from tests.common import random_date
 from datetime import datetime
+
+from tests.common import random_date
+
 
 @dataclass
 class MockImage:
@@ -25,5 +27,3 @@ class MockImageFactory:
         return MockImage([name],
                          labels,
                          dict(Metadata=dict(LastTagTime=datetime.strftime(random_date(),'%Y-%m-%dT%H:%M:%S.%fZ'))))
-                         
-

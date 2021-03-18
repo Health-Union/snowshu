@@ -1,15 +1,13 @@
-from importlib import import_module
-import re
 import os
+import re
+from importlib import import_module
 from pathlib import Path
-from typing import Optional, \
-    Any, \
-    Union, \
-    TextIO, \
-    Type, \
-    TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional, TextIO, Type, Union
+
 import yaml
+
 from snowshu.logger import Logger
+
 if TYPE_CHECKING:
     from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
     from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
@@ -23,7 +21,7 @@ def correct_case(val: str, upper: bool = True):
     if any({val.isupper(), val.islower()}) and \
        re.fullmatch(r'^(\w|\s)*$', val):
         val = val.upper() if upper else val.lower()
-    return val      
+    return val
 
 
 def case_insensitive_dict_value(dictionary, caseless_key) -> Any:
@@ -38,7 +36,7 @@ def case_insensitive_dict_value(dictionary, caseless_key) -> Any:
         the value of insensitive key. Raises KeyError if not found.
     """
     lowered = {key.lower(): key for key in dictionary.keys()}
-    return dictionary[lowered[caseless_key.lower()]]    
+    return dictionary[lowered[caseless_key.lower()]]
 
 
 def key_for_value(dictionary, value):

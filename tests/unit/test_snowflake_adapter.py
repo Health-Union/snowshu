@@ -1,10 +1,11 @@
 import mock
+
 from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
-from tests.common import rand_string, query_equalize
-from snowshu.core.models.relation import Relation
 from snowshu.core.models.credentials import Credentials
 from snowshu.core.models.materializations import TABLE
+from snowshu.core.models.relation import Relation
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
+from tests.common import query_equalize, rand_string
 
 
 def test_conn_string_basic():

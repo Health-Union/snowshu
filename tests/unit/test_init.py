@@ -1,15 +1,17 @@
-from logging import DEBUG
-from snowshu.logger import Logger
-from pathlib import Path
-from mock import patch, MagicMock
-from tests.common import rand_string
-from click.testing import CliRunner
-import pytest
-import mock
 import os
 from datetime import datetime, timedelta
+from logging import DEBUG
+from pathlib import Path
+
+import mock
+import pytest
+from click.testing import CliRunner
+from mock import MagicMock, patch
+
 from snowshu.core import main
 from snowshu.formats import DEFAULT_TAG_FORMAT
+from snowshu.logger import Logger
+from tests.common import rand_string
 
 
 def test_init_cli_happy_path(tmpdir):
@@ -87,4 +89,3 @@ def test_analyze_does_all_but_run(replica, create_relation):
         assert '().analyze' == replica_methods[2][0]
         replica.assert_called_once()
         create_relation.assert_not_called()
-

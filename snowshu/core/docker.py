@@ -1,10 +1,16 @@
 from __future__ import annotations
-from typing import Type, Optional,List
-import docker
+
 import re
-from snowshu.configs import DOCKER_NETWORK,\
-    DOCKER_TARGET_CONTAINER
+from typing import TYPE_CHECKING, List, Optional, Type
+
+import docker
+
+from snowshu.configs import DOCKER_NETWORK, DOCKER_TARGET_CONTAINER
 from snowshu.logger import Logger
+
+if TYPE_CHECKING:
+    from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
+
 logger = Logger().logger
 
 
@@ -32,21 +38,23 @@ class SnowShuDocker:
         replica = container.commit(
             repository=self.sanitize_replica_name(replica_name),
             changes=target_adapter.docker_commit_changes()
-            )
+        )
         logger.info(f'Replica image {replica.tags[0]} created. Cleaning up...')
         self.remove_container(container.name)
 
         return replica
-    ## TODO: this is all holdover from storages, and can be greatly simplified.
-    def get_stopped_container(
+    # TODO: this is all holdover from storages, and can be greatly simplified.
+    def get_stopped_container(      # noqa pylint: disable=too-many-arguments
             self,
             image,
             start_command: str,
             envars: list,
             port: int,
             name: Optional[str] = None,
-            labels: dict = dict(),
+            labels: dict = None,
             protocol: str = "tcp") -> docker.models.containers.Container:
+        if not labels:
+            labels = dict()
         name = name if name else self.replica_image_name_to_common_name(image)
         logger.info(f'Finding base image {image}...')
         try:
@@ -75,14 +83,14 @@ class SnowShuDocker:
         logger.info(f"Created stopped container {container.name}.")
         return container
 
-    def startup(self,
+    def startup(self,   # noqa pylint: disable=too-many-arguments
                 image: str,
                 start_command: str,
                 port: int,
                 target_adapter: str,
                 source_adapter: str,
                 envars: list,
-                protocol: str = "tcp") -> docker.models.containers.Container:
+                protocol: str = "tcp") -> docker.models.containers.Container:   # noqa pylint: disable=unused-argument
 
         container = self.get_stopped_container(
             image,
@@ -111,12 +119,11 @@ class SnowShuDocker:
                 removable.kill()
             except docker.errors.APIError:
                 logger.info(f'Container {container} already stopped.')
-                pass
+
             removable.remove()
             logger.info(f'Container {container} removed.')
         except docker.errors.NotFound:
             logger.info(f'Container {container} not found, skipping.')
-            pass  # already removed.
 
     def _get_or_create_network(
             self, name: str) -> docker.models.networks.Network:
@@ -145,7 +152,8 @@ class SnowShuDocker:
             logger.critical(message)
             raise AttributeError(message)
 
-    def sanitize_replica_name(self, name: str) -> str:
+    @staticmethod
+    def sanitize_replica_name(name: str) -> str:
         """Much more strict than standard docker tag names.
 
         ReplicaFactory names are coerced into ASCII lowercase, dash-
@@ -160,21 +168,23 @@ class SnowShuDocker:
         final_image = prefix + image
         return final_image
 
-    def replica_image_name_to_common_name(self, name: str) -> str:
+    @staticmethod
+    def replica_image_name_to_common_name(name: str) -> str:
         """reverse the replica sanitizer."""
-        sr='snowshu_replica_'
-        return ':'.join((sr.join(name.split(sr)[1:])).split(':')[:-1])
+        sr_delimeter = 'snowshu_replica_'
+        return ':'.join((sr_delimeter.join(name.split(sr_delimeter)[1:])).split(':')[:-1])
 
-    def _remount_replica_data(
-            self,
-            container: docker.models.containers.Container,
-            target_adapter: Type['BaseTargetAdapter']) -> None:
+    @staticmethod
+    def _remount_replica_data(container: docker.models.containers.Container,
+                              target_adapter: Type['BaseTargetAdapter']) -> None:
         logger.info('Remounting data inside target...')
         for command in target_adapter.image_finalize_bash_commands():
-            response = container.exec_run(f"/bin/bash -c '{command}'", tty=True)
+            response = container.exec_run(
+                f"/bin/bash -c '{command}'", tty=True)
             if response[0] > 0:
                 raise OSError(response[1])
         logger.info('Data remounted, image ready to be finalized.')
 
-    def find_snowshu_images(self)->List[docker.models.images.Image]:
-        return [img for img in filter((lambda x : len(x.tags) > 0),self.client.images.list(filters=dict(label='snowshu_replica=true')))]
+    def find_snowshu_images(self) -> List[docker.models.images.Image]:
+        return list(filter((lambda x: len(x.tags) > 0), self.client.images.list(
+            filters=dict(label='snowshu_replica=true'))))

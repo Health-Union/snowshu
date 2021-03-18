@@ -1,18 +1,19 @@
-from typing import Union, \
-    Type, \
-    TYPE_CHECKING
+from typing import TYPE_CHECKING, Type, Union
+
 import snowshu.samplings.samplings as all_samplings
+
 if TYPE_CHECKING:
     from snowshu.core.samplings.bases.base_sampling import BaseSampling
 
 
-def get_sampling_from_partial(partial: Union[dict, str]) -> Type["BaseSampling"]:
+def get_sampling_from_partial(
+        partial: Union[dict, str]) -> Type["BaseSampling"]:
     """
     Takes a sampling config dict and returns an instance of
     :class:`BaseSampling <snowshu.core.samplings.base_sampling.BaseSampling>`
 
     This will accept either a string name of a sampling to invoke it with no params,
-    or a dict to invoke with the params passed. 
+    or a dict to invoke with the params passed.
 
     Args:
         partial: the portion of the configuration dict that creates the sampling.
@@ -28,7 +29,8 @@ def get_sampling_from_partial(partial: Union[dict, str]) -> Type["BaseSampling"]
         The configured  :class:`DefaultSampling <snowshu.samplings.default_sampling.DefaultSampling>`.
     """
     def find_sampling_from_string(string: str) -> Type["BaseSampling"]:
-        return all_samplings.__dict__[''.join([substring.capitalize() for substring in string.split('_')]) + 'Sampling']
+        return all_samplings.__dict__[''.join(
+            [substring.capitalize() for substring in string.split('_')]) + 'Sampling']
     try:
         nested_dict = list(partial.keys())[0]
         return find_sampling_from_string(nested_dict)(**partial[nested_dict])

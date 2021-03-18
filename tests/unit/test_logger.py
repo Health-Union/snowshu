@@ -1,9 +1,10 @@
 import logging
+
 import pytest
-from snowshu.logger import Logger
-from tests.common import rand_string
 from testfixtures import LogCapture
 
+from snowshu.logger import Logger
+from tests.common import rand_string
 
 LOG_LEVELS = ('CRITICAL', 'ERROR', 'WARNING', 'DEBUG', 'INFO', 'NOTSET',)
 

@@ -1,5 +1,5 @@
 class BaseSampleSize:
-    """The base class for all sample size methods. 
+    """The base class for all sample size methods.
 
     """
 
@@ -14,4 +14,4 @@ class BaseSampleSize:
             the number of elements
 
         """
-        raise NotImplementedError()        
+        raise NotImplementedError()

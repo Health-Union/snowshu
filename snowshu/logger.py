@@ -1,25 +1,31 @@
+import logging
 import os
 import time
-from snowshu.formats import LOGGING_FILE_FORMAT, LOGGING_CLI_FORMAT, LOGGING_DATE_FORMAT, LOGGING_CLI_WARNING_FORMAT
-import logging
-from coloredlogs import ColoredFormatter
-from typing import Optional
 from logging.handlers import RotatingFileHandler
+from typing import Optional
 
-# Tone down snowflake.connector log noise by only outputting warnings and higher level messages
+from coloredlogs import ColoredFormatter
+
+from snowshu.formats import (LOGGING_CLI_FORMAT, LOGGING_CLI_WARNING_FORMAT,
+                             LOGGING_DATE_FORMAT, LOGGING_FILE_FORMAT)
+
+# Tone down snowflake.connector log noise by only outputting warnings and
+# higher level messages
 logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
+
 
 def duration(start: int) -> str:
     dur = round(time.time() - start, 2)
     if dur < 1:
         return "< 1 second"
-    else:
-        return f"{dur} seconds"
+
+    return f"{dur} seconds"
 
 
 class Logger:
     """File log is ALWAYS debug, regardless of log level."""
     DEFAULT_LOG_FILE_LOCATION = os.path.abspath('./snowshu.log')
+    file_handler: Optional[RotatingFileHandler] = None
 
     def __init__(self) -> None:
         self._logger = logging.getLogger('snowshu')
@@ -48,7 +54,8 @@ class Logger:
             if handler != self.file_handler:
                 handler.setLevel(level)
 
-    def remove_all_handlers(self, logger: logging.Logger) -> None:
+    @staticmethod
+    def remove_all_handlers(logger: logging.Logger) -> None:
         logger.handlers = list()
 
     @property
@@ -64,19 +71,22 @@ class Logger:
         self.file_handler.baseFilename = value
 
     # Handlers
+    @staticmethod
     def _construct_file_handler(
-            self, log_file_location: str) -> RotatingFileHandler:
+            log_file_location: str) -> RotatingFileHandler:
         file_handler = RotatingFileHandler(log_file_location,
                                            maxBytes=10485760,
                                            backupCount=5)
         file_handler.setLevel(logging.DEBUG)
         return file_handler
 
-    def _construct_stream_handler(self) -> logging.StreamHandler:
+    @staticmethod
+    def _construct_stream_handler() -> logging.StreamHandler:
         return logging.StreamHandler()
 
     # Formatters
-    def _construct_file_formatter(self) -> logging.Formatter:
+    @staticmethod
+    def _construct_file_formatter() -> logging.Formatter:
         return logging.Formatter(fmt=LOGGING_FILE_FORMAT,
                                  datefmt=LOGGING_DATE_FORMAT)
 
@@ -92,7 +102,8 @@ class Logger:
                                 level_styles=self._colored_log_level_styles()
                                 )
 
-    def _colored_log_level_styles(self) -> dict:
+    @staticmethod
+    def _colored_log_level_styles() -> dict:
         return {'critical': {'color': 'red'},
                 'debug': {},
                 'error': {'color': 'red'},
@@ -101,10 +112,12 @@ class Logger:
                 'success': {'color': 'green'},
                 'warning': {'color': 'yellow'}
                 }
-    # Filters
 
-    def _warning_only_filter(self, record):
+    # Filters
+    @staticmethod
+    def _warning_only_filter(record):
         return record.levelno == logging.WARNING
 
-    def _exclude_warning_filter(self, record):
+    @staticmethod
+    def _exclude_warning_filter(record):
         return record.levelno != logging.WARNING

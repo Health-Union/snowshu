@@ -8,4 +8,4 @@ class BaseSampleMethod:
         raise NotImplementedError("SampleMethod instances must have a name.")
 
     def __repr__(self) -> str:
-        return "<SampleMethod self.name>"
+        return f"<SampleMethod {self.name}>"
