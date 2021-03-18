@@ -51,6 +51,11 @@ class Logger:
     def remove_all_handlers(self, logger: logging.Logger) -> None:
         logger.handlers = list()
 
+    def log_retries(self, retry_state):
+        """ Function for passing to tenacity.retry decorator. """
+        self.logger.warning('Retrying %s: attempt %s ended with: %s',
+            retry_state.fn.__qualname__, retry_state.attempt_number, retry_state.outcome.exception())
+
     @property
     def logger(self) -> logging.Logger:
         return self._logger
