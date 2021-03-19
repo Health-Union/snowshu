@@ -11,10 +11,15 @@ jobs:
   build-and-test:
 
     runs-on: ubuntu-latest
+    environment: SNOWSHU_DEVELOPMENT
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+    - name: Setup credentials
+      env:
+        CREDENTIALS: ${{ secrets.SNOWFLAKE_CREDENTIALS }}
+      run: echo "$CREDENTIALS" | base64 --decode > tests/assets/integration/credentials.yml
     - name: Build the Docker image
       run: docker-compose up -d
     - name: Run Linter
