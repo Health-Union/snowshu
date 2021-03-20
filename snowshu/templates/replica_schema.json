@@ -89,8 +89,7 @@
     },
     "_database": {
       "type": "array",
-      "items": [
-        {
+      "items":{
           "type": "object",
           "properties": {
             "pattern": {
@@ -104,13 +103,11 @@
             "pattern",
             "schemas"
           ]
-        }
-      ]
+      }
     },
     "_db_schema": {
       "type": "array",
-      "items": [
-        {
+      "items":{
           "type": "object",
           "properties": {
             "pattern": {
@@ -118,19 +115,16 @@
             },
             "relations": {
               "type": "array",
-              "items": [
-                {
+              "items":{
                   "type": "string"
-                }
-              ]
+              }
             }
           },
           "required": [
             "pattern",
             "relations"
           ]
-        }
-      ]
+      }
     },
     "specified_relations": {
       "type": "array",
@@ -183,11 +177,9 @@
       "properties": {
         "directional": {
           "type": "array",
-          "items": [
-            {
+          "items": {
               "$ref": "#/definitions/_directional_relationship_object"
-            }
-          ]
+          }
         }
       },
       "required":[
@@ -199,11 +191,9 @@
       "properties": {
         "bidirectional": {
           "type": "array",
-          "items": [
-            {
+          "items": {
               "$ref": "#/definitions/_directional_relationship_object"
-            }
-          ]
+          }
         }
       },
       "required": [
