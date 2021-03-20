@@ -259,6 +259,7 @@ LIMIT {max_number_of_outliers})
         logger.error(message)
         raise NotImplementedError(message)
 
+    # TODO: change arg name in parent to the fix issue here
     @overrides
     def _build_conn_string(self, overrides: Optional[dict] = None) -> str:  # noqa pylint: disable=redefined-outer-name
         """overrides the base conn string."""

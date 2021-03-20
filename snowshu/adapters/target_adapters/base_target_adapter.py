@@ -29,7 +29,6 @@ class BaseTargetAdapter(BaseSQLAdapter):
     REQUIRED_CREDENTIALS = [USER, PASSWORD, HOST, PORT, DATABASE]
     ALLOWED_CREDENTIALS = list()
     DOCKER_TARGET_PORT = DOCKER_TARGET_PORT
-    container: Optional["Container"] = None
 
     def __init__(self):
         super().__init__()
@@ -42,6 +41,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
                     f'Target adapter requires attribute f{attr} but was not set.')
 
         self.credentials = self._generate_credentials()
+        self.container: "Container" = None
 
     def enable_cross_database(self, relations: Iterable['Relation']) -> None:
         """ Create x-database links, if available to the target.

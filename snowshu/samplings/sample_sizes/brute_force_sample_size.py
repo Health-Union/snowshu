@@ -26,7 +26,8 @@ class BruteForceSampleSize(BaseSampleSize):
         else:
             raise ValueError(f"Percentage must be between 0.01 and 0.99, is {val}")
 
-
+    # TODO: BaseSampleSize should have this as method not property
+    # https://github.com/Health-Union/snowshu/pull/57#discussion_r596988285
     def size(self, population: int) -> int: # noqa pylint: invalid-overridden-method, arguments-differ
         """Calculates the sample size for a given population size.
 

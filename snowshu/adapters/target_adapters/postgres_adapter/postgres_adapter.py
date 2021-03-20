@@ -95,7 +95,7 @@ class PostgresAdapter(BaseTargetAdapter):
         for u_db in unique_databases:
             conn = self.get_connection(database_override=u_db)
             statement_runner('CREATE EXTENSION postgres_fdw')
-            for remote_database in filter((lambda x: x != u_db), unique_databases): # noqa pylint: disable=cell-var-from-loop
+            for remote_database in filter((lambda x, current_db=u_db: x != current_db), unique_databases):
                 statement_runner(f"""CREATE SERVER {remote_database}
 FOREIGN DATA WRAPPER postgres_fdw
 OPTIONS (dbname '{remote_database}',port '9999')""")

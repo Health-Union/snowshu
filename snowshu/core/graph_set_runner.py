@@ -30,7 +30,9 @@ class GraphExecutable:
 class GraphSetRunner:
 
     barf_output = 'snowshu_barf_output'
-    barf: bool = False
+
+    def __init__(self):
+        self.barf = None
 
     def execute_graph_set(self,     # noqa pylint: disable=too-many-arguments
                           graph_set: List[nx.Graph],

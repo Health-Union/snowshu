@@ -14,11 +14,11 @@ logger = Logger().logger
 
 
 class ReplicaFactory:
-    config: Configuration
-    run_analyze: bool
 
     def __init__(self):
         self._credentials = dict()
+        self.config: Configuration = None
+        self.run_analyze: bool = None
 
     def create(self,
                name: Union[str, None],
