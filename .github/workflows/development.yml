@@ -11,18 +11,15 @@ jobs:
   build-and-test:
 
     runs-on: ubuntu-latest
-    environment: SNOWSHU_DEVELOPMENT
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: Setup credentials
-      env:
-        CREDENTIALS: ${{ secrets.SNOWFLAKE_CREDENTIALS }}
-      run: echo "$CREDENTIALS" | base64 --decode > tests/assets/integration/credentials.yml
+    - name: Setup template credentials
+      run: cp snowshu/templates/credentials.yml tests/assets/integration/credentials.yml
     - name: Build the Docker image
       run: docker-compose up -d
     - name: Run Linter
       run: docker-compose exec -T snowshu prospector
-    - name: Run Test
+    - name: Run Unit Test
       run: docker-compose exec -T snowshu py.test --cov=snowshu tests/unit
