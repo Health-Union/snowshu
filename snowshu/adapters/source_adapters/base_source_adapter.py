@@ -129,6 +129,12 @@ class BaseSourceAdapter(BaseSQLAdapter):
             # this allows the connection to return to the pool
             logger.debug(f'Executed query in {time.time()-start} seconds.')
             frame = pd.read_sql_query(query_sql, conn)
+            logger.debug("Dataframe datatypes: %s", str(frame.dtypes).replace('\n',' | '))
+            if len(frame) > 0:
+                for col in frame.columns:
+                    logger.debug("Pandas loaded element 0 of column %s as %s", col, type(frame[col][0]))
+            else:
+                logger.debug("Dataframe is empty")
         finally:
             if cursor:
                 cursor.close()
