@@ -5,8 +5,8 @@
 Developer Documentation
 =======================
 
-Thank you for contributing to SnowShu! 
+Thank you for contributing to SnowShu!
 
 .. toctree::
-
+   development_setup
    creating_adapters
