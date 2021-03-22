@@ -6,13 +6,17 @@ The replica.yml File
 
 Building a SnowShu replica is essentially configured in a single file. 
 
-.. note:: The replica.yml file can be named any valid ``.yml`` file, by default SnowShu will look for a ``replica.yml`` file in the execution directory. To specify the file name use the ``--replica-file`` flag. 
+.. note::
+  The replica.yml file can be named any valid ``.yml`` file, by default SnowShu will look for a ``replica.yml`` file
+  in the execution directory. To specify the file name use the ``--replica-file`` flag.
  
 
 Sample replica.yml File
 =====================================
 
-Your initial replica file will look something like this (*hint*: you can run ``snowshu init`` to get a generated sample file):
+Your initial replica file will look something like `this
+<https://github.com/Health-Union/snowshu/blob/master/snowshu/templates/replica.yml>`_
+(*hint*: you can run ``snowshu init`` to get a generated sample file):
 
 .. code-block:: yaml
    
@@ -32,9 +36,9 @@ Your initial replica file will look something like this (*hint*: you can run ``s
        databases:
        - pattern: SNOWSHU_DEVELOPMENT
          schemas:
-         - pattern: '.*'
+         - pattern: "(?i)(EXTERNAL_DATA|SOURCE_SYSTEM|TESTS_DATA)"
            relations:
-           - '^(?!.+_VIEW).+$'
+           - '^(?i).*(?<!_view)$'
      specified_relations: 
      - database: SNOWSHU_DEVELOPMENT
        schema: SOURCE_SYSTEM
@@ -125,7 +129,7 @@ In our example, this portion of the source directive would be the overall source
      sampling: default
      include_outliers: True
 
-The components of the overall source settings, disected:
+The components of the overall source settings, dissected:
 
 - **profile** (*Required*) is the name of the profile found in ``credentials.yml`` to execute with. In this example we are using a profile named "default".
 - **sampling** (*Required*) is the name of the sampling method to be used. Samplings combine both the number of records sampled and the way in which they are selected. Current sampling options are ``default`` (uses Bernoulli sampling and Cochran's sizing), or ``brute_force`` (Uses a fixed % and Bernoulli).
@@ -144,19 +148,32 @@ With your overall source settings configured, you can set your *general* samplin
      databases:
      - pattern: SNOWSHU_DEVELOPMENT
        schemas:
-       - pattern: '.*'
+       - pattern: "(?i)(EXTERNAL_DATA|SOURCE_SYSTEM|TESTS_DATA)"
          relations:
-         - '^(?!.+_VIEW).+$'
+         - '^(?i).*(?<!_view)$'
 
-General relations accepts a nested structure of **database->schema(s)->relation(s)**. The configuration accepts both plain text relation names and regex strings (python re syntax). 
-For example, the pattern above matches all relations (tables and views) in the database ``SNOWSHU_DEVELOPMENT`` in any schema, where the name does not end in "VIEW" (or "view", "vIew" etc).
+General relations accepts a nested structure of **database->schema(s)->relation(s)**.
+The configuration accepts both plain text relation names and regex strings (python re syntax).
+For example, the regex pattern above matches all relations (tables and views) in the database ``SNOWSHU_DEVELOPMENT``
+in specific schemas, where the name does not end in "VIEW" (or "view", "vIew" etc).
+
+.. note::
+  Error in specifying the correct regex is a common mistake here.
+
+  * Python regular expression operation `fullmatch <https://docs.python.org/3/library/re.html#re.fullmatch>`_
+    is used to filter out the relations.
+  * Please take note of the case of the database object or handle case inside the regex using ``(?i)``.
+  * In yaml string input can be given with single, double or no quotes.
 
 This nested pattern of relations follows all the specs outlined in the `Overall Source Settings`_.
 
 Specified Sampling Configuration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The specified sampling configurations are the most... specific. If a relation appears in both the general sampling configuation and a specified sampling configuration, the specified sampling will win out. They are also evaluated top-down, so a relation appearing in more than one specified configuration will have either the cumulative value (for relationships) or the last value (for flags). 
+The specified sampling configurations are the most... specific. If a relation appears in both the general
+sampling configuration and a specified sampling configuration, the specified sampling will win out.
+They are also evaluated top-down, so a relation appearing in more than one specified configuration will
+have either the cumulative value (for relationships) or the last value (for flags).
 
 Specified relations look like this: 
 
@@ -210,7 +227,13 @@ The primary use of specified relations is to create relationships. This is accom
 A Relationships Primer
 """"""""""""""""""""""
 
-One of the more gnarly parts of generating sample data for testing is the issue of `referential integrity. <https://en.wikipedia.org/wiki/Referential_integrity>`__. Say you have a table, say ``USERS``, and another table ``ORDERS`` with a column ``user_id`` in it. In the full data set, every row of ``ORDERS`` will have a valid ``user_id`` from the ``USERS`` table - and you can test your software by checking to make sure your final output of ``ORDERS`` has a valid ``user_id`` that can be found in ``USERS``. However, when we sample this is no longer the case. Not all the rows selected by the sample from one table can be referenced by the other - and this breaks our tests. 
+One of the more gnarly parts of generating sample data for testing is the issue of `referential integrity.
+<https://en.wikipedia.org/wiki/Referential_integrity>`__. Say you have a table,
+say ``USERS``, and another table ``ORDERS`` with a column ``user_id`` in it.
+In the full data set, every row of ``ORDERS`` will have a valid ``user_id`` from the ``USERS``
+table - and you can test your software by checking to make sure your final output of ``ORDERS`` has a valid
+``user_id`` that can be found in ``USERS``. However, when we sample this is no longer the case.
+Not all the rows selected by the sample from one table can be referenced by the other - and this breaks our tests.
 
 SnowShu handles this complexity by enforcing relationships. 
 

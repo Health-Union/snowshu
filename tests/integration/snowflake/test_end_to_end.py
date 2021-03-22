@@ -1,5 +1,6 @@
 import os
 import time
+import re
 from datetime import datetime
 
 import docker
@@ -19,7 +20,7 @@ from snowshu.core.main import cli
 BASE_CONN='postgresql://snowshu:snowshu@integration-test:9999/{}'
 SNOWSHU_META_STRING=BASE_CONN.format('snowshu')
 SNOWSHU_DEVELOPMENT_STRING=BASE_CONN.format('snowshu_development')
-DOCKER_SPIN_UP_TIMEOUT = 5
+DOCKER_SPIN_UP_TIMEOUT = 15
 
 @pytest.fixture(scope="session", autouse=True)
 def end_to_end(docker_flush_session):
@@ -39,13 +40,23 @@ def end_to_end(docker_flush_session):
 def any_appearance_of(string,strings):
     return any([string in line for line in strings])
 
+def find_number_of_processed_relations(strings):
+    regex = r"Identified a total of (.*?) relations to sample based on the specified configurations."
+    for string in strings:
+        substring = re.search(regex, string)
+        if substring:
+            found_relations_count = int(substring.group(1))
+            break
+    return found_relations_count if substring else 0
+
 def test_reports_full_catalog_start(end_to_end):
     result_lines = end_to_end
     assert any_appearance_of('Building filtered catalog...',result_lines)
 
 def test_finds_n_relations(end_to_end):
     result_lines= end_to_end
-    assert any_appearance_of('Identified a total of 11 relations to sample based on the specified configurations.',result_lines)
+    assert find_number_of_processed_relations(result_lines) == 11, \
+        "Number of found relations do not match the expected of 11 relations. Check database."
 
 def test_replicates_order_items(end_to_end):
     result_lines = end_to_end
