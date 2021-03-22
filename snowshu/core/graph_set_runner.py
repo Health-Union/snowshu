@@ -47,17 +47,14 @@ class GraphSetRunner:
                                     target_adapter,
                                     analyze) for graph in graphs]
 
-        start_time = time.time()
-
         # Tables need to come first to prevent deps deadlocks with views
         for graphs in [table_graph_set, view_graph_set]:
             with ThreadPoolExecutor(max_workers=threads) as executor:
                 for executable in make_executables(graphs):
-                    executor.submit(self._traverse_and_execute,
-                                    executable, start_time)
+                    executor.submit(self._traverse_and_execute, executable)
 
-    def _traverse_and_execute(
-            self, executable: GraphExecutable, start_time: int) -> None:
+    def _traverse_and_execute(self, executable: GraphExecutable) -> None:
+        start_time = time.time()
         try:
             logger.debug(
                 f"Executing graph with {len(executable.graph)} relations in it...")

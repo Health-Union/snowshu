@@ -5,6 +5,7 @@ import tempfile
 import copy
 import json
 import yaml
+import re
 from snowshu.core.configuration_parser import ConfigurationParser
 from tests.conftest_modules.test_credentials import CREDENTIALS
 from tests.conftest_modules.test_configuration import CONFIGURATION
@@ -141,7 +142,7 @@ def sanitize_docker_environment():
     def is_snowshu_related_image(image)->bool:
         if len(image.tags) < 1:
             return False
-        return any([val in image.tags[0] for val in ('snowshu_replica_',
+        return any([re.search(val, image.tags[0]) for val in ('^snowshu_replica_\w+',
             'integration-test',
             'snowshu_target',)])
 

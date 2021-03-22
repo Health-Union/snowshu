@@ -13,6 +13,10 @@ import snowshu.core.models.materializations as mz
 from snowshu.logger import Logger, duration
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from snowshu.core.models.credentials import USER, PASSWORD, ACCOUNT, DATABASE, SCHEMA, ROLE, WAREHOUSE
+import tenacity
+from tenacity.retry import retry_if_exception_type
+from tenacity.wait import wait_exponential
+from tenacity.stop import stop_after_attempt
 logger = Logger().logger
 
 
@@ -330,6 +334,10 @@ LIMIT {max_number_of_outliers})
         count = int(self._safe_query(count_sql).iloc[0]['count'])
         return count
 
+    @tenacity.retry(wait=wait_exponential(),
+                    stop=stop_after_attempt(4),
+                    before_sleep=Logger().log_retries,
+                    reraise=True)
     @overrides
     def check_count_and_query(self, query: str,
                               max_count: int) -> pd.DataFrame:
