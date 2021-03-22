@@ -4,21 +4,46 @@ import sqlalchemy
 import yaml
 import logging
 import os
+import glob
+from pathlib import Path
+from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
+from snowshu.core.models.credentials import Credentials
 
-raise NotImplementedError('THIS IS A WORK IN PROGRESS, DO NOT USE!')
+# raise NotImplementedError('THIS IS A WORK IN PROGRESS, DO NOT USE!')
 
-paths = list()
-for p in os.walk('./DATABASE=SNOWSHU_DEVELOPMENT/SCHEMA=SOURCE_SYSTEM'):
-    for f in p[-1]:
-        paths.append(('SOURCE_SYSTEM', os.path.join(p[0], f),))
-for p in os.walk('./DATABASE=SNOWSHU_DEVELOPMENT/SCHEMA=EXTERNAL_DATA'):
-    for f in p[-1]:
-        paths.append(('EXTERNAL_DATA', os.path.join(p[0], f),))
-for p in paths:
-    with open(p) as f:
-        frame = pd.read_csv(f)
-        frame.to_sql(p[1].split('/')[-1].replace('.csv', '').upper(),
-                     e, schema=p[0], index=False, chunksize=16000)
+ASSETS_DIR = Path(os.path.dirname(__file__))
+EXT = '*.csv'
+
+def get_connection_profile(credentials):
+    # get the connection profile in dict form
+    return {}
+
+def build_connectable():
+    with open('/app' / ASSETS_DIR / 'integration' / 'credentials.yml') as cred_file:
+        credentials = yaml.safe_load(cred_file)
+    if credentials['sources'][0]['adapter'] != 'snowflake':
+        raise NotImplementedError('Test setup created just for snowflake source.')
+    profile_dict = get_connection_profile(credentials)
+    adapter = SnowflakeAdapter()
+    adapter.credentials = Credentials(**profile_dict)
+    return adapter.get_connection()
+
+
+
+if __name__ == "__main__":
+    conn = build_connectable()
+    os.chdir(ASSETS_DIR / 'data')
+    all_csv_files = [file
+                    for path, subdir, files in os.walk('.')
+                    for file in glob.glob(os.path.join(path, EXT))]
+    for csv_file in all_csv_files:
+        with open(csv_file) as f:
+            frame = pd.read_csv(f)
+            table_name = csv_file.split('/')[-1].replace('.csv', '').upper()
+            schema_name = csv_file.split('/')[-2].split('=')[-1]
+            database_name = csv_file.split('/')[-3].split('=')[-1]
+            frame.to_sql(table_name, conn, schema=schema_name, index=False, chunksize=16000)
+
 """
 
 def load_integration_tests():
