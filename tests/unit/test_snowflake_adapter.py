@@ -1,4 +1,6 @@
 import mock
+import pytest
+from psycopg2 import OperationalError
 
 from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
 from snowshu.core.models.credentials import Credentials
@@ -134,3 +136,16 @@ SELECT
 FROM 
     {relmock.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
 """)
+
+
+def test_retry_count_query():
+    """ Verifies that the retry decorator works as expected """
+    error_list = [OperationalError, OperationalError, OperationalError, SystemError, RuntimeError]
+    with mock.patch("snowshu.adapters.source_adapters.SnowflakeAdapter._count_query", side_effect=error_list):
+        sf = SnowflakeAdapter()
+        with pytest.raises(SystemError) as exc:
+            sf.check_count_and_query("select * from unknown_table", 10)
+        
+        # assert that the 4th error was raised
+        assert exc.errisinstance(SystemError)
+        assert sf.check_count_and_query.retry.statistics["attempt_number"] == 4

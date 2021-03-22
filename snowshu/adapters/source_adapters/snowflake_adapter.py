@@ -3,8 +3,11 @@ from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 import pandas as pd
 import sqlalchemy
+import tenacity
 from overrides import overrides
 from sqlalchemy.pool import NullPool
+from tenacity.stop import stop_after_attempt
+from tenacity.wait import wait_exponential
 
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
@@ -19,6 +22,7 @@ from snowshu.samplings.sample_methods import BernoulliSampleMethod
 
 if TYPE_CHECKING:
     from snowshu.core.samplings.bases.base_sample_method import BaseSampleMethod
+
 logger = Logger().logger
 
 
@@ -347,6 +351,10 @@ LIMIT {max_number_of_outliers})
         count = int(self._safe_query(count_sql).iloc[0]['count'])
         return count
 
+    @tenacity.retry(wait=wait_exponential(),
+                    stop=stop_after_attempt(4),
+                    before_sleep=Logger().log_retries,
+                    reraise=True)
     @overrides
     def check_count_and_query(self, query: str,
                               max_count: int) -> pd.DataFrame:

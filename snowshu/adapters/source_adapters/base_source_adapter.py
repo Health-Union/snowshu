@@ -131,6 +131,8 @@ class BaseSourceAdapter(BaseSQLAdapter):
         """runs the query and closes the connection."""
         logger.debug('Beginning query execution...')
         start = time.time()
+        conn = None
+        cursor = None
         try:
             conn = self.get_connection()
             cursor = conn.connect()
@@ -141,8 +143,10 @@ class BaseSourceAdapter(BaseSQLAdapter):
             logger.debug(f'Executed query in {time.time()-start} seconds.')
             frame = pd.read_sql_query(query_sql, conn)
         finally:
-            cursor.close()
-            conn.dispose()
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.dispose()
         return frame
 
     def _correct_case(self, val: str) -> str:

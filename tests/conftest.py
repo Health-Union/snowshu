@@ -1,6 +1,6 @@
 import copy
 import json
-import tempfile
+import re
 from io import StringIO
 
 import docker
@@ -143,7 +143,7 @@ def sanitize_docker_environment():
     def is_snowshu_related_image(image)->bool:
         if len(image.tags) < 1:
             return False
-        return any([val in image.tags[0] for val in ('snowshu_replica_',
+        return any([re.search(val, image.tags[0]) for val in ('^snowshu_replica_\w+',
             'integration-test',
             'snowshu_target',)])
 
