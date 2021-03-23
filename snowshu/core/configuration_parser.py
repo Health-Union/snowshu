@@ -26,6 +26,7 @@ TEMPLATES_PATH = Path(os.path.dirname(__file__)).parent / 'templates'
 REPLICA_JSON_SCHEMA = TEMPLATES_PATH / 'replica_schema.json'
 CREDENTIALS_JSON_SCHEMA = TEMPLATES_PATH / 'credentials_schema.json'
 
+
 @dataclass
 class MatchPattern:
 
@@ -100,7 +101,7 @@ class ConfigurationParser:
     preserve_case: bool = False
 
     def _get_dict_from_anything(self,
-                                dict_like_object: Union[str,'StringIO',dict],
+                                dict_like_object: Union[str, 'StringIO', dict],
                                 schema_path: Path) -> dict:
         """Returns dict from path, io object or dict.  
 
@@ -115,14 +116,14 @@ class ConfigurationParser:
             try:
                 return yaml.safe_load(dict_like_object.read())
             except AttributeError:
-                with open(dict_like_object, 'r') as f:
-                    instance = yaml.safe_load(f.read())
+                with open(dict_like_object, 'r') as stream:
+                    instance = yaml.safe_load(stream.read())
                 return self._verify_schema(instance, Path(dict_like_object), schema_path)
 
-    def _verify_schema(self,
-                        instance,
-                        file_path: Path,
-                        schema_path: Path):
+    @staticmethod
+    def _verify_schema(instance,
+                       file_path: Path,
+                       schema_path: Path):
         logger.debug("Parsing file at %s", file_path)
         with open(schema_path) as schema_file:
             schema = yaml.safe_load(schema_file.read())
@@ -161,8 +162,8 @@ class ConfigurationParser:
     def from_file_or_path(
             self, loadable: Union[Path, str, TextIO]) -> Configuration:
         """rips through a configuration and returns a configuration object."""
-        logger.debug(f'loading configuration...')
-        loaded=self._get_dict_from_anything(loadable, REPLICA_JSON_SCHEMA)
+        logger.debug('loading configuration...')
+        loaded = self._get_dict_from_anything(loadable, REPLICA_JSON_SCHEMA)
         logger.debug('Done loading.')
 
         # we need the source adapter first to case-correct everything else
@@ -265,7 +266,7 @@ class ConfigurationParser:
                                full_configs: Union[str, 'StringIO', dict]) -> AdapterProfile:
         profile = full_configs[section]['profile']
         credentials = full_configs['credpath']
-        
+
         def lookup_profile_from_creds(creds_dict: dict,
                                       profile: str,
                                       section: str) -> dict:
@@ -279,9 +280,10 @@ class ConfigurationParser:
             except KeyError as err:
                 raise ValueError(f'Credentials missing required section: {err}')
         try:
-            profile_dict=lookup_profile_from_creds(self._get_dict_from_anything(credentials, CREDENTIALS_JSON_SCHEMA),
-                                                   profile,
-                                                   section)
+            profile_dict = lookup_profile_from_creds(self._get_dict_from_anything(credentials,
+                                                                                  CREDENTIALS_JSON_SCHEMA),
+                                                     profile,
+                                                     section)
         except FileNotFoundError as err:
             err.strerror = "Credentials specified in replica.yml not found. " + err.strerror
             raise
