@@ -8,7 +8,7 @@ from io import StringIO
 from pathlib import Path
 from jsonschema.exceptions import ValidationError
 import yaml
-from snowshu.core.configuration_parser import ConfigurationParser
+from snowshu.core.configuration_parser import ConfigurationParser, REPLICA_JSON_SCHEMA, CREDENTIALS_JSON_SCHEMA
 import os
 from snowshu.samplings.samplings import DefaultSampling
 
@@ -90,8 +90,7 @@ def test_schema_verification_errors(stub_creds, stub_configs):
         mock_file.seek(0)
         stub_configs['credpath']=mock_file.name
         with pytest.raises(ValidationError) as exc:
-            ConfigurationParser()._build_adapter_profile('source', stub_configs,
-                            schema_path=Path("/app/snowshu/templates/credentials_schema.json"))
+            ConfigurationParser()._build_adapter_profile('source', stub_configs)
     assert "True is not of type 'string'" in str(exc.value)
 
     # config with missing credentials file
@@ -99,3 +98,19 @@ def test_schema_verification_errors(stub_creds, stub_configs):
         mock_config_file = StringIO(yaml.dump(stub_configs))
         ConfigurationParser().from_file_or_path(mock_config_file)
     assert "Credentials specified in replica.yml not found" in fnf_err.value.strerror
+
+
+def test_schema_verification(tmpdir, stub_creds, stub_configs):
+    replica_file = Path(tmpdir / 'replica_file.yml')
+    cred_file = Path(tmpdir / 'credentials_file.yml')
+    stub_creds = stub_creds()
+    stub_configs = stub_configs()
+    stub_configs["credpath"] = str(cred_file.absolute())
+
+    cred_file.write_text(json.dumps(stub_creds))
+    replica_file.write_text(json.dumps(stub_configs))
+
+    replica_config = ConfigurationParser()._get_dict_from_anything(replica_file, REPLICA_JSON_SCHEMA)
+    cred_config = ConfigurationParser()._get_dict_from_anything(cred_file, CREDENTIALS_JSON_SCHEMA)
+    assert replica_config
+    assert cred_config

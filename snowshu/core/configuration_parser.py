@@ -14,6 +14,9 @@ from snowshu.core.samplings.utils import get_sampling_from_partial
 from snowshu.core.models import Credentials
 logger = Logger().logger
 
+TEMPLATES_PATH = Path(os.path.dirname(__file__)).parent / 'templates'
+REPLICA_JSON_SCHEMA = TEMPLATES_PATH / 'replica_schema.json'
+CREDENTIALS_JSON_SCHEMA = TEMPLATES_PATH / 'credentials_schema.json'
 
 @dataclass
 class MatchPattern:
@@ -84,13 +87,15 @@ class Configuration:
 
 class ConfigurationParser:
 
-    def _get_dict_from_anything(self, dict_like_object:Union[str,'StringIO',dict],
-                                **kwargs)->dict:
+    def _get_dict_from_anything(self,
+                                dict_like_object: Union[str,'StringIO',dict],
+                                schema_path: Path) -> dict:
         """Returns dict from path, io object or dict.  
         
         Returns:
             a formatted dict.
         """
+        # TODO validation against the schema should happen in all cases
         try:
             assert isinstance(dict_like_object,dict)
             return dict_like_object
@@ -100,15 +105,13 @@ class ConfigurationParser:
             except AttributeError:
                 with open(dict_like_object, 'r') as f:
                     instance = yaml.safe_load(f.read())
-                return self._verify_schema(instance, Path(dict_like_object), **kwargs)
+                return self._verify_schema(instance, Path(dict_like_object), schema_path)
 
     def _verify_schema(self,
                         instance,
                         file_path: Path,
-                        templates_path: Path = Path(os.path.dirname(__file__)).parent / 'templates',
-                        schema_path: Path = None):
+                        schema_path: Path):
         logger.debug("Parsing file at %s", file_path)
-        schema_path = templates_path / f'{file_path.stem}_schema.json' if not schema_path else schema_path
         with open(schema_path) as schema_file:
             schema = yaml.safe_load(schema_file.read())
 
@@ -146,8 +149,8 @@ class ConfigurationParser:
     ## this should be migrated to an init
     def from_file_or_path(self, loadable: Union[Path, str, TextIO]) -> Configuration:
         """rips through a configuration and returns a configuration object."""
-        logger.debug(f'loading credentials...')
-        loaded=self._get_dict_from_anything(loadable)
+        logger.debug(f'loading configuration...')
+        loaded=self._get_dict_from_anything(loadable, REPLICA_JSON_SCHEMA)
         logger.debug('Done loading.')
 
         ## we need the source adapter first to case-correct everything else
@@ -238,8 +241,7 @@ class ConfigurationParser:
                     self._build_relationships(rel)) for rel in specified_relations]
     
     def _build_adapter_profile(self,section:str,
-                               full_configs:Union[str,'StringIO',dict],
-                               **kwargs)->AdapterProfile:
+                               full_configs:Union[str,'StringIO',dict])->AdapterProfile:
         profile=full_configs[section]['profile']
         credentials=full_configs['credpath']
         
@@ -256,7 +258,7 @@ class ConfigurationParser:
             except KeyError as e:
                 raise ValueError(f'Credentials missing required section: {e}')
         try:
-            profile_dict=lookup_profile_from_creds(self._get_dict_from_anything(credentials, **kwargs),
+            profile_dict=lookup_profile_from_creds(self._get_dict_from_anything(credentials, CREDENTIALS_JSON_SCHEMA),
                                                 profile,
                                                 section)
         except FileNotFoundError as err:
