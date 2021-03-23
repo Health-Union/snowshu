@@ -1,8 +1,8 @@
-import re
 from typing import TYPE_CHECKING, List, Optional, Union
-
+import json
+import re
+from sqlalchemy.types import JSON
 import pandas as pd
-
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
@@ -50,13 +50,24 @@ class Relation:
 
     @data.setter
     def data(self, val: pd.DataFrame) -> None:
-        """Adjust data columns to match corrected attribute names."""
+        """ Setter for the relation's dataframe
+
+            Adjusts data columns to match corrected attribute names and
+            fixes mismatched datatypes
+        """
         lowered_columns = [correct_case(col, False)
                            for col in val.columns.to_list()]
         attrs = [attr.name for attr in self.attributes]
         lowered_attrs = [correct_case(attr, False) for attr in attrs]
         val.columns = [attrs[lowered_attrs.index(
             col)] for col in lowered_columns]
+
+        # handle the fact that pandas.read_sql may not preserve json type on load
+        for attr in self.attributes:
+            if isinstance(attr.data_type.sqlalchemy_type, JSON):
+                transform_func = (lambda v: json.loads(v) if isinstance(v, str) else v)
+                val[attr.name] = val[attr.name].transform(func=transform_func)
+
         self._data = val
 
     @property
