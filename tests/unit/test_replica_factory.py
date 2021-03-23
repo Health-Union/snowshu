@@ -27,6 +27,6 @@ def test_loading_specified_replica_file(tmpdir, stub_creds, stub_configs):
     replica_file.write_text(json.dumps(stub_configs))
 
     replica = ReplicaFactory()
-    assert "config" not in replica.__dict__
+    assert not replica.config
     replica.load_config(replica_file)
     assert replica.config
