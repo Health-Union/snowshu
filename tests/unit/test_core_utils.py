@@ -1,5 +1,7 @@
 import pytest
-from snowshu.core.utils import case_insensitive_dict_value,correct_case
+
+from snowshu.core.utils import case_insensitive_dict_value, correct_case
+
 
 def test_case_insensitive_search():
 

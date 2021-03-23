@@ -1,7 +1,8 @@
 import mock
 import pytest
-from tests.common import rand_string
+
 from snowshu.core.replica.replica_manager import ReplicaManager
+from tests.common import rand_string
 
 
 @mock.patch('snowshu.core.replica.replica_manager.SnowShuDocker.find_snowshu_images')
@@ -26,4 +27,3 @@ def test_launch_docker_cmd_bad(docker,mock_docker_image):
     result=ReplicaManager.launch_docker_command(replica_name)
 
     assert result == f'No replica found for does_not_exist.'
-

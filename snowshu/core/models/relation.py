@@ -1,29 +1,34 @@
-from typing import List, Union, Optional
-from snowshu.core.utils import key_for_value,correct_case
+import re
+from typing import TYPE_CHECKING, List, Optional, Union
+
+import pandas as pd
+
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
-import pandas as pd
-import re
+from snowshu.core.utils import correct_case, key_for_value
 from snowshu.logger import Logger
+
+if TYPE_CHECKING:
+    from snowshu.core.configuration_parser import SpecifiedMatchPattern
+    from snowshu.core.samplings.bases.base_sampling import BaseSampling
 logger = Logger().logger
 
 
 class Relation:
-    _data:pd.DataFrame
-    compiled_query:str
-    core_query:str
-    population_size:int
-    sample_size:int
-    source_extracted:bool=False
-    target_loaded:bool=False
-    sampling:Optional['BaseSampling']
-    sample_method:Optional['SampleMethod']
-    unsampled:bool=False
-    include_outliers:bool=False
-    max_number_of_outliers:int=DEFAULT_MAX_NUMBER_OF_OUTLIERS
+    _data: pd.DataFrame
+    compiled_query: str
+    core_query: str
+    population_size: int
+    sample_size: int
+    source_extracted: bool = False
+    target_loaded: bool = False
+    sampling: Optional['BaseSampling']
+    unsampled: bool = False
+    include_outliers: bool = False
+    max_number_of_outliers: int = DEFAULT_MAX_NUMBER_OF_OUTLIERS
 
-    def __init__(self,
+    def __init__(self,  # noqa pylint: disable=too-many-arguments
                  database: str,
                  schema: str,
                  name: str,
@@ -40,18 +45,19 @@ class Relation:
         return f"<Relation object {self.database}.{self.schema}.{self.name}>"
 
     @property
-    def data(self)->pd.DataFrame:
+    def data(self) -> pd.DataFrame:
         return self._data
 
     @data.setter
-    def data(self,val:pd.DataFrame)->None:
+    def data(self, val: pd.DataFrame) -> None:
         """Adjust data columns to match corrected attribute names."""
-        lowered_columns=[correct_case(col,False) for col in val.columns.to_list()]
-        attrs=[attr.name for attr in self.attributes]
-        lowered_attrs=[correct_case(attr,False) for attr in attrs]
-        val.columns=[attrs[lowered_attrs.index(col)] for col in lowered_columns]
-        self._data=val      
-
+        lowered_columns = [correct_case(col, False)
+                           for col in val.columns.to_list()]
+        attrs = [attr.name for attr in self.attributes]
+        lowered_attrs = [correct_case(attr, False) for attr in attrs]
+        val.columns = [attrs[lowered_attrs.index(
+            col)] for col in lowered_columns]
+        self._data = val
 
     @property
     def dot_notation(self) -> str:
@@ -59,7 +65,8 @@ class Relation:
 
     @property
     def quoted_dot_notation(self) -> str:
-        return '.'.join([self.quoted(getattr(self,x)) for x in ('database','schema','name',)])
+        return '.'.join([self.quoted(getattr(self, x))
+                        for x in ('database', 'schema', 'name',)])
 
     @property
     def star(self) -> str:
@@ -78,16 +85,17 @@ class Relation:
     def relation(self, value: str) -> None:
         self.name = value
 
-    def quoted(self,val:str)->str:
+    @staticmethod
+    def quoted(val: str) -> str:
         """Returns quoted value if appropriate."""
         return f'"{val}"' if all({val.isupper(),
-                                 val.islower(),}) and ' ' not in val else val
-        
-    def scoped_cte(self,string:Optional[str]=None)->str:
+                                  val.islower(), }) and ' ' not in val else val
+
+    def scoped_cte(self, string: Optional[str] = None) -> str:
         """ returns a CTE name scoped to the relation.
             If _string_ is provided, this will be suffixed to the name."""
-        return "__".join([self.database,self.schema,self.name,string])        
- 
+        return "__".join([self.database, self.schema, self.name, string])
+
     def typed_columns(self, data_type_mappings: dict) -> str:
         """generates the column section of a create statement in format <attr>
         <datatype>"""
@@ -114,7 +122,7 @@ def lookup_single_relation(lookup: dict, relation_set: iter) -> Relation:
         lookup(dict) a dict of database, schema, relation keys
         relation_set(iter) any iterable of relations
     """
-    logger.debug(f'looking for relation {lookup}...')
+    logger.debug('looking for relation %s...', lookup)
     # flexibility to match other apis with either 'name' or 'relation'
     lookup['relation'] = lookup.get('relation', lookup.get('name'))
     found = next((rel for rel in relation_set if
@@ -122,7 +130,7 @@ def lookup_single_relation(lookup: dict, relation_set: iter) -> Relation:
                   and rel.schema == lookup['schema']
                   and rel.name == lookup['relation']), None)
 
-    logger.debug(f'found {found}.')
+    logger.debug('found %s.', found)
     return found
 
 
@@ -134,41 +142,45 @@ def lookup_relations(lookup: dict, relation_set: iter) -> Relation:
         lookup(dict) a dict of database, schema, relation regex patterns
         relation_set(iter) any iterable of relations
     """
-    logger.debug(f'looking for relations that match {lookup}...')
+    logger.debug('looking for relations that match %s...', lookup)
     found = filter(lambda rel: single_full_pattern_match(
         rel, lookup), relation_set)
-    logger.debug(f'found {str(found)}.')
+    logger.debug('found %s.', str(found))
     return list(found)
 
 
-def single_full_pattern_match(rel: Relation, pattern:Union[dict,'SpecifiedMatchPattern']) -> bool:
+def single_full_pattern_match(rel: Relation,
+                              pattern: Union[dict, 'SpecifiedMatchPattern']) -> bool:
     """determines if a relation matches a regex pattern.
-    
-    Pattern can be a dictionary of or a :class:`SpecifiedMatchPattern <snowshu.core.configuration_parser.SpecifiedMatchPattern>`.
-    
+
+    Pattern can be a dictionary of or a
+    :class:`SpecifiedMatchPattern <snowshu.core.configuration_parser.SpecifiedMatchPattern>`.
+
     Args:
-        relation: The :class:`Relation <snowshu.core.models.relation.Relation>` to be tested. 
-        pattern: Either a dict of database,schema,name(relation) or a :class:`SpecifiedMatchPattern <snowshu.core.configuration_parser.SpecifiedMatchPattern>`.
-    
+        relation: The :class:`Relation <snowshu.core.models.relation.Relation>` to be tested.
+        pattern: Either a dict of database,schema,name(relation) or a
+                    :class:`SpecifiedMatchPattern <snowshu.core.configuration_parser.SpecifiedMatchPattern>`.
+
     Returns:
         If the pattern matches the relation.
     """
     attributes = ('database', 'schema', 'name',)
 
     try:
-        pattern=dict(database=pattern.database_pattern,
-                     schema=pattern.schema_pattern,
-                     name=pattern.relation_pattern)
+        pattern = dict(database=pattern.database_pattern,
+                       schema=pattern.schema_pattern,
+                       name=pattern.relation_pattern)
     except AttributeError:
         pass
     if not all([pattern[attribute] for attribute in attributes]):
         return False
-    return all([(lambda r, p: re.fullmatch(r, p))(pattern[attr],
-                                          rel.__dict__[attr],) for attr in attributes])
+    return all([re.fullmatch(pattern[attr], rel.__dict__[attr])
+                for attr in attributes])
+
 
 def at_least_one_full_pattern_match(rel: Relation, patterns: iter) -> bool:
     """determines if a relation matches any of a collection of pattern
-    dictionaries (database,schema,name).""" 
+    dictionaries (database,schema,name)."""
     patterns = list(filter(lambda p: all(
         p[attr] for attr in ('database', 'schema', 'name',)), patterns))
     return any([single_full_pattern_match(rel, pattern)

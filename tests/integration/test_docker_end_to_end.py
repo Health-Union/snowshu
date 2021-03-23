@@ -1,13 +1,15 @@
-import pytest
 import time
+
 import docker
-from tests.common import rand_string
+import pytest
 from sqlalchemy import create_engine
-from snowshu.core.docker import SnowShuDocker
+
 from snowshu.adapters.target_adapters import PostgresAdapter
+from snowshu.core.docker import SnowShuDocker
+from snowshu.logger import Logger
+from tests.common import rand_string
 from tests.integration.snowflake.test_end_to_end import DOCKER_SPIN_UP_TIMEOUT
 
-from snowshu.logger import Logger
 Logger().set_log_level(0)
 
 TEST_NAME, TEST_TABLE = [rand_string(10) for _ in range(2)]

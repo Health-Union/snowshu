@@ -1,16 +1,14 @@
-import sys
-import os
-import click
-from pathlib import Path
 import logging
-from snowshu.logger import Logger
-from shutil import which, copyfile
-from snowshu.formats import DEFAULT_TAG_FORMAT
-from snowshu.configs import IS_IN_DOCKER, DOCKER_TARGET_PORT
-from datetime import datetime
+import os
+from pathlib import Path
+from shutil import copyfile, which
+
+import click
+
+from snowshu.configs import IS_IN_DOCKER
 from snowshu.core.replica.replica_factory import ReplicaFactory
 from snowshu.core.replica.replica_manager import ReplicaManager
-
+from snowshu.logger import Logger
 
 # Always check for docker
 NO_DOCKER = 'SnowShu requires Docker, \
@@ -54,8 +52,8 @@ def init(path: click.Path) -> None:
     def source(filename):
         return os.path.join(templates, filename)
 
-    CREDENTIALS = 'credentials.yml'
-    REPLICA = 'replica.yml'
+    CREDENTIALS = 'credentials.yml'     # noqa pep8: disable=N806
+    REPLICA = 'replica.yml'     # noqa pep8: disable=N806
 
     if os.path.isfile(destination(CREDENTIALS)) or os.path.isfile(
             destination(REPLICA)):
@@ -67,9 +65,9 @@ def init(path: click.Path) -> None:
         copyfile(source(CREDENTIALS), destination(CREDENTIALS))
         logger.info(
             f"sample files created in directory {os.path.abspath(path)}")
-    except Exception as e:
-        logger.error(f"failed to generate sample files: {e}")
-        raise e
+    except Exception as exc:
+        logger.error(f"failed to generate sample files: {exc}")
+        raise exc
 
 
 @cli.command()
@@ -78,22 +76,23 @@ def init(path: click.Path) -> None:
     type=click.Path(
         exists=True),
     default=REPLICA_DEFAULT,
-    help="the Path, string or bytes object snowshu will use for your replica configuration file, default is ./replica.yml")
+    help="the Path, string or bytes object snowshu will use for your replica \
+          configuration file, default is ./replica.yml")
 @click.option('--name',
-    default=None,
-    help="Overrides the replica name found in replica.yml")
+              default=None,
+              help="Overrides the replica name found in replica.yml")
 @click.option(
     '--barf',
     is_flag=True,
     help="outputs the source query sql to a local folder snowshu_barf_output")
 def create(replica_file: click.Path,
-        name:str,
-        barf:bool):
+           name: str,
+           barf: bool):
     """Generate a new replica from a replica.yml file.
     """
     replica = ReplicaFactory()
     replica.load_config(replica_file)
-    click.echo(replica.create(name,barf))
+    click.echo(replica.create(name, barf))
 
 
 @cli.command()
@@ -103,26 +102,27 @@ def create(replica_file: click.Path,
         exists=True),
     default=REPLICA_DEFAULT,
     help="where snowshu will look for your replica configuration file, default is ./replica.yml")
-@click.option('--barf','-b',
-    is_flag=True,
-    help="outputs the source query sql to a local folder snowshu_barf_output")
-def analyze(replica_file: click.Path,barf:bool):
+@click.option('--barf', '-b',
+              is_flag=True,
+              help="outputs the source query sql to a local folder snowshu_barf_output")
+def analyze(replica_file: click.Path, barf: bool):
     """Perform a "dry run" of the replica creation without actually executing, and return the expected results."""
 
     replica = ReplicaFactory()
     replica.load_config(replica_file)
     click.echo(replica.analyze(barf))
 
+
 @cli.command()
-def list():
+def list():     # noqa pylint: disable=redefined-builtin
     """List all the available SnowShu replicas found on this computer."""
     replica_manager = ReplicaManager()
     click.echo(replica_manager.list())
 
+
 @cli.command()
 @click.argument('replica')
-def launch_docker_cmd(replica:str):
+def launch_docker_cmd(replica: str):
     """Return the docker command line string to start a given replica."""
     replica_manager = ReplicaManager()
     click.echo(replica_manager.launch_docker_command(replica))
-

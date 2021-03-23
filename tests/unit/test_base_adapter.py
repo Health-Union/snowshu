@@ -1,11 +1,13 @@
 import pytest
 from mock import patch
+
+import snowshu.core.models.materializations as mz
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.adapters.source_adapters import BaseSourceAdapter
 from snowshu.core.models import Relation
-import snowshu.core.models.materializations as mz
+from snowshu.core.models.credentials import (ACCOUNT, DATABASE, HOST, PASSWORD,
+                                             ROLE, SCHEMA, USER, Credentials)
 from tests.common import rand_string
-from snowshu.core.models.credentials import Credentials, USER, PASSWORD, HOST, ACCOUNT, SCHEMA, DATABASE, ROLE
 
 
 def rand_creds(args) -> Credentials:

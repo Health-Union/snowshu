@@ -1,7 +1,8 @@
-import pytest
 import mock
-from snowshu.core.docker import SnowShuDocker
+import pytest
+
 from snowshu.adapters.target_adapters import PostgresAdapter
+from snowshu.core.docker import SnowShuDocker
 
 
 def test_makes_replica_name_safe():
