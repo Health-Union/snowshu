@@ -1,15 +1,8 @@
-<<<<<<< HEAD
-from typing import List, Union, Optional
-import json
-from sqlalchemy.types import JSON
-from snowshu.core.utils import key_for_value,correct_case
-=======
-import re
 from typing import TYPE_CHECKING, List, Optional, Union
-
+import json
+import re
+from sqlalchemy.types import JSON
 import pandas as pd
-
->>>>>>> master
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
