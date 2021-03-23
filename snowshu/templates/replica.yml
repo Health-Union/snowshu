@@ -14,15 +14,9 @@ source:
     databases:
     - pattern: SNOWSHU_DEVELOPMENT # matches our test database
       schemas:
-      - pattern: EXTERNAL_DATA  # TODO: Fix it to be "(EXTERNAL_DATA|SOURCE_SYSTEM|TESTS_DATA)"
+      - pattern: "(?i)(EXTERNAL_DATA|SOURCE_SYSTEM|TESTS_DATA)" # matches our test schemas
         relations:
         - '^(?i).*(?<!_view)$' # matches all relations that do not end with '_VIEW'
-      - pattern: SOURCE_SYSTEM
-        relations:
-        - '^(?i).*(?<!_view)$'
-      - pattern: TESTS_DATA
-        relations:
-        - '^(?i).*(?<!_view)$'
   # these are exceptions to the 'default' sampling above
   specified_relations: 
   - database: SNOWSHU_DEVELOPMENT
