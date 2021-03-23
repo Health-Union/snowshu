@@ -149,7 +149,23 @@
           "type": "boolean"
         },
         "relationships": {
-          "$ref": "#/definitions/relationship_object"
+          "type":"object",
+          "properties": {
+            "directional": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/_directional_relationship_object"
+              }
+            },
+            "bidirectional": {
+              "type":"array",
+              "items": {
+                "$ref": "#/definitions/_directional_relationship_object"
+              }
+            }
+          },
+          "additionalProperties": false,
+          "minProperties": 1
         },
         "sampling": {
           "$ref": "#/definitions/sampling_object"
@@ -159,45 +175,6 @@
         "database",
         "schema",
         "relation"
-      ]
-    },
-    "relationship_object": {
-      "type": "object",
-      "anyOf": [
-        {
-          "$ref": "#/definitions/directional"
-        },
-        {
-          "$ref": "#/definitions/bidirectional"
-        }
-      ]
-    },
-    "directional": {
-      "type": "object",
-      "properties": {
-        "directional": {
-          "type": "array",
-          "items": {
-              "$ref": "#/definitions/_directional_relationship_object"
-          }
-        }
-      },
-      "required":[
-        "directional"
-      ]
-    },
-    "bidirectional": {
-      "type": "object",
-      "properties": {
-        "bidirectional": {
-          "type": "array",
-          "items": {
-              "$ref": "#/definitions/_directional_relationship_object"
-          }
-        }
-      },
-      "required": [
-        "bidirectional"
       ]
     },
     "_directional_relationship_object": {
