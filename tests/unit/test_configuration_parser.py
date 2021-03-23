@@ -103,6 +103,7 @@ def test_schema_verification_errors(stub_creds, stub_configs):
 
 
 def test_schema_verification(tmpdir, stub_creds, stub_configs):
+    """ Verifies that the configuration parser can load a proper file. """
     replica_file = Path(tmpdir / 'replica_file.yml')
     cred_file = Path(tmpdir / 'credentials_file.yml')
     stub_creds = stub_creds()
@@ -114,5 +115,5 @@ def test_schema_verification(tmpdir, stub_creds, stub_configs):
 
     replica_config = ConfigurationParser()._get_dict_from_anything(replica_file, REPLICA_JSON_SCHEMA)
     cred_config = ConfigurationParser()._get_dict_from_anything(cred_file, CREDENTIALS_JSON_SCHEMA)
-    assert replica_config
-    assert cred_config
+    assert isinstance(replica_config, dict)
+    assert isinstance(cred_config, dict)
