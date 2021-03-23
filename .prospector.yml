@@ -1,4 +1,4 @@
-strictness: medium
+strictness: high
 doc-warnings: false
 test-warnings: false
 autodetect: true
@@ -7,10 +7,14 @@ member-warnings: false
 ignore-patterns:
   - (^|/)__init__.py$
 
-pep8:
+pylint:
+  options:
+    max-line-length: 120
   disable:
-    - W504
-    - W503
-    - E501
-    - N806
+    - abstract-method
+    - logging-fstring-interpolation
+    - cyclic-import # https://github.com/PyCQA/pylint/issues/3525
 
+pep8:
+  options:
+    max-line-length: 120

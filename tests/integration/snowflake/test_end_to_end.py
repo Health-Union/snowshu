@@ -1,11 +1,13 @@
-from datetime import datetime
-import docker
-import pytest
 import os
 import time
-from sqlalchemy import create_engine
-from snowshu.configs import PACKAGE_ROOT
+from datetime import datetime
+
+import docker
+import pytest
 from click.testing import CliRunner
+from sqlalchemy import create_engine
+
+from snowshu.configs import PACKAGE_ROOT
 from snowshu.core.main import cli
 
 """ End-To-End all inclusive test session"""

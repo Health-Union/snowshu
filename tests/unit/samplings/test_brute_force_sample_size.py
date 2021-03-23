@@ -1,6 +1,8 @@
 
 import pytest
+
 from snowshu.samplings.sample_sizes import BruteForceSampleSize
+
 
 def test_cochrans():
     sample_sizer=BruteForceSampleSize(0.10)
@@ -9,4 +11,3 @@ def test_cochrans():
 def test_div_by_zero():
     sample_sizer=BruteForceSampleSize(0.50)
     assert sample_sizer.size(0) == 0
-

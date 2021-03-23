@@ -2,7 +2,6 @@ snowshu.core
 ============
 .. toctree::
 
-   snowshu.core.catalog
    snowshu.core.compile
    snowshu.core.configuration_parser
    snowshu.core.docker

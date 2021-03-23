@@ -1,15 +1,18 @@
-import pytest
-import mock
-from tests.conftest import CONFIGURATION
-from io import StringIO
-import yaml
 import copy
+from io import StringIO
+
+import mock
 import networkx as nx
+import pytest
+import yaml
+
 from snowshu.core.configuration_parser import ConfigurationParser
 from snowshu.core.graph import SnowShuGraph
-from snowshu.samplings.samplings import DefaultSampling,BruteForceSampling
-from snowshu.core.models import materializations as mz
 from snowshu.core.models import Relation
+from snowshu.core.models import materializations as mz
+from snowshu.samplings.samplings import BruteForceSampling, DefaultSampling
+from tests.conftest import CONFIGURATION
+
 
 def test_graph_builds_dags_correctly(stub_graph_set):
     shgraph = SnowShuGraph()

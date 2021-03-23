@@ -1,10 +1,10 @@
 class BaseSampleSize:
-    """The base class for all sample size methods. 
+    """The base class for all sample size methods.
 
     """
 
     @property
-    def size(self)->int:
+    def size(self) -> int:
         """The sample size.
 
         Must return the sample size (integer count of elements) caluclated
@@ -14,4 +14,4 @@ class BaseSampleSize:
             the number of elements
 
         """
-        raise NotImplementedError()        
+        raise NotImplementedError()

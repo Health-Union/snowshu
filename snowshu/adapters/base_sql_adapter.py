@@ -1,16 +1,20 @@
+import copy
+from typing import Optional
+
 import sqlalchemy
 from sqlalchemy.pool import NullPool
+
+from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, USER,
+                                             Credentials)
 from snowshu.logger import Logger
-from snowshu.core.models.credentials import Credentials, USER, PASSWORD, HOST, DATABASE
-from typing import Optional
-import copy
+
 logger = Logger().logger
 
 
 class BaseSQLAdapter:
 
     def __init__(self):
-        self.CLASSNAME = self.__class__.__name__
+        self.CLASSNAME = self.__class__.__name__     # noqa pylint: disable=invalid-name
         for attr in ('REQUIRED_CREDENTIALS', 'ALLOWED_CREDENTIALS',
                      'MATERIALIZATION_MAPPINGS',):
             if not hasattr(self, attr):
@@ -27,7 +31,7 @@ class BaseSQLAdapter:
             if value.__dict__[cred] is None:
                 raise KeyError(
                     f"{self.CLASSNAME} requires missing credential {cred}.")
-        ALL_CREDENTIALS = self.REQUIRED_CREDENTIALS + self.ALLOWED_CREDENTIALS
+        ALL_CREDENTIALS = self.REQUIRED_CREDENTIALS + self.ALLOWED_CREDENTIALS  # noqa pylint: disable=invalid-name
         for val in [val for val in value.__dict__.keys() if (
                 val not in ALL_CREDENTIALS and value.__dict__[val] is not None)]:
             raise KeyError(
@@ -62,7 +66,7 @@ class BaseSQLAdapter:
         logger.debug(f'engine aquired. Conn string: {repr(engine.url)}')
         return engine
 
-    def _build_conn_string(self, overrides: dict = {}) -> str:
+    def _build_conn_string(self, overrides: dict = None) -> str:
         """This is the most basic implementation of a connection string
         possible and is intended to be extended.
 
@@ -73,6 +77,8 @@ class BaseSQLAdapter:
             # attempt to infer the dialect
             raise KeyError(
                 'base_sql_adapter unable to build connection string; required param `dialect` to infer.')
+        if not overrides:
+            overrides = dict()
 
         self._credentials.urlencode()
         conn_string, used_credentials = self._build_conn_string_partial(
@@ -80,8 +86,9 @@ class BaseSQLAdapter:
         instance_creds = copy.deepcopy(self._credentials)
         for key in overrides.keys():
             instance_creds.__dict__[key] = overrides[key]
-        get_args = '&'.join([f"{arg}={instance_creds.__dict__[arg]}" for arg in (set(
-            self.ALLOWED_CREDENTIALS) - used_credentials) if arg in vars(instance_creds) and instance_creds.__dict__[arg] is not None])
+        get_args = '&'.join([f"{arg}={instance_creds.__dict__[arg]}"
+                            for arg in (set(self.ALLOWED_CREDENTIALS) - used_credentials)
+                            if arg in vars(instance_creds) and instance_creds.__dict__[arg] is not None])
         return conn_string + get_args
 
     def _build_conn_string_partial(
@@ -91,5 +98,7 @@ class BaseSQLAdapter:
         RETURNS: a tuple with the conn string and a tuple of credential args used in that string
         """
         database = database if database is not None else self._credentials.database
-        return f"{dialect}://{self._credentials.user}:{self._credentials.password}@{self._credentials.host}/{database}?",\
+        return (
+            f"{dialect}://{self._credentials.user}:{self._credentials.password}@{self._credentials.host}/{database}?",
             {USER, PASSWORD, HOST, DATABASE, }
+        )

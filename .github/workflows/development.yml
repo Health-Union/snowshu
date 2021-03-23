@@ -1,0 +1,25 @@
+name: Development Workflow
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+
+  build-and-test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Setup template credentials
+      run: cp snowshu/templates/credentials.yml tests/assets/integration/credentials.yml
+    - name: Build the Docker image
+      run: docker-compose up -d
+    - name: Run Linter
+      run: docker-compose exec -T snowshu prospector
+    - name: Run Unit Test
+      run: docker-compose exec -T snowshu py.test --cov=snowshu tests/unit
