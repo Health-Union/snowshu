@@ -1,9 +1,10 @@
-import pytest
 import mock
 import json
 from pathlib import Path
 from tests.common import rand_string
 from snowshu.core.replica.replica_factory import ReplicaFactory
+from tests.common import rand_string
+
 
 @mock.patch('snowshu.core.replica.replica_factory.SnowShuGraph.build_graph')
 @mock.patch('snowshu.core.replica.replica_factory.SnowShuGraph.get_graphs',return_value=[])

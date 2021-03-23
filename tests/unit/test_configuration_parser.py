@@ -1,16 +1,18 @@
-import mock
-import tempfile
 import json
-import pytest
-from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
-from tests.common import rand_string
+import os
+import tempfile
 from io import StringIO
 from pathlib import Path
-from jsonschema.exceptions import ValidationError
+
+import mock
+import pytest
 import yaml
+from jsonschema.exceptions import ValidationError
+
+from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.configuration_parser import ConfigurationParser, REPLICA_JSON_SCHEMA, CREDENTIALS_JSON_SCHEMA
-import os
 from snowshu.samplings.samplings import DefaultSampling
+from tests.common import rand_string
 
 
 def test_fills_in_empty_source_values(stub_replica_configuration):
@@ -74,7 +76,8 @@ def test_loads_good_creds(stub_creds,stub_configs):
         json.dump(stub_creds, mock_file)
         mock_file.seek(0)
         stub_configs['credpath']=mock_file.name
-        adapter_profile=ConfigurationParser()._build_adapter_profile('source',stub_configs)
+        adapter_profile=ConfigurationParser()._build_adapter_profile('source', stub_configs,
+                            schema_path=Path("/app/snowshu/templates/credentials_schema.json"))
 
     assert adapter_profile.name == SOURCES_NAME
     assert adapter_profile.adapter.credentials.password == SOURCES_PASSWORD

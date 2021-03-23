@@ -1,9 +1,12 @@
 import os
-import pytest
+
 import docker
-from snowshu.core.replica.replica_factory import ReplicaFactory
+import pytest
+
 from snowshu.configs import PACKAGE_ROOT
 from snowshu.core.docker import SnowShuDocker
+from snowshu.core.replica.replica_factory import ReplicaFactory
+
 
 def test_analyze_unsampled(docker_flush):
 

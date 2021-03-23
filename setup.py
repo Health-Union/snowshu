@@ -1,7 +1,8 @@
 #!/usr/local/bin/python3
 
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 VERSION='0.0.2'
 PYTHON_REQUIRES='3.7'

@@ -1,10 +1,12 @@
-import pytest
-import mock
 import copy
-import pandas as pd
-from snowshu.samplings.samplings import DefaultSampling
-from snowshu.core.graph_set_runner import GraphSetRunner, GraphExecutable
 from time import time
+
+import mock
+import pandas as pd
+import pytest
+
+from snowshu.core.graph_set_runner import GraphExecutable, GraphSetRunner
+from snowshu.samplings.samplings import DefaultSampling
 
 
 def test_traverse_and_execute_analyze(stub_graph_set):

@@ -1,20 +1,22 @@
-from dataclasses import dataclass
 import copy
-import pytest
+from dataclasses import dataclass
+
 import mock
-import pandas as pd
-from dfmock import DFMock
-from tests.common import rand_string
 import networkx as nx
-from tests.common import query_equalize
+import pandas as pd
+import pytest
+from dfmock import DFMock
+
+import snowshu.core.models.data_types as dt
 import snowshu.core.models.materializations as mz
 from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
-from snowshu.core.models.relation import Relation
 from snowshu.core.compile import RuntimeSourceCompiler
+from snowshu.core.models.attribute import Attribute
+from snowshu.core.models.relation import Relation
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from snowshu.samplings.samplings import DefaultSampling
-from snowshu.core.models.attribute import Attribute
-import snowshu.core.models.data_types as dt
+from tests.common import query_equalize, rand_string
+
 
 def stub_out_sampling(rel:Relation)->Relation:
     rel.sampling=DefaultSampling()

@@ -1,23 +1,24 @@
-import pytest
-import docker
-from io import StringIO
-import tempfile
 import copy
 import json
-import yaml
 import re
-from snowshu.core.configuration_parser import ConfigurationParser
-from tests.conftest_modules.test_credentials import CREDENTIALS
-from tests.conftest_modules.test_configuration import CONFIGURATION
-from tests.conftest_modules.mock_docker_images import MockImageFactory
+from io import StringIO
 
-from tests.common import rand_string
-from snowshu.core.models import Relation, Attribute
-import snowshu.core.models.data_types as dt
-import snowshu.core.models.materializations as mz
+import docker
 import networkx as nx
 import pandas as pd
+import pytest
+import yaml
 from dfmock import DFMock
+
+import snowshu.core.models.data_types as dt
+import snowshu.core.models.materializations as mz
+from snowshu.core.configuration_parser import ConfigurationParser
+from snowshu.core.models import Attribute, Relation
+from tests.common import rand_string
+from tests.conftest_modules.mock_docker_images import MockImageFactory
+from tests.conftest_modules.test_configuration import CONFIGURATION
+from tests.conftest_modules.test_credentials import CREDENTIALS
+
 
 @pytest.fixture
 def stub_creds():

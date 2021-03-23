@@ -1,16 +1,20 @@
+import gc
 import os
 import shutil
-import gc
-from typing import List
-from snowshu.configs import MAX_ALLOWED_ROWS
-from snowshu.core.compile import RuntimeSourceCompiler
-from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
-from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
-import networkx as nx
-from snowshu.logger import Logger, duration
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from typing import List
+
+import networkx as nx
+
+from snowshu.adapters.source_adapters.base_source_adapter import \
+    BaseSourceAdapter
+from snowshu.adapters.target_adapters.base_target_adapter import \
+    BaseTargetAdapter
+from snowshu.configs import MAX_ALLOWED_ROWS
+from snowshu.core.compile import RuntimeSourceCompiler
+from snowshu.logger import Logger, duration
 
 logger = Logger().logger
 
@@ -26,14 +30,18 @@ class GraphExecutable:
 class GraphSetRunner:
 
     barf_output = 'snowshu_barf_output'
-    def execute_graph_set(self,
+
+    def __init__(self):
+        self.barf = None
+
+    def execute_graph_set(self,     # noqa pylint: disable=too-many-arguments
                           graph_set: List[nx.Graph],
                           source_adapter: BaseSourceAdapter,
                           target_adapter: BaseTargetAdapter,
                           threads: int,
                           analyze: bool = False,
                           barf: bool = False) -> None:
-        self.barf=barf
+        self.barf = barf
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
             os.makedirs(self.barf_output)
@@ -53,17 +61,17 @@ class GraphSetRunner:
                 for executable in make_executables(graphs):
                     executor.submit(self._traverse_and_execute, executable)
 
-    def _traverse_and_execute(self, executable: GraphExecutable) -> None:
+    def _traverse_and_execute(self, executable: GraphExecutable) -> None:   # noqa mccabe: disable=MC0001
         start_time = time.time()
         try:
             logger.debug(
                 f"Executing graph with {len(executable.graph)} relations in it...")
             for i, relation in enumerate(
                     nx.algorithms.dag.topological_sort(executable.graph)):
-                relation.population_size=executable.source_adapter.scalar_query(
-                                         executable.source_adapter.population_count_statement(relation))
-                logger.info(
-                    f'Executing graph {i+1} of {len(executable.graph)} source query for relation {relation.dot_notation}...')
+                relation.population_size = executable.source_adapter.scalar_query(
+                    executable.source_adapter.population_count_statement(relation))
+                logger.info(f'Executing graph {i+1} of {len(executable.graph)} source query '
+                            f'for relation {relation.dot_notation}...')
 
                 relation.sampling.prepare(relation,
                                           executable.source_adapter)
@@ -77,10 +85,8 @@ class GraphSetRunner:
                         logger.info(
                             f'Relation {relation.dot_notation} is a view, skipping.')
                     else:
-                        result = [
-                            row for row in executable.source_adapter.check_count_and_query(
-                                relation.compiled_query,
-                                MAX_ALLOWED_ROWS).itertuples()][0]
+                        result = executable.source_adapter.check_count_and_query(relation.compiled_query,
+                                                                                 MAX_ALLOWED_ROWS).iloc[0]
                         relation.population_size = result.population_size
                         relation.sample_size = result.sample_size
                         logger.info(
@@ -89,7 +95,7 @@ class GraphSetRunner:
                     executable.target_adapter.create_database_if_not_exists(
                         relation.quoted(relation.database))
                     executable.target_adapter.create_schema_if_not_exists(
-                        relation.quoted(relation.database), 
+                        relation.quoted(relation.database),
                         relation.quoted(relation.schema))
                     if relation.is_view:
                         logger.info(
@@ -97,7 +103,8 @@ class GraphSetRunner:
                         relation.population_size = "N/A"
                         relation.sample_size = "N/A"
                         try:
-                            relation.view_ddl = executable.source_adapter.scalar_query(relation.compiled_query)
+                            relation.view_ddl = executable.source_adapter.scalar_query(
+                                relation.compiled_query)
                         except Exception:
                             raise SystemError(
                                 f'Failed to extract DDL statement: {relation.compiled_query}')
@@ -109,9 +116,9 @@ class GraphSetRunner:
                         try:
                             relation.data = executable.source_adapter.check_count_and_query(
                                 relation.compiled_query, MAX_ALLOWED_ROWS)
-                        except Exception as e:
+                        except Exception as exc:
                             raise SystemError(
-                                f'Failed execution of extraction sql statement: {relation.compiled_query} {e}')
+                                f'Failed execution of extraction sql statement: {relation.compiled_query} {exc}')
 
                         relation.sample_size = len(relation.data)
                         logger.info(
@@ -122,9 +129,9 @@ class GraphSetRunner:
                     try:
                         executable.target_adapter.create_and_load_relation(
                             relation)
-                    except Exception as e:
+                    except Exception as exc:
                         raise SystemError(
-                            f'Failed to load relation {relation.quoted_dot_notation} into target: {e}')
+                            f'Failed to load relation {relation.quoted_dot_notation} into target: {exc}')
 
                     logger.info(
                         f'Done replication of relation {relation.dot_notation} in {duration(start_time)}.')
@@ -133,14 +140,14 @@ class GraphSetRunner:
                 logger.info(
                     f'population:{relation.population_size}, sample:{relation.sample_size}')
                 if self.barf:
-                   with open(os.path.join(self.barf_output,f'{relation.dot_notation}.sql'),'w') as f:
-                        f.write(relation.compiled_query) 
+                    with open(os.path.join(self.barf_output, f'{relation.dot_notation}.sql'), 'w') as barf_file:
+                        barf_file.write(relation.compiled_query)
             try:
                 for relation in executable.graph.nodes:
                     del relation.data
             except AttributeError:
                 pass
             gc.collect()
-        except Exception as e:
-            logger.error(f'failed with error of type {type(e)}: {str(e)}')
-            raise e
+        except Exception as exc:
+            logger.error(f'failed with error of type {type(exc)}: {str(exc)}')
+            raise exc

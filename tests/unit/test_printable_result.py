@@ -1,4 +1,5 @@
 import pytest
+
 import snowshu.core.printable_result as pr
 
 

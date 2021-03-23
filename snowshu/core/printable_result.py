@@ -1,8 +1,11 @@
-from tabulate import tabulate
-import networkx as nx
 from dataclasses import dataclass
 from typing import Any, List, Union
+
+import networkx as nx
+from tabulate import tabulate
+
 from snowshu.logger import Logger
+
 logger = Logger().logger
 
 
@@ -10,7 +13,7 @@ logger = Logger().logger
 class ReportRow:
     dot_notation: str
     population_size: Union[int, str]
-    target_sample_size:Union[int,str]
+    target_sample_size: Union[int, str]
     final_sample_size: Union[int, str]
     count_of_dependencies: str
     percent_to_target: Any
@@ -33,10 +36,10 @@ def graph_to_result_list(graphs: nx.Graph) -> list:
             for relation in graph.nodes:
                 deps = len(nx.ancestors(graph, relation))
                 deps = " " if deps == 0 else str(deps)
-                target_sample_size=relation.population_size if\
+                target_sample_size = relation.population_size if\
                     (relation.unsampled or relation.population_size < relation.sampling.size)\
                     else relation.sampling.size
-                
+
                 if isinstance(relation.population_size, str):
                     percent = "N/A"
                 elif int(relation.population_size) < 1:
@@ -45,7 +48,8 @@ def graph_to_result_list(graphs: nx.Graph) -> list:
                     percent = int(round(
                         100.0 * (relation.sample_size / target_sample_size)))
 
-                percent_is_acceptable = True if isinstance(percent, str) else abs(percent-100) <= 5
+                percent_is_acceptable = True if isinstance(
+                    percent, str) else abs(percent - 100) <= 5
                 report.append(ReportRow(
                     relation.dot_notation,
                     relation.population_size,
@@ -54,8 +58,8 @@ def graph_to_result_list(graphs: nx.Graph) -> list:
                     deps,
                     percent,
                     percent_is_acceptable))
-        except Exception as e:
-            message = f"failure in building row for relation {relation.dot_notation} : {e}"
+        except Exception as exc:
+            message = f"failure in building row for relation {relation.dot_notation} : {exc}"
             logger.critical(message)
             raise ValueError(message)
     return report
@@ -81,18 +85,19 @@ def printable_result(report: List[ReportRow], analyze: str) -> str:
         tabulate(printable, headers, colalign=column_alignment) + "\n"
 
 
-def format_set_of_available_images(imageset:iter)->str:
+def format_set_of_available_images(imageset: iter) -> str:
     """Transforms an iterable of tuples into a response pretty printed.
 
     Args:
-        imageset: a tuple or ordered iterable in format (image name, last modified datetime, source adapter, target adapter). 
+        imageset: a tuple or ordered iterable in format (image name,
+            last modified datetime, source adapter, target adapter).
     Returns:
         formatted color output.
     """
-    headers= ('Replica name',
-              'modified',
-              'source',
-              'replica engine',
-              'docker image',)
+    headers = ('Replica name',
+               'modified',
+               'source',
+               'replica engine',
+               'docker image',)
 
-    return "\n\nAVAILABLE IMAGES:\n\n" + tabulate(imageset,headers)
+    return "\n\nAVAILABLE IMAGES:\n\n" + tabulate(imageset, headers)

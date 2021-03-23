@@ -5,15 +5,16 @@ from urllib.parse import quote_plus
 ACCOUNT = 'account'
 DATABASE = 'database'
 HOST = 'host'
-PASSWORD = 'password'
+PASSWORD = 'password'   # noqa dodgy: disable=password
 PORT = 'port'
 ROLE = 'role'
 SCHEMA = 'schema'
 USER = 'user'
 WAREHOUSE = 'warehouse'
 
+
 @dataclass
-class Credentials:
+class Credentials:  # noqa pylint: disable=too-many-instance-attributes
     """Represents every accepted type of credential, attempting to bring some
     sanity to how configs are defined for disparate adapters."""
     account: Optional[str] = None
@@ -25,7 +26,6 @@ class Credentials:
     schema: Optional[str] = None
     user: Optional[str] = None
     warehouse: Optional[str] = None
-    
 
     def urlencode(self) -> None:
         """quote-plus encoding of all attributes good for sql urls."""
