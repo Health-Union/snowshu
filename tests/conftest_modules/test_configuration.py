@@ -26,8 +26,6 @@ CONFIGURATION = {
             ]
         },
         "include_outliers": True,
-        "sample_method": "bernoulli",
-        "probability": 30,
         "specified_relations": [
             {
                 "database": "SNOWSHU_DEVELOPMENT",

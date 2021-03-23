@@ -10,7 +10,7 @@ import yaml
 from jsonschema.exceptions import ValidationError
 
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
-from snowshu.core.configuration_parser import ConfigurationParser
+from snowshu.core.configuration_parser import ConfigurationParser, REPLICA_JSON_SCHEMA, CREDENTIALS_JSON_SCHEMA
 from snowshu.samplings.samplings import DefaultSampling
 from tests.common import rand_string
 
@@ -76,8 +76,7 @@ def test_loads_good_creds(stub_creds,stub_configs):
         json.dump(stub_creds, mock_file)
         mock_file.seek(0)
         stub_configs['credpath']=mock_file.name
-        adapter_profile=ConfigurationParser()._build_adapter_profile('source', stub_configs,
-                            schema_path=Path("/app/snowshu/templates/credentials_schema.json"))
+        adapter_profile=ConfigurationParser()._build_adapter_profile('source', stub_configs)
 
     assert adapter_profile.name == SOURCES_NAME
     assert adapter_profile.adapter.credentials.password == SOURCES_PASSWORD
@@ -93,8 +92,7 @@ def test_schema_verification_errors(stub_creds, stub_configs):
         mock_file.seek(0)
         stub_configs['credpath']=mock_file.name
         with pytest.raises(ValidationError) as exc:
-            ConfigurationParser()._build_adapter_profile('source', stub_configs,
-                            schema_path=Path("/app/snowshu/templates/credentials_schema.json"))
+            ConfigurationParser()._build_adapter_profile('source', stub_configs)
     assert "True is not of type 'string'" in str(exc.value)
 
     # config with missing credentials file
@@ -102,3 +100,20 @@ def test_schema_verification_errors(stub_creds, stub_configs):
         mock_config_file = StringIO(yaml.dump(stub_configs))
         ConfigurationParser().from_file_or_path(mock_config_file)
     assert "Credentials specified in replica.yml not found" in fnf_err.value.strerror
+
+
+def test_schema_verification(tmpdir, stub_creds, stub_configs):
+    """ Verifies that the configuration parser can load a proper file. """
+    replica_file = Path(tmpdir / 'replica_file.yml')
+    cred_file = Path(tmpdir / 'credentials_file.yml')
+    stub_creds = stub_creds()
+    stub_configs = stub_configs()
+    stub_configs["credpath"] = str(cred_file.absolute())
+
+    cred_file.write_text(json.dumps(stub_creds))
+    replica_file.write_text(json.dumps(stub_configs))
+
+    replica_config = ConfigurationParser()._get_dict_from_anything(replica_file, REPLICA_JSON_SCHEMA)
+    cred_config = ConfigurationParser()._get_dict_from_anything(cred_file, CREDENTIALS_JSON_SCHEMA)
+    assert isinstance(replica_config, dict)
+    assert isinstance(cred_config, dict)

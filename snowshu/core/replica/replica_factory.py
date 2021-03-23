@@ -76,7 +76,7 @@ class ReplicaFactory:
     def load_config(self, config: Union[Path, str, TextIO]):
         """does all the initial work to make the resulting ReplicaFactory
         object usable."""
-        logger.info('Loading credentials...')
+        logger.info('Loading configuration...')
         start_timer = time.time()
         self.config = ConfigurationParser().from_file_or_path(config)
-        logger.info('Credentials loaded in %s.', duration(start_timer))
+        logger.info('Configuration loaded in %s.', duration(start_timer))
