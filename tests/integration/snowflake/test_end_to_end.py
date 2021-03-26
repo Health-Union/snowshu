@@ -26,7 +26,11 @@ def end_to_end(docker_flush_session):
     runner = CliRunner()
     configuration_path = os.path.join(
         PACKAGE_ROOT, 'snowshu', 'templates', 'replica.yml')
-    create_output=runner.invoke(cli, ('create', '--replica-file', configuration_path)).output.split('\n')
+    create_result=runner.invoke(cli, ('create', '--replica-file', configuration_path))
+    if create_result.exit_code:
+        print(create_result.exc_info)
+        raise create_result.exception
+    create_output = create_result.output.split('\n')
     client=docker.from_env()
     client.containers.run('snowshu_replica_integration-test',
                           ports={'9999/tcp':9999},
