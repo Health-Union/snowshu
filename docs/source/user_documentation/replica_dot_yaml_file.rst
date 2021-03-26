@@ -24,6 +24,9 @@ Your initial replica file will look something like this (*hint*: you can run ``s
    threads: 15
    target:
      adapter: postgres
+     adapter_args:
+      pg_extensions:
+        - uuid-ossp
    source:
      profile: default
      sampling: default
@@ -93,6 +96,9 @@ In our example, this would be the header:
    threads: 15
    target:
      adapter: postgres
+     adapter_args:
+      pg_extensions:
+        - uuid-ossp
 
 Let's disect each of the components:
 
@@ -102,7 +108,10 @@ Let's disect each of the components:
 - **short_description** (*Optional*) tells users a little bit about the replica you are creating.
 - **long_description** (*Optional*) provides users with a detailed explanation of the replica you are creating.
 - **threads** (*Optional*) tells SnowShu the max number of threads that can be used when multiprocessing. When not set SnowShu may run much slower :(. 
-- **target** (*Required*) Specifies the adapter to use when creating a replica. For Snowflake, BigQuery and Redshift this should be ``postgres``. 
+- **target** (*Required*) Specifies the adapter to use when creating a replica.
+
+  - **adapter** (*Required*) For Snowflake, BigQuery and Redshift this should be ``postgres``.
+  - **adapter_args** (*Optional*) Some targets may require additional configuration, especially when emulating a different source type. These keys and values are specific to the target type. Currently, only `pg_extensions` is supported.
 
 Source
 ------
