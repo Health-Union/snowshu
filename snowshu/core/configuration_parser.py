@@ -299,7 +299,11 @@ class ConfigurationParser:
 
     @staticmethod
     def _build_target(full_creds: dict) -> AdapterProfile:
-        adapter = fetch_adapter(full_creds['target']['adapter'], 'target')()
+        adapter_type = fetch_adapter(full_creds['target']['adapter'], 'target')
+        adapter_args = full_creds['target'].get('adapter_args')
+        if not adapter_args:
+            adapter_args = dict()
+        adapter = adapter_type(**adapter_args)
         adapter.replica_meta = {
             attr: full_creds[attr] for attr in (
                 'name', 'short_description', 'long_description',)}

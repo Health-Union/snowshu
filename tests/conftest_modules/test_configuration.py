@@ -73,7 +73,10 @@ CONFIGURATION = {
         ]
     },
     "target": {
-        "adapter": "postgres"
+        "adapter": "postgres",
+        "adapter_args": {
+            "pg_extensions": ["uuid-ossp"]
+        }
     },
     "storage": {
         "profile": "default"

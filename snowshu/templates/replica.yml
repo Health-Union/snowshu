@@ -6,6 +6,9 @@ long_description: this is for testing against a live db
 threads: 15
 target:
   adapter: 'postgres'
+  adapter_args:
+    pg_extensions:
+      - uuid-ossp
 source:
   profile: default
   sampling: default
