@@ -3,12 +3,13 @@ import glob
 import logging
 import os
 import sys
+from argparse import Namespace
 from pathlib import Path
-from sqlalchemy.exc import ProgrammingError
 
 import pandas as pd
 import sqlalchemy
 import yaml
+from sqlalchemy.exc import ProgrammingError
 
 from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
 from snowshu.core.models.credentials import Credentials
@@ -143,6 +144,34 @@ def load_tables(tables, engine):
                 LOGGER.debug("Data Loaded")
 
 
+def make_views(engine):
+    """ Generate related views. """
+    # TODO: even with view creations, test_view fails ISSUE #64
+    users_view = dict(
+        name='USERS_VIEW',
+        schema='SOURCE_SYSTEM',
+        sql='SELECT * FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."USERS"')
+    address_region_attributes_view = dict(
+        name='ADDRESS_REGION_ATTRIBUTES_VIEW',
+        schema='EXTERNAL_DATA',
+        sql='SELECT * FROM "SNOWSHU_DEVELOPMENT"."EXTERNAL_DATA"."ADDRESS_REGION_ATTRIBUTES"')
+    order_items_view = dict(
+        name='ORDER_ITEMS_VIEW',
+        schema='SOURCE_SYSTEM',
+        sql='SELECT * FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."ORDER_ITEMS"')
+
+    for view_dict in (
+            users_view,
+            address_region_attributes_view,
+            order_items_view):
+        view = Namespace(**view_dict)
+        LOGGER.debug(f'Creating view {view.name}...')
+        create = f'CREATE VIEW "SNOWSHU_DEVELOPMENT"."{view.schema}"."{view.name}" AS {view.sql}'
+        with engine.begin() as cursor:
+            cursor.execute(create)
+            LOGGER.info(f'Done creating view {view.name}.')
+
+
 if __name__ == "__main__":
     conn = build_connectable()
     if HARD_RESET:
@@ -155,3 +184,4 @@ if __name__ == "__main__":
     tables = setup_db_structure(all_csv_files, conn)
     load_from_sql_file(conn)
     load_tables(tables, conn)
+    make_views(conn)
