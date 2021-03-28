@@ -1,6 +1,6 @@
 CREATE SCHEMA IF NOT EXISTS "SNOWSHU_DEVELOPMENT"."TESTS_DATA";
 
-CREATE TABLE "SNOWSHU_DEVELOPMENT"."TESTS_DATA"."DATA_TYPES" (
+CREATE TABLE IF NOT EXISTS "SNOWSHU_DEVELOPMENT"."TESTS_DATA"."DATA_TYPES" (
 array_col ARRAY,
 bigint_col BIGINT,
 binary_col BINARY,
@@ -102,3 +102,25 @@ CURRENT_DATE(),
 to_binary(hex_encode('Hello World'),'HEX'),
 'Hello World',
     parse_json(' { "key1": "value1", "key2": NULL } ');
+
+
+
+CREATE TABLE IF NOT EXISTS "SNOWSHU_DEVELOPMENT"."TESTS_DATA"."CASE_TESTING" (
+    UPPER_COL VARCHAR,
+    "QUOTED_UPPER_COL" VARCHAR,
+    lower_col VARCHAR,
+    CamelCasedCol VARCHAR,
+    Snake_Case_Camel_Col VARCHAR,
+    "Spaces Col" VARCHAR
+);
+
+
+INSERT INTO "SNOWSHU_DEVELOPMENT"."TESTS_DATA"."CASE_TESTING" (
+    UPPER_COL,
+    "QUOTED_UPPER_COL",
+    lower_col,
+    CamelCasedCol,
+    Snake_Case_Camel_Col,
+    "Spaces Col"
+)
+VALUES('a', 'b', 'c', 'd', 'e', 'f');
