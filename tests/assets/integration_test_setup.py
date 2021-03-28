@@ -115,25 +115,6 @@ def create_special_table(tables, conn):
     if not any(filter(lambda item: "DATA_TYPE" in item, tables)):
         return
 
-    table_full_name, table_file_path = filter(
-        lambda item: "DATA_TYPE" in item[0],
-        tables.items()
-    ).__next__()
-
-    # create table
-    with open(table_file_path) as table_file:
-        table_data = pd.read_csv(table_file)
-        query = f"CREATE TABLE {table_full_name} ("
-        for t_col in filter(lambda item: "_col" in item, table_data.columns):
-            t_col_type = t_col.replace('_col', '').upper()
-            if t_col_type == "DOUBLEPRECISION":
-                t_col_type = "DOUBLE PRECISION"
-            query += f"{t_col} {t_col_type}, "
-        query = query[:-2] + ");"
-
-        with conn.begin() as cursor:
-            cursor.execute(query)
-
     # TODO: load data from csv + case_testing csv, requires dataframe/csv changes
     load_from_sql_file(conn)
     return
