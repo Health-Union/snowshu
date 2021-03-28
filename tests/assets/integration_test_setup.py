@@ -18,6 +18,8 @@ ASSETS_DIR = Path(os.path.dirname(__file__))
 DATA_DIR = ASSETS_DIR / 'data'
 CREDENTIALS = ASSETS_DIR / 'integration' / 'credentials.yml'
 EXT = '*.csv'
+HARD_RESET = False
+TEST_DATABASE = "SNOWSHU_DEVELOPMENT"
 
 
 def get_connection_profile(credentials):
@@ -25,10 +27,15 @@ def get_connection_profile(credentials):
 
         Raises:
             NotImplementedError: if source adapter is not implemented.
+            ValueError: if test database b/w file and config do not match.
     """
     if credentials['sources'][0]['adapter'] != 'snowflake':
         raise NotImplementedError(
             'Test setup created just for snowflake source.')
+
+    if credentials['sources'][0]['database'].upper() != TEST_DATABASE:
+        raise ValueError(
+            'Test database set in file and database in configurations do not match.')
 
     return dict(
         account=credentials['sources'][0]['account'],
@@ -59,6 +66,10 @@ def build_connectable() -> 'sqlalchemy.engine.base.Engine'::
 
 if __name__ == "__main__":
     conn = build_connectable()
+    if HARD_RESET:
+        with conn.begin() as connection:
+            LOGGER.warning(f"HARD_RESET set. Deleting {TEST_DATABASE} database.")
+            connection.execute(f"DROP DATABASE IF EXISTS {TEST_DATABASE};")
 
     for csv_file in get_all_csv_file():
         with open(csv_file) as f:
