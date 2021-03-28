@@ -266,7 +266,7 @@ LIMIT {max_number_of_outliers})
     def _get_relations_from_database(self, schema_obj: BaseSourceAdapter._DatabaseObject) -> List[Relation]:
         quoted_database = schema_obj.full_relation.quoted(schema_obj.full_relation.database)  # quoted db name
         relation_database = schema_obj.full_relation.database  # case corrected db name
-        case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schame name
+        case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schema name
         relations_sql = f"""
                                  SELECT
                                     m.table_schema AS schema,
