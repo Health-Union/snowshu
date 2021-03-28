@@ -16,12 +16,26 @@ from snowshu.core.models.credentials import Credentials
 
 ASSETS_DIR = Path(os.path.dirname(__file__))
 DATA_DIR = ASSETS_DIR / 'data'
+CREDENTIALS = ASSETS_DIR / 'integration' / 'credentials.yml'
 EXT = '*.csv'
 
 
 def get_connection_profile(credentials):
-    # get the connection profile in dict form
-    return {}
+    """ Used to get the source connection profile in dict form. 
+
+        Raises:
+            NotImplementedError: if source adapter is not implemented.
+    """
+    if credentials['sources'][0]['adapter'] != 'snowflake':
+        raise NotImplementedError(
+            'Test setup created just for snowflake source.')
+
+    return dict(
+        account=credentials['sources'][0]['account'],
+        user=credentials['sources'][0]['user'],
+        password=credentials['sources'][0]['password'],
+        database=credentials['sources'][0]['database']
+    )
 
 
 def get_all_csv_file():
@@ -32,12 +46,11 @@ def get_all_csv_file():
     return all_csv_files
 
 
-def build_connectable():
-    with open('/app' / ASSETS_DIR / 'integration' / 'credentials.yml') as cred_file:
+def build_connectable() -> 'sqlalchemy.engine.base.Engine'::
+     """ Generates SQL alchemy engine from credentials. """
+    with open(CREDENTIALS) as cred_file:
         credentials = yaml.safe_load(cred_file)
-    if credentials['sources'][0]['adapter'] != 'snowflake':
-        raise NotImplementedError(
-            'Test setup created just for snowflake source.')
+
     profile_dict = get_connection_profile(credentials)
     adapter = SnowflakeAdapter()
     adapter.credentials = Credentials(**profile_dict)
@@ -59,33 +72,3 @@ if __name__ == "__main__":
                 schema=schema_name,
                 index=False,
                 chunksize=16000)
-
-"""
-
-def load_integration_tests():
-
-    conn=build_connectable()
-
-    for name, schema, csv_file in get_source_files():
-        logger.info(f'Inserting table "{schema}"."{name}"...')
-        frame=pd.read_csv(csv_file)
-        frame.to_sql(name, conn, schema=schema)
-        logger.info(f'Done inserting table "{schema}"."{name}".')
-
-
-    ## make views for good measure
-        users_view=dict(name='USERS_VIEW',schema='SOURCE_SYSTEM',sql='SELECT * FROM "SNOWSHU_DEVELOPMENT"."SOURCE_SYSTEM"."USERS"')
-        address_region_attributes_view=dict(name='address_region_attributes_view',schema='EXTERNAL_DATA',sql='SELECT * FROM "SNOWSHU_DEVELOPMENT"."EXTERNAL_DATA"."ADDRESS_REGION_ATTRIBUTES"')
-
-        for view in (users_view,address_region_attributes_view,):
-            logger.info(f'Creating view {view.name}...')
-            create=f'CREATE VIEW "SNOWSHU_DEVELOPMENT"."{view.schema}"."{view.name}" AS {view.sql}'
-            conn.execute(create)
-            logger.info('Done creating view {view.name}.')
-
-def build_connectable():
-
-
-def get_source_files():
-    for schema in
-"""
