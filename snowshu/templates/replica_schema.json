@@ -40,7 +40,8 @@
     "target": {
       "type": "object",
       "properties": {
-        "adapter": { "type": "string"}
+        "adapter": { "type": "string"},
+        "adapter_args": {"type": "object"}
       },
       "required": [
           "adapter"

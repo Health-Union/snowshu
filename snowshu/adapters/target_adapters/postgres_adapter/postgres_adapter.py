@@ -27,8 +27,10 @@ class PostgresAdapter(BaseTargetAdapter):
                              'POSTGRES_USER',
                              'POSTGRES_DB']
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         super().__init__()
+
+        self.extensions = kwargs.get("pg_extensions", list())
 
         self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port}' # noqa pylint: disable=invalid-name
         self.DOCKER_READY_COMMAND = (f'pg_isready -p {self._credentials.port} ' # noqa pylint: disable=invalid-name
@@ -55,6 +57,13 @@ class PostgresAdapter(BaseTargetAdapter):
                 logger.debug('Database %s already exists, skipping.', database)
             else:
                 raise sql_errs
+
+        # load any pg extensions that are required
+        db_conn = self.get_connection(database_override=database)
+        for ext in self.extensions:
+            statement = f'create extension if not exists \"{ext}\"'
+            db_conn.execute(statement)
+
         return database
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:

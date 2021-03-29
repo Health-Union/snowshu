@@ -1,5 +1,6 @@
 import os
 import time
+import re
 from datetime import datetime
 
 import docker
@@ -26,7 +27,11 @@ def end_to_end(docker_flush_session):
     runner = CliRunner()
     configuration_path = os.path.join(
         PACKAGE_ROOT, 'snowshu', 'templates', 'replica.yml')
-    create_output=runner.invoke(cli, ('create', '--replica-file', configuration_path)).output.split('\n')
+    create_result=runner.invoke(cli, ('create', '--replica-file', configuration_path))
+    if create_result.exit_code:
+        print(create_result.exc_info)
+        raise create_result.exception
+    create_output = create_result.output.split('\n')
     client=docker.from_env()
     client.containers.run('snowshu_replica_integration-test',
                           ports={'9999/tcp':9999},
@@ -133,6 +138,12 @@ def test_applies_emulation_function(end_to_end):
     query = 'SELECT ANY_VALUE(id) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS'
     q = conn.execute(query)
     assert int(q.fetchall()[0][0]) > 0
+
+def test_applies_uuid_emulation_function(end_to_end):
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
+    query = 'SELECT UUID_STRING()'
+    q = conn.execute(query)
+    assert re.match('[0-9A-Fa-f-]{36}', q.fetchall()[0][0])
 
 def test_data_types(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
