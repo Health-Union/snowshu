@@ -145,6 +145,12 @@ def test_applies_uuid_emulation_function(end_to_end):
     q = conn.execute(query)
     assert re.match('[0-9A-Fa-f-]{36}', q.fetchall()[0][0])
 
+def test_applies_pg_extensions(end_to_end):
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
+    query = "SELECT CASE WHEN 'My_Cased_String'::citext = 'my_cased_string'::citext THEN 'SUCCESS' ELSE 'FAIL' END"
+    q = conn.execute(query)
+    assert q.fetchall()[0][0] == 'SUCCESS'
+
 def test_data_types(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
