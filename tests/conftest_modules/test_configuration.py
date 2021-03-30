@@ -75,7 +75,7 @@ CONFIGURATION = {
     "target": {
         "adapter": "postgres",
         "adapter_args": {
-            "pg_extensions": ["uuid-ossp"]
+            "pg_extensions": ["citext"]
         }
     },
     "storage": {

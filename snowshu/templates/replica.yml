@@ -8,7 +8,7 @@ target:
   adapter: 'postgres'
   adapter_args:
     pg_extensions:
-      - uuid-ossp
+      - citext
 source:
   profile: default
   sampling: default
