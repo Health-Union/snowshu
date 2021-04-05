@@ -26,9 +26,10 @@ with open('./README.md','r') as readme:
     packagedata['long_description']=readme.read()
     packagedata['long_description_content_type']='text/markdown'
 
-with open('./requirements/base.txt', 'r') as requirements:
-    for line in requirements.readlines():
-        if not line.startswith('-r'):
-            packagedata['install_requires'].append(line)
+for file_name in ['base.txt', 'snowflake_pins.txt']:
+    with open(f'./requirements/{file_name}', 'r') as requirements:
+        for line in requirements.readlines():
+            if not line.startswith('-r'):
+                packagedata['install_requires'].append(line)
 
 setup(**packagedata)
