@@ -86,6 +86,13 @@ class PostgresAdapter(BaseTargetAdapter):
         return commands
 
     @staticmethod
+    def image_initialize_bash_commands() -> List[str]:
+        commands = list()
+        # install extra postgres extension packages here
+        commands.append('apt-get update && apt-get install -y postgresql-plpython3-12')
+        return commands
+
+    @staticmethod
     def docker_commit_changes() -> str:
         """To finalize the image we need to set envars for the container."""
         return f"ENV PGDATA /{DOCKER_REMOUNT_DIRECTORY}"

@@ -28,7 +28,7 @@ def test_creates_replica(docker_flush):
         target_adapter.DOCKER_IMAGE,
         target_adapter.DOCKER_START_COMMAND,
         9999,
-        target_adapter.CLASSNAME,
+        target_adapter,
         'SnowflakeAdapter',
         ['POSTGRES_USER=snowshu',
          'POSTGRES_PASSWORD=snowshu',
@@ -64,4 +64,6 @@ def test_creates_replica(docker_flush):
     assert ('a', 1,) in res
     assert ('b', 2,) in res
     assert ('c', 3,) in res
+    # verify that the extra OS packages are installed
+    res = engine.execute("create extension plpython3udf;")
     shdocker.remove_container(TEST_NAME)
