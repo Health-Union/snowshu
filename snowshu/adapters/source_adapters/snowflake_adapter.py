@@ -357,13 +357,20 @@ LIMIT {max_number_of_outliers})
                     reraise=True)
     @overrides
     def check_count_and_query(self, query: str,
-                              max_count: int) -> pd.DataFrame:
+                              max_count: int,
+                              unsampled: bool) -> pd.DataFrame:
         """checks the count, if count passes returns results as a dataframe."""
         try:
             logger.debug('Checking count for query...')
             start_time = time.time()
             count = self._count_query(query)
-            assert count <= max_count
+            if unsampled and count > max_count:
+                warn_msg = (f'Unsampled relation has {count} rows which is over '
+                            f'the max allowed rows for this type of query ({max_count}). '
+                            f'All records will be loaded into replica.')
+                logger.warning(warn_msg)
+            else:
+                assert count <= max_count
             logger.debug(
                 f'Query count safe at {count} rows in {time.time()-start_time} seconds.')
         except AssertionError:

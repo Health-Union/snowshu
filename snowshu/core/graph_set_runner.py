@@ -86,7 +86,8 @@ class GraphSetRunner:
                             f'Relation {relation.dot_notation} is a view, skipping.')
                     else:
                         result = executable.source_adapter.check_count_and_query(relation.compiled_query,
-                                                                                 MAX_ALLOWED_ROWS).iloc[0]
+                                                                                 MAX_ALLOWED_ROWS,
+                                                                                 relation.unsampled).iloc[0]
                         relation.population_size = result.population_size
                         relation.sample_size = result.sample_size
                         logger.info(
@@ -115,7 +116,7 @@ class GraphSetRunner:
                             f'Retrieving records from source {relation.dot_notation}...')
                         try:
                             relation.data = executable.source_adapter.check_count_and_query(
-                                relation.compiled_query, MAX_ALLOWED_ROWS)
+                                relation.compiled_query, MAX_ALLOWED_ROWS, relation.unsampled)
                         except Exception as exc:
                             raise SystemError(
                                 f'Failed execution of extraction sql statement: {relation.compiled_query} {exc}')

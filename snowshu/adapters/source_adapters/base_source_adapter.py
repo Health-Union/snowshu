@@ -164,7 +164,7 @@ class BaseSourceAdapter(BaseSQLAdapter):
         """wraps any query in a COUNT statement, returns that integer."""
         raise NotImplementedError()
 
-    def check_count_and_query(self, query: str, max_count: int) -> pd.DataFrame:
+    def check_count_and_query(self, query: str, max_count: int, unsampled: bool) -> pd.DataFrame:
         """checks the count, if count passes returns results as a dataframe."""
         raise NotImplementedError()
 
@@ -181,7 +181,7 @@ class BaseSourceAdapter(BaseSQLAdapter):
         Returns:
             the raw value from cell [0][0]
         """
-        return self.check_count_and_query(query, 1).iloc[0][0]
+        return self.check_count_and_query(query, 1, False).iloc[0][0]
 
     def _get_data_type(self, source_type: str) -> DataType:
         try:

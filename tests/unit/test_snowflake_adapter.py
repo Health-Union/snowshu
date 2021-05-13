@@ -144,7 +144,7 @@ def test_retry_count_query():
     with mock.patch("snowshu.adapters.source_adapters.SnowflakeAdapter._count_query", side_effect=error_list):
         sf = SnowflakeAdapter()
         with pytest.raises(SystemError) as exc:
-            sf.check_count_and_query("select * from unknown_table", 10)
+            sf.check_count_and_query("select * from unknown_table", 10, False)
         
         # assert that the 4th error was raised
         assert exc.errisinstance(SystemError)
