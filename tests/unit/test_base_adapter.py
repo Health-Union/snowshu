@@ -15,7 +15,7 @@ def rand_creds(args) -> Credentials:
     return Credentials(**kwargs)
 
 
-class TestAdapter(BaseSQLAdapter):
+class StubbedAdapter(BaseSQLAdapter):
 
     REQUIRED_CREDENTIALS = (USER, PASSWORD, HOST)
     ALLOWED_CREDENTIALS = (ACCOUNT, SCHEMA)
@@ -25,7 +25,7 @@ class TestAdapter(BaseSQLAdapter):
 
 def test_sets_credentials():
 
-    base = TestAdapter()
+    base = StubbedAdapter()
 
     with pytest.raises(KeyError):
         base.credentials = rand_creds((HOST,))
@@ -39,7 +39,7 @@ def test_sets_credentials():
 
 
 def test_default_conn_string():
-    base = TestAdapter()
+    base = StubbedAdapter()
     base.dialect = 'postgres'
 
     base.REQUIRED_CREDENTIALS = (USER, PASSWORD, DATABASE, HOST)
@@ -56,7 +56,7 @@ def test_build_catalog():
     config_patterns = [
         dict(database="snowshu_development",
              schema=".*",
-             name="^(?i).*(?<!_view)$"),
+             name="(?i)^.*(?<!_view)$"),
         dict(database="snowshu_development",
              schema="source_system",
              name="order_items_view")
