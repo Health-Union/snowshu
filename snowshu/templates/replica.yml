@@ -19,7 +19,7 @@ source:
       schemas:
       - pattern: "(?i)(EXTERNAL_DATA|SOURCE_SYSTEM|TESTS_DATA)" # matches our test schemas
         relations:
-        - '^(?i).*(?<!_view)$' # matches all relations that do not end with '_VIEW'
+        - '(?i)^.*(?<!_view)$' # matches all relations that do not end with '_VIEW'
   # these are exceptions to the 'default' sampling above
   specified_relations: 
   - database: SNOWSHU_DEVELOPMENT

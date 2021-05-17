@@ -87,7 +87,7 @@ class SnowShuDocker:
                 image: str,
                 start_command: str,
                 port: int,
-                target_adapter: str,
+                target_adapter: Type['BaseTargetAdapter'],
                 source_adapter: str,
                 envars: list,
                 protocol: str = "tcp") -> docker.models.containers.Container:   # noqa pylint: disable=unused-argument
@@ -100,7 +100,7 @@ class SnowShuDocker:
             name=DOCKER_TARGET_CONTAINER,
             labels=dict(
                 snowshu_replica='true',
-                target_adapter=target_adapter,
+                target_adapter=target_adapter.CLASSNAME,
                 source_adapter=source_adapter))
         logger.info(
             f'Connecting {DOCKER_TARGET_CONTAINER} to bridge network..')
@@ -109,6 +109,9 @@ class SnowShuDocker:
             f'Connected. Starting created container {DOCKER_TARGET_CONTAINER}...')
         container.start()
         logger.info(f'Container {DOCKER_TARGET_CONTAINER} started.')
+        logger.info(f'Running initial setup on {DOCKER_TARGET_CONTAINER}...')
+        self._run_container_setup(container, target_adapter)
+        logger.info(f'Container {DOCKER_TARGET_CONTAINER} fully initialized.')
         return container
 
     def remove_container(self, container: str) -> None:
@@ -184,6 +187,16 @@ class SnowShuDocker:
             if response[0] > 0:
                 raise OSError(response[1])
         logger.info('Data remounted, image ready to be finalized.')
+
+    @staticmethod
+    def _run_container_setup(container: docker.models.containers.Container,
+                             target_adapter: Type['BaseTargetAdapter']) -> None:
+        logger.info('Running initialization commands in container...')
+        for command in target_adapter.image_initialize_bash_commands():
+            response = container.exec_run(f"/bin/bash -c '{command}'", tty=True)
+            if response[0] > 0:
+                raise OSError(response[1])
+        logger.info('Setup commands finished.')
 
     def find_snowshu_images(self) -> List[docker.models.images.Image]:
         return list(filter((lambda x: len(x.tags) > 0), self.client.images.list(

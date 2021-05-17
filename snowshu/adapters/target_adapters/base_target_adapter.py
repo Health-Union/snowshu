@@ -140,7 +140,7 @@ AS
             self.DOCKER_IMAGE,
             self.DOCKER_START_COMMAND,
             self.DOCKER_TARGET_PORT,
-            self.CLASSNAME,
+            self,
             source_adapter_name,
             self._build_snowshu_envars(
                 self.DOCKER_SNOWSHU_ENVARS))

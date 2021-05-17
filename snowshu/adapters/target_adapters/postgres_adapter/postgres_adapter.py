@@ -17,6 +17,7 @@ class PostgresAdapter(BaseTargetAdapter):
     name = 'postgres'
     dialect = 'postgres'
     DOCKER_IMAGE = 'postgres:12'
+    PRELOADED_PACKAGES = ['postgresql-plpython3-12']
     MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
 
@@ -83,6 +84,12 @@ class PostgresAdapter(BaseTargetAdapter):
         commands = list()
         commands.append(f'mkdir /{DOCKER_REMOUNT_DIRECTORY}')
         commands.append(f'cp -a /var/lib/postgresql/data/* /{DOCKER_REMOUNT_DIRECTORY}')
+        return commands
+
+    def image_initialize_bash_commands(self) -> List[str]:
+        commands = list()
+        # install extra postgres extension packages here
+        commands.append(f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}')
         return commands
 
     @staticmethod
