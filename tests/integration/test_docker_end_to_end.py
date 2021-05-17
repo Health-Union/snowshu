@@ -65,5 +65,5 @@ def test_creates_replica(docker_flush):
     assert ('b', 2,) in res
     assert ('c', 3,) in res
     # verify that the extra OS packages are installed
-    res = engine.execute("create extension plpython3udf;")
+    res = engine.execute("create extension plpython3u;")
     shdocker.remove_container(TEST_NAME)
