@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Iterable, List
+from overrides import overrides
 
 import sqlalchemy
 
@@ -32,6 +33,7 @@ class PostgresAdapter(BaseTargetAdapter):
         super().__init__()
 
         self.extensions = kwargs.get("pg_extensions", list())
+        self.x00_replacement = kwargs.get("pg_0x00_replacement", "")
 
         self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port}' # noqa pylint: disable=invalid-name
         self.DOCKER_READY_COMMAND = (f'pg_isready -p {self._credentials.port} ' # noqa pylint: disable=invalid-name
@@ -78,6 +80,31 @@ class PostgresAdapter(BaseTargetAdapter):
                 logger.debug('Schema %s.%s already exists, skipping.', database, schema)
             else:
                 raise sql_errs
+
+    @overrides
+    def load_data_into_relation(self, relation: "Relation") -> None:
+        try:
+            return super().load_data_into_relation(relation)
+        except ValueError as exc:
+            if 'cannot contain NUL' in str(exc):
+                logger.warning("Invalid 0x00 char found in %s. "
+                               "Removing from affected columns and trying again", relation.quoted_dot_notation)
+                fixed_relation = self.replace_x00_values(relation)
+                logger.info("Retrying data load for %s", relation.quoted_dot_notation)
+                return super().load_data_into_relation(fixed_relation)
+
+            raise exc
+
+    def replace_x00_values(self, relation: "Relation") -> "Relation":
+        for col, col_type in relation.data.dtypes.iteritems():
+            # str types are put into object type columns
+            if col_type == 'object' and isinstance(relation.data[col][0], str):
+                matched_nul_char = (relation.data[col].str.find('\x00') > -1)
+                if any(matched_nul_char):
+                    logger.warning("Invalid 0x00 char found in column %s. Replacing with '%s' "
+                                   "(excluing bounding single quotes)", col, self.x00_replacement)
+                    relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
+        return relation
 
     @staticmethod
     def image_finalize_bash_commands() -> List[str]:

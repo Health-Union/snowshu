@@ -120,7 +120,7 @@ AS
                                  chunksize=DEFAULT_INSERT_CHUNK_SIZE,
                                  method='multi')
         except Exception as exc:
-            logger.info("Failed to load data into %s:%s", relation.quoted_dot_notation, exc)
+            logger.info("Exception encountered loading data into %s:%s", relation.quoted_dot_notation, exc)
             raise exc
         logger.info('Data loaded into relation %s', relation.quoted_dot_notation)
 
