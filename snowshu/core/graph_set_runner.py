@@ -41,6 +41,16 @@ class GraphSetRunner:
                           threads: int,
                           analyze: bool = False,
                           barf: bool = False) -> None:
+        """ Processes the given graphs in parallel based on the provided adapters
+
+            Args:
+                graph_set (list): list of graphs to process
+                source_adapter (BaseSourceAdapter): source adapter for the relations
+                target_adapter (BaseTargetAdapter): target adapter for the relations
+                threads (int): number of threads to use for parallelization
+                analyze (bool): whether to run analyze or actually transfer the sampled data
+                barf (bool): whether to dump diagnostic files to disk
+        """
         self.barf = barf
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
@@ -55,6 +65,10 @@ class GraphSetRunner:
                                     target_adapter,
                                     analyze) for graph in graphs]
 
+        # TODO errors in the parallel execution are never handled
+        # This can result in replicas with missing relations as
+        # the processing does not halt on exceptions
+
         # Tables need to come first to prevent deps deadlocks with views
         for graphs in [table_graph_set, view_graph_set]:
             with ThreadPoolExecutor(max_workers=threads) as executor:
@@ -62,7 +76,19 @@ class GraphSetRunner:
                     executor.submit(self._traverse_and_execute, executable)
 
     def _traverse_and_execute(self, executable: GraphExecutable) -> None:   # noqa mccabe: disable=MC0001
+        """ Processes a single graph and loads the data into the replica if required
+
+            To save memory after processing, the loaded dataframes are deleted, and
+            garbage collection manually called.
+
+            Args:
+                executable (GraphExecutable): object that contains all of the necessary info for
+                    executing a sample and loading it into the target
+        """
         start_time = time.time()
+        if self.barf:
+            with open(os.path.join(self.barf_output, f'{[n for n in executable.graph.nodes][0].name}.component'), 'wb') as barf_file:
+                nx.write_multiline_adjlist(executable.graph, barf_file)
         try:
             logger.debug(
                 f"Executing graph with {len(executable.graph)} relations in it...")
