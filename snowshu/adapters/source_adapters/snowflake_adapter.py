@@ -202,6 +202,7 @@ FROM
                                    subject_key: str,
                                    constraint_key: str,
                                    max_number_of_outliers: int) -> str:
+        """ Union statements to select outliers. This does not pull in NULL values. """
         return f"""
 (SELECT
     *

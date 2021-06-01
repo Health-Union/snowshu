@@ -42,6 +42,7 @@ class ReplicaFactory:
         if len(graphs) < 1:
             return "No relations found per provided replica configuration, exiting."
 
+        # TODO replica container should not be started for analyze commands
         self.config.target_profile.adapter.initialize_replica(
             self.config.source_profile.name)
         runner = GraphSetRunner()
