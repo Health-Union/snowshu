@@ -17,8 +17,17 @@ class RuntimeSourceCompiler:
                                      dag: networkx.Graph,
                                      source_adapter: Type[BaseSourceAdapter],
                                      analyze: bool) -> Relation:
-        """generates and populates the compiled sql for each relation in a
-        dag."""
+        """ Generates the sql statements for the given relation
+
+            Args:
+                relation (Relation): the relation to generate the sql for
+                dag (Graph): the connected dependency graph that contains the relation
+                source_adapter (BaseSourceAdapter): the source adapter for the sql dialect
+                analyze (bool): whether to generate sql statements for analyze or actaul sampling
+
+            Returns:
+                Relation: the given relation with `compiled_query` populated
+        """
         query = str()
         if relation.is_view:
             relation.core_query, relation.compiled_query = [
