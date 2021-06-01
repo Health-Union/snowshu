@@ -14,21 +14,25 @@ logger = Logger().logger
 
 
 class SnowShuGraph:
+    """ Wrapper class for the networkx.Graph that represents the 
+        configuration relation dependencies
+
+        Attributes:
+            dag (tuple) - unused
+            graph (networkx.Graph) - Graph representation of a configuration
+    """
 
     def __init__(self):
         self.dag: tuple = None
         self.graph: networkx.Graph = None
 
-    def build_graph(self, configs: Configuration) -> networkx.DiGraph:
-        """Builds a directed graph per replica config.
+    def build_graph(self, configs: Configuration) -> None:
+        """ Builds a directed graph per replica config.
 
-        Args:
-            configs: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object.
-
-        Returns:
-            a directed graph of :class:`Relations <snowshu.core.models.relation.Relation>` with dependencies applied.
+            Args:
+                configs: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object.
         """
-        logger.debug('Building graphs from config...')
+        logger.debug('Building graph from config...')
 
         full_catalog = configs.source_profile.adapter.build_catalog(
             patterns=self._build_sum_patterns_from_configs(configs),
@@ -85,8 +89,21 @@ class SnowShuGraph:
             configs: Configuration,
             graph: networkx.DiGraph,
             available_nodes: Set[Relation]) -> networkx.DiGraph:
-        """takes a configuration file, a graph and a collection of available
-        nodes, applies configs as edges and returns the graph."""
+        """ Takes a configuration file, a graph and a collection of available
+            nodes, applies configs as edges and returns the graph.
+
+            When edges are added, they are always out of the remote relation
+            and into the local relation. The other details of the relationship
+            are included in the edge data.
+
+            Args:
+                configs: Configuration to translate into a digraph
+                graph: The graph object to apply edges to. Assumed to have most nodes included already
+                available_nodes: The set of nodes that are available to be in the graph
+
+            Returns:
+                - The final digraph with edges that represents the given configuration
+        """
         for relation in configs.specified_relations:
             relation_dict = dict(
                 name=relation.relation_pattern,
@@ -150,7 +167,14 @@ class SnowShuGraph:
         return graph
 
     def get_graphs(self) -> tuple:
-        """builds independent graphs and returns the collection of them."""
+        """ Generates the set of (weakly) connected components of the object's graph
+
+            Returns:
+                tuple of connected subgraphs of the original processing graph
+        """
+        # TODO this function is manually finding the connected components of the main graph
+        # Can likely be simplified if not entirely replaced by get_weakly_connected_components()
+
         if not isinstance(self.graph, networkx.Graph):
             raise ValueError(
                 'Graph must be built before SnowShuGraph can get graphs from it.')
