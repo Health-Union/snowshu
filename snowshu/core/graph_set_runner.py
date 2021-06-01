@@ -87,8 +87,8 @@ class GraphSetRunner:
         """
         start_time = time.time()
         if self.barf:
-            with open(os.path.join(self.barf_output, f'{[n for n in executable.graph.nodes][0].name}.component'), 'wb') as barf_file:
-                nx.write_multiline_adjlist(executable.graph, barf_file)
+            with open(os.path.join(self.barf_output, f'{[n for n in executable.graph.nodes][0].name}.component'), 'wb') as cmp_file:  # noqa pylint: disable=unnecessary-comprehension
+                nx.write_multiline_adjlist(executable.graph, cmp_file)
         try:
             logger.debug(
                 f"Executing graph with {len(executable.graph)} relations in it...")
