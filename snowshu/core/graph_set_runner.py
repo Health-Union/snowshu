@@ -96,8 +96,8 @@ class GraphSetRunner:
                     nx.algorithms.dag.topological_sort(executable.graph)):
                 relation.population_size = executable.source_adapter.scalar_query(
                     executable.source_adapter.population_count_statement(relation))
-                logger.info(f'Executing graph {i+1} of {len(executable.graph)} source query '
-                            f'for relation {relation.dot_notation}...')
+                logger.info(f'Executing source query for relation {relation.dot_notation} '
+                            f'({i+1} of {len(executable.graph)} in graph)...')
 
                 relation.sampling.prepare(relation,
                                           executable.source_adapter)

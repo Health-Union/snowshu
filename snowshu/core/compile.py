@@ -40,33 +40,33 @@ class RuntimeSourceCompiler:
             predicates = list()
             unions = list()
             for child in dag.successors(relation):
-                for edge in dag.edges((relation, child), True):
-                    edge_data = edge[2]
-                    if edge_data['direction'] == 'bidirectional':
-                        predicates.append(source_adapter.upstream_constraint_statement(child,
-                                                                                       edge_data['remote_attribute'],
-                                                                                       edge_data['local_attribute']))
-                    if relation.include_outliers:
-                        unions.append(source_adapter.union_constraint_statement(relation,
-                                                                                child,
-                                                                                edge_data['remote_attribute'],
-                                                                                edge_data['local_attribute'],
-                                                                                relation.max_number_of_outliers))
+                # parallel edges aren't currently supported
+                edge = dag.edges[relation, child]
+                if edge['direction'] == 'bidirectional':
+                    predicates.append(source_adapter.upstream_constraint_statement(child,
+                                                                                   edge['remote_attribute'],
+                                                                                   edge['local_attribute']))
+                if relation.include_outliers:
+                    unions.append(source_adapter.union_constraint_statement(relation,
+                                                                            child,
+                                                                            edge['remote_attribute'],
+                                                                            edge['local_attribute'],
+                                                                            relation.max_number_of_outliers))
 
             for parent in dag.predecessors(relation):
-                for edge in dag.edges((parent, relation,), True):
-                    edge_data = edge[2]
-                    do_not_sample = edge_data['direction'] == 'bidirectional'
-                    predicates.append(source_adapter.predicate_constraint_statement(parent,
-                                                                                    analyze,
-                                                                                    edge_data['local_attribute'],
-                                                                                    edge_data['remote_attribute']))
-                    if relation.include_outliers:
-                        unions.append(source_adapter.union_constraint_statement(relation,
-                                                                                parent,
-                                                                                edge_data['local_attribute'],
-                                                                                edge_data['remote_attribute'],
-                                                                                relation.max_number_of_outliers))
+                edge = dag.edges[parent, relation]
+                # if any incoming edge is birectional set do_not_sample flag
+                do_not_sample = (edge['direction'] == 'bidirectional' or do_not_sample)
+                predicates.append(source_adapter.predicate_constraint_statement(parent,
+                                                                                analyze,
+                                                                                edge['local_attribute'],
+                                                                                edge['remote_attribute']))
+                if relation.include_outliers:
+                    unions.append(source_adapter.union_constraint_statement(relation,
+                                                                            parent,
+                                                                            edge['local_attribute'],
+                                                                            edge['remote_attribute'],
+                                                                            relation.max_number_of_outliers))
 
             query = source_adapter.sample_statement_from_relation(
                 relation, (None if predicates else relation.sampling.sample_method))
