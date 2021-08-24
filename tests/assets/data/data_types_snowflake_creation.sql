@@ -111,7 +111,10 @@ CREATE TABLE IF NOT EXISTS "SNOWSHU_DEVELOPMENT"."TESTS_DATA"."CASE_TESTING" (
     lower_col VARCHAR,
     CamelCasedCol VARCHAR,
     Snake_Case_Camel_Col VARCHAR,
-    "Spaces Col" VARCHAR
+    "Spaces Col" VARCHAR,
+    "UNIFORM SPACE" VARCHAR,
+    "uniform lower" VARCHAR,
+    "1" VARCHAR
 );
 
 
@@ -121,6 +124,9 @@ INSERT INTO "SNOWSHU_DEVELOPMENT"."TESTS_DATA"."CASE_TESTING" (
     lower_col,
     CamelCasedCol,
     Snake_Case_Camel_Col,
-    "Spaces Col"
+    "Spaces Col",
+    "UNIFORM SPACE",
+    "uniform lower",
+    "1"
 )
-VALUES('a', 'b', 'c', 'd', 'e', 'f');
+VALUES('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i');
