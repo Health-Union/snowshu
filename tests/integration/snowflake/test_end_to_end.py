@@ -210,3 +210,33 @@ AND
 "variant_col":"json"
 }
     assert {t[0]:t[1] for t in type_mappings} == EXPECTED_DATA_TYPES
+
+
+def test_casing(end_to_end):
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
+    query = """
+        SELECT 
+            COLUMN_NAME,
+            DATA_TYPE
+        FROM 
+            SNOWSHU_DEVELOPMENT.information_schema.columns 
+        WHERE 
+            TABLE_SCHEMA = 'tests_data' 
+        AND 
+            TABLE_NAME='case_testing'
+    """
+
+    q = conn.execute(query)
+    type_mappings = q.fetchall()
+    EXPECTED_DATA_TYPES={
+        "lower_col":"character varying",
+        "upper_col":"character varying",  # fully upper-case should map to all lower (snowflake -> postgres)
+        "CamelCasedCol":"character varying",
+        "quoted_upper_col":"character varying",  # fully upper-case should map to all lower (snowflake -> postgres)
+        "1":"character varying",
+        "Spaces Col":"character varying",
+        "UNIFORM SPACE":"character varying",
+        "uniform lower":"character varying",
+        "Snake_Case_Camel_Col":"character varying",
+    }
+    assert {t[0]:t[1] for t in type_mappings} == EXPECTED_DATA_TYPES

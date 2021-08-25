@@ -18,8 +18,20 @@ logger = Logger().logger
 
 
 def correct_case(val: str, upper: bool = True):
+    """ Returns the case corrected value based on general sql identifier rules
+
+        If the value is entirely one case, made up of only word characters
+        and doesn't begin with a number, we can conform the case
+
+        ARGS:
+            - val: string that is the value to correct case for
+            - upper: flag to determine the case to conform to. Defaults to True (uppercase)
+        RETURNS:
+            the case corrected value
+    """
     if any({val.isupper(), val.islower()}) and \
-       re.fullmatch(r'^(\w|\s)*$', val):
+            re.fullmatch(r'^\w*$', val) and \
+            not re.fullmatch(r'^[0-9].*', val):
         val = val.upper() if upper else val.lower()
     return val
 
