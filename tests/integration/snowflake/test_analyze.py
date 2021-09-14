@@ -12,7 +12,7 @@ def test_analyze_unsampled(docker_flush):
 
     replica = ReplicaFactory()
 
-    config = os.path.join(PACKAGE_ROOT, "snowshu", "templates", "replica.yml")
+    config = os.path.join(PACKAGE_ROOT, "tests", "assets", "replica_test_config.yml")
     replica.load_config(config)
     result = replica.analyze(barf=False).split('\n')
     result.reverse()

@@ -26,7 +26,7 @@ DOCKER_SPIN_UP_TIMEOUT = 15
 def end_to_end(docker_flush_session):
     runner = CliRunner()
     configuration_path = os.path.join(
-        PACKAGE_ROOT, 'snowshu', 'templates', 'replica.yml')
+        PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
     create_result=runner.invoke(cli, ('create', '--replica-file', configuration_path))
     if create_result.exit_code:
         print(create_result.exc_info)
