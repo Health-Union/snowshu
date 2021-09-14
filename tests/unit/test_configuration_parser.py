@@ -18,9 +18,11 @@ from tests.common import rand_string
 def test_fills_in_empty_source_values(stub_replica_configuration):
     for rel in stub_replica_configuration.specified_relations:
         assert isinstance(rel.unsampled, bool)
+        assert isinstance(rel.relationships.directional, list)
         assert isinstance(rel.relationships.bidirectional, list)
+        assert isinstance(rel.relationships.polymorphic, list)
 
-        for direction in ('bidirectional', 'directional',):
+        for direction in ('bidirectional', 'directional', 'polymorphic'):
             assert getattr(rel.relationships, direction) is not None
 
 

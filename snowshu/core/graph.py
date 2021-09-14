@@ -308,7 +308,7 @@ class SnowShuGraph:
                 schema=lower_level.schema_pattern if lower_level.schema_pattern else upper_level.schema_pattern,
                 name=lower_level.relation_pattern
             ) for upper_level in config.specified_relations
-            for lower_level in upper_level.relationships.bidirectional + upper_level.relationships.directional
+            for lower_level in upper_level.relationships.bidirectional + upper_level.relationships.directional + upper_level.relationships.polymorphic
         ]
 
         all_patterns = approved_default_patterns + \

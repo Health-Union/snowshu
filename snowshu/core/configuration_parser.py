@@ -59,9 +59,14 @@ class SpecifiedMatchPattern():
         remote_attribute: str
 
     @dataclass
+    class PolymorphicRelationshipPattern(RelationshipPattern):
+        local_type_attribute: str
+
+    @dataclass
     class Relationships:
         bidirectional: List['RelationshipPattern']  # noqa pyflakes: disable=F821
         directional: List['RelationshipPattern']    # noqa pyflakes: disable=F821
+        polymorphic: List['PolymorphicRelationshipPattern']    # noqa pyflakes: disable=F821
 
     database_pattern: str
     schema_pattern: str
@@ -236,12 +241,26 @@ class ConfigurationParser:
                 self.case(sub['relation']),
                 self.case(sub['remote_attribute']))
 
+        def build_polymorphic_relationship(
+                sub) -> SpecifiedMatchPattern.PolymorphicRelationshipPattern:
+            return SpecifiedMatchPattern.PolymorphicRelationshipPattern(
+                self.case(sub['local_attribute']),
+                self.case(sub['database']) if sub['database'] != '' else None,
+                self.case(sub['schema']) if sub['schema'] != '' else None,
+                self.case(sub['relation']),
+                self.case(sub['remote_attribute']),
+                self.case(sub['local_type_attribute']) if sub['local_type_attribute'] != '' else None
+            )
+
         relationships = specified_pattern.get('relationships', dict())
         directional = relationships.get('directional', list())
         bidirectional = relationships.get('bidirectional', list())
+        polymorphic = relationships.get('polymorphic', list())
         return SpecifiedMatchPattern.Relationships(
             [build_relationship(rel) for rel in bidirectional],
-            [build_relationship(rel) for rel in directional])
+            [build_relationship(rel) for rel in directional],
+            [build_polymorphic_relationship(rel) for rel in polymorphic]
+        )
 
     def _build_specified_relations(
             self, source_config: dict) -> SpecifiedMatchPattern:

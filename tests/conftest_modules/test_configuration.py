@@ -108,7 +108,41 @@ CONFIGURATION = {
                         "min_sample_size": 300
                     }
                 }
-            }
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "POLYMORPHIC_DATA",
+                "relation": "PARENT_TABLE",
+                "relationships": {
+                    "polymorphic": [
+                        {
+                            "local_attribute": "CHILD_ID",
+                            "local_type_attribute": "CHILD_TYPE",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "POLYMORPHIC_DATA",
+                            "relation": "(?i)^CHILD_TYPE_[0-9]_ITEMS$",
+                            "remote_attribute": "ID"
+                        }
+                    ],
+                }
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "POLYMORPHIC_DATA",
+                "relation": "PARENT_TABLE_2",
+                "relationships": {
+                    "polymorphic": [
+                        {
+                            "local_attribute": "PARENT_ID",
+                            "local_type_attribute": "",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "POLYMORPHIC_DATA",
+                            "relation": "(?i)^CHILD_TYPE_[0-9]_ITEMS$",
+                            "remote_attribute": "PARENT_ID"
+                        }
+                    ],
+                }
+            },
         ]
     },
     "target": {

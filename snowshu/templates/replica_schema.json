@@ -166,6 +166,12 @@
               "items": {
                 "$ref": "#/definitions/_directional_relationship_object"
               }
+            },
+            "polymorphic": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/_polymorphic_relationship_object"
+              }
             }
           },
           "additionalProperties": false,
@@ -186,6 +192,37 @@
       "additionalProperties": false,
       "properties": {
         "local_attribute": {
+          "type": "string"
+        },
+        "database": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "relation": {
+          "type": "string"
+        },
+        "remote_attribute": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "local_attribute",
+        "database",
+        "schema",
+        "relation",
+        "remote_attribute"
+      ]
+    },
+    "_polymorphic_relationship_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "local_attribute": {
+          "type": "string"
+        },
+        "local_type_attribute": {
           "type": "string"
         },
         "database": {
