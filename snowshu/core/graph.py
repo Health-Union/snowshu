@@ -34,21 +34,18 @@ class SnowShuGraph:
         """
         logger.debug('Building graph from config...')
 
-        full_catalog = configs.source_profile.adapter.build_catalog(
+        catalog = configs.source_profile.adapter.build_catalog(
             patterns=self._build_sum_patterns_from_configs(configs),
             thread_workers=configs.threads)
         # set defaults for all relations in the catalog
-        for relation in full_catalog:
+        for relation in catalog:
             self._set_globals_for_node(relation, configs)
             self._set_overriding_params_for_node(relation, configs)
 
-        included_relations = self._filter_relations(
-            full_catalog, self._build_sum_patterns_from_configs(configs))
-
         # build graph and add edges
         graph = networkx.DiGraph()
-        graph.add_nodes_from(included_relations)
-        self.graph = self._apply_specifications(configs, graph, full_catalog)
+        graph.add_nodes_from(catalog)
+        self.graph = self._apply_specifications(configs, graph, catalog)
 
         logger.info(
             f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
@@ -243,15 +240,6 @@ class SnowShuGraph:
             approved_specified_patterns + approved_second_level_specified_patterns
         logger.debug(f'All config primary patterns: {all_patterns}')
         return all_patterns
-
-    @staticmethod
-    def _filter_relations(full_catalog: iter,
-                          patterns: dict) -> Set[Relation]:
-        """applies patterns to the full catalog to build the filtered relation
-        set."""
-
-        return set(filter(lambda rel: at_least_one_full_pattern_match(rel, patterns),
-                          full_catalog))
 
     @staticmethod
     def _set_globals_for_node(relation: Relation, configs: Configuration) -> Relation:
