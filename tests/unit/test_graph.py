@@ -11,7 +11,7 @@ from snowshu.core.graph import SnowShuGraph
 from snowshu.core.models import Relation
 from snowshu.core.models import materializations as mz
 from snowshu.samplings.samplings import BruteForceSampling, DefaultSampling
-from tests.conftest import CONFIGURATION
+from tests.conftest import CONFIGURATION, BASIC_CONFIGURATION
 
 
 def test_graph_builds_dags_correctly(stub_graph_set):
@@ -107,7 +107,7 @@ def test_sets_outliers(stub_graph_set):
                     vals.birelation_left,
                     vals.birelation_right]
 
-    config_dict=copy.deepcopy(CONFIGURATION)
+    config_dict=copy.deepcopy(BASIC_CONFIGURATION)
     config_dict['source']['include_outliers']=True
     config_dict['source']['max_number_of_outliers']=1000
 
@@ -134,7 +134,7 @@ def test_no_duplicates(stub_graph_set):
                     vals.birelation_left,
                     vals.birelation_right]
 
-    config_dict=copy.deepcopy(CONFIGURATION)
+    config_dict=copy.deepcopy(BASIC_CONFIGURATION)
 
     config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
     

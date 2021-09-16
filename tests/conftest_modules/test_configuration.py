@@ -1,4 +1,43 @@
 
+BASIC_CONFIGURATION = {
+    "version": "1",
+    "credpath": "tests/assets/integration/credentials.yml",
+    "name": "integration trail path",
+    "short_description": "this is a sample with LIVE CREDS for integration",
+    "long_description": "this is for testing against a live db",
+    "threads": 15,
+    "source": {
+        "profile": "default",
+        "sampling": "default",
+        "general_relations": {
+            "databases": [
+                {
+                    "pattern": "SNOWSHU_DEVELOPMENT",
+                    "schemas": [
+                        {
+                            "pattern": ".*",
+                            "relations": [
+                                "^(?!.+_VIEW).+$"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "include_outliers": True,
+        "specified_relations": []
+    },
+    "target": {
+        "adapter": "postgres",
+        "adapter_args": {
+            "pg_extensions": ["citext"]
+        }
+    },
+    "storage": {
+        "profile": "default"
+    }
+}
+
 
 CONFIGURATION = {
     "version": "1",
