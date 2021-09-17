@@ -144,7 +144,7 @@ class SnowShuGraph:
                 if not downstream_relations:
                     raise InvalidRelationshipException(
                         f'Relationship {relationship} was specified, but '
-                        f'{relation_pattern_dict} does not match any relations '
+                        f'{relation_pattern_dict} does not match any relations. '
                         f'Please verify replica configuration.'
                     )
 
@@ -152,7 +152,7 @@ class SnowShuGraph:
                 possible_wildcard_attrs = ('database', 'schema',)
                 wildcard_attrs = [attr for attr in possible_wildcard_attrs if relationship[attr] is None]
 
-                # TODO DRY out the logic branches here
+                # TODO DRY out the logic branches here - from upstream_relations downwards should be the same logic
                 # if there are wildcard attributes, partition downstream relations
                 if wildcard_attrs:
                     wildcard_partitions = {}
@@ -205,7 +205,7 @@ class SnowShuGraph:
                             raise InvalidRelationshipException(
                                 f'Relations {view_relations} are views, '
                                 f'but have been specified as an upstream dependency for '
-                                f'relation {relation.quoted_dot_notation}. '
+                                f'relation {relation}. '
                                 f'View dependencies are not allowed by SnowShu.'
                             )
 
@@ -255,7 +255,7 @@ class SnowShuGraph:
                         raise InvalidRelationshipException(
                             f'Relations {view_relations} are views, '
                             f'but have been specified as an upstream dependency for '
-                            f'relation {relation.quoted_dot_notation}. '
+                            f'relation {relation}. '
                             f'View dependencies are not allowed by SnowShu.'
                         )
 
