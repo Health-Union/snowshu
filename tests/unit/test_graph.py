@@ -184,8 +184,49 @@ def test_sets_only_existing_adapters():
                       BruteForceSampling)
 
 
+def test_build_graph_partitions_wildcards(stub_graph_set):
+    """ Tests build_graph partitions wildcard relationships """
+    shgraph = SnowShuGraph()
+    _,vals = stub_graph_set
+    full_catalog=[  vals.downstream_wildcard_relation_1,
+                    vals.downstream_wildcard_relation_2,
+                    vals.upstream_wildcard_relation_1,
+                    vals.upstream_wildcard_relation_2,
+                ]
+    config_dict=copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict["source"]["specified_relations"] = [
+        {
+            "database": f"({vals.downstream_wildcard_relation_1.database}|{vals.downstream_wildcard_relation_2.database})",
+            "schema": f"({vals.downstream_wildcard_relation_1.schema}|{vals.downstream_wildcard_relation_2.schema})",
+            "relation": ".*downstream.*$",
+            "relationships": {
+                "directional": [
+                    {
+                        "local_attribute": vals.directional_key,
+                        "database": "",
+                        "schema": "",
+                        "relation": ".*upstream.*$",
+                        "remote_attribute": vals.directional_key
+                    }
+                ]
+            }
+        }
+    ]
+    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = full_catalog
+        config.source_profile.adapter = adapter_mock
+        shgraph.build_graph(config)
+        assert len(shgraph.graph.edges()) == 2
+        assert (vals.upstream_wildcard_relation_1, vals.downstream_wildcard_relation_1) in shgraph.graph.edges()
+        assert (vals.upstream_wildcard_relation_1, vals.downstream_wildcard_relation_2) not in shgraph.graph.edges()
+        assert (vals.upstream_wildcard_relation_2, vals.downstream_wildcard_relation_1) not in shgraph.graph.edges()
+        assert (vals.upstream_wildcard_relation_2, vals.downstream_wildcard_relation_2) in shgraph.graph.edges()
+
+
 def test_build_graph_allows_upstream_regex(stub_graph_set):
-    """ Tests build_graph exits on many-to-many relationships """
+    """ Tests build_graph builds multiple upstream relationships """
     shgraph = SnowShuGraph()
     _,vals = stub_graph_set
     full_catalog=[  vals.downstream_relation,

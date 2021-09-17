@@ -168,7 +168,7 @@ class SnowShuGraph:
                             relationship[attr] = getattr(downstream_partition[0], attr)
 
                         graph = SnowShuGraph._process_downstream_relation_set(relationship,
-                                                                              downstream_relations,
+                                                                              downstream_partition,
                                                                               graph,
                                                                               available_nodes)
                 # no wildcards present in relationship definition
