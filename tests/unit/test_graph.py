@@ -184,6 +184,45 @@ def test_sets_only_existing_adapters():
                       BruteForceSampling)
 
 
+def test_build_graph_allows_upstream_regex(stub_graph_set):
+    """ Tests build_graph exits on many-to-many relationships """
+    shgraph = SnowShuGraph()
+    _,vals = stub_graph_set
+    full_catalog=[  vals.downstream_relation,
+                    vals.upstream_relation,
+                    vals.birelation_left,
+                    vals.birelation_right]
+    config_dict=copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict["source"]["specified_relations"] = [
+        {
+            "database": vals.downstream_relation.database,
+            "schema": vals.downstream_relation.schema,
+            "relation": vals.downstream_relation.name,
+            "relationships": {
+                "directional": [
+                    {
+                        "local_attribute": vals.directional_key,
+                        "database": ".*",
+                        "schema": ".*",
+                        "relation": ".*relation.*$", # incl birelations
+                        "remote_attribute": vals.directional_key
+                    }
+                ]
+            }
+        }
+    ]
+    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = full_catalog
+        config.source_profile.adapter = adapter_mock
+        shgraph.build_graph(config)
+        assert len(shgraph.graph.edges()) == 3
+        assert (vals.upstream_relation, vals.downstream_relation) in shgraph.graph.edges()
+        assert (vals.birelation_left, vals.downstream_relation) in shgraph.graph.edges()
+        assert (vals.birelation_right, vals.downstream_relation) in shgraph.graph.edges()
+
+
 def test_build_graph_fails_no_downstream():
     """ Tests build_graph exits on no downstream relations """
     shgraph = SnowShuGraph()
