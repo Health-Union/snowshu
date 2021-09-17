@@ -80,7 +80,7 @@ class SnowShuGraph:
         return relation
 
     @staticmethod   # noqa mccabe: disable=MC0001
-    def _apply_specifications(
+    def _apply_specifications(  # noqa pylint: disable=too-many-locals
             configs: Configuration,
             graph: networkx.DiGraph,
             available_nodes: Set[Relation]) -> networkx.DiGraph:
@@ -132,27 +132,26 @@ class SnowShuGraph:
                         local_attribute=val.local_attribute
                     ) for val in relation.relationships.__dict__[relationship_type]]
 
+            # determine downstream relations from relation patterns
+            downstream_relations = set(
+                filter(
+                    lambda x: single_full_pattern_match(x, relation_pattern_dict),  # noqa  pylint: disable=cell-var-from-loop
+                    available_nodes
+                )
+            )
+            if not downstream_relations:
+                raise InvalidRelationshipException(
+                    f'Relationship {relation_pattern_dict} was specified, '
+                    f'but does not match any relations. '
+                    f'Please verify replica configuration.'
+                )
+
             # for each relationship, find up/downstream relations, then create the appropriate edges
             for relationship in relationship_dicts:
-                # determine downstream relations from relation patterns
-                downstream_relations = set(
-                    filter(
-                        lambda x: single_full_pattern_match(x, relation_pattern_dict),  # noqa  pylint: disable=cell-var-from-loop
-                        available_nodes
-                    )
-                )
-                if not downstream_relations:
-                    raise InvalidRelationshipException(
-                        f'Relationship {relationship} was specified, but '
-                        f'{relation_pattern_dict} does not match any relations. '
-                        f'Please verify replica configuration.'
-                    )
-
                 # check for wild cards
                 possible_wildcard_attrs = ('database', 'schema',)
                 wildcard_attrs = [attr for attr in possible_wildcard_attrs if relationship[attr] is None]
 
-                # TODO DRY out the logic branches here - from upstream_relations downwards should be the same logic
                 # if there are wildcard attributes, partition downstream relations
                 if wildcard_attrs:
                     wildcard_partitions = {}
@@ -168,105 +167,75 @@ class SnowShuGraph:
                         for attr in wildcard_attrs:
                             relationship[attr] = getattr(downstream_partition[0], attr)
 
-                        # find any of the upstream relations
-                        upstream_relations = set(
-                            filter(
-                                lambda x: single_full_pattern_match(x, relationship),  # noqa pylint: disable=cell-var-from-loop
-                                available_nodes)
-                        )
-                        # determine the set difference for verification
-                        downstream_partition_set = set(downstream_partition)
-                        upstream_without_downstream = upstream_relations.difference(downstream_partition_set)
-
-                        # check to make sure an upstream relation was found
-                        if not upstream_without_downstream:
-                            raise InvalidRelationshipException(
-                                f'It looks like the wildcard relation '
-                                f'{relationship["database"]}.{relationship["schema"]}.{relationship["name"]} '
-                                f'was specified as a dependency, but it does not exist.')
-                        # check to see if there was an intersection between the upstream and downstream relations
-                        if len(upstream_without_downstream) != len(upstream_relations):
-                            logger.warning(
-                                f'Relationship {relationship} defines at least one downstream '
-                                f'relation in the upstream relation set. Ignoring the occurrence '
-                                f'in the upstream set. Please verify replica config file.'
-                            )
-                        # check to make sure we aren't trying to generate a many-to-many relationship
-                        if len(upstream_without_downstream) > 1 and len(downstream_partition_set) > 1:
-                            raise InvalidRelationshipException(
-                                f'Relationship {relationship} defines a many-to-many '
-                                f'relationship between tables in the source location. '
-                                f'Many-to-many relationship are not allowed by SnowShu '
-                                f'as they are usually unintended side effects of lenient regex.'
-                            )
-                        # check to make sure found upstream relation is not a view
-                        view_relations = [r.quoted_dot_notation for r in upstream_relations if r.is_view]
-                        if view_relations:
-                            raise InvalidRelationshipException(
-                                f'Relations {view_relations} are views, '
-                                f'but have been specified as an upstream dependency for '
-                                f'relation {relation}. '
-                                f'View dependencies are not allowed by SnowShu.'
-                            )
-
-                        for downstream_relation in downstream_partition_set:
-                            for upstream_relation in upstream_without_downstream:
-                                graph.add_edge(upstream_relation,
-                                               downstream_relation,
-                                               direction=relationship['direction'],
-                                               remote_attribute=relationship['remote_attribute'],
-                                               local_attribute=relationship['local_attribute'])
+                        graph = SnowShuGraph._process_downstream_relation_set(relationship,
+                                                                              downstream_relations,
+                                                                              graph,
+                                                                              available_nodes)
                 # no wildcards present in relationship definition
                 else:
-                    # find any of the upstream relations
-                    upstream_relations = set(
-                        filter(
-                            lambda x: single_full_pattern_match(x, relationship),  # noqa pylint: disable=cell-var-from-loop
-                            available_nodes
-                        )
-                    )
-                    # determine the set difference for verification
-                    upstream_without_downstream = upstream_relations.difference(downstream_relations)
+                    graph = SnowShuGraph._process_downstream_relation_set(relationship,
+                                                                          downstream_relations,
+                                                                          graph,
+                                                                          available_nodes)
 
-                    # check to make sure an upstream relation was found
-                    if not upstream_without_downstream:
-                        raise InvalidRelationshipException(
-                            f'It looks like the relation '
-                            f'{relationship["database"]}.{relationship["schema"]}.{relationship["name"]} '
-                            f'was specified as a dependency, but it does not exist.')
-                    # check to see if there was an intersection between the upstream and downstream relations
-                    if len(upstream_without_downstream) != len(upstream_relations):
-                        logger.warning(
-                            f'Relationship {relationship} defines at least one downstream '
-                            f'relation in the upstream relation set. Ignoring the occurrence '
-                            f'in the upstream set. Please verify replica config file.'
-                        )
-                    # check to make sure we aren't trying to generate a many-to-many relationship
-                    if len(upstream_without_downstream) > 1 and len(downstream_relations) > 1:
-                        raise InvalidRelationshipException(
-                            f'Relationship {relationship} defines a many-to-many '
-                            f'relationship between tables in the source location. '
-                            f'Many-to-many relationship are not allowed by SnowShu '
-                            f'as they are usually unintended side effects of lenient regex.'
-                        )
-                    # check to make sure found upstream relation is not a view
-                    view_relations = [r.quoted_dot_notation for r in upstream_relations if r.is_view]
-                    if view_relations:
-                        raise InvalidRelationshipException(
-                            f'Relations {view_relations} are views, '
-                            f'but have been specified as an upstream dependency for '
-                            f'relation {relation}. '
-                            f'View dependencies are not allowed by SnowShu.'
-                        )
+        return graph
 
-                    for downstream_relation in downstream_relations:
-                        for upstream_relation in upstream_without_downstream:
-                            graph.add_edge(upstream_relation,
-                                           downstream_relation,
-                                           direction=relationship['direction'],
-                                           remote_attribute=relationship['remote_attribute'],
-                                           local_attribute=relationship['local_attribute'])
+    @staticmethod
+    def _process_downstream_relation_set(
+            relationship: dict,
+            downstream_set: Set[Relation],
+            graph: networkx.DiGraph,
+            full_relation_set: Set[Relation]) -> None:
+        """ Adds the appropriate edges to the graph for the given relationship """
+        # find any of the upstream relations
+        upstream_relations = set(
+            filter(
+                lambda x: single_full_pattern_match(x, relationship),  # noqa pylint: disable=cell-var-from-loop
+                full_relation_set
+            )
+        )
+        # determine the set difference for verification
+        upstream_without_downstream = upstream_relations.difference(downstream_set)
 
+        # check to make sure an upstream relation was found
+        if not upstream_without_downstream:
+            raise InvalidRelationshipException(
+                f'It looks like the relation '
+                f'{relationship["database"]}.{relationship["schema"]}.{relationship["name"]} '
+                f'was specified as a dependency, but it does not exist.'
+            )
+        # check to see if there was an intersection between the upstream and downstream relations
+        if len(upstream_without_downstream) != len(upstream_relations):
+            logger.warning(
+                f'Relationship {relationship} defines at least one downstream '
+                f'relation in the upstream relation set. Ignoring the occurrence '
+                f'in the upstream set. Please verify replica config file.'
+            )
+        # check to make sure we aren't trying to generate a many-to-many relationship
+        if len(upstream_without_downstream) > 1 and len(downstream_set) > 1:
+            raise InvalidRelationshipException(
+                f'Relationship {relationship} defines a many-to-many '
+                f'relationship between tables in the source location. '
+                f'Many-to-many relationship are not allowed by SnowShu '
+                f'as they are usually unintended side effects of lenient regex.'
+            )
+        # check to make sure found upstream relation is not a view
+        view_relations = [r.quoted_dot_notation for r in upstream_relations if r.is_view]
+        if view_relations:
+            raise InvalidRelationshipException(
+                f'Relations {view_relations} are views, '
+                f'but have been specified as an upstream dependency for '
+                f'the relationship {relationship}. '
+                f'View dependencies are not allowed by SnowShu.'
+            )
+
+        for downstream_relation in downstream_set:
+            for upstream_relation in upstream_without_downstream:
+                graph.add_edge(upstream_relation,
+                               downstream_relation,
+                               direction=relationship['direction'],
+                               remote_attribute=relationship['remote_attribute'],
+                               local_attribute=relationship['local_attribute'])
         return graph
 
     def get_graphs(self) -> tuple:
