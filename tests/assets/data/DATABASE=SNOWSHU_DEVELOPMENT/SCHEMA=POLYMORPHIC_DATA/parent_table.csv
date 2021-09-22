@@ -1,0 +1,13 @@
+id,child_id,child_type,value
+1,1,child_type_0_item,parent_1
+2,2,child_type_0_item,parent_2
+3,3,child_type_0_item,parent_3
+4,4,child_type_0_item,parent_4
+5,1,child_type_1_item,parent_5
+6,2,child_type_1_item,parent_6
+7,3,child_type_1_item,parent_7
+8,4,child_type_1_item,parent_8
+9,1,child_type_2_item,parent_9
+10,2,child_type_2_item,parent_10
+11,3,child_type_2_item,parent_11
+12,4,child_type_2_item,parent_12

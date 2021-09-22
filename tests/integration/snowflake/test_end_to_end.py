@@ -27,7 +27,7 @@ def end_to_end(docker_flush_session):
     runner = CliRunner()
     configuration_path = os.path.join(
         PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
-    create_result=runner.invoke(cli, ('create', '--replica-file', configuration_path))
+    create_result=runner.invoke(cli, ('create', '--replica-file', configuration_path, '--barf'))
     if create_result.exit_code:
         print(create_result.exc_info)
         raise create_result.exception
@@ -59,8 +59,9 @@ def test_reports_full_catalog_start(end_to_end):
 
 def test_finds_n_relations(end_to_end):
     result_lines= end_to_end
-    assert find_number_of_processed_relations(result_lines) == 11, \
-        "Number of found relations do not match the expected of 11 relations. Check database."
+    breakpoint()
+    assert find_number_of_processed_relations(result_lines) == 16, \
+        "Number of found relations do not match the expected of 16 relations. Check database."
 
 def test_replicates_order_items(end_to_end):
     result_lines = end_to_end
