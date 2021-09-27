@@ -16,7 +16,7 @@ from snowshu.core.configuration_parser import ConfigurationParser
 from snowshu.core.models import Attribute, Relation
 from tests.common import rand_string
 from tests.conftest_modules.mock_docker_images import MockImageFactory
-from tests.conftest_modules.test_configuration import CONFIGURATION
+from tests.conftest_modules.test_configuration import CONFIGURATION, BASIC_CONFIGURATION
 from tests.conftest_modules.test_credentials import CREDENTIALS
 
 
@@ -57,6 +57,24 @@ class RelationTestHelper:
             name='birelation_right', **self.rand_relation_helper())
         self.view_relation = Relation(
             name='view_relation', **self.rand_relation_helper())
+
+        self.downstream_wildcard_relation_1 = Relation(
+            name='downstream_wildcard_relation_1', **self.rand_relation_helper())
+        self.downstream_wildcard_relation_2 = Relation(
+            name='downstream_wildcard_relation_2', **self.rand_relation_helper())
+        self.upstream_wildcard_relation_1 = Relation(
+            name='upstream_wildcard_relation_1',
+            schema=self.downstream_wildcard_relation_1.schema,
+            database=self.downstream_wildcard_relation_1.database,
+            materialization=mz.TABLE,
+            attributes=[])
+        self.upstream_wildcard_relation_2 = Relation(
+            name='upstream_wildcard_relation_2',
+            schema=self.downstream_wildcard_relation_2.schema,
+            database=self.downstream_wildcard_relation_2.database,
+            materialization=mz.TABLE,
+            attributes=[])
+
         self.bidirectional_key_left = rand_string(10),
         self.bidirectional_key_right = rand_string(8),
         self.directional_key = rand_string(15)
@@ -64,7 +82,8 @@ class RelationTestHelper:
         # update specifics
         self.view_relation.materialization = mz.VIEW
 
-        for n in ('downstream_relation', 'upstream_relation',):
+        for n in ('downstream_relation', 'upstream_relation', 'downstream_wildcard_relation_1', 'downstream_wildcard_relation_2',
+                'upstream_wildcard_relation_1', 'upstream_wildcard_relation_2'):
             self.__dict__[n].attributes = [
                 Attribute(self.directional_key, dt.INTEGER)]
 
@@ -73,7 +92,8 @@ class RelationTestHelper:
         self.birelation_left.attributes = [
             Attribute(self.bidirectional_key_left, dt.VARCHAR)]
 
-        for r in ('downstream_relation', 'upstream_relation', 'iso_relation', 'birelation_left', 'birelation_right', 'view_relation',):
+        for r in ('downstream_relation', 'upstream_relation', 'iso_relation', 'birelation_left', 'birelation_right', 'view_relation',
+                'downstream_wildcard_relation_1', 'downstream_wildcard_relation_2', 'upstream_wildcard_relation_1', 'upstream_wildcard_relation_2'):
             self.__dict__[r].compiled_query = ''
 
 

@@ -4,8 +4,6 @@ import networkx
 
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models.relation import (Relation,
-                                          at_least_one_full_pattern_match,
-                                          lookup_single_relation,
                                           single_full_pattern_match)
 from snowshu.exceptions import InvalidRelationshipException
 from snowshu.logger import Logger
@@ -34,21 +32,18 @@ class SnowShuGraph:
         """
         logger.debug('Building graph from config...')
 
-        full_catalog = configs.source_profile.adapter.build_catalog(
+        catalog = configs.source_profile.adapter.build_catalog(
             patterns=self._build_sum_patterns_from_configs(configs),
             thread_workers=configs.threads)
         # set defaults for all relations in the catalog
-        for relation in full_catalog:
+        for relation in catalog:
             self._set_globals_for_node(relation, configs)
             self._set_overriding_params_for_node(relation, configs)
 
-        included_relations = self._filter_relations(
-            full_catalog, self._build_sum_patterns_from_configs(configs))
-
         # build graph and add edges
         graph = networkx.DiGraph()
-        graph.add_nodes_from(included_relations)
-        self.graph = self._apply_specifications(configs, graph, full_catalog)
+        graph.add_nodes_from(catalog)
+        self.graph = self._apply_specifications(configs, graph, catalog)
 
         logger.info(
             f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
@@ -85,7 +80,7 @@ class SnowShuGraph:
         return relation
 
     @staticmethod   # noqa mccabe: disable=MC0001
-    def _apply_specifications(
+    def _apply_specifications(  # noqa pylint: disable=too-many-locals
             configs: Configuration,
             graph: networkx.DiGraph,
             available_nodes: Set[Relation]) -> networkx.DiGraph:
@@ -105,65 +100,142 @@ class SnowShuGraph:
                 - The final digraph with edges that represents the given configuration
         """
         for relation in configs.specified_relations:
-            relation_dict = dict(
+            # create dict for pattern matching of specified relation pattern
+            relation_pattern_dict = dict(
                 name=relation.relation_pattern,
                 database=relation.database_pattern,
                 schema=relation.schema_pattern)
+            # if the relation is unsampled, set all matching nodes to be unsampled and break back to for loop
             if relation.unsampled:
                 unsampled_relations = set(
                     filter(
                         lambda x: single_full_pattern_match(
                             x,
-                            relation_dict),     # noqa pylint: disable=cell-var-from-loop
+                            relation_pattern_dict),     # noqa pylint: disable=cell-var-from-loop
                         available_nodes))
-                for rel in unsampled_relations:
-                    rel.unsampled = True
-                    graph.add_node(rel)
+                for uns_rel in unsampled_relations:
+                    uns_rel.unsampled = True
+                    graph.add_node(uns_rel)
                 continue
 
-            edges = list()
-            for direction in ('bidirectional', 'directional',):
-                edges += [
+            # processing for non-unsampled relations
+            # create a list of the relationship remote patterns and attributes
+            relationship_dicts = list()
+            for relationship_type in ('bidirectional', 'directional',):
+                relationship_dicts += [
                     dict(
-                        direction=direction,
+                        direction=relationship_type,
                         database=val.database_pattern,
                         schema=val.schema_pattern,
-                        relation=val.relation_pattern,
+                        name=val.relation_pattern,
                         remote_attribute=val.remote_attribute,
-                        local_attribute=val.local_attribute) for val in relation.relationships.__dict__[direction]]
+                        local_attribute=val.local_attribute
+                    ) for val in relation.relationships.__dict__[relationship_type]]
 
-            for edge in edges:
-                downstream_relations = set(
-                    filter(
-                        lambda x: single_full_pattern_match(
-                            x,
-                            relation_dict),     # noqa  pylint: disable=cell-var-from-loop
-                        available_nodes))
-                for rel in downstream_relations:
-                    # populate any string wildcard upstreams
-                    for attr in ('database', 'schema',):
-                        edge[attr] = edge[attr] if edge[attr] is not None else getattr(
-                            rel, attr)
-                    upstream_relation = lookup_single_relation(
-                        edge, available_nodes)
-                    if upstream_relation is None:
-                        raise ValueError(
-                            f'It looks like the wildcard relation '
-                            f'{edge["database"]}.{edge["schema"]}.{edge["relation"]} '
-                            f'was specified as a dependency, but it does not exist.')
-                    if upstream_relation.is_view:
-                        raise InvalidRelationshipException(
-                            f'Relation {upstream_relation.quoted_dot_notation} is a view, '
-                            f'but has been specified as an upstream dependency for '
-                            f'relation {relation.quoted_dot_notation}. '
-                            f'View dependencies are not allowed by SnowShu.')
-                    if upstream_relation == rel:
-                        continue
-                    graph.add_edge(upstream_relation,
-                                   rel,
-                                   direction=edge['direction'],
-                                   remote_attribute=edge['remote_attribute'],
-                                   local_attribute=edge['local_attribute'])
+            # determine downstream relations from relation patterns
+            downstream_relations = set(
+                filter(
+                    lambda x: single_full_pattern_match(x, relation_pattern_dict),  # noqa  pylint: disable=cell-var-from-loop
+                    available_nodes
+                )
+            )
+            if not downstream_relations:
+                raise InvalidRelationshipException(
+                    f'Relationship {relation_pattern_dict} was specified, '
+                    f'but does not match any relations. '
+                    f'Please verify replica configuration.'
+                )
+
+            # for each relationship, find up/downstream relations, then create the appropriate edges
+            for relationship in relationship_dicts:
+                # check for wild cards
+                possible_wildcard_attrs = ('database', 'schema',)
+                wildcard_attrs = [attr for attr in possible_wildcard_attrs if relationship[attr] is None]
+
+                # if there are wildcard attributes, partition downstream relations
+                if wildcard_attrs:
+                    wildcard_partitions = {}
+                    for down_rel in downstream_relations:
+                        # create wildcard key off of (in case there are multiple wildcards)
+                        wildcard_key = '|'.join([getattr(down_rel, attr) for attr in wildcard_attrs])
+                        val = wildcard_partitions.get(wildcard_key, [])
+                        val.append(down_rel)
+                        wildcard_partitions[wildcard_key] = val
+
+                    for _, downstream_partition in wildcard_partitions.items():
+                        # populate any wildcard patterns with the appropriate values from first element
+                        for attr in wildcard_attrs:
+                            relationship[attr] = getattr(downstream_partition[0], attr)
+
+                        graph = SnowShuGraph._process_downstream_relation_set(relationship,
+                                                                              downstream_partition,
+                                                                              graph,
+                                                                              available_nodes)
+                # no wildcards present in relationship definition
+                else:
+                    graph = SnowShuGraph._process_downstream_relation_set(relationship,
+                                                                          downstream_relations,
+                                                                          graph,
+                                                                          available_nodes)
+
+        return graph
+
+    @staticmethod
+    def _process_downstream_relation_set(
+            relationship: dict,
+            downstream_set: Set[Relation],
+            graph: networkx.DiGraph,
+            full_relation_set: Set[Relation]) -> None:
+        """ Adds the appropriate edges to the graph for the given relationship """
+        # find any of the upstream relations
+        upstream_relations = set(
+            filter(
+                lambda x: single_full_pattern_match(x, relationship),  # noqa pylint: disable=cell-var-from-loop
+                full_relation_set
+            )
+        )
+        # determine the set difference for verification
+        upstream_without_downstream = upstream_relations.difference(downstream_set)
+
+        # check to make sure an upstream relation was found
+        if not upstream_without_downstream:
+            raise InvalidRelationshipException(
+                f'It looks like the relation '
+                f'{relationship["database"]}.{relationship["schema"]}.{relationship["name"]} '
+                f'was specified as a dependency, but it does not exist.'
+            )
+        # check to see if there was an intersection between the upstream and downstream relations
+        if len(upstream_without_downstream) != len(upstream_relations):
+            logger.warning(
+                f'Relationship {relationship} defines at least one downstream '
+                f'relation in the upstream relation set. Ignoring the occurrence '
+                f'in the upstream set. Please verify replica config file.'
+            )
+        # check to make sure we aren't trying to generate a many-to-many relationship
+        if len(upstream_without_downstream) > 1 and len(downstream_set) > 1:
+            raise InvalidRelationshipException(
+                f'Relationship {relationship} defines a many-to-many '
+                f'relationship between tables in the source location. '
+                f'Many-to-many relationship are not allowed by SnowShu '
+                f'as they are usually unintended side effects of lenient regex.'
+            )
+        # check to make sure found upstream relation is not a view
+        view_relations = [r.quoted_dot_notation for r in upstream_relations if r.is_view]
+        if view_relations:
+            raise InvalidRelationshipException(
+                f'Relations {view_relations} are views, '
+                f'but have been specified as an upstream dependency for '
+                f'the relationship {relationship}. '
+                f'View dependencies are not allowed by SnowShu.'
+            )
+
+        for downstream_relation in downstream_set:
+            for upstream_relation in upstream_without_downstream:
+                graph.add_edge(upstream_relation,
+                               downstream_relation,
+                               direction=relationship['direction'],
+                               remote_attribute=relationship['remote_attribute'],
+                               local_attribute=relationship['local_attribute'])
         return graph
 
     def get_graphs(self) -> tuple:
@@ -243,15 +315,6 @@ class SnowShuGraph:
             approved_specified_patterns + approved_second_level_specified_patterns
         logger.debug(f'All config primary patterns: {all_patterns}')
         return all_patterns
-
-    @staticmethod
-    def _filter_relations(full_catalog: iter,
-                          patterns: dict) -> Set[Relation]:
-        """applies patterns to the full catalog to build the filtered relation
-        set."""
-
-        return set(filter(lambda rel: at_least_one_full_pattern_match(rel, patterns),
-                          full_catalog))
 
     @staticmethod
     def _set_globals_for_node(relation: Relation, configs: Configuration) -> Relation:
