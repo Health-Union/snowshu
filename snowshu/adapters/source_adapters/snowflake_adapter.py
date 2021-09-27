@@ -252,12 +252,12 @@ LIMIT {max_number_of_outliers})
         return f"{local_key} IN ({constraint_sql}) "
 
     @staticmethod
-    def polymorphic_constraint_statement(relation: Relation,
-                                       analyze: bool,
-                                       local_key: str,
-                                       remote_key: str,
-                                       local_type: str,
-                                       local_type_match_val: str = None) -> str:
+    def polymorphic_constraint_statement(relation: Relation,  # noqa pylint: disable=too-many-arguments
+                                         analyze: bool,
+                                         local_key: str,
+                                         remote_key: str,
+                                         local_type: str,
+                                         local_type_match_val: str = None) -> str:
         predicate = SnowflakeAdapter.predicate_constraint_statement(relation, analyze, local_key, remote_key)
         if local_type_match_val:
             type_match_val = local_type_match_val

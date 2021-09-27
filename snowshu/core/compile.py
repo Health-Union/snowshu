@@ -1,4 +1,3 @@
-from snowshu.exceptions import InvalidRelationshipException
 from typing import Type
 
 import networkx
@@ -13,8 +12,9 @@ logger = Logger().logger
 
 class RuntimeSourceCompiler:
 
+    # TODO breakout edge logic into edgetype/direction handling functions
     @staticmethod   # noqa mccabe: disable=MC0001
-    def compile_queries_for_relation(relation: Relation,
+    def compile_queries_for_relation(relation: Relation,  # noqa pylint: disable=too-many-branches
                                      dag: networkx.Graph,
                                      source_adapter: Type[BaseSourceAdapter],
                                      analyze: bool) -> Relation:
@@ -50,7 +50,8 @@ class RuntimeSourceCompiler:
                                                                                    edge['local_attribute']))
                 if relation.include_outliers and edge['direction'] == 'polymorphic':
                     logger.warning("Polymorphic relationships currently do not support including outliers. "
-                                   f"Ignoring include_outliers flag for edge from {relation.dot_notation} to {child.dot_notation}. ")
+                                   "Ignoring include_outliers flag for edge "
+                                   f"from {relation.dot_notation} to {child.dot_notation}. ")
                 elif relation.include_outliers:
                     unions.append(source_adapter.union_constraint_statement(relation,
                                                                             child,
@@ -67,16 +68,18 @@ class RuntimeSourceCompiler:
                     # if the local type attribute is set, the constraint needs to account for it
                     # otherwise we only need the normal predicate constraint
                     if edge['local_type_attribute']:
-                        polymorphic_predicates.append(source_adapter.polymorphic_constraint_statement(parent,
-                                                                                                      analyze,
-                                                                                                      edge['local_attribute'],
-                                                                                                      edge['remote_attribute'],
-                                                                                                      edge['local_type_attribute']))
+                        polymorphic_predicates.append(
+                            source_adapter.polymorphic_constraint_statement(parent,
+                                                                            analyze,
+                                                                            edge['local_attribute'],
+                                                                            edge['remote_attribute'],
+                                                                            edge['local_type_attribute']))
                     else:
-                        polymorphic_predicates.append(source_adapter.predicate_constraint_statement(parent,
-                                                                                                    analyze,
-                                                                                                    edge['local_attribute'],
-                                                                                                    edge['remote_attribute']))
+                        polymorphic_predicates.append(
+                            source_adapter.predicate_constraint_statement(parent,
+                                                                          analyze,
+                                                                          edge['local_attribute'],
+                                                                          edge['remote_attribute']))
                 else:
                     predicates.append(source_adapter.predicate_constraint_statement(parent,
                                                                                     analyze,
@@ -84,7 +87,8 @@ class RuntimeSourceCompiler:
                                                                                     edge['remote_attribute']))
                 if relation.include_outliers and edge['direction'] == 'polymorphic':
                     logger.warning("Polymorphic relationships currently do not support including outliers. "
-                                   f"Ignoring include_outliers flag for edge from {parent.dot_notation} to {relation.dot_notation}. ")
+                                   "Ignoring include_outliers flag for edge "
+                                   f"from {parent.dot_notation} to {relation.dot_notation}. ")
                 elif relation.include_outliers:
                     unions.append(source_adapter.union_constraint_statement(relation,
                                                                             parent,
