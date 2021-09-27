@@ -124,12 +124,28 @@ class SnowShuGraph:
             for relationship_type in ('bidirectional', 'directional',):
                 relationship_dicts += [
                     dict(
-                        direction=relationship_type,
                         database=val.database_pattern,
                         schema=val.schema_pattern,
                         name=val.relation_pattern,
-                        remote_attribute=val.remote_attribute,
-                        local_attribute=val.local_attribute
+                        edge_attributes={
+                            "direction": relationship_type,
+                            "remote_attribute": val.remote_attribute,
+                            "local_attribute": val.local_attribute
+                        }
+                    ) for val in relation.relationships.__dict__[relationship_type]]
+
+            for relationship_type in ('polymorphic',):
+                relationship_dicts += [
+                    dict(
+                        database=val.database_pattern,
+                        schema=val.schema_pattern,
+                        name=val.relation_pattern,
+                        edge_attributes={
+                            "direction": relationship_type,
+                            "remote_attribute": val.remote_attribute,
+                            "local_attribute": val.local_attribute,
+                            "local_type_attribute": val.local_type_attribute
+                        }
                     ) for val in relation.relationships.__dict__[relationship_type]]
 
             # determine downstream relations from relation patterns
@@ -233,9 +249,7 @@ class SnowShuGraph:
             for upstream_relation in upstream_without_downstream:
                 graph.add_edge(upstream_relation,
                                downstream_relation,
-                               direction=relationship['direction'],
-                               remote_attribute=relationship['remote_attribute'],
-                               local_attribute=relationship['local_attribute'])
+                               **relationship['edge_attributes'])
         return graph
 
     def get_graphs(self) -> tuple:

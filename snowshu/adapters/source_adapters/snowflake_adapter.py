@@ -252,6 +252,20 @@ LIMIT {max_number_of_outliers})
         return f"{local_key} IN ({constraint_sql}) "
 
     @staticmethod
+    def polymorphic_constraint_statement(relation: Relation,
+                                       analyze: bool,
+                                       local_key: str,
+                                       remote_key: str,
+                                       local_type: str,
+                                       local_type_match_val: str = None) -> str:
+        predicate = SnowflakeAdapter.predicate_constraint_statement(relation, analyze, local_key, remote_key)
+        if local_type_match_val:
+            type_match_val = local_type_match_val
+        else:
+            type_match_val = relation.name[:-1] if relation.name[-1].lower() == 's' else relation.name
+        return f" ({predicate} AND LOWER({local_type}) = LOWER('{type_match_val}') ) "
+
+    @staticmethod
     def _sample_type_to_query_sql(sample_type: 'BaseSampleMethod') -> str:
         if sample_type.name == 'BERNOULLI':
             qualifier = sample_type.probability if sample_type.probability\
