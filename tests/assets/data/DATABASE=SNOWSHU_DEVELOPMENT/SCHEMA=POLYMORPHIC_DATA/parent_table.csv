@@ -11,3 +11,5 @@ id,child_id,child_type,value
 10,2,child_type_2_item,parent_10
 11,3,child_type_2_item,parent_11
 12,4,child_type_2_item,parent_12
+13,1,child_type_x_item,parent_13
+14,2,child_type_x_item,parent_14

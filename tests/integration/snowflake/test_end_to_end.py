@@ -9,7 +9,7 @@ from click.testing import CliRunner
 from sqlalchemy import create_engine
 
 from snowshu.configs import PACKAGE_ROOT
-from snowshu.core.main import cli
+from snowshu.core.main import cli, create
 
 """ End-To-End all inclusive test session"""
 #1. builds a new replica based on the template configs
@@ -59,7 +59,6 @@ def test_reports_full_catalog_start(end_to_end):
 
 def test_finds_n_relations(end_to_end):
     result_lines= end_to_end
-    breakpoint()
     assert find_number_of_processed_relations(result_lines) == 16, \
         "Number of found relations do not match the expected of 16 relations. Check database."
 
@@ -78,6 +77,42 @@ def test_snowshu_explain(end_to_end):
     assert response['target_adapter'] == 'postgres'
     assert response['source_adapter'] == 'snowflake'
     assert datetime(response['created_at']) < datetime.now()
+
+
+def test_polymorphic_parent_id(end_to_end):
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
+    query_string = """
+        SELECT * FROM SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.PARENT_TABLE
+    """
+    query = conn.execute(query_string)
+    results = query.fetchall()
+    for record in results:
+        assert record['id'] not in (13, 14)
+    assert len(results) == 12
+
+
+def test_polymorphic_child_id(end_to_end):
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
+    query_string = """
+        SELECT * FROM SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.PARENT_TABLE_2
+    """
+    query = conn.execute(query_string)
+    results = query.fetchall()
+    for record in results:
+        assert record['id'] not in (13, 14)
+    assert len(results) == 12
+
+
+def test_polymorphic_child_tables(end_to_end):
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
+    for val in ['0', '1', '2']:
+        query_string = f"""
+            SELECT * FROM SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.CHILD_TYPE_{val}_ITEMS
+        """
+        query = conn.execute(query_string)
+        results = query.fetchall()
+        assert len(results) == 4
+
 
 def test_bidirectional(end_to_end):
     print('test_bidirectional')

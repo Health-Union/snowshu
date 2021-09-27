@@ -85,7 +85,7 @@ source:
       relation: PARENT_TABLE_2
       relationships:
         polymorphic:
-          - local_attribute: PARENT_ID
+          - local_attribute: ID
             local_type_attribute: ''
             database: SNOWSHU_DEVELOPMENT
             schema: POLYMORPHIC_DATA

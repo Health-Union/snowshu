@@ -133,12 +133,12 @@ CONFIGURATION = {
                 "relationships": {
                     "polymorphic": [
                         {
-                            "local_attribute": "PARENT_ID",
+                            "local_attribute": "ID",
                             "local_type_attribute": "",
                             "database": "SNOWSHU_DEVELOPMENT",
                             "schema": "POLYMORPHIC_DATA",
                             "relation": "(?i)^CHILD_TYPE_[0-9]_ITEMS$",
-                            "remote_attribute": "PARENT_ID"
+                            "remote_attribute": "PARENT_2_ID"
                         }
                     ],
                 }

@@ -129,6 +129,70 @@ def test_run_iso(stub_relation_set):
         """)
 
 
+def test_run_deps_polymorphic_idtype(stub_relation_set):
+    child1 = stub_relation_set.child_relation_type_1
+    child2 = stub_relation_set.child_relation_type_2
+    child3 = stub_relation_set.child_relation_type_3
+    parent = stub_relation_set.parent_relation_childid_type
+    childid = stub_relation_set.childid_key
+    childtype = stub_relation_set.childtype_key
+    for relation in (child1, child2, child3, parent,):
+        relation = stub_out_sampling(relation)
+
+    child1.data=pd.DataFrame([{childid: "1"},{childid: "2"}])
+    child2.data=pd.DataFrame([{childid: "1"},{childid: "3"}])
+    child3.data=pd.DataFrame([{childid: "1"},{childid: "4"}])
+    dag=nx.DiGraph()
+    dag.add_edge(child1,parent,direction="polymorphic",remote_attribute=childid,local_attribute=childid,local_type_attribute=childtype)
+    dag.add_edge(child2,parent,direction="polymorphic",remote_attribute=childid,local_attribute=childid,local_type_attribute=childtype)
+    dag.add_edge(child3,parent,direction="polymorphic",remote_attribute=childid,local_attribute=childid,local_type_attribute=childtype)
+    adapter=SnowflakeAdapter()
+    child1 = RuntimeSourceCompiler.compile_queries_for_relation(child1,dag,adapter,False)
+    child2 = RuntimeSourceCompiler.compile_queries_for_relation(child2,dag,adapter,False)
+    child3 = RuntimeSourceCompiler.compile_queries_for_relation(child3,dag,adapter,False)
+    parent = RuntimeSourceCompiler.compile_queries_for_relation(parent,dag,adapter,False)
+
+    expected_query = f"""
+        SELECT 
+            * 
+        FROM 
+        {parent.quoted_dot_notation}
+        WHERE ( ({childid} IN ('1','2') AND LOWER({childtype}) = LOWER('child_type_1_record') ) OR ({childid} IN ('1','3') AND LOWER({childtype}) = LOWER('child_type_2_record') ) OR ({childid} IN ('1','4') AND LOWER({childtype}) = LOWER('child_type_3_record') ) )
+    """
+    assert query_equalize(parent.compiled_query)==query_equalize(expected_query)
+
+def test_run_deps_polymorphic_parentid(stub_relation_set):
+    child1 = stub_relation_set.child_relation_type_1
+    child2 = stub_relation_set.child_relation_type_2
+    child3 = stub_relation_set.child_relation_type_3
+    parent = stub_relation_set.parent_relation_parentid
+    parentid = stub_relation_set.parentid_key
+    for relation in (child1, child2, child3, parent,):
+        relation = stub_out_sampling(relation)
+
+    child1.data=pd.DataFrame([{parentid: "1"},{parentid: "10"}])
+    child2.data=pd.DataFrame([{parentid: "2"},{parentid: "20"}])
+    child3.data=pd.DataFrame([{parentid: "3"},{parentid: "30"}])
+    dag=nx.DiGraph()
+    dag.add_edge(child1,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid,local_type_attribute='')
+    dag.add_edge(child2,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid,local_type_attribute='')
+    dag.add_edge(child3,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid,local_type_attribute='')
+    adapter=SnowflakeAdapter()
+    child1 = RuntimeSourceCompiler.compile_queries_for_relation(child1,dag,adapter,False)
+    child2 = RuntimeSourceCompiler.compile_queries_for_relation(child2,dag,adapter,False)
+    child3 = RuntimeSourceCompiler.compile_queries_for_relation(child3,dag,adapter,False)
+    parent = RuntimeSourceCompiler.compile_queries_for_relation(parent,dag,adapter,False)
+
+    expected_query = f"""
+        SELECT 
+            * 
+        FROM 
+        {parent.quoted_dot_notation}
+        WHERE ( {parentid} IN ('1','10') OR {parentid} IN ('2','20') OR {parentid} IN ('3','30') )
+    """
+    assert query_equalize(parent.compiled_query)==query_equalize(expected_query)
+
+
 def test_run_deps_directional(stub_relation_set):
     upstream=stub_relation_set.upstream_relation
     downstream=stub_relation_set.downstream_relation
