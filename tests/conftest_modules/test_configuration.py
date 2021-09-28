@@ -121,7 +121,15 @@ CONFIGURATION = {
                             "database": "SNOWSHU_DEVELOPMENT",
                             "schema": "POLYMORPHIC_DATA",
                             "relation": "(?i)^CHILD_TYPE_[0-9]_ITEMS$",
-                            "remote_attribute": "ID"
+                            "remote_attribute": "ID",
+                            "local_type_overrides": [
+                                {
+                                    "database": "SNOWSHU_DEVELOPMENT",
+                                    "schema": "POLYMORPHIC_DATA",
+                                    "relation": "CHILD_TYPE_2_ITEMS",
+                                    "override_value": "type_2"
+                                }
+                            ]
                         }
                     ],
                 }
@@ -134,7 +142,6 @@ CONFIGURATION = {
                     "polymorphic": [
                         {
                             "local_attribute": "ID",
-                            "local_type_attribute": "",
                             "database": "SNOWSHU_DEVELOPMENT",
                             "schema": "POLYMORPHIC_DATA",
                             "relation": "(?i)^CHILD_TYPE_[0-9]_ITEMS$",

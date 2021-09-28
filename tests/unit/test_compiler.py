@@ -136,6 +136,8 @@ def test_run_deps_polymorphic_idtype(stub_relation_set):
     parent = stub_relation_set.parent_relation_childid_type
     childid = stub_relation_set.childid_key
     childtype = stub_relation_set.childtype_key
+    child2type_override = stub_relation_set.child2override_key
+    local_overrides = {child2.dot_notation: child2type_override}
     for relation in (child1, child2, child3, parent,):
         relation = stub_out_sampling(relation)
 
@@ -143,9 +145,12 @@ def test_run_deps_polymorphic_idtype(stub_relation_set):
     child2.data=pd.DataFrame([{childid: "1"},{childid: "3"}])
     child3.data=pd.DataFrame([{childid: "1"},{childid: "4"}])
     dag=nx.DiGraph()
-    dag.add_edge(child1,parent,direction="polymorphic",remote_attribute=childid,local_attribute=childid,local_type_attribute=childtype)
-    dag.add_edge(child2,parent,direction="polymorphic",remote_attribute=childid,local_attribute=childid,local_type_attribute=childtype)
-    dag.add_edge(child3,parent,direction="polymorphic",remote_attribute=childid,local_attribute=childid,local_type_attribute=childtype)
+    dag.add_edge(child1,parent,direction="polymorphic",remote_attribute=childid,local_attribute=childid,
+        local_type_attribute=childtype,local_type_overrides=local_overrides)
+    dag.add_edge(child2,parent,direction="polymorphic",remote_attribute=childid,local_attribute=childid,
+        local_type_attribute=childtype,local_type_overrides=local_overrides)
+    dag.add_edge(child3,parent,direction="polymorphic",remote_attribute=childid,local_attribute=childid,
+        local_type_attribute=childtype,local_type_overrides=local_overrides)
     adapter=SnowflakeAdapter()
     child1 = RuntimeSourceCompiler.compile_queries_for_relation(child1,dag,adapter,False)
     child2 = RuntimeSourceCompiler.compile_queries_for_relation(child2,dag,adapter,False)
@@ -157,7 +162,7 @@ def test_run_deps_polymorphic_idtype(stub_relation_set):
             * 
         FROM 
         {parent.quoted_dot_notation}
-        WHERE ( ({childid} IN ('1','2') AND LOWER({childtype}) = LOWER('child_type_1_record') ) OR ({childid} IN ('1','3') AND LOWER({childtype}) = LOWER('child_type_2_record') ) OR ({childid} IN ('1','4') AND LOWER({childtype}) = LOWER('child_type_3_record') ) )
+        WHERE ( ({childid} IN ('1','2') AND LOWER({childtype}) = LOWER('child_type_1_record') ) OR ({childid} IN ('1','3') AND LOWER({childtype}) = LOWER('{child2type_override}') ) OR ({childid} IN ('1','4') AND LOWER({childtype}) = LOWER('child_type_3_record') ) )
     """
     assert query_equalize(parent.compiled_query)==query_equalize(expected_query)
 
@@ -174,9 +179,9 @@ def test_run_deps_polymorphic_parentid(stub_relation_set):
     child2.data=pd.DataFrame([{parentid: "2"},{parentid: "20"}])
     child3.data=pd.DataFrame([{parentid: "3"},{parentid: "30"}])
     dag=nx.DiGraph()
-    dag.add_edge(child1,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid,local_type_attribute='')
-    dag.add_edge(child2,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid,local_type_attribute='')
-    dag.add_edge(child3,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid,local_type_attribute='')
+    dag.add_edge(child1,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid)
+    dag.add_edge(child2,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid)
+    dag.add_edge(child3,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid)
     adapter=SnowflakeAdapter()
     child1 = RuntimeSourceCompiler.compile_queries_for_relation(child1,dag,adapter,False)
     child2 = RuntimeSourceCompiler.compile_queries_for_relation(child2,dag,adapter,False)

@@ -7,9 +7,9 @@ id,child_id,child_type,value
 6,2,child_type_1_item,parent_6
 7,3,child_type_1_item,parent_7
 8,4,child_type_1_item,parent_8
-9,1,child_type_2_item,parent_9
-10,2,child_type_2_item,parent_10
-11,3,child_type_2_item,parent_11
-12,4,child_type_2_item,parent_12
+9,1,type_2,parent_9
+10,2,type_2,parent_10
+11,3,type_2,parent_11
+12,4,type_2,parent_12
 13,1,child_type_x_item,parent_13
 14,2,child_type_x_item,parent_14

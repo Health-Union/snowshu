@@ -40,6 +40,17 @@ def test_fills_empty_top_level_values(stub_configs):
     assert parsed.max_number_of_outliers==DEFAULT_MAX_NUMBER_OF_OUTLIERS
 
 
+def test_casing_polymorphic_overrides(stub_configs):
+    stub_configs = stub_configs()
+    mock_config_file=StringIO(yaml.dump(stub_configs))
+    parsed = ConfigurationParser().from_file_or_path(mock_config_file)
+    override_relation = [rel for rel in parsed.specified_relations if rel.relation_pattern == 'parent_table'][0]
+    overrides = override_relation.relationships.polymorphic[0].local_type_overrides
+    assert overrides
+    assert 'snowshu_development.polymorphic_data.child_type_2_items' in overrides
+    assert overrides['snowshu_development.polymorphic_data.child_type_2_items'] == 'type_2'
+
+
 def test_errors_on_missing_section(stub_configs):
     stub_configs = stub_configs()
     del stub_configs['source']

@@ -92,6 +92,7 @@ class RelationTestHelper:
         self.parentid_key = rand_string(15)
         self.childid_key = rand_string(15)
         self.childtype_key = rand_string(15)
+        self.child2override_key = rand_string(20)
 
         # update specifics
         self.view_relation.materialization = mz.VIEW

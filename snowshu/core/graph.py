@@ -134,19 +134,23 @@ class SnowShuGraph:
                         }
                     ) for val in relation.relationships.__dict__[relationship_type]]
 
-            for relationship_type in ('polymorphic',):
-                relationship_dicts += [
-                    dict(
-                        database=val.database_pattern,
-                        schema=val.schema_pattern,
-                        name=val.relation_pattern,
-                        edge_attributes={
-                            "direction": relationship_type,
-                            "remote_attribute": val.remote_attribute,
-                            "local_attribute": val.local_attribute,
-                            "local_type_attribute": val.local_type_attribute
-                        }
-                    ) for val in relation.relationships.__dict__[relationship_type]]
+            for val in relation.relationships.polymorphic:
+                edge_attr = {
+                    "direction": "polymorphic",
+                    "remote_attribute": val.remote_attribute,
+                    "local_attribute": val.local_attribute,
+                }
+                if val.local_type_attribute:
+                    edge_attr["local_type_attribute"] = val.local_type_attribute
+                    edge_attr["local_type_overrides"] = val.local_type_overrides
+
+                rel_dict = {
+                    "database": val.database_pattern,
+                    "schema": val.schema_pattern,
+                    "name": val.relation_pattern,
+                    "edge_attributes": edge_attr
+                }
+                relationship_dicts.append(rel_dict)
 
             # determine downstream relations from relation patterns
             downstream_relations = set(

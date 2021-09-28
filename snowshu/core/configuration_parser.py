@@ -61,6 +61,7 @@ class SpecifiedMatchPattern():
     @dataclass
     class PolymorphicRelationshipPattern(RelationshipPattern):
         local_type_attribute: str
+        local_type_overrides: dict
 
     @dataclass
     class Relationships:
@@ -243,13 +244,25 @@ class ConfigurationParser:
 
         def build_polymorphic_relationship(
                 sub) -> SpecifiedMatchPattern.PolymorphicRelationshipPattern:
+            override_dict = {}
+            if 'local_type_overrides' in sub:
+                for override in sub['local_type_overrides']:
+                    key = '.'.join([
+                        self.case(override['database']),
+                        self.case(override['schema']),
+                        self.case(override['relation'])
+                    ])
+                    value = override['override_value']
+                    override_dict[key] = value
+
             return SpecifiedMatchPattern.PolymorphicRelationshipPattern(
                 self.case(sub['local_attribute']),
                 self.case(sub['database']) if sub['database'] != '' else None,
                 self.case(sub['schema']) if sub['schema'] != '' else None,
                 self.case(sub['relation']),
                 self.case(sub['remote_attribute']),
-                self.case(sub['local_type_attribute']) if sub['local_type_attribute'] != '' else None
+                self.case(sub['local_type_attribute']) if 'local_type_attribute' in sub else None,
+                override_dict
             )
 
         relationships = specified_pattern.get('relationships', dict())

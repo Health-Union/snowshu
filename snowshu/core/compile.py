@@ -67,13 +67,15 @@ class RuntimeSourceCompiler:
                 if edge['direction'] == 'polymorphic':
                     # if the local type attribute is set, the constraint needs to account for it
                     # otherwise we only need the normal predicate constraint
-                    if edge['local_type_attribute']:
+                    if 'local_type_attribute' in edge:
+                        local_type_override = edge['local_type_overrides'].get(parent.dot_notation, None)
                         polymorphic_predicates.append(
                             source_adapter.polymorphic_constraint_statement(parent,
                                                                             analyze,
                                                                             edge['local_attribute'],
                                                                             edge['remote_attribute'],
-                                                                            edge['local_type_attribute']))
+                                                                            edge['local_type_attribute'],
+                                                                            local_type_override))
                     else:
                         polymorphic_predicates.append(
                             source_adapter.predicate_constraint_statement(parent,
