@@ -32,7 +32,30 @@ MOCKED_CONFIG = dict(name='test',
                                                                                          database='snowno',
                                                                                          schema='THING',
                                                                                          relation='matches_in_directional')]
-                                                                       ))]),
+                                                                       )),
+                                                dict(database='(?i)^snow.*',
+                                                    schema='THING',
+                                                    relation='.*poly$',
+                                                    relationships=dict(polymorphic=[dict(local_attribute='child_id',
+                                                                                         local_type_attribute='child_type',
+                                                                                         remote_attribute='id',
+                                                                                         database='',
+                                                                                         schema='',
+                                                                                         relation='^poly_child_[0-9]_items$')
+                                                                                      ],
+                                                                       )),
+                                                dict(database='(?i)^snow.*',
+                                                    schema='THING',
+                                                    relation='.*poly2$',
+                                                    relationships=dict(polymorphic=[dict(local_attribute='id',
+                                                                                         local_type_attribute='',
+                                                                                         remote_attribute='parent_id',
+                                                                                         database='',
+                                                                                         schema='',
+                                                                                         relation='^poly_child_[0-9]_items$')
+                                                                                      ],
+                                                                       )),
+                                                ]),
                      target=dict(adapter='default'),
                      storage=dict(profile='default'))
 
@@ -49,7 +72,13 @@ MOCKED_CATALOG = (Relation('snowyes', 'thing', 'foo_suffix', mz.TABLE, []),
                            'matches_in_directional', mz.TABLE, []),
                   Relation('SNOWYES', 'thing',
                            'nevermatch_except_bidirectional', mz.TABLE, []),
-                  Relation('snowyes', 'thing', 'nevermatch_except_bidirectional', mz.TABLE, []),)
+                  Relation('snowyes', 'thing', 'nevermatch_except_bidirectional', mz.TABLE, []),
+                  Relation('snowyes', 'thing', 'parent_poly', mz.TABLE, []),
+                  Relation('snowyes', 'thing', 'parent_poly2', mz.TABLE, []),
+                  Relation('snowyes', 'thing', 'poly_child_1_items', mz.TABLE, []),
+                  Relation('snowyes', 'thing', 'poly_child_2_items', mz.TABLE, []),
+                  Relation('snowyes', 'thing', 'poly_child_3_items', mz.TABLE, []),
+                  )
 
 @pytest.mark.skip("TODO This test needs to be redone since the filtering is completed when the catalog is created, not during graph building")
 @mock.patch('snowshu.core.configuration_parser.ConfigurationParser._build_adapter_profile')
@@ -69,3 +98,11 @@ def test_included_and_excluded(target, adapter):
         assert MOCKED_CATALOG[4] not in matched_nodes.nodes
         assert MOCKED_CATALOG[5] not in matched_nodes.nodes
         assert MOCKED_CATALOG[6] in matched_nodes.nodes
+        assert MOCKED_CATALOG[7] in matched_nodes.nodes
+        assert MOCKED_CATALOG[8] in matched_nodes.nodes
+        # polymorphic matches
+        assert MOCKED_CATALOG[9] in matched_nodes.nodes
+        assert MOCKED_CATALOG[10] in matched_nodes.nodes
+        assert MOCKED_CATALOG[11] in matched_nodes.nodes
+        assert MOCKED_CATALOG[12] in matched_nodes.nodes
+        assert MOCKED_CATALOG[13] in matched_nodes.nodes

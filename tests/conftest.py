@@ -75,17 +75,42 @@ class RelationTestHelper:
             materialization=mz.TABLE,
             attributes=[])
 
-        self.bidirectional_key_left = rand_string(10),
-        self.bidirectional_key_right = rand_string(8),
+        self.parent_relation_childid_type = Relation(
+            name='parent_relation_childid_type', **self.rand_relation_helper())
+        self.parent_relation_parentid = Relation(
+            name='parent_relation_parentid', **self.rand_relation_helper())
+        self.child_relation_type_1 = Relation(
+            name='child_type_1_records', **self.rand_relation_helper())
+        self.child_relation_type_2 = Relation(
+            name='child_type_2_records', **self.rand_relation_helper())
+        self.child_relation_type_3 = Relation(
+            name='child_type_3_records', **self.rand_relation_helper())
+
+        self.bidirectional_key_left = rand_string(10)
+        self.bidirectional_key_right = rand_string(8)
         self.directional_key = rand_string(15)
+        self.parentid_key = rand_string(15)
+        self.childid_key = rand_string(15)
+        self.childtype_key = rand_string(15)
+        self.child2override_key = rand_string(20)
 
         # update specifics
         self.view_relation.materialization = mz.VIEW
 
         for n in ('downstream_relation', 'upstream_relation', 'downstream_wildcard_relation_1', 'downstream_wildcard_relation_2',
                 'upstream_wildcard_relation_1', 'upstream_wildcard_relation_2'):
-            self.__dict__[n].attributes = [
-                Attribute(self.directional_key, dt.INTEGER)]
+            self.__dict__[n].attributes = [Attribute(self.directional_key, dt.INTEGER)]
+
+        for n in ('child_relation_type_1', 'child_relation_type_2', 'child_relation_type_3',):
+            self.__dict__[n].attributes = [Attribute(self.parentid_key, dt.VARCHAR), Attribute(self.childid_key, dt.VARCHAR)]
+
+        self.parent_relation_childid_type.attributes = [
+            Attribute(self.childid_key, dt.VARCHAR),
+            Attribute(self.childtype_key, dt.VARCHAR)
+        ]
+        self.parent_relation_parentid.attributes = [
+            Attribute(self.parentid_key, dt.VARCHAR)
+        ]
 
         self.birelation_right.attributes = [
             Attribute(self.bidirectional_key_right, dt.VARCHAR)]
@@ -93,7 +118,8 @@ class RelationTestHelper:
             Attribute(self.bidirectional_key_left, dt.VARCHAR)]
 
         for r in ('downstream_relation', 'upstream_relation', 'iso_relation', 'birelation_left', 'birelation_right', 'view_relation',
-                'downstream_wildcard_relation_1', 'downstream_wildcard_relation_2', 'upstream_wildcard_relation_1', 'upstream_wildcard_relation_2'):
+                'downstream_wildcard_relation_1', 'downstream_wildcard_relation_2', 'upstream_wildcard_relation_1', 'upstream_wildcard_relation_2',
+                'child_relation_type_1', 'child_relation_type_2', 'child_relation_type_3','parent_relation_childid_type','parent_relation_parentid'):
             self.__dict__[r].compiled_query = ''
 
 

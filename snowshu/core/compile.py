@@ -12,8 +12,9 @@ logger = Logger().logger
 
 class RuntimeSourceCompiler:
 
+    # TODO breakout edge logic into edgetype/direction handling functions
     @staticmethod   # noqa mccabe: disable=MC0001
-    def compile_queries_for_relation(relation: Relation,
+    def compile_queries_for_relation(relation: Relation,  # noqa pylint: disable=too-many-branches
                                      dag: networkx.Graph,
                                      source_adapter: Type[BaseSourceAdapter],
                                      analyze: bool) -> Relation:
@@ -39,6 +40,7 @@ class RuntimeSourceCompiler:
             do_not_sample = False
             predicates = list()
             unions = list()
+            polymorphic_predicates = list()
             for child in dag.successors(relation):
                 # parallel edges aren't currently supported
                 edge = dag.edges[relation, child]
@@ -46,7 +48,11 @@ class RuntimeSourceCompiler:
                     predicates.append(source_adapter.upstream_constraint_statement(child,
                                                                                    edge['remote_attribute'],
                                                                                    edge['local_attribute']))
-                if relation.include_outliers:
+                if relation.include_outliers and edge['direction'] == 'polymorphic':
+                    logger.warning("Polymorphic relationships currently do not support including outliers. "
+                                   "Ignoring include_outliers flag for edge "
+                                   f"from {relation.dot_notation} to {child.dot_notation}. ")
+                elif relation.include_outliers:
                     unions.append(source_adapter.union_constraint_statement(relation,
                                                                             child,
                                                                             edge['remote_attribute'],
@@ -55,18 +61,47 @@ class RuntimeSourceCompiler:
 
             for parent in dag.predecessors(relation):
                 edge = dag.edges[parent, relation]
-                # if any incoming edge is birectional set do_not_sample flag
-                do_not_sample = (edge['direction'] == 'bidirectional' or do_not_sample)
-                predicates.append(source_adapter.predicate_constraint_statement(parent,
-                                                                                analyze,
-                                                                                edge['local_attribute'],
-                                                                                edge['remote_attribute']))
-                if relation.include_outliers:
+                # if any incoming edge is birectional or polymorphic set do_not_sample flag
+                # do_not_sample is set since those types are most likely already restricted
+                do_not_sample = (edge['direction'] in ('bidirectional', 'polymorphic',) or do_not_sample)
+                if edge['direction'] == 'polymorphic':
+                    # if the local type attribute is set, the constraint needs to account for it
+                    # otherwise we only need the normal predicate constraint
+                    if 'local_type_attribute' in edge:
+                        local_type_override = edge['local_type_overrides'].get(parent.dot_notation, None)
+                        polymorphic_predicates.append(
+                            source_adapter.polymorphic_constraint_statement(parent,
+                                                                            analyze,
+                                                                            edge['local_attribute'],
+                                                                            edge['remote_attribute'],
+                                                                            edge['local_type_attribute'],
+                                                                            local_type_override))
+                    else:
+                        polymorphic_predicates.append(
+                            source_adapter.predicate_constraint_statement(parent,
+                                                                          analyze,
+                                                                          edge['local_attribute'],
+                                                                          edge['remote_attribute']))
+                else:
+                    predicates.append(source_adapter.predicate_constraint_statement(parent,
+                                                                                    analyze,
+                                                                                    edge['local_attribute'],
+                                                                                    edge['remote_attribute']))
+                if relation.include_outliers and edge['direction'] == 'polymorphic':
+                    logger.warning("Polymorphic relationships currently do not support including outliers. "
+                                   "Ignoring include_outliers flag for edge "
+                                   f"from {parent.dot_notation} to {relation.dot_notation}. ")
+                elif relation.include_outliers:
                     unions.append(source_adapter.union_constraint_statement(relation,
                                                                             parent,
                                                                             edge['local_attribute'],
                                                                             edge['remote_attribute'],
                                                                             relation.max_number_of_outliers))
+
+            # if polymorphic predicates are set up, then generate the or predicate
+            if polymorphic_predicates:
+                full_polymorphic_predicate = " OR ".join(polymorphic_predicates)
+                predicates.append(f"( {full_polymorphic_predicate} )")
 
             query = source_adapter.sample_statement_from_relation(
                 relation, (None if predicates else relation.sampling.sample_method))

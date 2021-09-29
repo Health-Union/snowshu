@@ -124,13 +124,33 @@ class SnowShuGraph:
             for relationship_type in ('bidirectional', 'directional',):
                 relationship_dicts += [
                     dict(
-                        direction=relationship_type,
                         database=val.database_pattern,
                         schema=val.schema_pattern,
                         name=val.relation_pattern,
-                        remote_attribute=val.remote_attribute,
-                        local_attribute=val.local_attribute
+                        edge_attributes={
+                            "direction": relationship_type,
+                            "remote_attribute": val.remote_attribute,
+                            "local_attribute": val.local_attribute
+                        }
                     ) for val in relation.relationships.__dict__[relationship_type]]
+
+            for val in relation.relationships.polymorphic:
+                edge_attr = {
+                    "direction": "polymorphic",
+                    "remote_attribute": val.remote_attribute,
+                    "local_attribute": val.local_attribute,
+                }
+                if val.local_type_attribute:
+                    edge_attr["local_type_attribute"] = val.local_type_attribute
+                    edge_attr["local_type_overrides"] = val.local_type_overrides
+
+                rel_dict = {
+                    "database": val.database_pattern,
+                    "schema": val.schema_pattern,
+                    "name": val.relation_pattern,
+                    "edge_attributes": edge_attr
+                }
+                relationship_dicts.append(rel_dict)
 
             # determine downstream relations from relation patterns
             downstream_relations = set(
@@ -233,9 +253,7 @@ class SnowShuGraph:
             for upstream_relation in upstream_without_downstream:
                 graph.add_edge(upstream_relation,
                                downstream_relation,
-                               direction=relationship['direction'],
-                               remote_attribute=relationship['remote_attribute'],
-                               local_attribute=relationship['local_attribute'])
+                               **relationship['edge_attributes'])
         return graph
 
     def get_graphs(self) -> tuple:
@@ -308,7 +326,7 @@ class SnowShuGraph:
                 schema=lower_level.schema_pattern if lower_level.schema_pattern else upper_level.schema_pattern,
                 name=lower_level.relation_pattern
             ) for upper_level in config.specified_relations
-            for lower_level in upper_level.relationships.bidirectional + upper_level.relationships.directional
+            for lower_level in upper_level.relationships.bidirectional + upper_level.relationships.directional + upper_level.relationships.polymorphic  # noqa pep8: E501
         ]
 
         all_patterns = approved_default_patterns + \

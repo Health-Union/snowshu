@@ -18,9 +18,11 @@ from tests.common import rand_string
 def test_fills_in_empty_source_values(stub_replica_configuration):
     for rel in stub_replica_configuration.specified_relations:
         assert isinstance(rel.unsampled, bool)
+        assert isinstance(rel.relationships.directional, list)
         assert isinstance(rel.relationships.bidirectional, list)
+        assert isinstance(rel.relationships.polymorphic, list)
 
-        for direction in ('bidirectional', 'directional',):
+        for direction in ('bidirectional', 'directional', 'polymorphic'):
             assert getattr(rel.relationships, direction) is not None
 
 
@@ -36,6 +38,17 @@ def test_fills_empty_top_level_values(stub_configs):
     assert parsed.long_description == ''
     assert parsed.include_outliers==False
     assert parsed.max_number_of_outliers==DEFAULT_MAX_NUMBER_OF_OUTLIERS
+
+
+def test_casing_polymorphic_overrides(stub_configs):
+    stub_configs = stub_configs()
+    mock_config_file=StringIO(yaml.dump(stub_configs))
+    parsed = ConfigurationParser().from_file_or_path(mock_config_file)
+    override_relation = [rel for rel in parsed.specified_relations if rel.relation_pattern == 'parent_table'][0]
+    overrides = override_relation.relationships.polymorphic[0].local_type_overrides
+    assert overrides
+    assert 'snowshu_development.polymorphic_data.child_type_2_items' in overrides
+    assert overrides['snowshu_development.polymorphic_data.child_type_2_items'] == 'type_2'
 
 
 def test_errors_on_missing_section(stub_configs):

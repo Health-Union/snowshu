@@ -1,0 +1,5 @@
+id,parent_2_id,value
+1,1,child_type_0_1
+2,4,child_type_0_2
+3,7,child_type_0_3
+4,10,child_type_0_4
