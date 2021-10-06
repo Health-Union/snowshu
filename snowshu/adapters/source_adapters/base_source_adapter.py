@@ -57,7 +57,7 @@ class BaseSourceAdapter(BaseSQLAdapter):
             Returns:
                 Tuple[Relation]: All of the relations from the source adapter pass the filters
         """
-        return BaseSQLAdapter.build_catalog(patterns=patterns, thread_workers=thread_workers)
+        return BaseSQLAdapter.build_catalog(self, patterns=patterns, thread_workers=thread_workers)
 
     def _get_relations_from_database(self, schema_obj: _DatabaseObject):
         raise NotImplementedError()
