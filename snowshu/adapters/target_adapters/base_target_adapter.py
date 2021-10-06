@@ -30,7 +30,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
     ALLOWED_CREDENTIALS = list()
     DOCKER_TARGET_PORT = DOCKER_TARGET_PORT
 
-    def __init__(self):
+    def __init__(self, replica_metadata: dict):
         super().__init__()
         for attr in (
             'DOCKER_IMAGE',
@@ -42,6 +42,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
         self.credentials = self._generate_credentials()
         self.container: "Container" = None
+        self.replica_meta = replica_metadata
 
     def enable_cross_database(self, relations: Iterable['Relation']) -> None:
         """ Create x-database links, if available to the target.

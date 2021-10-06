@@ -34,5 +34,5 @@ def test_remounts_data_in_replica():
     container = mock.MagicMock()
     container.exec_run.return_value = (0, '',)
     shdocker = SnowShuDocker()
-    shdocker._remount_replica_data(container, PostgresAdapter())
+    shdocker._remount_replica_data(container, PostgresAdapter(replica_metadata={}))
     assert [arg for arg in container.exec_run.call_args_list][0][0][0] == "/bin/bash -c 'mkdir /snowshu_replica_data'"
