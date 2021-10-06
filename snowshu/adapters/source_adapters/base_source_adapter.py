@@ -57,72 +57,7 @@ class BaseSourceAdapter(BaseSQLAdapter):
             Returns:
                 Tuple[Relation]: All of the relations from the source adapter pass the filters
         """
-        filtered_schemas = self._get_filtered_schemas(patterns)
-
-        def accumulate_relations(schema_obj: BaseSourceAdapter._DatabaseObject, accumulator):
-            try:
-                relations = self._get_relations_from_database(schema_obj)
-                accumulator += [
-                    r for r in relations if at_least_one_full_pattern_match(r, patterns)]
-            except Exception as exc:
-                logger.critical(exc)
-                raise exc
-
-        # get all columns for filtered db/schema
-        catalog = []
-        logger.info('Building filtered catalog...')
-        start_time = time.time()
-        with ThreadPoolExecutor(max_workers=thread_workers) as executor:
-            for f_schema in filtered_schemas:
-                executor.submit(accumulate_relations, f_schema, catalog)
-
-        logger.info(f'Done building catalog. Found a total of {len(catalog)} relations '
-                    f'from the source in {duration(start_time)}.')
-        return tuple(catalog)
-
-    def _get_all_databases(self) -> List[str]:
-        raise NotImplementedError()
-
-    def _get_all_schemas(self, database: str) -> List[str]:
-        """ Returns the raw names of the schemas in the given database (raw case) """
-        raise NotImplementedError()
-
-    def _get_filtered_schemas(self, filters: Iterable[dict]) -> List[_DatabaseObject]:
-        """ Get all of the filtered schema structures based on the provided filters. """
-        db_filters = []
-        schema_filters = []
-        for _filter in filters:
-            new_filter = _filter.copy()
-            new_filter["name"] = ".*"
-            if schema_filters.count(new_filter) == 0:
-                schema_filters.append(new_filter)
-        for s_filter in schema_filters:
-            new_filter = s_filter.copy()
-            new_filter["schema"] = ".*"
-            if db_filters.count(new_filter) == 0:
-                db_filters.append(new_filter)
-
-        databases = self._get_all_databases()
-        database_relations = [Relation(self._correct_case(
-            database), "", "", None, None) for database in databases]
-        filtered_databases = [
-            rel for rel in database_relations if at_least_one_full_pattern_match(rel, db_filters)]
-
-        # get all schemas in all databases
-        filtered_schemas = []
-        for db_rel in filtered_databases:
-            schemas = self._get_all_schemas(
-                database=db_rel.quoted(db_rel.database))
-            schema_objs = [BaseSourceAdapter._DatabaseObject(schema,
-                                                             Relation(db_rel.database,
-                                                                      self._correct_case(
-                                                                          schema),
-                                                                      "", None, None))
-                           for schema in schemas]
-            filtered_schemas += [d for d in schema_objs if at_least_one_full_pattern_match(
-                d.full_relation, schema_filters)]
-
-        return filtered_schemas
+        return BaseSQLAdapter.build_catalog(patterns=patterns, thread_workers=thread_workers)
 
     def _get_relations_from_database(self, schema_obj: _DatabaseObject):
         raise NotImplementedError()
@@ -154,11 +89,6 @@ class BaseSourceAdapter(BaseSQLAdapter):
             if conn:
                 conn.dispose()
         return frame
-
-    def _correct_case(self, val: str) -> str:
-        """The base case correction method for a source adapter.
-        """
-        return val if self.preserve_case else correct_case(val, self.DEFAULT_CASE == 'upper')
 
     def _count_query(self, query: str) -> int:
         """wraps any query in a COUNT statement, returns that integer."""
