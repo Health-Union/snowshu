@@ -22,22 +22,6 @@ class BaseSourceAdapter(BaseSQLAdapter):
     SUPPORTS_CROSS_DATABASE = False
     SUPPORTED_FUNCTIONS = set()
 
-    class _DatabaseObject:
-        """ An internal class to allow for preserving name casing when needed
-
-            Ex: When querying information_schema, an object name may need to
-                passed as a varchar for a case-sensitive match
-
-            Args:
-                case_sensitive_name (str): The name of the object in the original case
-                full_relation (Relation): An object that represents the database object
-                    to allow for convenient pattern matching
-        """
-
-        def __init__(self, case_sensitive_name: str, full_relation: Relation):
-            self.case_sensitive_name = case_sensitive_name
-            self.full_relation = full_relation
-
     def __init__(self, preserve_case: bool = False):
         self.preserve_case = preserve_case
         super().__init__()
@@ -45,22 +29,6 @@ class BaseSourceAdapter(BaseSQLAdapter):
             if not hasattr(self, attr):
                 raise NotImplementedError(
                     f'Source adapter requires attribute f{attr} but was not set.')
-
-    def build_catalog(self, patterns: Iterable[dict], thread_workers: int = 1) -> Tuple[Relation]:
-        """ This function is expected to return all of the relations that satisfy the filters 
-
-            Args:
-                patterns (Iterable[dict]): Filter dictionaries to apply to the source databases
-                    requires "database", "schema", and "name" keys
-                thread_workers (int): The number of workers to use when building the catalog
-
-            Returns:
-                Tuple[Relation]: All of the relations from the source adapter pass the filters
-        """
-        return BaseSQLAdapter.build_catalog(self, patterns=patterns, thread_workers=thread_workers)
-
-    def _get_relations_from_database(self, schema_obj: _DatabaseObject):
-        raise NotImplementedError()
 
     def _safe_query(self, query_sql: str) -> pd.DataFrame:
         """runs the query and closes the connection."""
