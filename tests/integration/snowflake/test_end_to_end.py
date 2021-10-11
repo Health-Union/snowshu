@@ -5,10 +5,11 @@ from datetime import datetime
 
 import docker
 import pytest
+import yaml
 from click.testing import CliRunner
 from sqlalchemy import create_engine
 
-from snowshu.configs import PACKAGE_ROOT
+from snowshu.configs import PACKAGE_ROOT, DEFAULT_PRESERVE_CASE, DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.main import cli, create
 
 """ End-To-End all inclusive test session"""
@@ -18,6 +19,7 @@ from snowshu.core.main import cli, create
 #4. Spins down and cleans up
 
 BASE_CONN='postgresql://snowshu:snowshu@integration-test:9999/{}'
+CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
 SNOWSHU_META_STRING=BASE_CONN.format('snowshu')
 SNOWSHU_DEVELOPMENT_STRING=BASE_CONN.format('snowshu_development')
 DOCKER_SPIN_UP_TIMEOUT = 15
@@ -25,9 +27,8 @@ DOCKER_SPIN_UP_TIMEOUT = 15
 @pytest.fixture(scope="session", autouse=True)
 def end_to_end(docker_flush_session):
     runner = CliRunner()
-    configuration_path = os.path.join(
-        PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
-    create_result=runner.invoke(cli, ('create', '--replica-file', configuration_path, '--barf'))
+
+    create_result=runner.invoke(cli, ('create', '--replica-file', CONFIGURATION_PATH, '--barf'))
     if create_result.exit_code:
         print(create_result.exc_info)
         raise create_result.exception
@@ -77,6 +78,30 @@ def test_snowshu_explain(end_to_end):
     assert response['target_adapter'] == 'postgres'
     assert response['source_adapter'] == 'snowflake'
     assert datetime(response['created_at']) < datetime.now()
+
+
+def test_replica_meta(end_to_end):
+    conn = create_engine(SNOWSHU_META_STRING)
+    query_string = """
+        SELECT * FROM SNOWSHU.SNOWSHU.REPLICA_META
+    """
+    with open(CONFIGURATION_PATH, 'r') as file_stream:
+        expected_config = yaml.safe_load(file_stream)
+    # default for preserve case and max_outliers are set after parsing
+    expected_config["preserve_case"] = DEFAULT_PRESERVE_CASE
+    expected_config["source"]["max_number_of_outliers"] = DEFAULT_MAX_NUMBER_OF_OUTLIERS
+
+    query = conn.execute(query_string)
+    results = query.fetchall()
+    for record in results:
+        assert record['created_at']
+        # values from replica_test_config.yml
+        assert record['name'] == 'integration-test'
+        assert record['short_description'] == 'this is a sample with LIVE CREDS for integration'
+        assert record['long_description'] == 'this is for testing against a live db'
+        assert record['config_json'] == expected_config
+
+    assert len(results) == 1
 
 
 def test_polymorphic_parent_id(end_to_end):
