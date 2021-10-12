@@ -63,8 +63,8 @@ def test_build_catalog():
     ]
 
     mock_filtered_schema = [
-        BaseSourceAdapter._DatabaseObject("SOURCE_SYSTEM", Relation("snowshu_development", "source_system", "", None, None)),
-        BaseSourceAdapter._DatabaseObject("Cased_Schema", Relation("snowshu_development", "Cased_Schema", "", None, None)),
+        BaseSQLAdapter._DatabaseObject("SOURCE_SYSTEM", Relation("snowshu_development", "source_system", "", None, None)),
+        BaseSQLAdapter._DatabaseObject("Cased_Schema", Relation("snowshu_development", "Cased_Schema", "", None, None)),
     ]
 
     included_relations = [
@@ -81,7 +81,7 @@ def test_build_catalog():
     ]
 
     mock_relations = included_relations + excluded_relations
-    def mock_get_relations_func(schema_obj: BaseSourceAdapter._DatabaseObject):
+    def mock_get_relations_func(schema_obj: BaseSQLAdapter._DatabaseObject):
         return [r for r in mock_relations if schema_obj.full_relation.schema == r.schema]
 
     # stubbed version of the BaseSourceAdapter with the required class vars
@@ -93,9 +93,9 @@ def test_build_catalog():
         SUPPORTED_SAMPLE_METHODS = []
 
 
-    with patch("snowshu.adapters.source_adapters.BaseSourceAdapter._get_filtered_schemas", return_value=mock_filtered_schema) \
-         , patch("snowshu.adapters.source_adapters.BaseSourceAdapter._get_relations_from_database", side_effect=mock_get_relations_func):
-        adapter = StubbedSourceAdapter()
+    with patch("snowshu.adapters.BaseSQLAdapter._get_filtered_schemas", return_value=mock_filtered_schema) \
+         , patch("snowshu.adapters.BaseSQLAdapter._get_relations_from_database", side_effect=mock_get_relations_func):
+        adapter = StubbedAdapter()
         catalog = adapter.build_catalog(config_patterns)
         for r in excluded_relations:
             assert not r in catalog
