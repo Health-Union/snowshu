@@ -158,12 +158,12 @@ class BaseSQLAdapter:
         """ This function is expected to return all of the relations that satisfy the filters 
 
             Args:
-                patterns (Iterable[dict]): Filter dictionaries to apply to the source databases
+                patterns (Iterable[dict]): Filter dictionaries to apply to the databases
                     requires "database", "schema", and "name" keys
                 thread_workers (int): The number of workers to use when building the catalog
 
             Returns:
-                Tuple[Relation]: All of the relations from the source adapter pass the filters
+                Tuple[Relation]: All of the relations from the sql adapter pass the filters
         """
         filtered_schemas = self._get_filtered_schemas(patterns)
 
@@ -185,7 +185,7 @@ class BaseSQLAdapter:
                 executor.submit(accumulate_relations, f_schema, catalog)
 
         logger.info(f'Done building catalog. Found a total of {len(catalog)} relations '
-                    f'from the source in {duration(start_time)}.')
+                    f'from the database in {duration(start_time)}.')
         return tuple(catalog)
 
     def _get_all_databases(self) -> List[str]:
@@ -233,6 +233,6 @@ class BaseSQLAdapter:
         raise NotImplementedError()
 
     def _correct_case(self, val: str) -> str:
-        """The base case correction method for a source adapter.
+        """The base case correction method for a sql adapter.
         """
         return val if self.preserve_case else correct_case(val, self.DEFAULT_CASE == 'upper')

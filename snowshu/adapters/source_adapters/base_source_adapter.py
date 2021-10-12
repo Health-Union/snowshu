@@ -14,7 +14,6 @@ class BaseSourceAdapter(BaseSQLAdapter):
     name = ''
     MAX_ALLOWED_DATABASES = MAX_ALLOWED_DATABASES
     MAX_ALLOWED_ROWS = MAX_ALLOWED_ROWS
-    DEFAULT_CASE = 'lower'
     SUPPORTS_CROSS_DATABASE = False
     SUPPORTED_FUNCTIONS = set()
 
