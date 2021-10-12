@@ -1,15 +1,12 @@
 from typing import TYPE_CHECKING, Iterable, List
 from overrides import overrides
-
 import sqlalchemy
-from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
 
 from snowshu.adapters.target_adapters import BaseTargetAdapter
 from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
 from snowshu.logger import Logger
-
 from snowshu.core.models.relation import Relation
 
 logger = Logger().logger
@@ -115,7 +112,7 @@ class PostgresAdapter(BaseTargetAdapter):
         return [s[0] for s in schemas] if len(schemas) > 0 else schemas
     
     @overrides
-    def _get_relations_from_database(self, schema_obj: BaseSQLAdapter._DatabaseObject) -> List[Relation]:
+    def _get_relations_from_database(self, schema_obj: BaseTargetAdapter._DatabaseObject) -> List[Relation]:
         quoted_database = schema_obj.full_relation.quoted(schema_obj.full_relation.database)  # quoted db name
         relation_database = schema_obj.full_relation.database  # case corrected db name
         case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schame name
