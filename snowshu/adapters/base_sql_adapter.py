@@ -1,11 +1,12 @@
 import time
 import copy
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple
+import pandas as pd
 
 import sqlalchemy
 from sqlalchemy.pool import NullPool
-from snowshu.core.models import DataType, Relation
+from snowshu.core.models import Relation
 from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, USER,
                                              Credentials)
 from snowshu.core.models.relation import at_least_one_full_pattern_match
@@ -87,6 +88,34 @@ class BaseSQLAdapter:
             overrides), poolclass=NullPool, isolation_level="AUTOCOMMIT")
         logger.debug(f'engine aquired. Conn string: {repr(engine.url)}')
         return engine
+
+    def _safe_query(self, query_sql: str) -> pd.DataFrame:
+        """runs the query and closes the connection."""
+        logger.debug('Beginning query execution...')
+        start = time.time()
+        conn = None
+        cursor = None
+        try:
+            conn = self.get_connection()
+            cursor = conn.connect()
+            # we make the STRONG assumption that all responses will be small enough
+            # to live in-memory (because sampling engine).
+            # further safety added by the constraints in snowshu.configs
+            # this allows the connection to return to the pool
+            logger.debug(f'Executed query in {time.time()-start} seconds.')
+            frame = pd.read_sql_query(query_sql, conn)
+            logger.debug("Dataframe datatypes: %s", str(frame.dtypes).replace('\n', ' | '))
+            if len(frame) > 0:
+                for col in frame.columns:
+                    logger.debug("Pandas loaded element 0 of column %s as %s", col, type(frame[col][0]))
+            else:
+                logger.debug("Dataframe is empty")
+        finally:
+            if cursor:
+                cursor.close()
+            if conn:
+                conn.dispose()
+        return frame
 
     def _build_conn_string(self, overrides: dict = None) -> str:
         """This is the most basic implementation of a connection string
@@ -184,22 +213,19 @@ class BaseSQLAdapter:
         databases = self._get_all_databases()
         database_relations = [Relation(self._correct_case(
             database), "", "", None, None) for database in databases]
-        filtered_databases = [
-            rel for rel in database_relations if at_least_one_full_pattern_match(rel, db_filters)]
+        filtered_databases = [rel for rel in database_relations if at_least_one_full_pattern_match(rel, db_filters)]
 
         # get all schemas in all databases
         filtered_schemas = []
         for db_rel in filtered_databases:
             schemas = self._get_all_schemas(
                 database=db_rel.quoted(db_rel.database))
-            schema_objs = [BaseSQLAdapter._DatabaseObject(schema,
-                                                             Relation(db_rel.database,
-                                                                      self._correct_case(
-                                                                          schema),
-                                                                      "", None, None))
-                           for schema in schemas]
-            filtered_schemas += [d for d in schema_objs if at_least_one_full_pattern_match(
-                d.full_relation, schema_filters)]
+            schema_objs = [
+                BaseSQLAdapter._DatabaseObject(
+                    schema, 
+                    Relation(db_rel.database, self._correct_case(schema), "", None, None)) for schema in schemas]
+            filtered_schemas += [
+                d for d in schema_objs if at_least_one_full_pattern_match(d.full_relation, schema_filters)]
 
         return filtered_schemas
 
@@ -210,7 +236,3 @@ class BaseSQLAdapter:
         """The base case correction method for a source adapter.
         """
         return val if self.preserve_case else correct_case(val, self.DEFAULT_CASE == 'upper')
-
-    
-
-    

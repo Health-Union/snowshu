@@ -1,15 +1,11 @@
-import time
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Iterable, List, Tuple
+from typing import Any
 
 import pandas as pd
 
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import MAX_ALLOWED_DATABASES, MAX_ALLOWED_ROWS
-from snowshu.core.models import DataType, Relation
-from snowshu.core.models.relation import at_least_one_full_pattern_match
-from snowshu.core.utils import correct_case
-from snowshu.logger import Logger, duration
+from snowshu.core.models import DataType
+from snowshu.logger import Logger
 
 logger = Logger().logger
 
@@ -29,34 +25,6 @@ class BaseSourceAdapter(BaseSQLAdapter):
             if not hasattr(self, attr):
                 raise NotImplementedError(
                     f'Source adapter requires attribute f{attr} but was not set.')
-
-    def _safe_query(self, query_sql: str) -> pd.DataFrame:
-        """runs the query and closes the connection."""
-        logger.debug('Beginning query execution...')
-        start = time.time()
-        conn = None
-        cursor = None
-        try:
-            conn = self.get_connection()
-            cursor = conn.connect()
-            # we make the STRONG assumption that all responses will be small enough
-            # to live in-memory (because sampling engine).
-            # further safety added by the constraints in snowshu.configs
-            # this allows the connection to return to the pool
-            logger.debug(f'Executed query in {time.time()-start} seconds.')
-            frame = pd.read_sql_query(query_sql, conn)
-            logger.debug("Dataframe datatypes: %s", str(frame.dtypes).replace('\n', ' | '))
-            if len(frame) > 0:
-                for col in frame.columns:
-                    logger.debug("Pandas loaded element 0 of column %s as %s", col, type(frame[col][0]))
-            else:
-                logger.debug("Dataframe is empty")
-        finally:
-            if cursor:
-                cursor.close()
-            if conn:
-                conn.dispose()
-        return frame
 
     def _count_query(self, query: str) -> int:
         """wraps any query in a COUNT statement, returns that integer."""
