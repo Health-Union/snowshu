@@ -125,16 +125,16 @@ class PostgresAdapter(BaseTargetAdapter):
                                     c.ordinal_position AS ordinal,
                                     c.data_type AS data_type
                                  FROM
-                                    {quoted_database}.INFORMATION_SCHEMA.TABLES m
+                                    {quoted_database}.information_schema.tables m
                                  INNER JOIN
-                                    {quoted_database}.INFORMATION_SCHEMA.COLUMNS c
+                                    {quoted_database}.information_schema.columns c
                                  ON
                                     c.table_schema = m.table_schema
                                  AND
                                     c.table_name = m.table_name
                                  WHERE
                                     m.table_schema = '{case_sensitive_schema}'
-                                    AND m.table_schema <> 'INFORMATION_SCHEMA'
+                                    AND m.table_schema NOT IN ('information_schema', 'pg_catalog')
                               """
 
         logger.debug(
