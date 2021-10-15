@@ -276,3 +276,33 @@ def test_casing(end_to_end):
         "Snake_Case_Camel_Col":"character varying",
     }
     assert {t[0]:t[1] for t in type_mappings} == EXPECTED_DATA_TYPES
+
+def test_get_relations_from_database(end_to_end):
+    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
+    quoted_database = "snowshu_development"
+    case_sensitive_schema = "source_system"
+    query = f"""
+        SELECT
+        m.table_schema AS schema,
+        m.table_name AS relation,
+        m.table_type AS materialization,
+        c.column_name AS attribute,
+        c.ordinal_position AS ordinal,
+        c.data_type AS data_type
+        FROM
+        {quoted_database}.information_schema.tables m
+        INNER JOIN
+        {quoted_database}.information_schema.columns c
+        ON
+        c.table_schema = m.table_schema
+        AND
+        c.table_name = m.table_name
+        WHERE
+        m.table_schema = '{case_sensitive_schema}'
+        AND m.table_schema NOT IN ('information_schema', 'pg_catalog')
+        AND m.table_type <> 'external'
+    """
+
+    q = conn.execute(query)
+    relations = q.fetchall()
+    
