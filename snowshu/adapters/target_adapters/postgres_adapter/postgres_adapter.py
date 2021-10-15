@@ -135,8 +135,9 @@ class PostgresAdapter(BaseTargetAdapter):
                                  WHERE
                                     m.table_schema = '{case_sensitive_schema}'
                                     AND m.table_schema NOT IN ('information_schema', 'pg_catalog')
+                                    AND m.table_type <> 'external'
                               """
-
+        
         logger.debug(
             f'Collecting detailed relations from database {quoted_database}...')
         relations_frame = self._safe_query(relations_sql)
