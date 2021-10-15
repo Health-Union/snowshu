@@ -35,7 +35,14 @@ def test_x00_replacement():
     assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 1, [content_col]] == normal_val)
     assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 2, [content_col]] == f"weird{custom_replacement}value")
 
-    config_patterns = [dict(database="snowshu", schema="(?i)^.*$", name="(?i)^.*$")]
+    config_patterns = [
+        dict(database="snowshu",
+             schema=".*",
+             name="(?i)^.*(?<!_view)$"),
+        dict(database="snowshu",
+             schema="source_system",
+             name="order_items_view")
+    ]
 
     catalog = adapter.build_catalog(config_patterns, 1)
 
