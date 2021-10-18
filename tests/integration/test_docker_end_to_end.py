@@ -23,7 +23,7 @@ def test_creates_replica(docker_flush):
     # query it and confirm that the data is in there
 
     shdocker = SnowShuDocker()
-    target_adapter = PostgresAdapter()
+    target_adapter = PostgresAdapter(replica_metadata={})
     target_container = shdocker.startup(
         target_adapter.DOCKER_IMAGE,
         target_adapter.DOCKER_START_COMMAND,

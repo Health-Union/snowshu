@@ -30,7 +30,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
     ALLOWED_CREDENTIALS = list()
     DOCKER_TARGET_PORT = DOCKER_TARGET_PORT
 
-    def __init__(self):
+    def __init__(self, replica_metadata: dict):
         super().__init__()
         for attr in (
             'DOCKER_IMAGE',
@@ -42,6 +42,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
         self.credentials = self._generate_credentials()
         self.container: "Container" = None
+        self.replica_meta = replica_metadata
 
     def enable_cross_database(self, relations: Iterable['Relation']) -> None:
         """ Create x-database links, if available to the target.
@@ -201,7 +202,9 @@ AS
             Attribute('created_at', dt.TIMESTAMP_TZ),
             Attribute('name', dt.VARCHAR),
             Attribute('short_description', dt.VARCHAR),
-            Attribute('long_description', dt.VARCHAR)]
+            Attribute('long_description', dt.VARCHAR),
+            Attribute('config_json', dt.JSON),
+        ]
 
         relation = Relation(
             "snowshu",
@@ -216,7 +219,11 @@ AS
                     created_at=datetime.now(),
                     name=self.replica_meta['name'],
                     short_description=self.replica_meta['short_description'],
-                    long_description=self.replica_meta['long_description'])])
+                    long_description=self.replica_meta['long_description'],
+                    config_json=self.replica_meta['config_json'],
+                )
+            ]
+        )
         self.create_and_load_relation(relation)
 
     def create_function_if_available(self,

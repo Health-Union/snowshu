@@ -1,7 +1,9 @@
+import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, TextIO, Type, Union
+
 
 import jsonschema
 import yaml
@@ -330,14 +332,16 @@ class ConfigurationParser:
                               adapter)
 
     @staticmethod
-    def _build_target(full_creds: dict) -> AdapterProfile:
-        adapter_type = fetch_adapter(full_creds['target']['adapter'], 'target')
-        adapter_args = full_creds['target'].get('adapter_args')
+    def _build_target(full_config: dict) -> AdapterProfile:
+        adapter_type = fetch_adapter(full_config['target']['adapter'], 'target')
+        adapter_args = full_config['target'].get('adapter_args')
         if not adapter_args:
             adapter_args = dict()
-        adapter = adapter_type(**adapter_args)
-        adapter.replica_meta = {
-            attr: full_creds[attr] for attr in (
+        metadata = {
+            attr: full_config[attr] for attr in (
                 'name', 'short_description', 'long_description',)}
-        return AdapterProfile(full_creds['target']['adapter'],
+        metadata['config_json'] = json.dumps(full_config)
+        adapter_args['replica_metadata'] = metadata
+        adapter = adapter_type(**adapter_args)
+        return AdapterProfile(full_config['target']['adapter'],
                               adapter)

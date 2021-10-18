@@ -8,7 +8,7 @@ from snowshu.core.models.relation import Relation
 
 
 def test_x00_replacement():
-    adapter = PostgresAdapter()
+    adapter = PostgresAdapter(replica_metadata={})
     id_col = "id"
     content_col = "content"
     normal_val = "normal_value"
@@ -28,7 +28,7 @@ def test_x00_replacement():
     assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 2, [content_col]] == "weirdvalue")
 
     # test custom replacement
-    adapter = PostgresAdapter(pg_0x00_replacement=custom_replacement)
+    adapter = PostgresAdapter(replica_metadata={}, pg_0x00_replacement=custom_replacement)
     relation = Relation("db", "schema", "relation", TABLE, cols)
     relation.data = DataFrame({id_col:[1,2],content_col: [normal_val, weird_value]})
 

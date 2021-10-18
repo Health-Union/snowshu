@@ -66,8 +66,8 @@ class PostgresAdapter(BaseTargetAdapter):
         "variant": dtypes.JSON
     }
 
-    def __init__(self, **kwargs):
-        super().__init__()
+    def __init__(self, replica_metadata: dict, **kwargs):
+        super().__init__(replica_metadata)
 
         self.extensions = kwargs.get("pg_extensions", list())
         self.x00_replacement = kwargs.get("pg_0x00_replacement", "")
