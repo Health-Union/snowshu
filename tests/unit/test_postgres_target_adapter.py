@@ -1,7 +1,8 @@
-from snowshu.core.models import data_types
 from pandas.core.frame import DataFrame
+
+from snowshu.core.models import data_types
 from snowshu.core.models.attribute import Attribute
-from snowshu.core.models.materializations import TABLE
+from snowshu.core.models.materializations import BASE_TABLE, TABLE
 from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
 from snowshu.core.models.relation import Relation
 
@@ -37,12 +38,10 @@ def test_x00_replacement():
 
     config_patterns = [
         dict(database="snowshu",
-             schema=".*",
-             name="(?i)^.*(?<!_view)$"),
-        dict(database="snowshu",
-             schema="source_system",
-             name="order_items_view")
+             schema="snowshu",
+             name="replica_meta")
     ]
 
     catalog = adapter.build_catalog(config_patterns, 1)
-
+    for r in catalog:
+        assert r.materialization == BASE_TABLE

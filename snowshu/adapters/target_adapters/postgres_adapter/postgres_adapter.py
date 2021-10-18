@@ -6,6 +6,7 @@ from snowshu.adapters.target_adapters import BaseTargetAdapter
 from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
+import snowshu.core.models.data_types as dtypes
 from snowshu.logger import Logger
 from snowshu.core.models.relation import Relation
 
@@ -17,7 +18,7 @@ class PostgresAdapter(BaseTargetAdapter):
     dialect = 'postgres'
     DOCKER_IMAGE = 'postgres:12'
     PRELOADED_PACKAGES = ['postgresql-plpython3-12']
-    MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, VIEW=mz.VIEW)
+    MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.BASE_TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
 
     # NOTE: either start container with db listening on port 9999,
@@ -26,6 +27,44 @@ class PostgresAdapter(BaseTargetAdapter):
     DOCKER_SNOWSHU_ENVARS = ['POSTGRES_PASSWORD',
                              'POSTGRES_USER',
                              'POSTGRES_DB']
+
+    DATA_TYPE_MAPPINGS = {
+        "array": dtypes.JSON,
+        "bigint": dtypes.BIGINT,
+        "binary": dtypes.BINARY,
+        "bit": dtypes.BINARY,
+        "boolean": dtypes.BOOLEAN,
+        "char": dtypes.CHAR,
+        "character": dtypes.CHAR,
+        "date": dtypes.DATE,
+        "datetime": dtypes.DATETIME,
+        "decimal": dtypes.DECIMAL,
+        "double": dtypes.FLOAT,
+        "double precision": dtypes.FLOAT,
+        "float": dtypes.FLOAT,
+        "float4": dtypes.FLOAT,
+        "float8": dtypes.FLOAT,
+        "int": dtypes.BIGINT,
+        "integer": dtypes.BIGINT,
+        "number": dtypes.BIGINT,
+        "numeric": dtypes.NUMERIC,
+        "object": dtypes.JSON,
+        "real": dtypes.FLOAT,
+        "smallint": dtypes.BIGINT,
+        "string": dtypes.VARCHAR,
+        "text": dtypes.VARCHAR,
+        "time": dtypes.TIME,
+        "timestamp": dtypes.TIMESTAMP_NTZ,
+        "timestamp_ntz": dtypes.TIMESTAMP_NTZ,
+        "timestamp_without_time_zone": dtypes.TIMESTAMP_NTZ,
+        "timestamp_ltz": dtypes.TIMESTAMP_TZ,
+        "timestamp_tz": dtypes.TIMESTAMP_TZ,
+        "timestamp_with_time_zone": dtypes.TIMESTAMP_TZ,
+        "varbinary": dtypes.BINARY,
+        "varchar": dtypes.VARCHAR,
+        "character_varying": dtypes.VARCHAR,
+        "variant": dtypes.JSON
+    }
 
     def __init__(self, **kwargs):
         super().__init__()
@@ -166,7 +205,7 @@ class PostgresAdapter(BaseTargetAdapter):
                 relation = Relation(relation_database,
                                 self._correct_case(attribute.schema),   # noqa pylint: disable=undefined-loop-variable
                                 self._correct_case(attribute.relation),   # noqa pylint: disable=undefined-loop-variable
-                                self.MATERIALIZATION_MAPPINGS[attribute.materialization],   # noqa pylint: disable=undefined-loop-variable
+                                self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")],   # noqa pylint: disable=undefined-loop-variable
                                 attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')
             relations.append(relation)
@@ -195,7 +234,7 @@ class PostgresAdapter(BaseTargetAdapter):
                 matched_nul_char = (relation.data[col].str.find('\x00') > -1)
                 if any(matched_nul_char):
                     logger.warning("Invalid 0x00 char found in column %s. Replacing with '%s' "
-                                   "(excluing bounding single quotes)", col, self.x00_replacement)
+                                   "(excluding bounding single quotes)", col, self.x00_replacement)
                     relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
         return relation
 

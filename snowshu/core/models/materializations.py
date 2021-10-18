@@ -12,5 +12,6 @@ class Materialization:
 
 VIEW = Materialization("VIEW", True)
 TABLE = Materialization("TABLE", False)
+BASE_TABLE = Materialization("BASE_TABLE", False)
 MATERIALIZED_VIEW = Materialization("MATERIALIZED_VIEW", True)
 SEQUENCE = Materialization("SEQUENCE", True)
