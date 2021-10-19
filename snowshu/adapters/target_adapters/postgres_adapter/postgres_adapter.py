@@ -29,7 +29,6 @@ class PostgresAdapter(BaseTargetAdapter):
                              'POSTGRES_DB']
 
     DATA_TYPE_MAPPINGS = {
-        # "array": dtypes.JSON,
         "bigint": dtypes.BIGINT,
         "binary": dtypes.BINARY,
         "bit": dtypes.BINARY,
@@ -41,6 +40,7 @@ class PostgresAdapter(BaseTargetAdapter):
         "decimal": dtypes.DECIMAL,
         "double": dtypes.FLOAT,
         "double precision": dtypes.FLOAT,
+        "real": dtypes.FLOAT,
         "float": dtypes.FLOAT,
         "float4": dtypes.FLOAT,
         "float8": dtypes.FLOAT,
@@ -52,7 +52,7 @@ class PostgresAdapter(BaseTargetAdapter):
         "real": dtypes.FLOAT,
         "smallint": dtypes.BIGINT,
         "string": dtypes.VARCHAR,
-        "text": dtypes.VARCHAR,
+        "text": dtypes.TEXT,
         "time": dtypes.TIME,
         "time_with_time_zone": dtypes.TIME_TZ,
         "time_without_time_zone": dtypes.TIME,
