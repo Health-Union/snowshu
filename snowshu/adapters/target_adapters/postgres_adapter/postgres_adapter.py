@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Iterable, List
+from typing import Iterable, List
 from overrides import overrides
 import sqlalchemy
 
@@ -120,7 +120,7 @@ class PostgresAdapter(BaseTargetAdapter):
 
     @overrides
     def _get_all_databases(self) -> List[str]:
-        logger.debug(f'Getting all databases from postgres...')
+        logger.debug('Getting all databases from postgres...')
         query = "SELECT datname FROM pg_database WHERE datistemplate = false;"
         engine = self.get_connection()
         databases = None
@@ -130,14 +130,15 @@ class PostgresAdapter(BaseTargetAdapter):
         except Exception as exc:
             logger.info("Failed to get databases:%s", exc)
             raise exc
-        
+
         logger.debug(f'Done. Found {len(databases)} databases.')
         return [d[0] for d in databases] if len(databases) > 0 else databases
-    
+
     @overrides
     def _get_all_schemas(self, database: str) -> List[str]:
         logger.debug(f'Collecting schemas from {database} in postgres...')
-        query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND schema_name NOT IN ('information_schema', 'pg_catalog')"
+        query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND \
+            schema_name NOT IN ('information_schema', 'pg_catalog')"
         engine = self.get_connection(database_override=database)
         schemas = None
         try:
@@ -146,10 +147,9 @@ class PostgresAdapter(BaseTargetAdapter):
         except Exception as exc:
             logger.info("Failed to get schemas for database %s: %s", database, exc)
             raise exc
-        
         logger.debug(f'Done. Found {len(schemas)} schemas in {database} database.')
         return [s[0] for s in schemas] if len(schemas) > 0 else schemas
-    
+
     @overrides
     def _get_relations_from_database(self, schema_obj: BaseTargetAdapter._DatabaseObject) -> List[Relation]:
         quoted_database = schema_obj.full_relation.quoted(schema_obj.full_relation.database)  # quoted db name
@@ -176,7 +176,7 @@ class PostgresAdapter(BaseTargetAdapter):
                                     AND m.table_schema NOT IN ('information_schema', 'pg_catalog')
                                     AND m.table_type <> 'external'
                               """
-        
+
         logger.debug(
             f'Collecting detailed relations from database {quoted_database}...')
         relations_frame = self._safe_query(relations_sql)

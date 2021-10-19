@@ -9,8 +9,10 @@ import yaml
 from click.testing import CliRunner
 from sqlalchemy import create_engine
 
+from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
 from snowshu.configs import PACKAGE_ROOT, DEFAULT_PRESERVE_CASE, DEFAULT_MAX_NUMBER_OF_OUTLIERS
-from snowshu.core.main import cli, create
+from snowshu.core.main import cli
+from snowshu.core.models.materializations import BASE_TABLE
 
 """ End-To-End all inclusive test session"""
 #1. builds a new replica based on the template configs
@@ -302,32 +304,15 @@ def test_casing(end_to_end):
     }
     assert {t[0]:t[1] for t in type_mappings} == EXPECTED_DATA_TYPES
 
-def test_get_relations_from_database(end_to_end):
-    conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
-    quoted_database = "snowshu_development"
-    case_sensitive_schema = "source_system"
-    query = f"""
-        SELECT
-        m.table_schema AS schema,
-        m.table_name AS relation,
-        m.table_type AS materialization,
-        c.column_name AS attribute,
-        c.ordinal_position AS ordinal,
-        c.data_type AS data_type
-        FROM
-        {quoted_database}.information_schema.tables m
-        INNER JOIN
-        {quoted_database}.information_schema.columns c
-        ON
-        c.table_schema = m.table_schema
-        AND
-        c.table_name = m.table_name
-        WHERE
-        m.table_schema = '{case_sensitive_schema}'
-        AND m.table_schema NOT IN ('information_schema', 'pg_catalog')
-        AND m.table_type <> 'external'
-    """
 
-    q = conn.execute(query)
-    relations = q.fetchall()
-    
+def test_get_relations_from_database(end_to_end):
+    adapter = PostgresAdapter(replica_metadata={})
+    config_patterns = [
+        dict(database="snowshu",
+             schema="snowshu",
+             name="replica_meta")
+    ]
+
+    catalog = adapter.build_catalog(config_patterns, 1)
+    for relation in catalog:
+        assert relation.materialization == BASE_TABLE

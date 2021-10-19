@@ -2,7 +2,7 @@ from pandas.core.frame import DataFrame
 
 from snowshu.core.models import data_types
 from snowshu.core.models.attribute import Attribute
-from snowshu.core.models.materializations import BASE_TABLE, TABLE
+from snowshu.core.models.materializations import TABLE
 from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
 from snowshu.core.models.relation import Relation
 
@@ -35,13 +35,3 @@ def test_x00_replacement():
     fixed_relation = adapter.replace_x00_values(relation)
     assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 1, [content_col]] == normal_val)
     assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 2, [content_col]] == f"weird{custom_replacement}value")
-
-    config_patterns = [
-        dict(database="snowshu",
-             schema="snowshu",
-             name="replica_meta")
-    ]
-
-    catalog = adapter.build_catalog(config_patterns, 1)
-    for r in catalog:
-        assert r.materialization == BASE_TABLE
