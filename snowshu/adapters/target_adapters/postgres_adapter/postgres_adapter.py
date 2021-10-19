@@ -18,7 +18,7 @@ class PostgresAdapter(BaseTargetAdapter):
     dialect = 'postgres'
     DOCKER_IMAGE = 'postgres:12'
     PRELOADED_PACKAGES = ['postgresql-plpython3-12']
-    MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.BASE_TABLE, VIEW=mz.VIEW)
+    MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
 
     # NOTE: either start container with db listening on port 9999,
@@ -29,7 +29,7 @@ class PostgresAdapter(BaseTargetAdapter):
                              'POSTGRES_DB']
 
     DATA_TYPE_MAPPINGS = {
-        "array": dtypes.JSON,
+        # "array": dtypes.JSON,
         "bigint": dtypes.BIGINT,
         "binary": dtypes.BINARY,
         "bit": dtypes.BINARY,
@@ -46,14 +46,16 @@ class PostgresAdapter(BaseTargetAdapter):
         "float8": dtypes.FLOAT,
         "int": dtypes.BIGINT,
         "integer": dtypes.BIGINT,
-        "number": dtypes.BIGINT,
         "numeric": dtypes.NUMERIC,
-        "object": dtypes.JSON,
+        "json": dtypes.JSON,
+        "jsonb": dtypes.JSON,
         "real": dtypes.FLOAT,
         "smallint": dtypes.BIGINT,
         "string": dtypes.VARCHAR,
         "text": dtypes.VARCHAR,
         "time": dtypes.TIME,
+        "time_with_time_zone": dtypes.TIME_TZ,
+        "time_without_time_zone": dtypes.TIME,
         "timestamp": dtypes.TIMESTAMP_NTZ,
         "timestamp_ntz": dtypes.TIMESTAMP_NTZ,
         "timestamp_without_time_zone": dtypes.TIMESTAMP_NTZ,
@@ -62,8 +64,7 @@ class PostgresAdapter(BaseTargetAdapter):
         "timestamp_with_time_zone": dtypes.TIMESTAMP_TZ,
         "varbinary": dtypes.BINARY,
         "varchar": dtypes.VARCHAR,
-        "character_varying": dtypes.VARCHAR,
-        "variant": dtypes.JSON
+        "character_varying": dtypes.VARCHAR
     }
 
     def __init__(self, replica_metadata: dict, **kwargs):
