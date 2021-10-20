@@ -306,7 +306,7 @@ def test_casing(end_to_end):
     assert {t[0]:t[1] for t in type_mappings} == EXPECTED_DATA_TYPES
 
 
-def test_get_relations_from_database():
+def test_get_relations_from_database(end_to_end):
     adapter = PostgresAdapter(replica_metadata={})
     config_patterns = [
         dict(database="snowshu",
