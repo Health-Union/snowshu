@@ -51,7 +51,7 @@ class PostgresAdapter(BaseTargetAdapter):
         "jsonb": dtypes.JSON,
         "smallint": dtypes.BIGINT,
         "string": dtypes.VARCHAR,
-        "text": dtypes.TEXT,
+        "text": dtypes.VARCHAR,
         "time": dtypes.TIME,
         "time_with_time_zone": dtypes.TIME_TZ,
         "time_without_time_zone": dtypes.TIME,
