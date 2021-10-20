@@ -49,7 +49,6 @@ class PostgresAdapter(BaseTargetAdapter):
         "numeric": dtypes.NUMERIC,
         "json": dtypes.JSON,
         "jsonb": dtypes.JSON,
-        "real": dtypes.FLOAT,
         "smallint": dtypes.BIGINT,
         "string": dtypes.VARCHAR,
         "text": dtypes.TEXT,
