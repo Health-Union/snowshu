@@ -1,15 +1,14 @@
-from typing import TYPE_CHECKING, Iterable, List
+from typing import Iterable, List
 from overrides import overrides
-
 import sqlalchemy
 
 from snowshu.adapters.target_adapters import BaseTargetAdapter
 from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
 from snowshu.core.models import materializations as mz
+from snowshu.core.models.attribute import Attribute
+import snowshu.core.models.data_types as dtypes
 from snowshu.logger import Logger
-
-if TYPE_CHECKING:
-    from snowshu.core.models.relation import Relation
+from snowshu.core.models.relation import Relation
 
 logger = Logger().logger
 
@@ -19,7 +18,7 @@ class PostgresAdapter(BaseTargetAdapter):
     dialect = 'postgres'
     DOCKER_IMAGE = 'postgres:12'
     PRELOADED_PACKAGES = ['postgresql-plpython3-12']
-    MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, VIEW=mz.VIEW)
+    MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
 
     # NOTE: either start container with db listening on port 9999,
@@ -28,6 +27,44 @@ class PostgresAdapter(BaseTargetAdapter):
     DOCKER_SNOWSHU_ENVARS = ['POSTGRES_PASSWORD',
                              'POSTGRES_USER',
                              'POSTGRES_DB']
+
+    DATA_TYPE_MAPPINGS = {
+        "bigint": dtypes.BIGINT,
+        "binary": dtypes.BINARY,
+        "bit": dtypes.BINARY,
+        "boolean": dtypes.BOOLEAN,
+        "char": dtypes.CHAR,
+        "character": dtypes.CHAR,
+        "date": dtypes.DATE,
+        "datetime": dtypes.DATETIME,
+        "decimal": dtypes.DECIMAL,
+        "double": dtypes.FLOAT,
+        "double precision": dtypes.FLOAT,
+        "real": dtypes.FLOAT,
+        "float": dtypes.FLOAT,
+        "float4": dtypes.FLOAT,
+        "float8": dtypes.FLOAT,
+        "int": dtypes.BIGINT,
+        "integer": dtypes.BIGINT,
+        "numeric": dtypes.NUMERIC,
+        "json": dtypes.JSON,
+        "jsonb": dtypes.JSON,
+        "smallint": dtypes.BIGINT,
+        "string": dtypes.VARCHAR,
+        "text": dtypes.VARCHAR,
+        "time": dtypes.TIME,
+        "time_with_time_zone": dtypes.TIME_TZ,
+        "time_without_time_zone": dtypes.TIME,
+        "timestamp": dtypes.TIMESTAMP_NTZ,
+        "timestamp_ntz": dtypes.TIMESTAMP_NTZ,
+        "timestamp_without_time_zone": dtypes.TIMESTAMP_NTZ,
+        "timestamp_ltz": dtypes.TIMESTAMP_TZ,
+        "timestamp_tz": dtypes.TIMESTAMP_TZ,
+        "timestamp_with_time_zone": dtypes.TIMESTAMP_TZ,
+        "varbinary": dtypes.BINARY,
+        "varchar": dtypes.VARCHAR,
+        "character_varying": dtypes.VARCHAR
+    }
 
     def __init__(self, replica_metadata: dict, **kwargs):
         super().__init__(replica_metadata)
@@ -82,6 +119,101 @@ class PostgresAdapter(BaseTargetAdapter):
                 raise sql_errs
 
     @overrides
+    def _get_all_databases(self) -> List[str]:
+        logger.debug('Getting all databases from postgres...')
+        query = "SELECT datname FROM pg_database WHERE datistemplate = false;"
+        engine = self.get_connection()
+        databases = None
+        try:
+            result = engine.execute(query)
+            databases = result.fetchall()
+        except Exception as exc:
+            logger.info("Failed to get databases:%s", exc)
+            raise exc
+
+        logger.debug(f'Done. Found {len(databases)} databases.')
+        return [d[0] for d in databases] if len(databases) > 0 else databases
+
+    @overrides
+    def _get_all_schemas(self, database: str) -> List[str]:
+        logger.debug(f'Collecting schemas from {database} in postgres...')
+        query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND \
+            schema_name NOT IN ('information_schema', 'pg_catalog')"
+        engine = self.get_connection(database_override=database)
+        schemas = None
+        try:
+            result = engine.execute(query)
+            schemas = result.fetchall()
+        except Exception as exc:
+            logger.info("Failed to get schemas for database %s: %s", database, exc)
+            raise exc
+        logger.debug(f'Done. Found {len(schemas)} schemas in {database} database.')
+        return [s[0] for s in schemas] if len(schemas) > 0 else schemas
+
+    @overrides
+    def _get_relations_from_database(self, schema_obj: BaseTargetAdapter._DatabaseObject) -> List[Relation]:
+        quoted_database = schema_obj.full_relation.quoted(schema_obj.full_relation.database)  # quoted db name
+        relation_database = schema_obj.full_relation.database  # case corrected db name
+        case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schame name
+        relations_sql = f"""
+                                 SELECT
+                                    m.table_schema AS schema,
+                                    m.table_name AS relation,
+                                    m.table_type AS materialization,
+                                    c.column_name AS attribute,
+                                    c.ordinal_position AS ordinal,
+                                    c.data_type AS data_type
+                                 FROM
+                                    {quoted_database}.information_schema.tables m
+                                 INNER JOIN
+                                    {quoted_database}.information_schema.columns c
+                                 ON
+                                    c.table_schema = m.table_schema
+                                 AND
+                                    c.table_name = m.table_name
+                                 WHERE
+                                    m.table_schema = '{case_sensitive_schema}'
+                                    AND m.table_schema NOT IN ('information_schema', 'pg_catalog')
+                                    AND m.table_type <> 'external'
+                              """
+
+        logger.debug(
+            f'Collecting detailed relations from database {quoted_database}...')
+        relations_frame = self._safe_query(relations_sql)
+        unique_relations = (
+            relations_frame['schema'] +
+            '.' +
+            relations_frame['relation']).unique().tolist()
+        logger.debug(
+            f'Done collecting relations. Found a total of {len(unique_relations)} '
+            f'unique relations in database {quoted_database}')
+        relations = list()
+        for relation in unique_relations:
+            logger.debug(f'Building relation { quoted_database + "." + relation }...')
+            attributes = list()
+
+            for attribute in relations_frame.loc[(
+                    relations_frame['schema'] + '.' + relations_frame['relation']) == relation].itertuples():
+                logger.debug(
+                    f'adding attribute {attribute.attribute} to relation..')
+                attributes.append(
+                    Attribute(
+                        self._correct_case(attribute.attribute),
+                        self._get_data_type(attribute.data_type)
+                    ))
+
+                relation = Relation(relation_database,
+                                self._correct_case(attribute.schema),   # noqa pylint: disable=undefined-loop-variable
+                                self._correct_case(attribute.relation),   # noqa pylint: disable=undefined-loop-variable
+                                self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")],   # noqa pylint: disable=undefined-loop-variable
+                                attributes)
+            logger.debug(f'Added relation {relation.dot_notation} to pool.')
+            relations.append(relation)
+        logger.debug(
+            f'Acquired {len(relations)} total relations from database {quoted_database}.')
+        return relations
+
+    @overrides
     def load_data_into_relation(self, relation: "Relation") -> None:
         try:
             return super().load_data_into_relation(relation)
@@ -102,7 +234,7 @@ class PostgresAdapter(BaseTargetAdapter):
                 matched_nul_char = (relation.data[col].str.find('\x00') > -1)
                 if any(matched_nul_char):
                     logger.warning("Invalid 0x00 char found in column %s. Replacing with '%s' "
-                                   "(excluing bounding single quotes)", col, self.x00_replacement)
+                                   "(excluding bounding single quotes)", col, self.x00_replacement)
                     relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
         return relation
 
