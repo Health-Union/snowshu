@@ -1,21 +1,25 @@
+import json
 import os
-import time
 import re
+import time
 from datetime import datetime
 
 import docker
 import pytest
+import sqlalchemy
 import yaml
 from click.testing import CliRunner
 from sqlalchemy import create_engine
 
+from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
 from snowshu.configs import PACKAGE_ROOT, DEFAULT_PRESERVE_CASE, DEFAULT_MAX_NUMBER_OF_OUTLIERS
-from snowshu.core.main import cli, create
+from snowshu.core.main import cli
+from snowshu.core.models import materializations, relation
 
 """ End-To-End all inclusive test session"""
 #1. builds a new replica based on the template configs
 #2. launches the replica
-#3. Queries the replica 
+#3. Queries the replica
 #4. Spins down and cleans up
 
 BASE_CONN='postgresql://snowshu:snowshu@integration-test:9999/{}'
@@ -39,7 +43,7 @@ def end_to_end(docker_flush_session):
                           name='integration-test',
                           network='snowshu',
                           detach=True)
-    time.sleep(DOCKER_SPIN_UP_TIMEOUT) # the replica needs a second to initialize
+    time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # the replica needs a second to initialize
     return create_output
 
 def any_appearance_of(string,strings):
@@ -301,3 +305,21 @@ def test_casing(end_to_end):
         "Snake_Case_Camel_Col":"character varying",
     }
     assert {t[0]:t[1] for t in type_mappings} == EXPECTED_DATA_TYPES
+
+def test_x_db_incremental_import():
+    adapter = PostgresAdapter(replica_metadata={})
+    cols = []
+    relation_one = relation.Relation("snowshu_development", "external_data", "address_region_attributes",
+                                     materializations.TABLE, cols)
+    relation_two = relation.Relation("snowshu_development", "external_data", "address_region_attributes",
+                                     materializations.TABLE, cols)
+    relations = relation_one, relation_two
+
+    def successfully_enabled_without_errors(adapter, relations):
+        try:
+            adapter.enable_cross_database(relations)
+            return True
+        except sqlalchemy.exc.ProgrammingError:
+            return False
+
+    assert successfully_enabled_without_errors(adapter, relations)
