@@ -1,10 +1,12 @@
+import json
 import os
-import time
 import re
+import time
 from datetime import datetime
 
 import docker
 import pytest
+import sqlalchemy
 import yaml
 from click.testing import CliRunner
 from sqlalchemy import create_engine
@@ -18,7 +20,7 @@ from snowshu.core.models.materializations import TABLE
 """ End-To-End all inclusive test session"""
 #1. builds a new replica based on the template configs
 #2. launches the replica
-#3. Queries the replica 
+#3. Queries the replica
 #4. Spins down and cleans up
 
 BASE_CONN='postgresql://snowshu:snowshu@integration-test:9999/{}'
@@ -42,7 +44,7 @@ def end_to_end(docker_flush_session):
                           name='integration-test',
                           network='snowshu',
                           detach=True)
-    time.sleep(DOCKER_SPIN_UP_TIMEOUT) # the replica needs a second to initialize
+    time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # the replica needs a second to initialize
     return create_output
 
 def any_appearance_of(string,strings):
@@ -315,9 +317,9 @@ def test_get_relations_from_database(end_to_end):
     ]
 
     attributes = [
-        Attribute('created_at', data_types.TIMESTAMP_TZ), 
-        Attribute('name', data_types.VARCHAR), 
-        Attribute('short_description', data_types.VARCHAR), 
+        Attribute('created_at', data_types.TIMESTAMP_TZ),
+        Attribute('name', data_types.VARCHAR),
+        Attribute('short_description', data_types.VARCHAR),
         Attribute('long_description', data_types.VARCHAR)
     ]
     relation = Relation("snowshu", "snowshu", "replica_meta", TABLE, attributes)
@@ -327,3 +329,22 @@ def test_get_relations_from_database(end_to_end):
     for rel in catalog:
         relations.append(rel.__dict__.items())
     assert relation.__dict__.items() in relations
+
+
+def test_x_db_incremental_import():
+    adapter = PostgresAdapter(replica_metadata={})
+    cols = []
+    relation_one = Relation("snowshu_development", "external_data", "address_region_attributes",
+                            TABLE, cols)
+    relation_two = Relation("snowshu_development", "external_data", "address_region_attributes",
+                            TABLE, cols)
+    relations = relation_one, relation_two
+
+    def successfully_enabled_without_errors(adapter, relations):
+        try:
+            adapter.enable_cross_database(relations)
+            return True
+        except sqlalchemy.exc.ProgrammingError:
+            return False
+
+    assert successfully_enabled_without_errors(adapter, relations)
