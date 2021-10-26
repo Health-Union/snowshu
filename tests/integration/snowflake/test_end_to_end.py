@@ -14,8 +14,6 @@ from sqlalchemy import create_engine
 from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
 from snowshu.configs import PACKAGE_ROOT, DEFAULT_PRESERVE_CASE, DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.main import cli
-from snowshu.core.models import materializations, relation
-from snowshu.core.main import cli
 from snowshu.core.models import Relation, Attribute, data_types
 from snowshu.core.models.materializations import TABLE
 
@@ -336,10 +334,10 @@ def test_get_relations_from_database(end_to_end):
 def test_x_db_incremental_import():
     adapter = PostgresAdapter(replica_metadata={})
     cols = []
-    relation_one = relation.Relation("snowshu_development", "external_data", "address_region_attributes",
-                                     materializations.TABLE, cols)
-    relation_two = relation.Relation("snowshu_development", "external_data", "address_region_attributes",
-                                     materializations.TABLE, cols)
+    relation_one = Relation("snowshu_development", "external_data", "address_region_attributes",
+                            TABLE, cols)
+    relation_two = Relation("snowshu_development", "external_data", "address_region_attributes",
+                            TABLE, cols)
     relations = relation_one, relation_two
 
     def successfully_enabled_without_errors(adapter, relations):
