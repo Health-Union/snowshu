@@ -15,6 +15,9 @@ from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
 from snowshu.configs import PACKAGE_ROOT, DEFAULT_PRESERVE_CASE, DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.main import cli
 from snowshu.core.models import materializations, relation
+from snowshu.core.main import cli
+from snowshu.core.models import Relation, Attribute, data_types
+from snowshu.core.models.materializations import TABLE
 
 """ End-To-End all inclusive test session"""
 #1. builds a new replica based on the template configs
@@ -305,6 +308,30 @@ def test_casing(end_to_end):
         "Snake_Case_Camel_Col":"character varying",
     }
     assert {t[0]:t[1] for t in type_mappings} == EXPECTED_DATA_TYPES
+
+
+def test_get_relations_from_database(end_to_end):
+    adapter = PostgresAdapter(replica_metadata={})
+    config_patterns = [
+        dict(database="snowshu",
+             schema=".*",
+             name=".*")
+    ]
+
+    attributes = [
+        Attribute('created_at', data_types.TIMESTAMP_TZ),
+        Attribute('name', data_types.VARCHAR),
+        Attribute('short_description', data_types.VARCHAR),
+        Attribute('long_description', data_types.VARCHAR)
+    ]
+    relation = Relation("snowshu", "snowshu", "replica_meta", TABLE, attributes)
+
+    catalog = adapter.build_catalog(config_patterns)
+    relations = []
+    for rel in catalog:
+        relations.append(rel.__dict__.items())
+    assert relation.__dict__.items() in relations
+
 
 def test_x_db_incremental_import():
     adapter = PostgresAdapter(replica_metadata={})

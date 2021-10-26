@@ -32,8 +32,10 @@ quoted_types = (
     ("DATETIME", types.DATETIME(),),
     ("JSON", types.JSON(),),
     ("TIME", types.TIME(timezone=False),),
+    ("TIME_TZ", types.TIME(timezone=True),),
     ("TIMESTAMP_NTZ", types.TIMESTAMP(timezone=False),),
     ("TIMESTAMP_TZ", types.TIMESTAMP(timezone=True),),
+    ("TEXT", types.TEXT(),),
     ("VARCHAR", types.VARCHAR(),),)
 
 unquoted_types = (

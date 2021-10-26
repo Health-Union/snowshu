@@ -11,7 +11,7 @@ from snowshu.configs import (DEFAULT_INSERT_CHUNK_SIZE,
                              IS_IN_DOCKER)
 from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models import Attribute, Credentials, Relation
-from snowshu.core.models import data_types as dt
+from snowshu.core.models import DataType, data_types as dt
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, PORT,
                                              USER)
@@ -181,6 +181,14 @@ AS
         conn_string = (f"{self.dialect}://{self._credentials.user}:{self._credentials.password}"
                        f"@{self._credentials.host}:{self.DOCKER_TARGET_PORT}/{database}?")
         return conn_string, {USER, PASSWORD, HOST, PORT, DATABASE, }
+
+    def _get_data_type(self, source_type: str) -> DataType:
+        try:
+            return self.DATA_TYPE_MAPPINGS[source_type.replace(' ', '_').lower()]
+        except KeyError as err:
+            logger.error(
+                '%s adapter does not support data type %s.', self.CLASSNAME, source_type)
+            raise err
 
     @staticmethod
     def _build_snowshu_envars(snowshu_envars: list) -> list:

@@ -1,5 +1,6 @@
-from snowshu.core.models import data_types
 from pandas.core.frame import DataFrame
+
+from snowshu.core.models import data_types
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.materializations import TABLE
 from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
@@ -34,4 +35,3 @@ def test_x00_replacement():
     fixed_relation = adapter.replace_x00_values(relation)
     assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 1, [content_col]] == normal_val)
     assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 2, [content_col]] == f"weird{custom_replacement}value")
-
