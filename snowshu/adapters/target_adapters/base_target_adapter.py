@@ -148,7 +148,6 @@ AS
         logger.info('Container initialized.')
         while not self.target_database_is_ready():
             sleep(.5)
-        shdocker.change_replica_data_directory(self.container, self)
         self._initialize_snowshu_meta_database()
 
     def target_database_is_ready(self) -> bool:

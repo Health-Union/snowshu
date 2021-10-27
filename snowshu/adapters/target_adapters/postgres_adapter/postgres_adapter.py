@@ -72,7 +72,9 @@ class PostgresAdapter(BaseTargetAdapter):
         self.extensions = kwargs.get("pg_extensions", list())
         self.x00_replacement = kwargs.get("pg_0x00_replacement", "")
 
-        self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port}' # noqa pylint: disable=invalid-name
+        self.DOCKER_START_COMMAND = (f'mkdir /{DOCKER_REMOUNT_DIRECTORY} ' # noqa pylint: disable=invalid-name
+                                     f'&& postgres -p {self._credentials.port} '
+                                     f'-e PGDATA=/{DOCKER_REMOUNT_DIRECTORY}')
         self.DOCKER_READY_COMMAND = (f'pg_isready -p {self._credentials.port} ' # noqa pylint: disable=invalid-name
                                      f'-h {self._credentials.host} '
                                      f'-U {self._credentials.user} '
@@ -241,7 +243,6 @@ class PostgresAdapter(BaseTargetAdapter):
     @staticmethod
     def image_finalize_bash_commands() -> List[str]:
         commands = list()
-        commands.append(f'mkdir /{DOCKER_REMOUNT_DIRECTORY}')
         commands.append(f'cp -a /var/lib/postgresql/data/* /{DOCKER_REMOUNT_DIRECTORY}')
         return commands
 

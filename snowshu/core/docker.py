@@ -38,7 +38,7 @@ class SnowShuDocker:
             pass
         replica = container.commit(
             repository=self.sanitize_replica_name(replica_name),
-            changes=target_adapter.docker_commit_changes()
+            # changes=target_adapter.docker_commit_changes()
         )
         logger.info(f'Replica image {replica.tags[0]} created. Cleaning up...')
         self.remove_container(container.name)
@@ -188,31 +188,6 @@ class SnowShuDocker:
             if response[0] > 0:
                 raise OSError(response[1])
         logger.info('Data remounted, image ready to be finalized.')
-
-    def change_replica_data_directory(container: docker.models.containers.Container,
-                                      target_adapter: Type['BaseTargetAdapter']) -> None:
-        logger.info('Changing data inside target...')
-
-        for command in target_adapter.image_finalize_bash_commands():
-            response = container.exec_run(
-                f"/bin/bash -c '{command}'", tty=True)
-            if response[0] > 0:
-                raise OSError(response[1])
-        logger.info('Data mounted, image ready to be finalized.')
-
-        replica_name = target_adapter.sanitize_replica_name(target_adapter.replica_meta['name'])
-        logger.info(f'Creating new replica image with name {replica_name}...')
-        try:
-            target_adapter.client.images.remove(replica_name, force=True)
-        except docker.errors.ImageNotFound:
-            logger.error(f'Docker image now found: {replica_name}...')
-            pass
-        replica = container.commit(
-            repository=target_adapter.sanitize_replica_name(replica_name),
-            changes=target_adapter.docker_commit_changes()
-        )
-        logger.info(f'Replica image {replica.tags[0]} created. Cleaning up...')
-        target_adapter.remove_container(container.name)
 
     @staticmethod
     def _run_container_setup(container: docker.models.containers.Container,
