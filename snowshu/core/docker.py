@@ -22,8 +22,7 @@ class SnowShuDocker:
     def convert_container_to_replica(
             self,
             replica_name: str,
-            container: docker.models.containers.Container,
-            target_adapter: Type['BaseTargetAdapter']) -> docker.models.images.Image:
+            container: docker.models.containers.Container) -> docker.models.images.Image:
         """coerces a live container into a replica image and returns the image.
 
         replica_name: the name of the new replica
@@ -34,8 +33,7 @@ class SnowShuDocker:
         try:
             self.client.images.remove(replica_name, force=True)
         except docker.errors.ImageNotFound:
-            logger.error(f'Docker image now found: {replica_name}...')
-            pass
+            logger.error(f'Docker image not found: {replica_name}...')
         replica = container.commit(
             repository=self.sanitize_replica_name(replica_name),
             # changes=target_adapter.docker_commit_changes()

@@ -160,8 +160,7 @@ AS
         shdocker = SnowShuDocker()
         logger.info('Finalizing target container into replica...')
         replica_image = shdocker.convert_container_to_replica(self.replica_meta['name'],
-                                                              self.container,
-                                                              self)
+                                                              self.container)
         logger.info('Finalized replica image %s', self.replica_meta["name"])
         return replica_image.tags[0]
 
