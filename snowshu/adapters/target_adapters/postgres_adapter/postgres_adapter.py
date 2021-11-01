@@ -72,7 +72,7 @@ class PostgresAdapter(BaseTargetAdapter):
         self.extensions = kwargs.get("pg_extensions", list())
         self.x00_replacement = kwargs.get("pg_0x00_replacement", "")
 
-        self.DOCKER_START_COMMAND = (f'mkdir /{DOCKER_REMOUNT_DIRECTORY} ' # noqa pylint: disable=invalid-name
+        self.DOCKER_START_COMMAND = (f'mkdir -p /{DOCKER_REMOUNT_DIRECTORY} ' # noqa pylint: disable=invalid-name
                                      f'&& postgres -p {self._credentials.port} '
                                      f'-e PGDATA=/{DOCKER_REMOUNT_DIRECTORY}')
         self.DOCKER_READY_COMMAND = (f'pg_isready -p {self._credentials.port} ' # noqa pylint: disable=invalid-name
@@ -240,22 +240,11 @@ class PostgresAdapter(BaseTargetAdapter):
                     relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
         return relation
 
-    @staticmethod
-    def image_finalize_bash_commands() -> List[str]:
-        commands = list()
-        commands.append(f'cp -a /var/lib/postgresql/data/* /{DOCKER_REMOUNT_DIRECTORY}')
-        return commands
-
     def image_initialize_bash_commands(self) -> List[str]:
         commands = list()
         # install extra postgres extension packages here
         commands.append(f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}')
         return commands
-
-    @staticmethod
-    def docker_commit_changes() -> str:
-        """To finalize the image we need to set envars for the container."""
-        return f"ENV PGDATA /{DOCKER_REMOUNT_DIRECTORY}"
 
     def enable_cross_database(self, relations: Iterable['Relation']) -> None:
         unique_schemas = {(rel.database, rel.schema,) for rel in relations}
