@@ -40,7 +40,8 @@ class BaseTargetAdapter(BaseSQLAdapter):
                 raise NotImplementedError(
                     f'Target adapter requires attribute f{attr} but was not set.')
 
-        self.credentials = self._generate_credentials()
+        self.target = DOCKER_TARGET_CONTAINER if IS_IN_DOCKER else 'localhost'
+        self.credentials = self._generate_credentials(self.target)
         self.container: "Container" = None
         self.replica_meta = replica_metadata
 
@@ -125,16 +126,20 @@ AS
             raise exc
         logger.info('Data loaded into relation %s', relation.quoted_dot_notation)
 
-    def initialize_replica(self, source_adapter_name: str) -> None:
+    def initialize_replica(self, 
+                           source_adapter_name: str,
+                           target: str) -> None:
         """shimming but will want to move _init_image public with this
         interface.
 
         Args:
             source_adapter_name: the classname of the source adapter
+            target: the base image for creating the replica. 
+                Uses default image when not passed
         """
-        self._init_image(source_adapter_name)
+        self._init_image(source_adapter_name, target)
 
-    def _init_image(self, source_adapter_name: str) -> None:
+    def _init_image(self, source_adapter_name: str, target: str) -> None:
         shdocker = SnowShuDocker()
         logger.info('Initializing target container...')
         self.container = shdocker.startup(
@@ -144,7 +149,8 @@ AS
             self,
             source_adapter_name,
             self._build_snowshu_envars(
-                self.DOCKER_SNOWSHU_ENVARS))
+                self.DOCKER_SNOWSHU_ENVARS),
+            target)
         logger.info('Container initialized.')
         while not self.target_database_is_ready():
             sleep(.5)
@@ -164,8 +170,10 @@ AS
         logger.info('Finalized replica image %s', self.replica_meta["name"])
         return replica_image.tags[0]
 
-    def _generate_credentials(self) -> Credentials:
-        host = DOCKER_TARGET_CONTAINER if IS_IN_DOCKER else 'localhost'
+    def regenerate_credentials(self, host) -> Credentials:
+        return self._generate_credentials(host)
+
+    def _generate_credentials(self, host) -> Credentials:
         return Credentials(host=host,
                            port=self.DOCKER_TARGET_PORT,
                            **dict(zip(('user',

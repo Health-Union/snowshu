@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, List, Optional, Type
 
 import docker
 
-from snowshu.configs import DOCKER_NETWORK, DOCKER_TARGET_CONTAINER
+from snowshu.configs import DOCKER_NETWORK
 from snowshu.logger import Logger
 
 if TYPE_CHECKING:
@@ -87,6 +87,7 @@ class SnowShuDocker:
                 target_adapter: Type['BaseTargetAdapter'],
                 source_adapter: str,
                 envars: list,
+                base_image: str,
                 protocol: str = "tcp") -> docker.models.containers.Container:   # noqa pylint: disable=unused-argument
 
         container = self.get_stopped_container(
@@ -94,21 +95,21 @@ class SnowShuDocker:
             start_command,
             envars,
             port,
-            name=DOCKER_TARGET_CONTAINER,
+            name=base_image,
             labels=dict(
                 snowshu_replica='true',
                 target_adapter=target_adapter.CLASSNAME,
                 source_adapter=source_adapter))
         logger.info(
-            f'Connecting {DOCKER_TARGET_CONTAINER} to bridge network..')
+            f'Connecting {base_image} to bridge network..')
         self._connect_to_bridge_network(container)
         logger.info(
-            f'Connected. Starting created container {DOCKER_TARGET_CONTAINER}...')
+            f'Connected. Starting created container {base_image}...')
         container.start()
-        logger.info(f'Container {DOCKER_TARGET_CONTAINER} started.')
-        logger.info(f'Running initial setup on {DOCKER_TARGET_CONTAINER}...')
+        logger.info(f'Container {base_image} started.')
+        logger.info(f'Running initial setup on {base_image}...')
         self._run_container_setup(container, target_adapter)
-        logger.info(f'Container {DOCKER_TARGET_CONTAINER} fully initialized.')
+        logger.info(f'Container {base_image} fully initialized.')
         return container
 
     def remove_container(self, container: str) -> None:

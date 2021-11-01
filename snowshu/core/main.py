@@ -5,7 +5,7 @@ from shutil import copyfile, which
 
 import click
 
-from snowshu.configs import IS_IN_DOCKER
+from snowshu.configs import IS_IN_DOCKER, DOCKER_TARGET_CONTAINER
 from snowshu.core.replica.replica_factory import ReplicaFactory
 from snowshu.core.replica.replica_manager import ReplicaManager
 from snowshu.logger import Logger
@@ -81,18 +81,22 @@ def init(path: click.Path) -> None:
 @click.option('--name',
               default=None,
               help="Overrides the replica name found in replica.yml")
+@click.option('--target',
+              default=DOCKER_TARGET_CONTAINER,
+              help="Overrides the target base image")
 @click.option(
     '--barf',
     is_flag=True,
     help="outputs the source query sql to a local folder snowshu_barf_output")
 def create(replica_file: click.Path,
            name: str,
+           target: str,
            barf: bool):
     """Generate a new replica from a replica.yml file.
     """
     replica = ReplicaFactory()
     replica.load_config(replica_file)
-    click.echo(replica.create(name, barf))
+    click.echo(replica.create(name, target, barf))
 
 
 @cli.command()
@@ -102,15 +106,18 @@ def create(replica_file: click.Path,
         exists=True),
     default=REPLICA_DEFAULT,
     help="where snowshu will look for your replica configuration file, default is ./replica.yml")
+@click.option('--target',
+              default=DOCKER_TARGET_CONTAINER,
+              help="Overrides the target base image")
 @click.option('--barf', '-b',
               is_flag=True,
               help="outputs the source query sql to a local folder snowshu_barf_output")
-def analyze(replica_file: click.Path, barf: bool):
+def analyze(replica_file: click.Path, target: str, barf: bool):
     """Perform a "dry run" of the replica creation without actually executing, and return the expected results."""
 
     replica = ReplicaFactory()
     replica.load_config(replica_file)
-    click.echo(replica.analyze(barf))
+    click.echo(replica.analyze(target, barf))
 
 
 @cli.command()
