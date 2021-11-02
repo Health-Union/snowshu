@@ -32,14 +32,26 @@ class Relation:
                  database: str,
                  schema: str,
                  name: str,
-                 materialization: mz.Materialization,
-                 attributes: List[Attribute]):
+                 materialization: Optional[mz.Materialization],
+                 attributes: Optional[List[Attribute]]):
 
         self.database = database
         self.schema = schema
         self.name = name
         self.materialization = materialization
         self.attributes = attributes
+
+    def __eq__(self, other):
+        if not isinstance(other, Relation):
+            return False
+
+        return (self.name == other.name and
+                self.schema == other.schema and
+                self.database == other.database and
+                self.materialization == other.materialization)
+
+    def __hash__(self):
+        return hash((self.name, self.schema, self.database, self.materialization))
 
     def __repr__(self) -> str:
         return f"<Relation object {self.database}.{self.schema}.{self.name}>"
@@ -129,7 +141,7 @@ def lookup_single_relation(lookup: dict, relation_set: iter) -> Relation:
     """looks up a single relation by dict given the relation_set, returns None
     if not found.
 
-    ARGS:
+    Args:
         lookup(dict) a dict of database, schema, relation keys
         relation_set(iter) any iterable of relations
     """
@@ -145,17 +157,16 @@ def lookup_single_relation(lookup: dict, relation_set: iter) -> Relation:
     return found
 
 
-def lookup_relations(lookup: dict, relation_set: iter) -> Relation:
+def lookup_relations(lookup: dict, relation_set: iter) -> List[Relation]:
     """Finds all relations that match regex patterns in given the relation_set,
     returns None if not found.
 
-    ARGS:
+    Args:
         lookup(dict) a dict of database, schema, relation regex patterns
         relation_set(iter) any iterable of relations
     """
     logger.debug('looking for relations that match %s...', lookup)
-    found = filter(lambda rel: single_full_pattern_match(
-        rel, lookup), relation_set)
+    found = filter(lambda rel: single_full_pattern_match(rel, lookup), relation_set)
     logger.debug('found %s.', str(found))
     return list(found)
 
@@ -168,7 +179,7 @@ def single_full_pattern_match(rel: Relation,
     :class:`SpecifiedMatchPattern <snowshu.core.configuration_parser.SpecifiedMatchPattern>`.
 
     Args:
-        relation: The :class:`Relation <snowshu.core.models.relation.Relation>` to be tested.
+        rel: The :class:`Relation <snowshu.core.models.relation.Relation>` to be tested.
         pattern: Either a dict of database,schema,name(relation) or a
                     :class:`SpecifiedMatchPattern <snowshu.core.configuration_parser.SpecifiedMatchPattern>`.
 

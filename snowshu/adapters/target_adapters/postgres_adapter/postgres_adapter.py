@@ -179,7 +179,7 @@ class PostgresAdapter(BaseTargetAdapter):
 
         logger.debug(
             f'Collecting detailed relations from database {quoted_database}...')
-        relations_frame = self._safe_query(relations_sql)
+        relations_frame = self._safe_query(relations_sql, quoted_database)
         unique_relations = (
             relations_frame['schema'] +
             '.' +

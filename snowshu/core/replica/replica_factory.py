@@ -1,6 +1,6 @@
 import time
 from pathlib import Path
-from typing import TextIO, Union
+from typing import TextIO, Union, Optional
 
 from snowshu.core.configuration_parser import (Configuration,
                                                ConfigurationParser)
@@ -16,12 +16,13 @@ logger = Logger().logger
 class ReplicaFactory:
 
     def __init__(self):
-        self._credentials = dict()
-        self.config: Configuration = None
-        self.run_analyze: bool = None
+        self._credentials = {}
+        self.config: Optional[Configuration] = None
+        self.run_analyze: Optional[bool] = None
+        self.incremental: Optional[bool] = None
 
     def create(self,
-               name: Union[str, None],
+               name: Optional[str],
                barf: bool) -> None:
         self.run_analyze = False
         return self._execute(name=name, barf=barf)
@@ -32,12 +33,19 @@ class ReplicaFactory:
 
     def _execute(self,
                  barf: bool = False,
-                 name: Union[str, None] = None) -> None:
+                 name: Optional[str] = None) -> Optional[str]:
         graph = SnowShuGraph()
         if name is not None:
             self.config.name = name
 
         graph.build_graph(self.config)
+        if self.incremental:
+            incremental_target_catalog = self.config.target_profile.adapter.build_catalog(
+                patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
+                thread_workers=self.config.threads)
+            graph.graph = SnowShuGraph.catalog_difference(graph.graph,
+                                                          incremental_target_catalog,
+                                                          self.config)
         graphs = graph.get_graphs()
         if len(graphs) < 1:
             return "No relations found per provided replica configuration, exiting."

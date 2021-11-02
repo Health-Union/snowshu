@@ -1,5 +1,5 @@
 import pytest
-from mock import patch
+from unittest.mock import patch
 
 import snowshu.core.models.materializations as mz
 from snowshu.adapters import BaseSQLAdapter

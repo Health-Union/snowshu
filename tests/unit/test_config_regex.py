@@ -1,6 +1,6 @@
 from io import StringIO
 
-import mock
+from unittest import mock
 import pytest
 import yaml
 

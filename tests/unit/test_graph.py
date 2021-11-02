@@ -1,8 +1,7 @@
 import copy
 from io import StringIO
-from snowshu.exceptions import InvalidRelationshipException
+from unittest import mock
 
-import mock
 import networkx as nx
 import pytest
 import yaml
@@ -11,8 +10,9 @@ from snowshu.core.configuration_parser import ConfigurationParser
 from snowshu.core.graph import SnowShuGraph
 from snowshu.core.models import Relation
 from snowshu.core.models import materializations as mz
+from snowshu.exceptions import InvalidRelationshipException
 from snowshu.samplings.samplings import BruteForceSampling, DefaultSampling
-from tests.conftest import CONFIGURATION, BASIC_CONFIGURATION
+from tests.conftest import CONFIGURATION, BASIC_CONFIGURATION, rand_string
 
 
 def test_graph_builds_dags_correctly(stub_graph_set):
@@ -53,12 +53,16 @@ def test_graph_allows_upstream_wildcards(stub_graph_set):
                                                          schema=vals.downstream_relation.schema,
                                                          unsampled=False,
                                                          relationships=dict(directional=[],
-                                                                            bidirectional=[dict(relation=vals.upstream_relation.name,
-                                                                                                database='',
-                                                                                                schema='',
-                                                                                                local_attribute=vals.downstream_relation.attributes[
-                                                                                                    0].name,
-                                                                                                remote_attribute=vals.upstream_relation.attributes[0].name)]))]
+                                                                            bidirectional=[dict(
+                                                                                relation=vals.upstream_relation.name,
+                                                                                database='',
+                                                                                schema='',
+                                                                                local_attribute=
+                                                                                vals.downstream_relation.attributes[
+                                                                                    0].name,
+                                                                                remote_attribute=
+                                                                                vals.upstream_relation.attributes[
+                                                                                    0].name)]))]
 
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
@@ -87,113 +91,113 @@ def test_unsampled(stub_graph_set):
                                                          unsampled=True)]
 
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
-    assert vals.iso_relation.unsampled == False
+    assert vals.iso_relation.unsampled is False
 
-    modified_graph = shgraph._apply_specifications(
+    shgraph._apply_specifications(
         config, nx.DiGraph(), full_catalog)
-    modified_graph=shgraph._apply_specifications(config,nx.DiGraph(),full_catalog)       
- 
-    assert vals.iso_relation.unsampled==True
+    shgraph._apply_specifications(config, nx.DiGraph(), full_catalog)
+
+    assert vals.iso_relation.unsampled is True
 
 
 def test_sets_outliers(stub_graph_set):
-    shgraph=SnowShuGraph()
+    shgraph = SnowShuGraph()
 
-    _,vals = stub_graph_set
+    _, vals = stub_graph_set
 
-    full_catalog=[  vals.iso_relation,
+    full_catalog = [vals.iso_relation,
                     vals.view_relation,
                     vals.downstream_relation,
                     vals.upstream_relation,
                     vals.birelation_left,
                     vals.birelation_right]
 
-    config_dict=copy.deepcopy(BASIC_CONFIGURATION)
-    config_dict['source']['include_outliers']=True
-    config_dict['source']['max_number_of_outliers']=1000
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict['source']['include_outliers'] = True
+    config_dict['source']['max_number_of_outliers'] = 1000
 
-    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
-    
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
     with mock.MagicMock() as adapter_mock:
         adapter_mock.build_catalog.return_value = full_catalog
         config.source_profile.adapter = adapter_mock
         _ = shgraph.build_graph(config)
 
-    assert vals.iso_relation.include_outliers==True
-    assert vals.iso_relation.max_number_of_outliers==1000
+    assert vals.iso_relation.include_outliers is True
+    assert vals.iso_relation.max_number_of_outliers == 1000
 
 
 def test_no_duplicates(stub_graph_set):
-    shgraph=SnowShuGraph()
+    shgraph = SnowShuGraph()
 
-    _,vals = stub_graph_set
+    _, vals = stub_graph_set
 
-    full_catalog=[  vals.iso_relation,
+    full_catalog = [vals.iso_relation,
                     vals.view_relation,
                     vals.downstream_relation,
                     vals.upstream_relation,
                     vals.birelation_left,
                     vals.birelation_right]
 
-    config_dict=copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
 
-    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
-    
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
     with mock.MagicMock() as adapter_mock:
         adapter_mock.build_catalog.return_value = full_catalog
         config.source_profile.adapter = adapter_mock
         shgraph.build_graph(config)
         graphs = shgraph.get_graphs()
 
-    all_nodes=[node for graph in graphs for node in graph.nodes]
+    all_nodes = [node for graph in graphs for node in graph.nodes]
     assert len(set(all_nodes)) == len(all_nodes)
 
 
 def test_split_dag_to_parallel():
-    shgraph=SnowShuGraph()
-    dag=nx.DiGraph()
-    dag.add_edges_from([(1,2,),(1,4,),(2,3,),(5,6,)])
-    split=shgraph._split_dag_for_parallel(dag)
-    
-    assert set([frozenset(val) for val in split]) == set([frozenset([1,2,4,3]),frozenset([5,6])])
+    shgraph = SnowShuGraph()
+    dag = nx.DiGraph()
+    dag.add_edges_from([(1, 2,), (1, 4,), (2, 3,), (5, 6,)])
+    split = shgraph._split_dag_for_parallel(dag)
+
+    assert set([frozenset(val) for val in split]) == set([frozenset([1, 2, 4, 3]), frozenset([5, 6])])
 
 
 def test_sets_only_existing_adapters():
-    shgraph=SnowShuGraph()
-    
-    test_relation=Relation(
-                 database='SNOWSHU_DEVELOPMENT',
-                 schema='SOURCE_SYSTEM',
-                 name='ORDER_ITEMS',
-                 materialization=mz.TABLE,
-                 attributes=[]
-                    )
-    test_relation.include_outliers, test_relation.unsampled = [False for _ in range(2)]   
-    test_relation.sampling=DefaultSampling()
-    config_dict=copy.deepcopy(CONFIGURATION)
-    config_dict['preserve_case'] = True
-    config_dict['source']['specified_relations'][1]['sampling']='lucky_guess'
-    with pytest.raises(AttributeError):
-        config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+    shgraph = SnowShuGraph()
 
-    assert isinstance(test_relation.sampling,DefaultSampling)
-    config_dict['source']['specified_relations'][1]['sampling']='brute_force'
-    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
-    
-    assert isinstance(shgraph._set_overriding_params_for_node(test_relation,config).sampling,
+    test_relation = Relation(
+        database='SNOWSHU_DEVELOPMENT',
+        schema='SOURCE_SYSTEM',
+        name='ORDER_ITEMS',
+        materialization=mz.TABLE,
+        attributes=[]
+    )
+    test_relation.include_outliers, test_relation.unsampled = [False for _ in range(2)]
+    test_relation.sampling = DefaultSampling()
+    config_dict = copy.deepcopy(CONFIGURATION)
+    config_dict['preserve_case'] = True
+    config_dict['source']['specified_relations'][1]['sampling'] = 'lucky_guess'
+    with pytest.raises(AttributeError):
+        config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
+    assert isinstance(test_relation.sampling, DefaultSampling)
+    config_dict['source']['specified_relations'][1]['sampling'] = 'brute_force'
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
+    assert isinstance(shgraph._set_overriding_params_for_node(test_relation, config).sampling,
                       BruteForceSampling)
 
 
 def test_build_graph_partitions_wildcards(stub_graph_set):
     """ Tests build_graph partitions wildcard relationships """
     shgraph = SnowShuGraph()
-    _,vals = stub_graph_set
-    full_catalog=[  vals.downstream_wildcard_relation_1,
+    _, vals = stub_graph_set
+    full_catalog = [vals.downstream_wildcard_relation_1,
                     vals.downstream_wildcard_relation_2,
                     vals.upstream_wildcard_relation_1,
                     vals.upstream_wildcard_relation_2,
-                ]
-    config_dict=copy.deepcopy(BASIC_CONFIGURATION)
+                    ]
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
             "database": f"({vals.downstream_wildcard_relation_1.database}|{vals.downstream_wildcard_relation_2.database})",
@@ -212,7 +216,7 @@ def test_build_graph_partitions_wildcards(stub_graph_set):
             }
         }
     ]
-    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
     with mock.MagicMock() as adapter_mock:
         adapter_mock.build_catalog.return_value = full_catalog
@@ -228,12 +232,12 @@ def test_build_graph_partitions_wildcards(stub_graph_set):
 def test_build_graph_allows_upstream_regex(stub_graph_set):
     """ Tests build_graph builds multiple upstream relationships """
     shgraph = SnowShuGraph()
-    _,vals = stub_graph_set
-    full_catalog=[  vals.downstream_relation,
+    _, vals = stub_graph_set
+    full_catalog = [vals.downstream_relation,
                     vals.upstream_relation,
                     vals.birelation_left,
                     vals.birelation_right]
-    config_dict=copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
             "database": vals.downstream_relation.database,
@@ -245,14 +249,14 @@ def test_build_graph_allows_upstream_regex(stub_graph_set):
                         "local_attribute": vals.directional_key,
                         "database": ".*",
                         "schema": ".*",
-                        "relation": ".*relation.*$", # incl birelations
+                        "relation": ".*relation.*$",  # incl birelations
                         "remote_attribute": vals.directional_key
                     }
                 ]
             }
         }
     ]
-    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
     with mock.MagicMock() as adapter_mock:
         adapter_mock.build_catalog.return_value = full_catalog
@@ -267,9 +271,9 @@ def test_build_graph_allows_upstream_regex(stub_graph_set):
 def test_build_graph_fails_no_downstream():
     """ Tests build_graph exits on no downstream relations """
     shgraph = SnowShuGraph()
-    full_catalog=[]  # no relations in filtered catalog
-    config_dict=copy.deepcopy(CONFIGURATION)  # use the "live" config on random test data
-    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+    full_catalog = []  # no relations in filtered catalog
+    config_dict = copy.deepcopy(CONFIGURATION)  # use the "live" config on random test data
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
     with mock.MagicMock() as adapter_mock:
         adapter_mock.build_catalog.return_value = full_catalog
@@ -284,12 +288,12 @@ def test_build_graph_fails_no_downstream():
 def test_build_graph_fails_no_upstream(stub_graph_set):
     """ Tests build_graph exits on no upstream relations """
     shgraph = SnowShuGraph()
-    _,vals = stub_graph_set
+    _, vals = stub_graph_set
     full_catalog = [
-                    vals.iso_relation,
-                    vals.view_relation,
-                    vals.downstream_relation,
-                ]
+        vals.iso_relation,
+        vals.view_relation,
+        vals.downstream_relation,
+    ]
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
@@ -323,13 +327,13 @@ def test_build_graph_fails_no_upstream(stub_graph_set):
 def test_build_graph_fails_no_distinct_upstream(stub_graph_set):
     """ Tests build_graph exits on no distinct upstream relations """
     shgraph = SnowShuGraph()
-    _,vals = stub_graph_set
+    _, vals = stub_graph_set
     full_catalog = [
-                    vals.iso_relation,
-                    vals.view_relation,
-                    vals.downstream_relation,
-                    vals.upstream_relation,
-                ]
+        vals.iso_relation,
+        vals.view_relation,
+        vals.downstream_relation,
+        vals.upstream_relation,
+    ]
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     # add relationship where downstream == upstream
     config_dict["source"]["specified_relations"] = [
@@ -364,33 +368,33 @@ def test_build_graph_fails_no_distinct_upstream(stub_graph_set):
 def test_build_graph_fails_many_to_many(stub_graph_set):
     """ Tests build_graph exits on many-to-many relationships """
     shgraph = SnowShuGraph()
-    _,vals = stub_graph_set
-    full_catalog=[  vals.iso_relation,
+    _, vals = stub_graph_set
+    full_catalog = [vals.iso_relation,
                     vals.view_relation,
                     vals.downstream_relation,
                     vals.upstream_relation,
                     vals.birelation_left,
                     vals.birelation_right]
-    config_dict=copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
             "database": ".*",
             "schema": ".*",
-            "relation": ".*relation_.*$", # birelations
+            "relation": ".*relation_.*$",  # birelations
             "relationships": {
                 "directional": [
                     {
                         "local_attribute": vals.directional_key,
                         "database": ".*",
                         "schema": ".*",
-                        "relation": ".*relation$", # non birelations
+                        "relation": ".*relation$",  # non birelations
                         "remote_attribute": vals.directional_key
                     }
                 ]
             }
         }
     ]
-    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
     with mock.MagicMock() as adapter_mock:
         adapter_mock.build_catalog.return_value = full_catalog
@@ -405,14 +409,14 @@ def test_build_graph_fails_many_to_many(stub_graph_set):
 def test_build_graph_fails_view(stub_graph_set):
     """ Tests build_graph exits on views as upstream relations """
     shgraph = SnowShuGraph()
-    _,vals = stub_graph_set
-    full_catalog=[  vals.iso_relation,
+    _, vals = stub_graph_set
+    full_catalog = [vals.iso_relation,
                     vals.view_relation,
                     vals.downstream_relation,
                     vals.upstream_relation,
                     vals.birelation_left,
                     vals.birelation_right]
-    config_dict=copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
             "database": vals.downstream_relation.database,
@@ -431,7 +435,7 @@ def test_build_graph_fails_view(stub_graph_set):
             }
         }
     ]
-    config=ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
     with mock.MagicMock() as adapter_mock:
         adapter_mock.build_catalog.return_value = full_catalog
@@ -440,3 +444,266 @@ def test_build_graph_fails_view(stub_graph_set):
         with pytest.raises(InvalidRelationshipException) as exc:
             shgraph.build_graph(config)
         assert "View dependencies are not allowed by SnowShu." in str(exc.value)
+
+
+def test_graph_difference_empty_target(stub_graph_set):
+    """ Tests graph_difference returns source graph with all nodes if target catalog is empty """
+    shgraph = SnowShuGraph()
+    _, vals = stub_graph_set
+    full_catalog = [vals.downstream_relation,
+                    vals.upstream_relation,
+                    vals.birelation_left,
+                    vals.birelation_right]
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict["source"]["specified_relations"] = [
+        {
+            "database": vals.downstream_relation.database,
+            "schema": vals.downstream_relation.schema,
+            "relation": vals.downstream_relation.name,
+            "relationships": {
+                "directional": [
+                    {
+                        "local_attribute": vals.directional_key,
+                        "database": ".*",
+                        "schema": ".*",
+                        "relation": ".*relation.*$",
+                        "remote_attribute": vals.directional_key
+                    }
+                ]
+            }
+        }
+    ]
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = full_catalog
+        config.source_profile.adapter = adapter_mock
+        shgraph.build_graph(config)
+        expected = shgraph
+        target_catalog = set()
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config)
+        assert actual == expected
+
+
+def test_graph_difference_no_changes(stub_graph_set):
+    """ Tests graph_difference returns graph with no nodes if target catalog has same nodes as source """
+    shgraph = SnowShuGraph()
+    _, vals = stub_graph_set
+    full_catalog = [vals.downstream_relation,
+                    vals.upstream_relation,
+                    vals.birelation_left,
+                    vals.birelation_right]
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict["source"]["specified_relations"] = [
+        {
+            "database": vals.downstream_relation.database,
+            "schema": vals.downstream_relation.schema,
+            "relation": vals.downstream_relation.name,
+            "relationships": {
+                "directional": [
+                    {
+                        "local_attribute": vals.directional_key,
+                        "database": ".*",
+                        "schema": ".*",
+                        "relation": ".*relation.*$",  # incl birelations
+                        "remote_attribute": vals.directional_key
+                    }
+                ]
+            }
+        }
+    ]
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = full_catalog
+        config.source_profile.adapter = adapter_mock
+        shgraph.build_graph(config)
+        target_catalog = set(shgraph.graph.nodes)
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config).graph
+        assert len(actual) == 0
+
+
+def test_graph_difference_less_relations_source(stub_graph_set):
+    """ Tests graph_difference returns graph with no nodes if target catalog has more nodes
+    than source, including all nodes present in source graph """
+    shgraph = SnowShuGraph()
+    _, vals = stub_graph_set
+    source_catalog = [vals.downstream_relation,
+                      vals.upstream_relation,
+                      vals.birelation_left,
+                      vals.birelation_right]
+    target_catalog = [vals.downstream_relation,
+                      vals.upstream_relation,
+                      vals.birelation_left,
+                      vals.birelation_right,
+                      vals.iso_relation]
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict["source"]["specified_relations"] = [
+        {
+            "database": vals.downstream_relation.database,
+            "schema": vals.downstream_relation.schema,
+            "relation": vals.downstream_relation.name,
+            "relationships": {
+                "directional": [
+                    {
+                        "local_attribute": vals.directional_key,
+                        "database": ".*",
+                        "schema": ".*",
+                        "relation": ".*relation.*$",  # incl birelations
+                        "remote_attribute": vals.directional_key
+                    }
+                ]
+            }
+        }
+    ]
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = source_catalog
+        config.source_profile.adapter = adapter_mock
+        shgraph.build_graph(config)
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config).graph
+        assert len(actual) == 0
+
+
+def test_graph_difference_more_isolated_relations_source(stub_graph_set, stub_relation_set):
+    """ Tests graph_difference returns graph with expected nodes if source graph has isolated nodes
+    which are not present in target catalog """
+    relation_set = {Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+                    Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+                    Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper())}
+
+    shgraph = SnowShuGraph()
+    _, vals = stub_graph_set
+    full_catalog = [vals.downstream_relation,
+                    vals.upstream_relation,
+                    vals.birelation_left,
+                    vals.birelation_right]
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict["source"]["specified_relations"] = [
+        {
+            "database": vals.downstream_relation.database,
+            "schema": vals.downstream_relation.schema,
+            "relation": vals.downstream_relation.name,
+            "relationships": {
+                "directional": [
+                    {
+                        "local_attribute": vals.directional_key,
+                        "database": ".*",
+                        "schema": ".*",
+                        "relation": ".*relation.*$",
+                        "remote_attribute": vals.directional_key
+                    }
+                ]
+            }
+        }
+    ]
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = full_catalog + list(relation_set)
+        config.source_profile.adapter = adapter_mock
+        shgraph.build_graph(config)
+        target_catalog = full_catalog
+        expected = nx.Graph()
+        expected.add_nodes_from(relation_set)
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config).graph
+        assert actual.nodes == expected.nodes
+
+
+def test_graph_difference_more_non_isolated_relations_source(stub_graph_set, stub_relation_set):
+    """ Tests graph_difference returns graph with expected nodes if source graph has non-isolated
+    nodes which are not present in target catalog """
+
+    _, vals = stub_graph_set
+    common_relation = Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper())
+    source_catalog = [common_relation,
+                      vals.downstream_relation,
+                      vals.upstream_relation,
+                      vals.birelation_right]
+
+    target_catalog = {common_relation,
+                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+                      vals.birelation_left,
+                      vals.birelation_right}
+
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict["source"]["specified_relations"] = [
+        {
+            "database": vals.downstream_relation.database,
+            "schema": vals.downstream_relation.schema,
+            "relation": vals.downstream_relation.name,
+            "relationships": {
+                "directional": [
+                    {
+                        "local_attribute": vals.directional_key,
+                        "database": ".*",
+                        "schema": ".*",
+                        "relation": ".*relation.*$",
+                        "remote_attribute": vals.directional_key
+                    }
+                ]
+            }
+        }
+    ]
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+    shgraph = SnowShuGraph()
+
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = source_catalog
+        config.source_profile.adapter = adapter_mock
+        shgraph.build_graph(config)
+        expected_nodes = source_catalog[1:]  # all non-isolated
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config).graph
+        assert list(actual.nodes) == expected_nodes
+
+
+def test_graph_difference_more_both_isolated_non_isolated_relations_source(stub_graph_set, stub_relation_set):
+    """ Tests graph_difference returns graph with expected nodes if source graph has non-isolated
+    and isolated nodes which are not present in target catalog """
+
+    _, vals = stub_graph_set
+    common_relation = Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper())
+    source_catalog = [common_relation,
+                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+                      vals.downstream_relation,
+                      vals.upstream_relation,
+                      vals.birelation_right]
+
+    target_catalog = {common_relation,
+                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+                      vals.birelation_left,
+                      vals.birelation_right}
+
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict["source"]["specified_relations"] = [
+        {
+            "database": vals.downstream_relation.database,
+            "schema": vals.downstream_relation.schema,
+            "relation": vals.downstream_relation.name,
+            "relationships": {
+                "directional": [
+                    {
+                        "local_attribute": vals.directional_key,
+                        "database": ".*",
+                        "schema": ".*",
+                        "relation": ".*relation.*$",
+                        "remote_attribute": vals.directional_key
+                    }
+                ]
+            }
+        }
+    ]
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+    shgraph = SnowShuGraph()
+
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = source_catalog
+        config.source_profile.adapter = adapter_mock
+        shgraph.build_graph(config)
+        expected_nodes = source_catalog[1:]
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config).graph
+        assert list(actual.nodes) == expected_nodes

@@ -82,16 +82,23 @@ def init(path: click.Path) -> None:
               default=None,
               help="Overrides the replica name found in replica.yml")
 @click.option(
-    '--barf',
+    '--barf', '-b',
     is_flag=True,
     help="outputs the source query sql to a local folder snowshu_barf_output")
+@click.option(
+    '--incremental', '-i',
+    is_flag=True,
+    help="creates relations and loads data only for new entries found in replica.yml, "
+         "which are not already present in current target container")
 def create(replica_file: click.Path,
            name: str,
-           barf: bool):
+           barf: bool,
+           incremental: bool):
     """Generate a new replica from a replica.yml file.
     """
     replica = ReplicaFactory()
     replica.load_config(replica_file)
+    replica.incremental = incremental
     click.echo(replica.create(name, barf))
 
 
@@ -105,11 +112,19 @@ def create(replica_file: click.Path,
 @click.option('--barf', '-b',
               is_flag=True,
               help="outputs the source query sql to a local folder snowshu_barf_output")
-def analyze(replica_file: click.Path, barf: bool):
+@click.option(
+    '--incremental', '-i',
+    is_flag=True,
+    help="creates relations and loads data only for new entries found in replica.yml, "
+         "which are not already present in current target container")
+def analyze(replica_file: click.Path,
+            barf: bool,
+            incremental: bool):
     """Perform a "dry run" of the replica creation without actually executing, and return the expected results."""
 
     replica = ReplicaFactory()
     replica.load_config(replica_file)
+    replica.incremental = incremental
     click.echo(replica.analyze(barf))
 
 
