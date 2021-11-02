@@ -39,13 +39,6 @@ class ReplicaFactory:
             self.config.name = name
 
         graph.build_graph(self.config)
-        if self.incremental:
-            incremental_target_catalog = self.config.target_profile.adapter.build_catalog(
-                patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
-                thread_workers=self.config.threads)
-            graph.graph = SnowShuGraph.catalog_difference(graph.graph,
-                                                          incremental_target_catalog,
-                                                          self.config)
         graphs = graph.get_graphs()
         if len(graphs) < 1:
             return "No relations found per provided replica configuration, exiting."
