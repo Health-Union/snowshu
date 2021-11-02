@@ -8,7 +8,7 @@ import pandas as pd
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import (DEFAULT_INSERT_CHUNK_SIZE,
                              DOCKER_TARGET_CONTAINER, DOCKER_TARGET_PORT,
-                             IS_IN_DOCKER, DOCKER_REMOUNT_DIRECTORY)
+                             IS_IN_DOCKER)
 from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models import Attribute, Credentials, Relation
 from snowshu.core.models import DataType, data_types as dt
@@ -196,13 +196,6 @@ AS
             logger.error(
                 '%s adapter does not support data type %s.', self.CLASSNAME, source_type)
             raise err
-
-    @staticmethod
-    def _build_snowshu_envars(snowshu_envars: list) -> list:
-        """helper method to populate envars with `snowshu`"""
-        envars = [f"{envar}=snowshu" for envar in snowshu_envars]
-        envars.append(f"PGDATA=/{DOCKER_REMOUNT_DIRECTORY}")
-        return envars
 
     def _initialize_snowshu_meta_database(self) -> None:
         self.create_database_if_not_exists('snowshu')

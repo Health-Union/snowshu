@@ -238,6 +238,13 @@ class PostgresAdapter(BaseTargetAdapter):
                     relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
         return relation
 
+    @classmethod
+    def _build_snowshu_envars(cls, snowshu_envars: list) -> list:
+        """helper method to populate envars with `snowshu`"""
+        envars = [f"{envar}=snowshu" for envar in snowshu_envars]
+        envars.append(f"PGDATA=/{DOCKER_REMOUNT_DIRECTORY}")
+        return envars
+
     def image_initialize_bash_commands(self) -> List[str]:
         commands = list()
         # install extra postgres extension packages here
