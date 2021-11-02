@@ -72,6 +72,10 @@ def test_replicates_order_items(end_to_end):
     result_lines = end_to_end
     assert any_appearance_of('Done replication of relation snowshu_development.source_system.order_items',result_lines)
 
+def test_successful_container_initialization(end_to_end):
+    result_lines = end_to_end
+    assert any_appearance_of('fully initialized.', result_lines)
+
 @pytest.mark.skip
 def test_snowshu_explain(end_to_end):
     runner = CliRunner()
