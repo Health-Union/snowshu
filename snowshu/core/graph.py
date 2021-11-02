@@ -52,7 +52,7 @@ class SnowShuGraph:
                 relation_pattern_dict = {'name': relation.relation_pattern,
                                          'database': relation.database_pattern,
                                          'schema': relation.schema_pattern}
-                if rels := lookup_relations(relation_pattern_dict, source):
+                if rels := lookup_relations(relation_pattern_dict, source):  # noqa pylint: disable=syntax-error
                     for rel in rels:
                         connected_entry = [source.pop(source.index(rel))]
                         for subrelation in chain.from_iterable(relation.relationships.__dict__.values()):
@@ -63,7 +63,7 @@ class SnowShuGraph:
                                                         'schema': subrelation.schema_pattern
                                                         if subrelation.schema_pattern is not None
                                                         else relation.schema_pattern}
-                            if subrels := lookup_relations(subrelation_pattern_dict, source):
+                            if subrels := lookup_relations(subrelation_pattern_dict, source):  # noqa pylint: disable=syntax-error
                                 for subrel in subrels:
                                     connected_entry.append(source.pop(source.index(subrel)))
                         non_isolated_relations.append(connected_entry)

@@ -1,7 +1,7 @@
 import time
 import copy
 from concurrent.futures import ThreadPoolExecutor
-from typing import Iterable, List, Optional, Tuple, Set
+from typing import Iterable, List, Optional, Set
 import pandas as pd
 
 import sqlalchemy
@@ -162,7 +162,7 @@ class BaseSQLAdapter:
                 thread_workers (int): The number of workers to use when building the catalog
 
             Returns:
-                Tuple[Relation]: All of the relations from the sql adapter pass the filters
+                Set[Relation]: All of the relations from the sql adapter pass the filters
         """
         filtered_schemas = self._get_filtered_schemas(patterns)
 
