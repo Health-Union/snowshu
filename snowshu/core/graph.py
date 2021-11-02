@@ -25,7 +25,7 @@ class SnowShuGraph:
         self.graph: Optional[networkx.Graph] = None
 
     @staticmethod
-    def catalog_difference(source_catalog: Union["SnowShuGraph", networkx.Graph, tuple, list, set],
+    def catalog_difference(source_catalog: Union["SnowShuGraph", networkx.Graph, tuple, list, set],  # noqa pylint: disable=MC0001,too-many-locals
                            target_catalog: Union[tuple, list, set],
                            configs: Configuration):
         """ Builds a directed graph per replica config.
@@ -47,12 +47,12 @@ class SnowShuGraph:
         else:
             source = list(source_catalog.nodes)
         non_isolated_relations = []
-        for relation in configs.specified_relations:
+        for relation in configs.specified_relations:  # noqa pylint: disable=too-many-nested-blocks
             if any(relation.relationships.__dict__.values()):
                 relation_pattern_dict = {'name': relation.relation_pattern,
                                          'database': relation.database_pattern,
                                          'schema': relation.schema_pattern}
-                if rels := lookup_relations(relation_pattern_dict, source):  # noqa pylint: disable=syntax-error
+                if rels := lookup_relations(relation_pattern_dict, source):
                     for rel in rels:
                         connected_entry = [source.pop(source.index(rel))]
                         for subrelation in chain.from_iterable(relation.relationships.__dict__.values()):
@@ -63,7 +63,7 @@ class SnowShuGraph:
                                                         'schema': subrelation.schema_pattern
                                                         if subrelation.schema_pattern is not None
                                                         else relation.schema_pattern}
-                            if subrels := lookup_relations(subrelation_pattern_dict, source):  # noqa pylint: disable=syntax-error
+                            if subrels := lookup_relations(subrelation_pattern_dict, source):
                                 for subrel in subrels:
                                     connected_entry.append(source.pop(source.index(subrel)))
                         non_isolated_relations.append(connected_entry)
@@ -75,7 +75,7 @@ class SnowShuGraph:
         difference_catalog = tuple(isolated_relations.union(non_isolated_relations))
         try:
             nodes_to_delete = [node for node in source_catalog if node not in difference_catalog]
-            (list(source_catalog).remove(node) for node in nodes_to_delete)
+            map(lambda node: list(source_catalog).remove(node), nodes_to_delete)
         except TypeError:
             try:
                 nodes_to_delete = [node for node in source_catalog if node not in difference_catalog]
