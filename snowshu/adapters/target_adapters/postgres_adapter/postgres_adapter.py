@@ -238,7 +238,7 @@ class PostgresAdapter(BaseTargetAdapter):
                     relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
         return relation
 
-    @overrides
+    @classmethod
     def _build_snowshu_envars(self, snowshu_envars: list) -> list:
         """helper method to populate envars with `snowshu`"""
         envars = [f"{envar}=snowshu" for envar in snowshu_envars]

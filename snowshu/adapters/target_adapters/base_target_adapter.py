@@ -189,10 +189,6 @@ AS
                 '%s adapter does not support data type %s.', self.CLASSNAME, source_type)
             raise err
 
-    def _build_snowshu_envars(self, snowshu_envars: list) -> list:
-        """helper method to populate envars with `snowshu`"""
-        return [f"{envar}=snowshu" for envar in snowshu_envars]
-
     def _initialize_snowshu_meta_database(self) -> None:
         self.create_database_if_not_exists('snowshu')
         self.create_schema_if_not_exists('snowshu', 'snowshu')
