@@ -239,7 +239,7 @@ class PostgresAdapter(BaseTargetAdapter):
         return relation
 
     @classmethod
-    def _build_snowshu_envars(self, snowshu_envars: list) -> list:
+    def _build_snowshu_envars(cls, snowshu_envars: list) -> list:
         """helper method to populate envars with `snowshu`"""
         envars = [f"{envar}=snowshu" for envar in snowshu_envars]
         envars.append(f"PGDATA=/{DOCKER_REMOUNT_DIRECTORY}")
