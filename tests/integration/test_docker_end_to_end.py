@@ -47,8 +47,7 @@ def test_creates_replica(docker_flush):
     assert ('a', 1) == checkpoint[0]
 
     replica = shdocker.convert_container_to_replica(TEST_NAME,
-                                                    target_container,
-                                                    target_adapter)
+                                                    target_container)
     # get a new replica
     client=docker.from_env()
     
