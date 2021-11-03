@@ -479,9 +479,9 @@ def test_graph_difference_empty_target(stub_graph_set):
         adapter_mock.build_catalog.return_value = full_catalog
         config.source_profile.adapter = adapter_mock
         shgraph.build_graph(config)
-        expected = shgraph
+        expected = shgraph.graph
         target_catalog = set()
-        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config)
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog)
         assert actual == expected
 
 
@@ -519,7 +519,7 @@ def test_graph_difference_no_changes(stub_graph_set):
         config.source_profile.adapter = adapter_mock
         shgraph.build_graph(config)
         target_catalog = set(shgraph.graph.nodes)
-        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config).graph
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog)
         assert len(actual) == 0
 
 
@@ -562,7 +562,7 @@ def test_graph_difference_less_relations_source(stub_graph_set):
         adapter_mock.build_catalog.return_value = source_catalog
         config.source_profile.adapter = adapter_mock
         shgraph.build_graph(config)
-        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config).graph
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog)
         assert len(actual) == 0
 
 
@@ -607,7 +607,7 @@ def test_graph_difference_more_isolated_relations_source(stub_graph_set, stub_re
         target_catalog = full_catalog
         expected = nx.Graph()
         expected.add_nodes_from(relation_set)
-        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config).graph
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog)
         assert actual.nodes == expected.nodes
 
 
@@ -655,7 +655,7 @@ def test_graph_difference_more_non_isolated_relations_source(stub_graph_set, stu
         config.source_profile.adapter = adapter_mock
         shgraph.build_graph(config)
         expected_nodes = source_catalog[1:]  # all non-isolated
-        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config).graph
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog)
         assert list(actual.nodes) == expected_nodes
 
 
@@ -705,5 +705,5 @@ def test_graph_difference_more_both_isolated_non_isolated_relations_source(stub_
         config.source_profile.adapter = adapter_mock
         shgraph.build_graph(config)
         expected_nodes = source_catalog[1:]
-        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog, config).graph
+        actual = SnowShuGraph.catalog_difference(shgraph, target_catalog)
         assert list(actual.nodes) == expected_nodes
