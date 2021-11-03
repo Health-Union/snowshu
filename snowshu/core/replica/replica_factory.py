@@ -1,7 +1,6 @@
 import time
 from pathlib import Path
 from typing import TextIO, Union
-from snowshu.adapters import target_adapters
 
 from snowshu.core.configuration_parser import (Configuration,
                                                ConfigurationParser)
