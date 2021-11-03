@@ -2,6 +2,7 @@ import mock
 import json
 from pathlib import Path
 from tests.common import rand_string
+from snowshu.configs import DOCKER_TARGET_CONTAINER
 from snowshu.core.replica.replica_factory import ReplicaFactory
 from tests.common import rand_string
 
@@ -12,7 +13,7 @@ def tests_replica_rename(get_graphs, build_graph, stub_configs):
     replica=ReplicaFactory()
     replica.load_config(stub_configs())
     test_name=rand_string(10)
-    replica.create(test_name,False)
+    replica.create(test_name, DOCKER_TARGET_CONTAINER, False)
     assert build_graph.call_args[0][0].name == test_name
 
 
