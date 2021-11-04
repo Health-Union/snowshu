@@ -128,18 +128,20 @@ AS
 
     def initialize_replica(self, 
                            source_adapter_name: str,
-                           target: str) -> None:
+                           target_image_name: str) -> None:
         """shimming but will want to move _init_image public with this
         interface.
 
         Args:
             source_adapter_name: the classname of the source adapter
-            target: the base image for creating the replica. 
+            target_image_name: the base image for creating the replica. 
                 Uses default image when not passed
         """
-        self._init_image(source_adapter_name, target)
+        self._init_image(source_adapter_name, target_image_name)
 
-    def _init_image(self, source_adapter_name: str, target: str) -> None:
+    def _init_image(self, 
+                    source_adapter_name: str, 
+                    target_image_name: str) -> None:
         shdocker = SnowShuDocker()
         logger.info('Initializing target container...')
         self.container = shdocker.startup(
@@ -150,7 +152,7 @@ AS
             source_adapter_name,
             self._build_snowshu_envars(
                 self.DOCKER_SNOWSHU_ENVARS),
-            target)
+            target_image_name)
         logger.info('Container initialized.')
         while not self.target_database_is_ready():
             sleep(.5)

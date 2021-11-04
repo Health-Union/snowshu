@@ -106,9 +106,6 @@ def create(replica_file: click.Path,
         exists=True),
     default=REPLICA_DEFAULT,
     help="where snowshu will look for your replica configuration file, default is ./replica.yml")
-@click.option('--target',
-              default=DOCKER_TARGET_CONTAINER,
-              help="Overrides the target base image")
 @click.option('--barf', '-b',
               is_flag=True,
               help="outputs the source query sql to a local folder snowshu_barf_output")
@@ -117,7 +114,7 @@ def analyze(replica_file: click.Path, target: str, barf: bool):
 
     replica = ReplicaFactory()
     replica.load_config(replica_file)
-    click.echo(replica.analyze(target, barf))
+    click.echo(replica.analyze(barf))
 
 
 @cli.command()
