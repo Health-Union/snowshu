@@ -30,7 +30,7 @@ class ReplicaFactory:
 
     def analyze(self, barf: bool) -> None:
         self.run_analyze = True
-        return self._execute(barf=barf)
+        return self._execute(target=None, barf=barf)
 
     def _execute(self,
                  target: str,
