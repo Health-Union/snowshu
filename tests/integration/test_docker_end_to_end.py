@@ -5,6 +5,7 @@ import pytest
 from sqlalchemy import create_engine
 
 from snowshu.adapters.target_adapters import PostgresAdapter
+from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
 from snowshu.core.docker import SnowShuDocker
 from snowshu.logger import Logger
 from tests.common import rand_string
@@ -32,7 +33,8 @@ def test_creates_replica(docker_flush):
         'SnowflakeAdapter',
         ['POSTGRES_USER=snowshu',
          'POSTGRES_PASSWORD=snowshu',
-         'POSTGRES_DB=snowshu', ])
+         'POSTGRES_DB=snowshu', 
+         f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}'])
 
     # load test data
     time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # give pg a moment to spin up all the way
