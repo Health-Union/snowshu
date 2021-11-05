@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from time import sleep
-from typing import TYPE_CHECKING, Iterable, List, Optional
+from typing import TYPE_CHECKING, Iterable, List, Optional, Union
 
 import pandas as pd
 
@@ -128,7 +128,7 @@ AS
 
     def initialize_replica(self, 
                            source_adapter_name: str,
-                           target_image_name: str) -> None:
+                           target_image_name: Union[str, None]) -> None:
         """shimming but will want to move _init_image public with this
         interface.
 
@@ -137,6 +137,8 @@ AS
             target_image_name: the base image for creating the replica. 
                 Uses default image when not passed
         """
+        target_image_name = target_image_name if target_image_name is not None \
+            else self.DOCKER_IMAGE
         self._init_image(source_adapter_name, target_image_name)
 
     def _init_image(self, 
@@ -145,14 +147,13 @@ AS
         shdocker = SnowShuDocker()
         logger.info('Initializing target container...')
         self.container = shdocker.startup(
-            self.DOCKER_IMAGE,
+            target_image_name,
             self.DOCKER_START_COMMAND,
             self.DOCKER_TARGET_PORT,
             self,
             source_adapter_name,
             self._build_snowshu_envars(
-                self.DOCKER_SNOWSHU_ENVARS),
-            target_image_name)
+                self.DOCKER_SNOWSHU_ENVARS))
         logger.info('Container initialized.')
         while not self.target_database_is_ready():
             sleep(.5)
@@ -171,9 +172,6 @@ AS
                                                               self.container)
         logger.info('Finalized replica image %s', self.replica_meta["name"])
         return replica_image.tags[0]
-
-    def regenerate_credentials(self, host) -> Credentials:
-        return self._generate_credentials(host)
 
     def _generate_credentials(self, host) -> Credentials:
         return Credentials(host=host,
