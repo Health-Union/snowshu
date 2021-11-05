@@ -2,7 +2,6 @@ import time
 from pathlib import Path
 from typing import TextIO, Union
 
-from snowshu.configs import DOCKER_TARGET_CONTAINER
 from snowshu.core.configuration_parser import (Configuration,
                                                ConfigurationParser)
 from snowshu.core.graph import SnowShuGraph
@@ -23,17 +22,15 @@ class ReplicaFactory:
 
     def create(self,
                name: Union[str, None],
-               target: str,
                barf: bool) -> None:
         self.run_analyze = False
-        return self._execute(target=target, name=name, barf=barf)
+        return self._execute(name=name, barf=barf)
 
     def analyze(self, barf: bool) -> None:
         self.run_analyze = True
-        return self._execute(target=None, barf=barf)
+        return self._execute(barf=barf)
 
     def _execute(self,
-                 target: str,
                  barf: bool = False,
                  name: Union[str, None] = None) -> None:
         graph = SnowShuGraph()
@@ -46,11 +43,8 @@ class ReplicaFactory:
             return "No relations found per provided replica configuration, exiting."
 
         # TODO replica container should not be started for analyze commands
-        target = target if target is not None else DOCKER_TARGET_CONTAINER
-        self.config.target_profile.adapter.target = target
-        self.config.target_profile.adapter.regenerate_credentials(target)
         self.config.target_profile.adapter.initialize_replica(
-            self.config.source_profile.name, target)
+            self.config.source_profile.name)
         runner = GraphSetRunner()
         runner.execute_graph_set(graphs,
                                  self.config.source_profile.adapter,
