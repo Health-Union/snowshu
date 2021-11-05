@@ -2,7 +2,6 @@ import time
 from pathlib import Path
 from typing import TextIO, Union
 
-from snowshu.configs import DOCKER_TARGET_CONTAINER
 from snowshu.core.configuration_parser import (Configuration,
                                                ConfigurationParser)
 from snowshu.core.graph import SnowShuGraph

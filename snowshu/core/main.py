@@ -5,7 +5,7 @@ from shutil import copyfile, which
 
 import click
 
-from snowshu.configs import IS_IN_DOCKER, DOCKER_TARGET_CONTAINER
+from snowshu.configs import IS_IN_DOCKER
 from snowshu.core.replica.replica_factory import ReplicaFactory
 from snowshu.core.replica.replica_manager import ReplicaManager
 from snowshu.logger import Logger
