@@ -13,7 +13,7 @@ def tests_replica_rename(get_graphs, build_graph, stub_configs):
     replica=ReplicaFactory()
     replica.load_config(stub_configs())
     test_name=rand_string(10)
-    replica.create(test_name, DOCKER_TARGET_CONTAINER, False)
+    replica.create(test_name, False)
     assert build_graph.call_args[0][0].name == test_name
 
 
