@@ -1,6 +1,6 @@
 import time
 from pathlib import Path
-from typing import TextIO, Union
+from typing import Optional, TextIO, Union
 
 from snowshu.core.configuration_parser import (Configuration,
                                                ConfigurationParser)
@@ -22,9 +22,10 @@ class ReplicaFactory:
 
     def create(self,
                name: Union[str, None],
-               barf: bool) -> None:
+               barf: bool,
+               target_image_name: Optional[str] = None) -> None:
         self.run_analyze = False
-        return self._execute(name=name, barf=barf)
+        return self._execute(name=name, barf=barf, target_image_name=target_image_name)
 
     def analyze(self, barf: bool) -> None:
         self.run_analyze = True
@@ -32,7 +33,8 @@ class ReplicaFactory:
 
     def _execute(self,
                  barf: bool = False,
-                 name: Union[str, None] = None) -> None:
+                 name: Union[str, None] = None,
+                 target_image_name: Optional[str] = None) -> None:
         graph = SnowShuGraph()
         if name is not None:
             self.config.name = name
@@ -44,7 +46,7 @@ class ReplicaFactory:
 
         # TODO replica container should not be started for analyze commands
         self.config.target_profile.adapter.initialize_replica(
-            self.config.source_profile.name)
+            self.config.source_profile.name, target_image_name)
         runner = GraphSetRunner()
         runner.execute_graph_set(graphs,
                                  self.config.source_profile.adapter,

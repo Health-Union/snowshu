@@ -10,7 +10,10 @@ from click.testing import CliRunner
 from sqlalchemy import create_engine
 
 from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
-from snowshu.configs import PACKAGE_ROOT, DEFAULT_PRESERVE_CASE, DEFAULT_MAX_NUMBER_OF_OUTLIERS
+from snowshu.core.docker import SnowShuDocker
+from snowshu.configs import PACKAGE_ROOT, DEFAULT_PRESERVE_CASE, \
+    DEFAULT_MAX_NUMBER_OF_OUTLIERS, DOCKER_REMOUNT_DIRECTORY, \
+    DOCKER_TARGET_CONTAINER
 from snowshu.core.main import cli
 from snowshu.core.models import Relation, Attribute, data_types
 from snowshu.core.models.materializations import TABLE
@@ -73,6 +76,33 @@ def test_replicates_order_items(end_to_end):
 def test_successful_container_initialization(end_to_end):
     result_lines = end_to_end
     assert any_appearance_of('fully initialized.', result_lines)
+
+
+def test_using_different_image(end_to_end):
+    shdocker = SnowShuDocker()
+    target_adapter = PostgresAdapter(replica_metadata={})
+
+    envars = ['POSTGRES_USER=snowshu',
+              'POSTGRES_PASSWORD=snowshu',
+              'POSTGRES_DB=snowshu', 
+              f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
+    target_container = shdocker.get_stopped_container(
+        'snowshu_replica_integration-test',
+        target_adapter.DOCKER_START_COMMAND,
+        envars,
+        9999,
+        name=DOCKER_TARGET_CONTAINER,
+        labels=dict(
+            snowshu_replica='true',
+            target_adapter=target_adapter.CLASSNAME,
+            source_adapter='SnowflakeAdapter'))
+    breakpoint()
+    # shdocker._connect_to_bridge_network(target_container)
+    assert target_container.status == 'created'
+    assert target_container.image.tags[0] == 'postgres:12'
+    # shdocker._run_container_setup(target_container, target_adapter)
+    # assert target_container.status == 'running'
+
 
 @pytest.mark.skip
 def test_snowshu_explain(end_to_end):
