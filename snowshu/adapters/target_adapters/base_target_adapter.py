@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from time import sleep
-from typing import TYPE_CHECKING, Iterable, List, Optional, Union
+from typing import TYPE_CHECKING, Iterable, List, Optional
 
 import pandas as pd
 
@@ -143,12 +143,11 @@ AS
             raise
 
     def _init_image(self, 
-                    source_adapter_name: str, 
-                    target_image_name: str) -> None:
+                    source_adapter_name: str) -> None:
         shdocker = SnowShuDocker()
         logger.info('Initializing target container...')
         self.container = shdocker.startup(
-            target_image_name,
+            self.DOCKER_IMAGE,
             self.DOCKER_START_COMMAND,
             self.DOCKER_TARGET_PORT,
             self,
