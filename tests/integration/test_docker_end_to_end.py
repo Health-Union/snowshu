@@ -32,7 +32,7 @@ def test_creates_replica(docker_flush):
         'SnowflakeAdapter',
         ['POSTGRES_USER=snowshu',
          'POSTGRES_PASSWORD=snowshu',
-         'POSTGRES_DB=snowshu', 
+         'POSTGRES_DB=snowshu',
          f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}'])
 
     # load test data

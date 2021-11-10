@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Materialization:
     name: str
     is_ephemeral: bool

@@ -1,5 +1,4 @@
-import mock
-import pytest
+from unittest import mock
 
 from snowshu.core.replica.replica_manager import ReplicaManager
 from tests.common import rand_string

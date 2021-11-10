@@ -1,14 +1,14 @@
 import os
 from datetime import datetime
 from time import sleep
-from typing import TYPE_CHECKING, Iterable, List, Optional, Union
+from typing import TYPE_CHECKING, Iterable, List, Optional
 
 import pandas as pd
 
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import (DEFAULT_INSERT_CHUNK_SIZE,
                              DOCKER_TARGET_CONTAINER, DOCKER_TARGET_PORT,
-                             IS_IN_DOCKER)
+                             IS_IN_DOCKER, DOCKER_REMOUNT_DIRECTORY)
 from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models import Attribute, Credentials, Relation
 from snowshu.core.models import DataType, data_types as dt
@@ -27,7 +27,7 @@ logger = Logger().logger
 class BaseTargetAdapter(BaseSQLAdapter):
     """All target adapters inherit from this one."""
     REQUIRED_CREDENTIALS = [USER, PASSWORD, HOST, PORT, DATABASE]
-    ALLOWED_CREDENTIALS = list()
+    ALLOWED_CREDENTIALS = []
     DOCKER_TARGET_PORT = DOCKER_TARGET_PORT
 
     def __init__(self, replica_metadata: dict):
@@ -126,28 +126,28 @@ AS
             raise exc
         logger.info('Data loaded into relation %s', relation.quoted_dot_notation)
 
-    def initialize_replica(self, 
-                           source_adapter_name: str,
-                           target_image_name: Union[str, None]) -> None:
+    def initialize_replica(self, source_adapter_name: str, override_image: str = None) -> None:
         """shimming but will want to move _init_image public with this
         interface.
 
         Args:
             source_adapter_name: the classname of the source adapter
-            target_image_name: the base image for creating the replica. 
-                Uses default image when not passed
+            incremental: the name of incremental image to initialize
         """
-        target_image_name = target_image_name if target_image_name is not None \
-            else self.DOCKER_IMAGE
-        self._init_image(source_adapter_name, target_image_name)
+        if override_image:
+            self.__class__.DOCKER_IMAGE = override_image
+        try:
+            self._init_image(source_adapter_name)
+        except Exception as error:
+            logger.error("Looks like provided DOCKER_IMAGE does not exists, error:\n%s", error)
+            raise
 
     def _init_image(self, 
-                    source_adapter_name: str, 
-                    target_image_name: str) -> None:
+                    source_adapter_name: str) -> None:
         shdocker = SnowShuDocker()
         logger.info('Initializing target container...')
         self.container = shdocker.startup(
-            target_image_name,
+            self.DOCKER_IMAGE,
             self.DOCKER_START_COMMAND,
             self.DOCKER_TARGET_PORT,
             self,
@@ -196,6 +196,13 @@ AS
             logger.error(
                 '%s adapter does not support data type %s.', self.CLASSNAME, source_type)
             raise err
+
+    @staticmethod
+    def _build_snowshu_envars(snowshu_envars: list) -> list:
+        """helper method to populate envars with `snowshu`"""
+        envars = [f"{envar}=snowshu" for envar in snowshu_envars]
+        envars.append(f"PGDATA=/{DOCKER_REMOUNT_DIRECTORY}")
+        return envars
 
     def _initialize_snowshu_meta_database(self) -> None:
         self.create_database_if_not_exists('snowshu')
@@ -256,4 +263,3 @@ AS
                 logger.debug('Function %s added.', function)
         except FileNotFoundError:
             logger.info('Function %s is not implemented for target %s.', function, self.CLASSNAME)
-            return    

@@ -1,52 +1,62 @@
+import json
 import os
-import time
 import re
+import time
 from datetime import datetime
 
 import docker
 import pytest
+import sqlalchemy
 import yaml
 from click.testing import CliRunner
 from sqlalchemy import create_engine
 
 from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
-from snowshu.configs import PACKAGE_ROOT, DEFAULT_PRESERVE_CASE, DEFAULT_MAX_NUMBER_OF_OUTLIERS
+from snowshu.core.docker import SnowShuDocker
+from snowshu.configs import (DEFAULT_PRESERVE_CASE,
+                             DEFAULT_MAX_NUMBER_OF_OUTLIERS,
+                             DOCKER_REMOUNT_DIRECTORY,
+                             DOCKER_TARGET_CONTAINER,
+                             PACKAGE_ROOT)
 from snowshu.core.main import cli
 from snowshu.core.models import Relation, Attribute, data_types
 from snowshu.core.models.materializations import TABLE
 
 """ End-To-End all inclusive test session"""
-#1. builds a new replica based on the template configs
-#2. launches the replica
-#3. Queries the replica 
-#4. Spins down and cleans up
+# 1. builds a new replica based on the template configs
+# 2. launches the replica
+# 3. Queries the replica
+# 4. Spins down and cleans up
 
-BASE_CONN='postgresql://snowshu:snowshu@integration-test:9999/{}'
-CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
-SNOWSHU_META_STRING=BASE_CONN.format('snowshu')
-SNOWSHU_DEVELOPMENT_STRING=BASE_CONN.format('snowshu_development')
+BASE_CONN = 'postgresql://snowshu:snowshu@integration-test:9999/{}'
+CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'assets', 'replica_test_config.yml')
+SNOWSHU_META_STRING = BASE_CONN.format('snowshu')
+SNOWSHU_DEVELOPMENT_STRING = BASE_CONN.format('snowshu_development')
 DOCKER_SPIN_UP_TIMEOUT = 15
+
 
 @pytest.fixture(scope="session", autouse=True)
 def end_to_end(docker_flush_session):
     runner = CliRunner()
 
-    create_result=runner.invoke(cli, ('create', '--replica-file', CONFIGURATION_PATH, '--barf'))
+    create_result = runner.invoke(cli, ('create', '--replica-file', CONFIGURATION_PATH, '--barf'))
     if create_result.exit_code:
         print(create_result.exc_info)
         raise create_result.exception
     create_output = create_result.output.split('\n')
-    client=docker.from_env()
+    client = docker.from_env()
     client.containers.run('snowshu_replica_integration-test',
-                          ports={'9999/tcp':9999},
+                          ports={'9999/tcp': 9999},
                           name='integration-test',
                           network='snowshu',
                           detach=True)
-    time.sleep(DOCKER_SPIN_UP_TIMEOUT) # the replica needs a second to initialize
+    time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # the replica needs a second to initialize
     return create_output
 
-def any_appearance_of(string,strings):
+
+def any_appearance_of(string, strings):
     return any([string in line for line in strings])
+
 
 def find_number_of_processed_relations(strings):
     regex = r"Identified a total of (.*?) relations to sample based on the specified configurations."
@@ -57,22 +67,48 @@ def find_number_of_processed_relations(strings):
             break
     return found_relations_count if substring else 0
 
+
 def test_reports_full_catalog_start(end_to_end):
     result_lines = end_to_end
-    assert any_appearance_of('Building filtered catalog...',result_lines)
+    assert any_appearance_of('Building filtered catalog...', result_lines)
+
 
 def test_finds_n_relations(end_to_end):
-    result_lines= end_to_end
+    result_lines = end_to_end
     assert find_number_of_processed_relations(result_lines) == 16, \
         "Number of found relations do not match the expected of 16 relations. Check database."
 
+
 def test_replicates_order_items(end_to_end):
     result_lines = end_to_end
-    assert any_appearance_of('Done replication of relation snowshu_development.source_system.order_items',result_lines)
+    assert any_appearance_of('Done replication of relation snowshu_development.source_system.order_items', result_lines)
 
-def test_successful_container_initialization(end_to_end):
-    result_lines = end_to_end
-    assert any_appearance_of('fully initialized.', result_lines)
+
+def test_using_different_image(end_to_end):
+    shdocker = SnowShuDocker()
+    target_adapter = PostgresAdapter(replica_metadata={})
+
+    envars = ['POSTGRES_USER=snowshu',
+              'POSTGRES_PASSWORD=snowshu',
+              'POSTGRES_DB=snowshu',
+              f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
+    target_container = shdocker.get_stopped_container(
+        'snowshu_replica_integration-test',
+        target_adapter.DOCKER_START_COMMAND,
+        envars,
+        9900,
+        name=DOCKER_TARGET_CONTAINER,
+        labels=dict(
+            snowshu_replica='true',
+            target_adapter=target_adapter.CLASSNAME,
+            source_adapter='SnowflakeAdapter'))
+    assert target_container.status == 'created'
+    assert target_container.image.tags[0] == 'snowshu_replica_integration-test:latest'
+    target_container.start()
+    target_container.reload()
+    assert target_container.status == 'running'
+    target_container.remove(force=True)
+
 
 @pytest.mark.skip
 def test_snowshu_explain(end_to_end):
@@ -195,6 +231,7 @@ SELECT
     # it is statistically very unlikely that NONE of the upstreams without a downstream will be included.
     assert downstream_missing == 0
 
+
 def test_view(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
@@ -205,11 +242,13 @@ SELECT
     q = conn.execute(query)
     assert len(set(q.fetchall()[0])) == 1
 
+
 def test_cross_database_query(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = 'SELECT COUNT(*) FROM snowshu__snowshu.replica_meta'
     q = conn.execute(query)
     assert len(set(q.fetchall()[0])) == 1
+
 
 def test_applies_emulation_function(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
@@ -217,17 +256,20 @@ def test_applies_emulation_function(end_to_end):
     q = conn.execute(query)
     assert int(q.fetchall()[0][0]) > 0
 
+
 def test_applies_uuid_emulation_function(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = 'SELECT UUID_STRING()'
     q = conn.execute(query)
     assert re.match('[0-9A-Fa-f-]{36}', q.fetchall()[0][0])
 
+
 def test_applies_pg_extensions(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = "SELECT CASE WHEN 'My_Cased_String'::citext = 'my_cased_string'::citext THEN 'SUCCESS' ELSE 'FAIL' END"
     q = conn.execute(query)
     assert q.fetchall()[0][0] == 'SUCCESS'
+
 
 def test_data_types(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
@@ -244,40 +286,40 @@ AND
 
     q = conn.execute(query)
     type_mappings = q.fetchall()
-    EXPECTED_DATA_TYPES={
-"array_col":"json",
-"bigint_col":"bigint",
-"binary_col":"bytea",
-"boolean_col":"boolean",
-"char_col":"character varying",
-"character_col":"character varying",
-"date_col":"date",
-"datetime_col":"timestamp without time zone",
-"decimal_col":"bigint",
-"double_col":"double precision",
-"doubleprecision_col":"double precision",
-"float_col":"double precision",
-"float4_col":"double precision",
-"float8_col":"double precision",
-"int_col":"bigint",
-"integer_col":"bigint",
-"number_col":"bigint",
-"numeric_col":"bigint",
-"object_col":"json",
-"real_col":"double precision",
-"smallint_col":"bigint",
-"string_col":"character varying",
-"text_col":"character varying",
-"time_col":"time without time zone",
-"timestamp_col":"timestamp without time zone",
-"timestamp_ntz_col":"timestamp without time zone",
-"timestamp_ltz_col":"timestamp with time zone",
-"timestamp_tz_col":"timestamp with time zone",
-"varbinary_col":"bytea",
-"varchar_col":"character varying",
-"variant_col":"json"
-}
-    assert {t[0]:t[1] for t in type_mappings} == EXPECTED_DATA_TYPES
+    EXPECTED_DATA_TYPES = {
+        "array_col": "json",
+        "bigint_col": "bigint",
+        "binary_col": "bytea",
+        "boolean_col": "boolean",
+        "char_col": "character varying",
+        "character_col": "character varying",
+        "date_col": "date",
+        "datetime_col": "timestamp without time zone",
+        "decimal_col": "bigint",
+        "double_col": "double precision",
+        "doubleprecision_col": "double precision",
+        "float_col": "double precision",
+        "float4_col": "double precision",
+        "float8_col": "double precision",
+        "int_col": "bigint",
+        "integer_col": "bigint",
+        "number_col": "bigint",
+        "numeric_col": "bigint",
+        "object_col": "json",
+        "real_col": "double precision",
+        "smallint_col": "bigint",
+        "string_col": "character varying",
+        "text_col": "character varying",
+        "time_col": "time without time zone",
+        "timestamp_col": "timestamp without time zone",
+        "timestamp_ntz_col": "timestamp without time zone",
+        "timestamp_ltz_col": "timestamp with time zone",
+        "timestamp_tz_col": "timestamp with time zone",
+        "varbinary_col": "bytea",
+        "varchar_col": "character varying",
+        "variant_col": "json"
+    }
+    assert {t[0]: t[1] for t in type_mappings} == EXPECTED_DATA_TYPES
 
 
 def test_casing(end_to_end):
@@ -296,18 +338,18 @@ def test_casing(end_to_end):
 
     q = conn.execute(query)
     type_mappings = q.fetchall()
-    EXPECTED_DATA_TYPES={
-        "lower_col":"character varying",
-        "upper_col":"character varying",  # fully upper-case should map to all lower (snowflake -> postgres)
-        "CamelCasedCol":"character varying",
-        "quoted_upper_col":"character varying",  # fully upper-case should map to all lower (snowflake -> postgres)
-        "1":"character varying",
-        "Spaces Col":"character varying",
-        "UNIFORM SPACE":"character varying",
-        "uniform lower":"character varying",
-        "Snake_Case_Camel_Col":"character varying",
+    EXPECTED_DATA_TYPES = {
+        "lower_col": "character varying",
+        "upper_col": "character varying",  # fully upper-case should map to all lower (snowflake -> postgres)
+        "CamelCasedCol": "character varying",
+        "quoted_upper_col": "character varying",  # fully upper-case should map to all lower (snowflake -> postgres)
+        "1": "character varying",
+        "Spaces Col": "character varying",
+        "UNIFORM SPACE": "character varying",
+        "uniform lower": "character varying",
+        "Snake_Case_Camel_Col": "character varying",
     }
-    assert {t[0]:t[1] for t in type_mappings} == EXPECTED_DATA_TYPES
+    assert {t[0]: t[1] for t in type_mappings} == EXPECTED_DATA_TYPES
 
 
 def test_get_relations_from_database(end_to_end):
@@ -319,9 +361,9 @@ def test_get_relations_from_database(end_to_end):
     ]
 
     attributes = [
-        Attribute('created_at', data_types.TIMESTAMP_TZ), 
-        Attribute('name', data_types.VARCHAR), 
-        Attribute('short_description', data_types.VARCHAR), 
+        Attribute('created_at', data_types.TIMESTAMP_TZ),
+        Attribute('name', data_types.VARCHAR),
+        Attribute('short_description', data_types.VARCHAR),
         Attribute('long_description', data_types.VARCHAR)
     ]
     relation = Relation("snowshu", "snowshu", "replica_meta", TABLE, attributes)
@@ -331,3 +373,22 @@ def test_get_relations_from_database(end_to_end):
     for rel in catalog:
         relations.append(rel.__dict__.items())
     assert relation.__dict__.items() in relations
+
+
+def test_x_db_incremental_import():
+    adapter = PostgresAdapter(replica_metadata={})
+    cols = []
+    relation_one = Relation("snowshu_development", "external_data", "address_region_attributes",
+                            TABLE, cols)
+    relation_two = Relation("snowshu_development", "external_data", "address_region_attributes",
+                            TABLE, cols)
+    relations = relation_one, relation_two
+
+    def successfully_enabled_without_errors(adapter, relations):
+        try:
+            adapter.enable_cross_database(relations)
+            return True
+        except sqlalchemy.exc.ProgrammingError:
+            return False
+
+    assert successfully_enabled_without_errors(adapter, relations)
