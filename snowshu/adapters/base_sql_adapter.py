@@ -1,7 +1,7 @@
 import time
 import copy
 from concurrent.futures import ThreadPoolExecutor
-from typing import Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Set
 import pandas as pd
 
 import sqlalchemy
@@ -77,26 +77,25 @@ class BaseSQLAdapter:
 
         logger.debug(f'Aquiring {self.CLASSNAME} connection...')
         overrides = dict(
-            (k,
-             v) for (
-                k,
-                v) in dict(
+            (k, v) for (k, v) in dict(
                 database=database_override,
-                schema=schema_override).items() if v is not None)
+                schema=schema_override).items()
+            if v is not None)
 
         engine = sqlalchemy.create_engine(self._build_conn_string(
             overrides), poolclass=NullPool, isolation_level="AUTOCOMMIT")
-        logger.debug(f'engine aquired. Conn string: {repr(engine.url)}')
+        logger.debug(f'engine acquired. Conn string: {repr(engine.url)}')
         return engine
 
-    def _safe_query(self, query_sql: str) -> pd.DataFrame:
+    def _safe_query(self, query_sql: str, database: str = None) -> pd.DataFrame:
         """runs the query and closes the connection."""
         logger.debug('Beginning query execution...')
         start = time.time()
         conn = None
         cursor = None
         try:
-            conn = self.get_connection()
+            # database_override is needed for databases like postgre
+            conn = self.get_connection() if not database else self.get_connection(database_override=database)
             cursor = conn.connect()
             # we make the STRONG assumption that all responses will be small enough
             # to live in-memory (because sampling engine).
@@ -129,7 +128,7 @@ class BaseSQLAdapter:
             raise KeyError(
                 'base_sql_adapter unable to build connection string; required param `dialect` to infer.')
         if not overrides:
-            overrides = dict()
+            overrides = {}
 
         self._credentials.urlencode()
         conn_string, used_credentials = self._build_conn_string_partial(
@@ -154,7 +153,7 @@ class BaseSQLAdapter:
             {USER, PASSWORD, HOST, DATABASE, }
         )
 
-    def build_catalog(self, patterns: Iterable[dict], thread_workers: int = 1) -> Tuple[Relation]:
+    def build_catalog(self, patterns: Iterable[dict], thread_workers: int) -> Set[Relation]:
         """ This function is expected to return all of the relations that satisfy the filters 
 
             Args:
@@ -163,7 +162,7 @@ class BaseSQLAdapter:
                 thread_workers (int): The number of workers to use when building the catalog
 
             Returns:
-                Tuple[Relation]: All of the relations from the sql adapter pass the filters
+                Set[Relation]: All of the relations from the sql adapter pass the filters
         """
         filtered_schemas = self._get_filtered_schemas(patterns)
 
@@ -186,7 +185,7 @@ class BaseSQLAdapter:
 
         logger.info(f'Done building catalog. Found a total of {len(catalog)} relations '
                     f'from the database in {duration(start_time)}.')
-        return tuple(catalog)
+        return set(catalog)
 
     def _get_all_databases(self) -> List[str]:
         raise NotImplementedError()
@@ -211,9 +210,10 @@ class BaseSQLAdapter:
                 db_filters.append(new_filter)
 
         databases = self._get_all_databases()
-        database_relations = [Relation(self._correct_case(
-            database), "", "", None, None) for database in databases]
-        filtered_databases = [rel for rel in database_relations if at_least_one_full_pattern_match(rel, db_filters)]
+        database_relations = [Relation(self._correct_case(database), "", "", None, None)
+                              for database in databases]
+        filtered_databases = [rel for rel in database_relations
+                              if at_least_one_full_pattern_match(rel, db_filters)]
 
         # get all schemas in all databases
         filtered_schemas = []

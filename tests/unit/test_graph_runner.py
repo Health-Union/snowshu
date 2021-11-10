@@ -1,7 +1,7 @@
 import copy
 from time import time
 
-import mock
+from unittest import mock
 import pandas as pd
 import pytest
 

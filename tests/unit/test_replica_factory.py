@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 import json
 from pathlib import Path
 from tests.common import rand_string

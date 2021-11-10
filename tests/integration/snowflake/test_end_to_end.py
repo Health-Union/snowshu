@@ -328,7 +328,7 @@ def test_get_relations_from_database(end_to_end):
     ]
     relation = Relation("snowshu", "snowshu", "replica_meta", TABLE, attributes)
 
-    catalog = adapter.build_catalog(config_patterns)
+    catalog = adapter.build_catalog(config_patterns, thread_workers=1)
     relations = []
     for rel in catalog:
         relations.append(rel.__dict__.items())

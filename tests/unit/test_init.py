@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 from logging import DEBUG
 from pathlib import Path
 
-import mock
+from unittest import mock
 import pytest
 from click.testing import CliRunner
-from mock import MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from snowshu.core import main
 from snowshu.formats import DEFAULT_TAG_FORMAT

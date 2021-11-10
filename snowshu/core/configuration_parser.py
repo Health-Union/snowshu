@@ -86,8 +86,8 @@ class AdapterProfile:
     adapter: Union["BaseSourceAdapter", "BaseTargetAdapter"]
 
 
-@dataclass  # noqa  pylint: disable=too-many-instance-attributes 
-class Configuration:
+@dataclass
+class Configuration:  # noqa pylint: disable=too-many-instance-attributes
     name: str
     version: str
     credpath: str

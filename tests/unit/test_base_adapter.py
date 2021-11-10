@@ -1,5 +1,5 @@
 import pytest
-from mock import patch
+from unittest.mock import patch
 
 import snowshu.core.models.materializations as mz
 from snowshu.adapters import BaseSQLAdapter
@@ -96,7 +96,7 @@ def test_build_catalog():
     with patch("snowshu.adapters.BaseSQLAdapter._get_filtered_schemas", return_value=mock_filtered_schema) \
          , patch("snowshu.adapters.BaseSQLAdapter._get_relations_from_database", side_effect=mock_get_relations_func):
         adapter = StubbedAdapter()
-        catalog = adapter.build_catalog(config_patterns)
+        catalog = adapter.build_catalog(config_patterns, thread_workers=1)
         for r in excluded_relations:
             assert not r in catalog
         for r in included_relations:
