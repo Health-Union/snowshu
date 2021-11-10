@@ -1,10 +1,8 @@
 import json
-import os
 import tempfile
 from io import StringIO
 from pathlib import Path
 
-import mock
 import pytest
 import yaml
 from jsonschema.exceptions import ValidationError

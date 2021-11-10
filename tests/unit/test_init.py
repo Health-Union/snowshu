@@ -1,15 +1,12 @@
 import os
-from datetime import datetime, timedelta
 from logging import DEBUG
 from pathlib import Path
+from unittest.mock import patch
 
-import mock
 import pytest
 from click.testing import CliRunner
-from mock import MagicMock, patch
 
 from snowshu.core import main
-from snowshu.formats import DEFAULT_TAG_FORMAT
 from snowshu.logger import Logger
 from tests.common import rand_string
 
