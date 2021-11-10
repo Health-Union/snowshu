@@ -19,11 +19,11 @@ class ReplicaFactory:
         self._credentials = {}
         self.config: Optional[Configuration] = None
         self.run_analyze: Optional[bool] = None
-        self.incremental: Optional[bool] = None
+        self.incremental: Optional[str] = None
 
     def create(self,
                name: Optional[str],
-               barf: bool) -> None:
+               barf: bool) -> Optional[str]:
         self.run_analyze = False
         return self._execute(name=name, barf=barf)
 
@@ -39,13 +39,30 @@ class ReplicaFactory:
             self.config.name = name
 
         graph.build_graph(self.config)
+
+        if self.incremental:
+            # TODO replica container should not be started for analyze commands
+            self.config.target_profile.adapter.initialize_replica(
+                self.config.source_profile.name,
+                self.incremental)
+
+            incremental_target_catalog = self.config.target_profile.adapter.build_catalog(
+                patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
+                thread_workers=self.config.threads)
+
+            graph.graph = SnowShuGraph.catalog_difference(graph.graph,
+                                                          incremental_target_catalog)
         graphs = graph.get_graphs()
         if len(graphs) < 1:
-            return "No relations found per provided replica configuration, exiting."
+            args = (' new ', ' incremental ', '; image up-to-date') if self.incremental else (' ', ' ', '')
+            message = "No{}relations found per provided{}replica configuration{}, exiting.".format(*args)
+            return message
 
-        # TODO replica container should not be started for analyze commands
-        self.config.target_profile.adapter.initialize_replica(
-            self.config.source_profile.name)
+        if not self.config.target_profile.adapter.container:
+            # TODO replica container should not be started for analyze commands
+            self.config.target_profile.adapter.initialize_replica(
+                self.config.source_profile.name)
+
         runner = GraphSetRunner()
         runner.execute_graph_set(graphs,
                                  self.config.source_profile.adapter,
@@ -54,8 +71,7 @@ class ReplicaFactory:
                                  analyze=self.run_analyze,
                                  barf=barf)
         if not self.run_analyze:
-            relations = [
-                relation for graph in graphs for relation in graph.nodes]
+            relations = [relation for graph in graphs for relation in graph.nodes]
             if self.config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:
                 logger.info('Creating x-database links in target...')
                 self.config.target_profile.adapter.enable_cross_database(

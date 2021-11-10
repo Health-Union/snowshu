@@ -1,11 +1,12 @@
-import time
 import copy
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable, List, Optional, Set
-import pandas as pd
 
+import pandas as pd
 import sqlalchemy
 from sqlalchemy.pool import NullPool
+
 from snowshu.core.models import Relation
 from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, USER,
                                              Credentials)
@@ -87,7 +88,7 @@ class BaseSQLAdapter:
         logger.debug(f'engine acquired. Conn string: {repr(engine.url)}')
         return engine
 
-    def _safe_query(self, query_sql: str, database: str = None) -> pd.DataFrame:
+    def _safe_query(self, query_sql: str, database=None) -> pd.DataFrame:
         """runs the query and closes the connection."""
         logger.debug('Beginning query execution...')
         start = time.time()
@@ -223,7 +224,8 @@ class BaseSQLAdapter:
             schema_objs = [
                 BaseSQLAdapter._DatabaseObject(
                     schema, 
-                    Relation(db_rel.database, self._correct_case(schema), "", None, None)) for schema in schemas]
+                    Relation(db_rel.database, self._correct_case(schema), "", None, None))
+                for schema in schemas]
             filtered_schemas += [
                 d for d in schema_objs if at_least_one_full_pattern_match(d.full_relation, schema_filters)]
 

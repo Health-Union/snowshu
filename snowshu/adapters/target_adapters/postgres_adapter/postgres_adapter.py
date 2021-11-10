@@ -39,7 +39,7 @@ class PostgresAdapter(BaseTargetAdapter):
         "datetime": dtypes.DATETIME,
         "decimal": dtypes.DECIMAL,
         "double": dtypes.FLOAT,
-        "double precision": dtypes.FLOAT,
+        "double_precision": dtypes.FLOAT,
         "real": dtypes.FLOAT,
         "float": dtypes.FLOAT,
         "float4": dtypes.FLOAT,
@@ -61,6 +61,7 @@ class PostgresAdapter(BaseTargetAdapter):
         "timestamp_ltz": dtypes.TIMESTAMP_TZ,
         "timestamp_tz": dtypes.TIMESTAMP_TZ,
         "timestamp_with_time_zone": dtypes.TIMESTAMP_TZ,
+        "bytea": dtypes.BINARY,
         "varbinary": dtypes.BINARY,
         "varchar": dtypes.VARCHAR,
         "character_varying": dtypes.VARCHAR
@@ -69,10 +70,10 @@ class PostgresAdapter(BaseTargetAdapter):
     def __init__(self, replica_metadata: dict, **kwargs):
         super().__init__(replica_metadata)
 
-        self.extensions = kwargs.get("pg_extensions", list())
+        self.extensions = kwargs.get("pg_extensions", [])
         self.x00_replacement = kwargs.get("pg_0x00_replacement", "")
 
-        self.DOCKER_START_COMMAND = (f'postgres -p {self._credentials.port} ') # noqa pylint: disable=invalid-name
+        self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port} ' # noqa pylint: disable=invalid-name
         self.DOCKER_READY_COMMAND = (f'pg_isready -p {self._credentials.port} ' # noqa pylint: disable=invalid-name
                                      f'-h {self._credentials.host} '
                                      f'-U {self._credentials.user} '
@@ -123,7 +124,6 @@ class PostgresAdapter(BaseTargetAdapter):
         logger.debug('Getting all databases from postgres...')
         query = "SELECT datname FROM pg_database WHERE datistemplate = false;"
         engine = self.get_connection()
-        databases = None
         try:
             result = engine.execute(query)
             databases = result.fetchall()
@@ -140,7 +140,6 @@ class PostgresAdapter(BaseTargetAdapter):
         query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND \
             schema_name NOT IN ('information_schema', 'pg_catalog')"
         engine = self.get_connection(database_override=database)
-        schemas = None
         try:
             result = engine.execute(query)
             schemas = result.fetchall()
@@ -246,7 +245,7 @@ class PostgresAdapter(BaseTargetAdapter):
         return envars
 
     def image_initialize_bash_commands(self) -> List[str]:
-        commands = list()
+        commands = []
         # install extra postgres extension packages here
         commands.append(f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}')
         return commands
