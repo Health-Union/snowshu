@@ -116,7 +116,6 @@ def analyze(replica_file: click.Path,
 
     replica = ReplicaFactory()
     replica.load_config(replica_file)
-    replica.incremental = None
     click.echo(replica.analyze(barf))
 
 
