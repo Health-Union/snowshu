@@ -29,7 +29,7 @@ from snowshu.core.models.materializations import TABLE
 # 4. Spins down and cleans up
 
 BASE_CONN = 'postgresql://snowshu:snowshu@integration-test:9999/{}'
-CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'assets', 'replica_test_config.yml')
+CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
 SNOWSHU_META_STRING = BASE_CONN.format('snowshu')
 SNOWSHU_DEVELOPMENT_STRING = BASE_CONN.format('snowshu_development')
 DOCKER_SPIN_UP_TIMEOUT = 15
@@ -82,32 +82,6 @@ def test_finds_n_relations(end_to_end):
 def test_replicates_order_items(end_to_end):
     result_lines = end_to_end
     assert any_appearance_of('Done replication of relation snowshu_development.source_system.order_items', result_lines)
-
-
-def test_using_different_image(end_to_end):
-    shdocker = SnowShuDocker()
-    target_adapter = PostgresAdapter(replica_metadata={})
-
-    envars = ['POSTGRES_USER=snowshu',
-              'POSTGRES_PASSWORD=snowshu',
-              'POSTGRES_DB=snowshu',
-              f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
-    target_container = shdocker.get_stopped_container(
-        'snowshu_replica_integration-test',
-        target_adapter.DOCKER_START_COMMAND,
-        envars,
-        9900,
-        name=DOCKER_TARGET_CONTAINER,
-        labels=dict(
-            snowshu_replica='true',
-            target_adapter=target_adapter.CLASSNAME,
-            source_adapter='SnowflakeAdapter'))
-    assert target_container.status == 'created'
-    assert target_container.image.tags[0] == 'snowshu_replica_integration-test:latest'
-    target_container.start()
-    target_container.reload()
-    assert target_container.status == 'running'
-    target_container.remove(force=True)
 
 
 @pytest.mark.skip
@@ -354,6 +328,9 @@ def test_casing(end_to_end):
 
 def test_get_relations_from_database(end_to_end):
     adapter = PostgresAdapter(replica_metadata={})
+    if adapter.target != "localhost":
+        adapter._credentials.host = 'integration-test'
+
     config_patterns = [
         dict(database="snowshu",
              schema=".*",
@@ -362,33 +339,64 @@ def test_get_relations_from_database(end_to_end):
 
     attributes = [
         Attribute('created_at', data_types.TIMESTAMP_TZ),
+        Attribute('config_json', data_types.JSON),
         Attribute('name', data_types.VARCHAR),
         Attribute('short_description', data_types.VARCHAR),
         Attribute('long_description', data_types.VARCHAR)
     ]
     relation = Relation("snowshu", "snowshu", "replica_meta", TABLE, attributes)
 
-    catalog = adapter.build_catalog(config_patterns)
+    catalog = adapter.build_catalog(config_patterns, thread_workers=1)
     relations = []
     for rel in catalog:
         relations.append(rel.__dict__.items())
     assert relation.__dict__.items() in relations
 
 
-def test_x_db_incremental_import():
+def test_x_db_incremental_import(end_to_end):
     adapter = PostgresAdapter(replica_metadata={})
+    if adapter.target != "localhost":
+        adapter._credentials.host = 'integration-test'
+
     cols = []
     relation_one = Relation("snowshu_development", "external_data", "address_region_attributes",
                             TABLE, cols)
-    relation_two = Relation("snowshu_development", "external_data", "address_region_attributes",
+    relation_two = Relation("snowshu_development", "external_data", "address_attributes",
                             TABLE, cols)
     relations = relation_one, relation_two
 
     def successfully_enabled_without_errors(adapter, relations):
         try:
             adapter.enable_cross_database(relations)
+            adapter.enable_cross_database(relations)
             return True
         except sqlalchemy.exc.ProgrammingError:
             return False
 
     assert successfully_enabled_without_errors(adapter, relations)
+
+
+def test_using_different_image(end_to_end):
+    shdocker = SnowShuDocker()
+    target_adapter = PostgresAdapter(replica_metadata={})
+
+    envars = ['POSTGRES_USER=snowshu',
+              'POSTGRES_PASSWORD=snowshu',
+              'POSTGRES_DB=snowshu',
+              f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
+    target_container = shdocker.get_stopped_container(
+        'snowshu_replica_integration-test',
+        target_adapter.DOCKER_START_COMMAND,
+        envars,
+        9900,
+        name=DOCKER_TARGET_CONTAINER,
+        labels=dict(
+            snowshu_replica='true',
+            target_adapter=target_adapter.CLASSNAME,
+            source_adapter='SnowflakeAdapter'))
+    assert target_container.status == 'created'
+    assert target_container.image.tags[0] == 'snowshu_replica_integration-test:latest'
+    target_container.start()
+    target_container.reload()
+    assert target_container.status == 'running'
+    target_container.remove(force=True)
