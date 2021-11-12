@@ -110,19 +110,13 @@ def create(replica_file: click.Path,
 @click.option('--barf', '-b',
               is_flag=True,
               help="outputs the source query sql to a local folder snowshu_barf_output")
-@click.option(
-    '--incremental', '-i',
-    is_flag=True,
-    help="creates relations and loads data only for new entries found in replica.yml, "
-         "which are not already present in target replica image")
 def analyze(replica_file: click.Path,
-            barf: bool,
-            incremental: str):
+            barf: bool):
     """Perform a "dry run" of the replica creation without actually executing, and return the expected results."""
 
     replica = ReplicaFactory()
     replica.load_config(replica_file)
-    replica.incremental = incremental
+    replica.incremental = None
     click.echo(replica.analyze(barf))
 
 
