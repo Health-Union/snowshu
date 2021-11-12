@@ -73,10 +73,9 @@ class BaseSQLAdapter:
         schema override are provided.
         """
         if not self._credentials:
-            raise KeyError(
-                'Adapter.get_connection called before setting Adapter.credentials')
+            raise KeyError('Adapter.get_connection called before setting Adapter.credentials')
 
-        logger.debug(f'Aquiring {self.CLASSNAME} connection...')
+        logger.debug(f'Acquiring {self.CLASSNAME} connection...')
         overrides = dict(
             (k, v) for (k, v) in dict(
                 database=database_override,
@@ -88,7 +87,7 @@ class BaseSQLAdapter:
         logger.debug(f'engine acquired. Conn string: {repr(engine.url)}')
         return engine
 
-    def _safe_query(self, query_sql: str, database=None) -> pd.DataFrame:
+    def _safe_query(self, query_sql: str, database: str = None) -> pd.DataFrame:
         """runs the query and closes the connection."""
         logger.debug('Beginning query execution...')
         start = time.time()

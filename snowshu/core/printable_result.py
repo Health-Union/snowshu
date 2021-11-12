@@ -36,8 +36,8 @@ def graph_to_result_list(graphs: nx.Graph) -> list:
             for relation in graph.nodes:
                 deps = len(nx.ancestors(graph, relation))
                 deps = " " if deps == 0 else str(deps)
-                target_sample_size = relation.population_size if\
-                    (relation.unsampled or relation.population_size < relation.sampling.size)\
+                target_sample_size = relation.population_size if \
+                    relation.unsampled or (relation.population_size < relation.sampling.size) \
                     else relation.sampling.size
 
                 if isinstance(relation.population_size, str):
@@ -65,7 +65,7 @@ def graph_to_result_list(graphs: nx.Graph) -> list:
     return report
 
 
-def printable_result(report: List[ReportRow], analyze: str) -> str:
+def printable_result(report: List[ReportRow], analyze: bool) -> str:
     colors = dict(reset="\033[0m",
                   red="\033[0;31m",
                   green="\033[0;32m")

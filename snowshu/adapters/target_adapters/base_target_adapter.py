@@ -132,7 +132,8 @@ AS
 
         Args:
             source_adapter_name: the classname of the source adapter
-            incremental: the name of incremental image to initialize
+            override_image: the name of incremental image to initialize,
+                if specified will override default image
         """
         if override_image:
             self.__class__.DOCKER_IMAGE = override_image
@@ -200,9 +201,7 @@ AS
     @staticmethod
     def _build_snowshu_envars(snowshu_envars: list) -> list:
         """helper method to populate envars with `snowshu`"""
-        envars = [f"{envar}=snowshu" for envar in snowshu_envars]
-        envars.append(f"PGDATA=/{DOCKER_REMOUNT_DIRECTORY}")
-        return envars
+        return [f"{envar}=snowshu" for envar in snowshu_envars]
 
     def _initialize_snowshu_meta_database(self) -> None:
         self.create_database_if_not_exists('snowshu')

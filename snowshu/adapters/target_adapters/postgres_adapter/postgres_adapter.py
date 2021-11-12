@@ -15,7 +15,7 @@ logger = Logger().logger
 
 class PostgresAdapter(BaseTargetAdapter):
     name = 'postgres'
-    dialect = 'postgres'
+    dialect = 'postgresql'
     DOCKER_IMAGE = 'postgres:12'
     PRELOADED_PACKAGES = ['postgresql-plpython3-12']
     MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
@@ -103,8 +103,10 @@ class PostgresAdapter(BaseTargetAdapter):
         db_conn = self.get_connection(database_override=database)
         for ext in self.extensions:
             statement = f'create extension if not exists \"{ext}\"'
-            db_conn.execute(statement)
-
+            try:
+                db_conn.execute(statement)
+            except sqlalchemy.exc.IntegrityError as error:
+                logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
         return database
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
@@ -245,9 +247,8 @@ class PostgresAdapter(BaseTargetAdapter):
         return envars
 
     def image_initialize_bash_commands(self) -> List[str]:
-        commands = []
         # install extra postgres extension packages here
-        commands.append(f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}')
+        commands = [f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}']
         return commands
 
     def enable_cross_database(self, relations: Iterable['Relation']) -> None:

@@ -29,7 +29,6 @@ class RuntimeSourceCompiler:
             Returns:
                 Relation: the given relation with `compiled_query` populated
         """
-        query = str()
         if relation.is_view:
             relation.core_query, relation.compiled_query = [
                 source_adapter.view_creation_statement(relation) for _ in range(2)]
@@ -61,7 +60,7 @@ class RuntimeSourceCompiler:
 
             for parent in dag.predecessors(relation):
                 edge = dag.edges[parent, relation]
-                # if any incoming edge is birectional or polymorphic set do_not_sample flag
+                # if any incoming edge is bidirectional or polymorphic set do_not_sample flag
                 # do_not_sample is set since those types are most likely already restricted
                 do_not_sample = (edge['direction'] in ('bidirectional', 'polymorphic',) or do_not_sample)
                 if edge['direction'] == 'polymorphic':
