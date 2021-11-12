@@ -132,7 +132,8 @@ AS
 
         Args:
             source_adapter_name: the classname of the source adapter
-            incremental: the name of incremental image to initialize
+            override_image: the name of incremental image to initialize,
+                if specified will override default image
         """
         if override_image:
             self.__class__.DOCKER_IMAGE = override_image

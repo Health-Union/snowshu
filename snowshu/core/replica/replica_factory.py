@@ -74,8 +74,7 @@ class ReplicaFactory:
             relations = [relation for graph in graphs for relation in graph.nodes]
             if self.config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:
                 logger.info('Creating x-database links in target...')
-                self.config.target_profile.adapter.enable_cross_database(
-                    relations)
+                self.config.target_profile.adapter.enable_cross_database(relations)
                 logger.info('X-database enabled.')
 
             logger.info(

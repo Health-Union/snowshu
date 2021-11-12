@@ -1,11 +1,6 @@
 import os
 
-import docker
-import pytest
-
 from snowshu.configs import PACKAGE_ROOT
-from snowshu.core.docker import SnowShuDocker
-from snowshu.configs import DOCKER_TARGET_CONTAINER
 from snowshu.core.replica.replica_factory import ReplicaFactory
 
 
@@ -15,7 +10,7 @@ def test_analyze_unsampled(docker_flush):
 
     config = os.path.join(PACKAGE_ROOT, "tests", "assets", "replica_test_config.yml")
     replica.load_config(config)
-    result = replica.analyze(target=DOCKER_TARGET_CONTAINER, barf=False).split('\n')
+    result = replica.analyze(barf=False).split('\n')
     result.reverse()
     for line in result:
         if "ORDERS" in line:
