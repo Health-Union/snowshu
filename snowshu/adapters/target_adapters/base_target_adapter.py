@@ -201,9 +201,7 @@ AS
     @staticmethod
     def _build_snowshu_envars(snowshu_envars: list) -> list:
         """helper method to populate envars with `snowshu`"""
-        envars = [f"{envar}=snowshu" for envar in snowshu_envars]
-        envars.append(f"PGDATA=/{DOCKER_REMOUNT_DIRECTORY}")
-        return envars
+        return [f"{envar}=snowshu" for envar in snowshu_envars]
 
     def _initialize_snowshu_meta_database(self) -> None:
         self.create_database_if_not_exists('snowshu')
