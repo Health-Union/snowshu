@@ -30,7 +30,7 @@ def test_graph_builds_dags_correctly(stub_graph_set):
     graph.add_nodes_from(full_catalog)
     shgraph.graph = graph
 
-    for sub in shgraph.get_graphs():
+    for sub in shgraph.get_connected_subgraphs():
         assert isinstance(sub, nx.DiGraph)
 
 
@@ -147,19 +147,10 @@ def test_no_duplicates(stub_graph_set):
         adapter_mock.build_catalog.return_value = full_catalog
         config.source_profile.adapter = adapter_mock
         shgraph.build_graph(config)
-        graphs = shgraph.get_graphs()
+        graphs = shgraph.get_connected_subgraphs()
 
     all_nodes = [node for graph in graphs for node in graph.nodes]
     assert len(set(all_nodes)) == len(all_nodes)
-
-
-def test_split_dag_to_parallel():
-    shgraph = SnowShuGraph()
-    dag = nx.DiGraph()
-    dag.add_edges_from([(1, 2,), (1, 4,), (2, 3,), (5, 6,)])
-    split = shgraph._split_dag_for_parallel(dag)
-
-    assert set([frozenset(val) for val in split]) == set([frozenset([1, 2, 4, 3]), frozenset([5, 6])])
 
 
 def test_sets_only_existing_adapters():

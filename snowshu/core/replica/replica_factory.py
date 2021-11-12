@@ -39,7 +39,7 @@ class ReplicaFactory:
             self.config.name = name
 
         graph.build_graph(self.config)
-        graphs = graph.get_graphs()
+        graphs = graph.get_connected_subgraphs()
         if len(graphs) < 1:
             return "No relations found per provided replica configuration, exiting."
 
