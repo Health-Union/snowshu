@@ -40,8 +40,8 @@ class SnowShuGraph:
             Returns:
                 The :class:`Graph <networkx.Graph>` which is source graph with removed nodes which are
                     common with target catalog nodes.
-        """
 
+        """
         if isinstance(source_graph, SnowShuGraph):
             source_graph = source_graph.graph
 

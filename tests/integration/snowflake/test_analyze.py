@@ -1,10 +1,6 @@
 import os
 
-import docker
-import pytest
-
 from snowshu.configs import PACKAGE_ROOT
-from snowshu.core.docker import SnowShuDocker
 from snowshu.core.replica.replica_factory import ReplicaFactory
 
 

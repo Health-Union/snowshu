@@ -1,6 +1,6 @@
 from io import StringIO
-
 from unittest import mock
+
 import pytest
 import yaml
 
@@ -11,7 +11,7 @@ from snowshu.core.models import materializations as mz
 
 MOCKED_CONFIG = dict(name='test',
                      version='1',
-                     credpath=dict(), ## not concerned with credentials parsing here
+                     credpath={}, ## not concerned with credentials parsing here
                      source=dict(
                           profile='default',
                           sampling='default',
