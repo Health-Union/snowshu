@@ -40,8 +40,8 @@ class SnowShuGraph:
             Returns:
                 The :class:`Graph <networkx.Graph>` which is source graph with removed nodes which are
                     common with target catalog nodes.
-        """
 
+        """
         if isinstance(source_graph, SnowShuGraph):
             source_graph = source_graph.graph
 
@@ -308,9 +308,8 @@ class SnowShuGraph:
         if not isinstance(self.graph, networkx.Graph):
             raise ValueError('Graph must be built before SnowShuGraph can get graphs from it.')
 
-        graph = self.graph.to_directed()
-        dags = [networkx.induced_subgraph(graph, bunch)
-                for bunch in networkx.weakly_connected_components(graph)]
+        dags = [networkx.induced_subgraph(self.graph, bunch)
+                for bunch in networkx.weakly_connected_components(self.graph)]
 
         # set the views flag
         for dag in dags:

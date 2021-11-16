@@ -15,7 +15,7 @@ logger = Logger().logger
 
 class PostgresAdapter(BaseTargetAdapter):
     name = 'postgres'
-    dialect = 'postgres'
+    dialect = 'postgresql'
     DOCKER_IMAGE = 'postgres:12'
     PRELOADED_PACKAGES = ['postgresql-plpython3-12']
     MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
@@ -39,7 +39,7 @@ class PostgresAdapter(BaseTargetAdapter):
         "datetime": dtypes.DATETIME,
         "decimal": dtypes.DECIMAL,
         "double": dtypes.FLOAT,
-        "double precision": dtypes.FLOAT,
+        "double_precision": dtypes.FLOAT,
         "real": dtypes.FLOAT,
         "float": dtypes.FLOAT,
         "float4": dtypes.FLOAT,
@@ -61,6 +61,7 @@ class PostgresAdapter(BaseTargetAdapter):
         "timestamp_ltz": dtypes.TIMESTAMP_TZ,
         "timestamp_tz": dtypes.TIMESTAMP_TZ,
         "timestamp_with_time_zone": dtypes.TIMESTAMP_TZ,
+        "bytea": dtypes.BINARY,
         "varbinary": dtypes.BINARY,
         "varchar": dtypes.VARCHAR,
         "character_varying": dtypes.VARCHAR
@@ -69,10 +70,10 @@ class PostgresAdapter(BaseTargetAdapter):
     def __init__(self, replica_metadata: dict, **kwargs):
         super().__init__(replica_metadata)
 
-        self.extensions = kwargs.get("pg_extensions", list())
+        self.extensions = kwargs.get("pg_extensions", [])
         self.x00_replacement = kwargs.get("pg_0x00_replacement", "")
 
-        self.DOCKER_START_COMMAND = (f'postgres -p {self._credentials.port} ') # noqa pylint: disable=invalid-name
+        self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port} ' # noqa pylint: disable=invalid-name
         self.DOCKER_READY_COMMAND = (f'pg_isready -p {self._credentials.port} ' # noqa pylint: disable=invalid-name
                                      f'-h {self._credentials.host} '
                                      f'-U {self._credentials.user} '
@@ -102,8 +103,10 @@ class PostgresAdapter(BaseTargetAdapter):
         db_conn = self.get_connection(database_override=database)
         for ext in self.extensions:
             statement = f'create extension if not exists \"{ext}\"'
-            db_conn.execute(statement)
-
+            try:
+                db_conn.execute(statement)
+            except sqlalchemy.exc.IntegrityError as error:
+                logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
         return database
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
@@ -123,7 +126,6 @@ class PostgresAdapter(BaseTargetAdapter):
         logger.debug('Getting all databases from postgres...')
         query = "SELECT datname FROM pg_database WHERE datistemplate = false;"
         engine = self.get_connection()
-        databases = None
         try:
             result = engine.execute(query)
             databases = result.fetchall()
@@ -140,7 +142,6 @@ class PostgresAdapter(BaseTargetAdapter):
         query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND \
             schema_name NOT IN ('information_schema', 'pg_catalog')"
         engine = self.get_connection(database_override=database)
-        schemas = None
         try:
             result = engine.execute(query)
             schemas = result.fetchall()
@@ -246,9 +247,8 @@ class PostgresAdapter(BaseTargetAdapter):
         return envars
 
     def image_initialize_bash_commands(self) -> List[str]:
-        commands = list()
         # install extra postgres extension packages here
-        commands.append(f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}')
+        commands = [f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}']
         return commands
 
     def enable_cross_database(self, relations: Iterable['Relation']) -> None:

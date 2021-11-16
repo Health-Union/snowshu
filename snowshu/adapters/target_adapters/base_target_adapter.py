@@ -27,7 +27,7 @@ logger = Logger().logger
 class BaseTargetAdapter(BaseSQLAdapter):
     """All target adapters inherit from this one."""
     REQUIRED_CREDENTIALS = [USER, PASSWORD, HOST, PORT, DATABASE]
-    ALLOWED_CREDENTIALS = list()
+    ALLOWED_CREDENTIALS = []
     DOCKER_TARGET_PORT = DOCKER_TARGET_PORT
 
     def __init__(self, replica_metadata: dict):
@@ -40,7 +40,8 @@ class BaseTargetAdapter(BaseSQLAdapter):
                 raise NotImplementedError(
                     f'Target adapter requires attribute f{attr} but was not set.')
 
-        self.credentials = self._generate_credentials()
+        self.target = DOCKER_TARGET_CONTAINER if IS_IN_DOCKER else 'localhost'
+        self.credentials = self._generate_credentials(self.target)
         self.container: "Container" = None
         self.replica_meta = replica_metadata
 
@@ -125,16 +126,25 @@ AS
             raise exc
         logger.info('Data loaded into relation %s', relation.quoted_dot_notation)
 
-    def initialize_replica(self, source_adapter_name: str) -> None:
+    def initialize_replica(self, source_adapter_name: str, override_image: str = None) -> None:
         """shimming but will want to move _init_image public with this
         interface.
 
         Args:
             source_adapter_name: the classname of the source adapter
+            override_image: the name of incremental image to initialize,
+                if specified will override default image
         """
-        self._init_image(source_adapter_name)
+        if override_image:
+            self.__class__.DOCKER_IMAGE = override_image
+        try:
+            self._init_image(source_adapter_name)
+        except Exception as error:
+            logger.error("Looks like provided DOCKER_IMAGE does not exists, error:\n%s", error)
+            raise
 
-    def _init_image(self, source_adapter_name: str) -> None:
+    def _init_image(self, 
+                    source_adapter_name: str) -> None:
         shdocker = SnowShuDocker()
         logger.info('Initializing target container...')
         self.container = shdocker.startup(
@@ -164,8 +174,7 @@ AS
         logger.info('Finalized replica image %s', self.replica_meta["name"])
         return replica_image.tags[0]
 
-    def _generate_credentials(self) -> Credentials:
-        host = DOCKER_TARGET_CONTAINER if IS_IN_DOCKER else 'localhost'
+    def _generate_credentials(self, host) -> Credentials:
         return Credentials(host=host,
                            port=self.DOCKER_TARGET_PORT,
                            **dict(zip(('user',
@@ -188,6 +197,11 @@ AS
             logger.error(
                 '%s adapter does not support data type %s.', self.CLASSNAME, source_type)
             raise err
+
+    @staticmethod
+    def _build_snowshu_envars(snowshu_envars: list) -> list:
+        """helper method to populate envars with `snowshu`"""
+        return [f"{envar}=snowshu" for envar in snowshu_envars]
 
     def _initialize_snowshu_meta_database(self) -> None:
         self.create_database_if_not_exists('snowshu')
@@ -248,4 +262,3 @@ AS
                 logger.debug('Function %s added.', function)
         except FileNotFoundError:
             logger.info('Function %s is not implemented for target %s.', function, self.CLASSNAME)
-            return    

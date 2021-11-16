@@ -28,6 +28,7 @@ def test_graph_builds_dags_correctly(stub_graph_set):
 
     graph = nx.Graph()
     graph.add_nodes_from(full_catalog)
+    graph = graph.to_directed()
     shgraph.graph = graph
 
     for sub in shgraph.get_connected_subgraphs():

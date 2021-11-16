@@ -1,14 +1,11 @@
 import copy
-import json
 import re
 from io import StringIO
 
 import docker
 import networkx as nx
-import pandas as pd
 import pytest
 import yaml
-from dfmock import DFMock
 
 import snowshu.core.models.data_types as dt
 import snowshu.core.models.materializations as mz
@@ -175,7 +172,7 @@ def stub_graph_set() -> tuple:
 
 def sanitize_docker_environment():
     client=docker.from_env()
-    def try_or_pass(statement,kwargs=dict()):
+    def try_or_pass(statement,kwargs={}):
         try:
             statement(**kwargs)
         except:

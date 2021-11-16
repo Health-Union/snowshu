@@ -1,11 +1,12 @@
-import time
 import copy
+import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable, List, Optional, Set
-import pandas as pd
 
+import pandas as pd
 import sqlalchemy
 from sqlalchemy.pool import NullPool
+
 from snowshu.core.models import Relation
 from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, USER,
                                              Credentials)
@@ -72,10 +73,9 @@ class BaseSQLAdapter:
         schema override are provided.
         """
         if not self._credentials:
-            raise KeyError(
-                'Adapter.get_connection called before setting Adapter.credentials')
+            raise KeyError('Adapter.get_connection called before setting Adapter.credentials')
 
-        logger.debug(f'Aquiring {self.CLASSNAME} connection...')
+        logger.debug(f'Acquiring {self.CLASSNAME} connection...')
         overrides = dict(
             (k, v) for (k, v) in dict(
                 database=database_override,
@@ -223,7 +223,8 @@ class BaseSQLAdapter:
             schema_objs = [
                 BaseSQLAdapter._DatabaseObject(
                     schema, 
-                    Relation(db_rel.database, self._correct_case(schema), "", None, None)) for schema in schemas]
+                    Relation(db_rel.database, self._correct_case(schema), "", None, None))
+                for schema in schemas]
             filtered_schemas += [
                 d for d in schema_objs if at_least_one_full_pattern_match(d.full_relation, schema_filters)]
 

@@ -1,9 +1,7 @@
 import copy
-from time import time
-
 from unittest import mock
+
 import pandas as pd
-import pytest
 
 from snowshu.core.graph_set_runner import GraphExecutable, GraphSetRunner
 from snowshu.samplings.samplings import DefaultSampling
