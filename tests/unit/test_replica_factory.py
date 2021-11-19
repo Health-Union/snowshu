@@ -8,7 +8,7 @@ from tests.common import rand_string
 
 
 @mock.patch('snowshu.core.replica.replica_factory.SnowShuGraph.build_graph')
-@mock.patch('snowshu.core.replica.replica_factory.SnowShuGraph.get_graphs', return_value=[])
+@mock.patch('snowshu.core.replica.replica_factory.SnowShuGraph.get_connected_subgraphs',return_value=[])
 def tests_replica_rename(_, build_graph, stub_configs):
     replica = ReplicaFactory()
     replica.load_config(stub_configs())

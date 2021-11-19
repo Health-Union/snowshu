@@ -52,7 +52,7 @@ class ReplicaFactory:
 
             graph.graph = SnowShuGraph.catalog_difference(graph.graph,
                                                           incremental_target_catalog)
-        graphs = graph.get_graphs()
+        graphs = graph.get_connected_subgraphs()
         if len(graphs) < 1:
             args = (' new ', ' incremental ', '; image up-to-date') if self.incremental else (' ', ' ', '')
             message = "No{}relations found per provided{}replica configuration{}, exiting.".format(*args)
