@@ -400,3 +400,13 @@ def test_using_different_image(end_to_end):
     target_container.reload()
     assert target_container.status == 'running'
     target_container.remove(force=True)
+
+
+def test_incremental_build_with_override_image(end_to_end):
+    runner = CliRunner()
+    create_result = runner.invoke(cli, ('create', '--incremental', 'snowshu_integration-tests:latest'))
+    if create_result.exit_code:
+        print(create_result.exc_info)
+        raise create_result.exception
+    create_output = create_result.output.split('\n')
+    assert any_appearance_of('The provided override image does not exists', create_output)
