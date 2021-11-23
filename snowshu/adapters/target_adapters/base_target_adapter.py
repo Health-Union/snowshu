@@ -126,7 +126,9 @@ AS
             raise exc
         logger.info('Data loaded into relation %s', relation.quoted_dot_notation)
 
-    def initialize_replica(self, source_adapter_name: str, override_image: str = None) -> None:
+    def initialize_replica(self, 
+                           source_adapter_name: str, 
+                           override_image: str = None) -> None:
         """shimming but will want to move _init_image public with this
         interface.
 
