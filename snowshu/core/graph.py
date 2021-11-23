@@ -298,48 +298,26 @@ class SnowShuGraph:
                                **relationship['edge_attributes'])
         return graph
 
-    def get_graphs(self) -> tuple:
+    def get_connected_subgraphs(self) -> tuple:
         """ Generates the set of (weakly) connected components of the object's graph
 
             Returns:
                 tuple of connected subgraphs of the original processing graph
         """
-        # TODO this function is manually finding the connected components of the main graph
-        # Can likely be simplified if not entirely replaced by get_weakly_connected_components()
 
         if not isinstance(self.graph, networkx.Graph):
-            raise ValueError(
-                'Graph must be built before SnowShuGraph can get graphs from it.')
-        # get isolates first
-        isodags = list(networkx.isolates(self.graph))
-        logger.debug(f'created {len(isodags)} isolate dags.')
-        # assemble undirected graphs
-        ugraph = self.graph.to_undirected()
-        ugraph.remove_nodes_from(isodags)
-        node_collections = self._split_dag_for_parallel(ugraph)
+            raise ValueError('Graph must be built before SnowShuGraph can get graphs from it.')
 
-        dags = [networkx.DiGraph() for _ in range(len(isodags))]
-        for graph, node in zip(dags, isodags):
-            graph.add_node(node)
-
-        for collection in node_collections:
-            dags.append(networkx.subgraph(self.graph, collection))
+        dags = [networkx.induced_subgraph(self.graph, bunch)
+                for bunch in networkx.weakly_connected_components(self.graph)]
 
         # set the views flag
         for dag in dags:
             dag.contains_views = False
             for relation in dag.nodes:
-                dag.contains_views = any(
-                    (dag.contains_views, relation.is_view,))
+                dag.contains_views = any((dag.contains_views, relation.is_view,))
 
         return tuple(dags)
-
-    @staticmethod
-    def _split_dag_for_parallel(dag: networkx.DiGraph) -> list:
-        ugraph = dag.to_undirected()
-        all_paths = set(frozenset(networkx.shortest_path(ugraph, node).keys())
-                        for node in ugraph)
-        return list(tuple(node) for node in all_paths)
 
     @staticmethod
     def build_sum_patterns_from_configs(config: Configuration) -> List[dict]:
