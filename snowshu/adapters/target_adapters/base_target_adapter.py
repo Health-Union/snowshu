@@ -128,7 +128,7 @@ AS
 
     def initialize_replica(self, 
                            source_adapter_name: str, 
-                           override_image: str = None) -> None:
+                           override_image: str = None) -> None: # noqa pylint:disable=too-many-branches
         """shimming but will want to move _init_image public with this
         interface.
 
