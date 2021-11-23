@@ -63,7 +63,7 @@ Your initial replica file will look something like `this
        relationships:
          bidirectional: 
          - local_attribute: PRODUCT_ID 
-           database: '' ## empty strings inherit from the downstream relation
+           database: '' ## empty strings inherit from the parent relation
            schema: ''
            relation: PRODUCTS
            remote_attribute: ID
@@ -79,7 +79,7 @@ Your initial replica file will look something like `this
        relationships:
          bidirectional: 
          - local_attribute: USER_ID 
-           database: '' ## empty strings inherit from the downstream relation
+           database: '' ## empty strings inherit from the parent relation
            schema: ''
            relation: USERS
            remote_attribute: ID
@@ -262,7 +262,7 @@ Specified relations look like this:
        relationships:
          bidirectional: 
          - local_attribute: PRODUCT_ID 
-           database: '' ## empty strings inherit from the downstream relation
+           database: '' ## empty strings inherit from the parent relation
            schema: ''
            relation: PRODUCTS
            remote_attribute: ID
@@ -278,7 +278,7 @@ Specified relations look like this:
        relationships:
          bidirectional: 
          - local_attribute: USER_ID 
-           database: '' ## empty strings inherit from the downstream relation
+           database: '' ## empty strings inherit from the parent relation
            schema: ''
            relation: USERS
            remote_attribute: ID
@@ -346,7 +346,7 @@ SnowShu handles this complexity by enforcing relationships.
 
 - A **directional** relationship is where the records for one table (``ORDERS`` in the example above) must have referential integrity to another (``USERS``). 
 - A **bidirectional** relationship is where both tables must have referential integrity to each other (ie ``USER_ADDRESSES`` and ``USERS`` must only have references that exist in each other). 
-- A **polymorphic** relationship is where the records for one table can have referential integrity to (other) multiple tables (ie ``CHILD_TYPE_2_ITEMS`` and ``USERS`` must only have references that exist in each other). 
+- A **polymorphic** relationship is where a record for one table has referential integrity to one of multiple tables (ie ``CHILD_TYPE_2_ITEMS`` and ``PARENT_TABLE`` must only have references that exist in each other). 
 
 Specified relations can have more than one of each type of relationship. For each relationship the following must be defined:
 
@@ -355,7 +355,7 @@ Specified relations can have more than one of each type of relationship. For eac
 - **relation** (*Required*) is the name or valid regex for the relation that the specified relation will have a relationship with, or a blank string (more on that below).
 - **local_attribute** (*Required*) is the name of the column in the specified relation that has an fkey relationship. Cannot be regex, needs to be the actual column name.
 - **remote_attribute** (*Required*) is the name of the column in the relation that the specified relation has an fkey relationship with. Cannot be regex, needs to be the actual column name.
-- **local_type_attribute** (*Optional*) is the type of the column in the matched specified relations that has an fkey relationship.
+- **local_type_attribute** (*Optional*) is the name of the column in the matched specified relations that has an fkey relationship. It specifies the table that the other attribute is supposed to match to.
 - **local_type_overrides** (*Optional*) provides a value to override the `local_type_attribute` of a specific relation match.
 
 So in this example: 
@@ -434,8 +434,7 @@ The *specified relation* is ``SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.PARENT_TABLE_
 
 The *specified relation* is ``SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.PARENT_TABLE`` which relates with a child relations ``SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.(?i)^CHILD_TYPE_[0-9]_ITEMS$``. When SnowShu builds this replica:
 
-- All the records in ``SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.PARENT_TABLE`` will be records with a ``CHILD_ID`` of ``local_type_attribute``, ``CHILD_TYPE``, found in the ``ID`` of any tables that match ``SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.(?i)^CHILD_TYPE_[0-9]_ITEMS$`` (example: ``ID`` in ``SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.CHILD_TYPE_3_ITEMS``).
-- Records found in ``SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.CHILD_TYPE_2_ITEMS`` will be records with a ``ID`` of type ``type_2`` (using the ``override_value`` of ``local_type_overrides``) found in the ``CHILD_ID`` of ``SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.PARENT_TABLE``.
+- All the records in the parent table will be records that have a ``CHILD_TYPE`` (``local_type_attribute`` column) value that matches the child table name (or the ``local_type_overrides`` for the child table if used) and a ``CHILD_ID`` value that matches ``ID`` value in the matching table.
 
 
 *A note on empty strings in relationships:* When specifying a relationship, SnowShu will interpret empty strings in the database or schema to inherit from the specified relation under test. For example:
