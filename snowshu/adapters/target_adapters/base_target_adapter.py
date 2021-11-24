@@ -137,25 +137,24 @@ AS
             override_image: the name of incremental image to initialize,
                 if specified will override default image
         """
-        try:
-            if override_image:
+        if override_image:
+            try:
                 shdocker = SnowShuDocker()
                 images = shdocker.client.images.list(name=override_image)
-                if len(images) > 0:
-                    image_commands = []
-                    for item in images[0].history():
-                        if ("postgres" in item["CreatedBy"]) or ("PGDATA" in item["CreatedBy"]):
-                            image_commands.append(item["CreatedBy"])
-                    if len(image_commands) > 0:
-                        self.__class__.DOCKER_IMAGE = override_image
-                    else:
-                        logger.error(f"The override image is not a Postgres image: {override_image}")
+                logger.debug(f"List of images found with name {override_image}: {images}")
+                image_commands = []
+                for item in images[0].history():
+                    if ("postgres" in item["CreatedBy"]) or ("PGDATA" in item["CreatedBy"]):
+                        image_commands.append(item["CreatedBy"])
+                if len(image_commands) > 0:
+                    self.__class__.DOCKER_IMAGE = override_image
                 else:
-                    logger.error(f"The provided override image does not exists, error: {override_image}")
-            self._init_image(source_adapter_name)
-        except Exception as error:
-            logger.error("Looks like provided DOCKER_IMAGE does not exists, error:\n%s", error)
-            raise
+                    logger.error(f"The override image is not a Postgres image: {override_image}")
+                    raise Exception(f"The override image is not a Postgres image: {override_image}")
+            except Exception as error:
+                logger.error("Looks like provided DOCKER_IMAGE does not exists, error:\n%s", error)
+                raise error
+        self._init_image(source_adapter_name)
 
     def _init_image(self, 
                     source_adapter_name: str) -> None:
