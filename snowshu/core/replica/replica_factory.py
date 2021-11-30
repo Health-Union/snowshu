@@ -39,6 +39,7 @@ class ReplicaFactory:
             self.config.name = name
 
         graph.build_graph(self.config)
+        cross_db_relations = list(graph.graph.nodes)
 
         if self.incremental:
             # TODO replica container should not be started for analyze commands
@@ -71,10 +72,10 @@ class ReplicaFactory:
                                  analyze=self.run_analyze,
                                  barf=barf)
         if not self.run_analyze:
-            relations = [relation for graph in graphs for relation in graph.nodes]
+            # relations = [relation for graph in graphs for relation in graph.nodes]
             if self.config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:
                 logger.info('Creating x-database links in target...')
-                self.config.target_profile.adapter.enable_cross_database(relations)
+                self.config.target_profile.adapter.enable_cross_database(cross_db_relations)
                 logger.info('X-database enabled.')
 
             logger.info(
@@ -82,7 +83,7 @@ class ReplicaFactory:
                 self.config.source_profile.adapter.name)
             for function in self.config.source_profile.adapter.SUPPORTED_FUNCTIONS:
                 self.config.target_profile.adapter.create_function_if_available(
-                    function, relations)
+                    function, cross_db_relations)
             logger.info('Emulation functions applied.')
             self.config.target_profile.adapter.finalize_replica()
 
