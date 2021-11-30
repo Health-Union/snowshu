@@ -39,7 +39,7 @@ class ReplicaFactory:
             self.config.name = name
 
         graph.build_graph(self.config)
-        cross_db_relations = list(graph.graph.nodes)
+        cross_db_relations = list(graph.graph.nodes) if graph.graph is not None else None
 
         if self.incremental:
             # TODO replica container should not be started for analyze commands
@@ -72,7 +72,8 @@ class ReplicaFactory:
                                  analyze=self.run_analyze,
                                  barf=barf)
         if not self.run_analyze:
-            # relations = [relation for graph in graphs for relation in graph.nodes]
+            relations = [relation for graph in graphs for relation in graph.nodes]
+            cross_db_relations = cross_db_relations if cross_db_relations is not None else relations
             if self.config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:
                 logger.info('Creating x-database links in target...')
                 self.config.target_profile.adapter.enable_cross_database(cross_db_relations)
