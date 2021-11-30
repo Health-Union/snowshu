@@ -1,4 +1,5 @@
 import time
+from unittest.mock import Mock
 from pathlib import Path
 from typing import Optional, TextIO, Union
 
@@ -39,9 +40,11 @@ class ReplicaFactory:
             self.config.name = name
 
         graph.build_graph(self.config)
-        cross_db_relations = list(graph.graph.nodes) if graph.graph is not None else None
+        cross_db_relations = None
 
         if self.incremental:
+            if graph.graph is not None and not isinstance(graph.graph, Mock):
+                cross_db_relations = list(graph.graph.nodes)
             # TODO replica container should not be started for analyze commands
             self.config.target_profile.adapter.initialize_replica(
                 self.config.source_profile.name,
