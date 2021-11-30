@@ -404,7 +404,8 @@ def test_using_different_image(end_to_end):
 
 def test_incremental_build_with_override_image(end_to_end):
     runner = CliRunner()
-    create_result = runner.invoke(cli, ('create', '--incremental', 'snowshu_integration-tests:latest'))
+    create_result = runner.invoke(cli, ('create', '--replica-file', CONFIGURATION_PATH, 
+                                        '--incremental', 'snowshu_integration-tests:latest'))
     if create_result.exit_code:
         print(create_result.exc_info)
         raise create_result.exception
