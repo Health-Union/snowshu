@@ -62,6 +62,9 @@ class SnowShuDocker:
                 self.client.images.pull(parsed_image[0], tag=parsed_image[1])
             else:
                 self.client.images.pull(parsed_image[0])
+        except ConnectionError as error:
+            logger.error('Looks like docker is not started, please start docker daemon\nError: %s', error)
+            raise
 
         port_dict = {f"{str(port)}/{protocol}": port}
 
