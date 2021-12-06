@@ -122,7 +122,6 @@ class PostgresAdapter(BaseTargetAdapter):
                     db_conn.execute(statement)
                 except sqlalchemy.exc.IntegrityError as error:
                     logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
-        return database
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
         conn = self.get_connection(database_override=database)
