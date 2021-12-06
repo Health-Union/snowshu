@@ -109,6 +109,21 @@ class PostgresAdapter(BaseTargetAdapter):
                 logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
         return database
 
+    def create_all_database_extensions(self) -> str:
+        """Post-processing step to create extensions on all existing databases
+        """
+        unique_databases = set(self._get_all_databases())
+        for database in unique_databases:
+            # load any pg extensions that are required
+            db_conn = self.get_connection(database_override=database)
+            for ext in self.extensions:
+                statement = f'create extension if not exists \"{ext}\"'
+                try:
+                    db_conn.execute(statement)
+                except sqlalchemy.exc.IntegrityError as error:
+                    logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
+        return database
+
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
         conn = self.get_connection(database_override=database)
         statement = f'CREATE SCHEMA IF NOT EXISTS {schema}'
