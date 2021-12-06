@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import List, Optional
 from overrides import overrides
 import sqlalchemy
 
@@ -137,10 +137,14 @@ class PostgresAdapter(BaseTargetAdapter):
         return [d[0] for d in databases] if len(databases) > 0 else databases
 
     @overrides
-    def _get_all_schemas(self, database: str) -> List[str]:
+    def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         logger.debug(f'Collecting schemas from {database} in postgres...')
         query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND \
             schema_name NOT IN ('information_schema', 'pg_catalog')"
+        if exclude_defaults:
+            query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' \
+                AND schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'pg_temp_1', \
+                'pg_toast_temp_1', 'public')"
         engine = self.get_connection(database_override=database)
         try:
             result = engine.execute(query)
@@ -251,9 +255,13 @@ class PostgresAdapter(BaseTargetAdapter):
         commands = [f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}']
         return commands
 
-    def enable_cross_database(self, relations: Iterable['Relation']) -> None:
-        unique_schemas = {(rel.database, rel.schema,) for rel in relations}
-        unique_databases = {rel.database for rel in relations}
+    def enable_cross_database(self) -> None:
+        unique_databases = set(self._get_all_databases())
+        unique_databases.remove('postgres')
+        schemas = []
+        for database in unique_databases:
+            schemas += [(database, schema) for schema in self._get_all_schemas(database, True)]
+        unique_schemas = set(schemas)
         unique_databases.add('snowshu')
         unique_schemas.add(('snowshu', 'snowshu',))
 

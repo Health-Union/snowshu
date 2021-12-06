@@ -90,7 +90,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
         return databases
 
     @overrides
-    def _get_all_schemas(self, database: str) -> List[str]:
+    def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         logger.debug(f'Collecting schemas from {database} in snowflake...')
         show_result = self._safe_query(f'SHOW TERSE SCHEMAS IN DATABASE {database}')[
             'name'].tolist()
