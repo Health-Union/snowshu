@@ -29,6 +29,10 @@ from snowshu.core.models.materializations import TABLE
 # 4. Spins down and cleans up
 
 BASE_CONN = 'postgresql://snowshu:snowshu@integration-test:9999/{}'
+INITIAL_INCREMENTAL_CONFIG_PATH = os.path.join(PACKAGE_ROOT, 
+                                               'tests', 
+                                               'assets', 
+                                               'replica_test_incremental_config.yml')
 CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
 SNOWSHU_META_STRING = BASE_CONN.format('snowshu')
 SNOWSHU_DEVELOPMENT_STRING = BASE_CONN.format('snowshu_development')
@@ -402,18 +406,24 @@ def test_using_different_image(end_to_end):
     target_container.remove(force=True)
 
 
-def test_incremental_build_with_override_image(end_to_end):
+def test_incremental_build_with_override_image():
     runner = CliRunner()
-    create_result = runner.invoke(cli, ('create'))
+    create_result = runner.invoke(cli, ('create', 
+                                        '--replica-file', 
+                                        INITIAL_INCREMENTAL_CONFIG_PATH))
     if create_result.exit_code:
         print(create_result.exc_info)
         raise create_result.exception
     create_output = create_result.output.split('\n')
-    assert any_appearance_of('Container initialized.', create_output)
+    assert any_appearance_of('Connected. Starting created container', create_output)
 
-    create_result = runner.invoke(cli, ('create', '--incremental', 'snowshu_integration-test:latest'))
+    create_result = runner.invoke(cli, ('create', 
+                                        '--replica-file', 
+                                        CONFIGURATION_PATH, 
+                                        '--incremental', 
+                                        'snowshu_replica_integration-test'))
     if create_result.exit_code:
         print(create_result.exc_info)
         raise create_result.exception
     create_output = create_result.output.split('\n')
-    assert any_appearance_of('Container initialized.', create_output)
+    assert any_appearance_of('Connected. Starting created container', create_output)
