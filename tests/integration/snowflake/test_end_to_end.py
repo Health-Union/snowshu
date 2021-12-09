@@ -29,6 +29,10 @@ from snowshu.core.models.materializations import TABLE
 # 4. Spins down and cleans up
 
 BASE_CONN = 'postgresql://snowshu:snowshu@integration-test:9999/{}'
+INITIAL_INCREMENTAL_CONFIG_PATH = os.path.join(PACKAGE_ROOT, 
+                                               'tests', 
+                                               'assets', 
+                                               'replica_test_incremental_config.yml')
 CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
 SNOWSHU_META_STRING = BASE_CONN.format('snowshu')
 SNOWSHU_DEVELOPMENT_STRING = BASE_CONN.format('snowshu_development')
