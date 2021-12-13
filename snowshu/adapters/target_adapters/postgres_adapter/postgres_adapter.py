@@ -98,15 +98,6 @@ class PostgresAdapter(BaseTargetAdapter):
                 logger.debug('Database %s already exists, skipping.', database)
             else:
                 raise sql_errs
-
-        # load any pg extensions that are required
-        db_conn = self.get_connection(database_override=database)
-        for ext in self.extensions:
-            statement = f'create extension if not exists \"{ext}\"'
-            try:
-                db_conn.execute(statement)
-            except sqlalchemy.exc.IntegrityError as error:
-                logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
         return database
 
     def create_all_database_extensions(self) -> str:
