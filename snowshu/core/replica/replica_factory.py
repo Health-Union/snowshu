@@ -76,6 +76,7 @@ class ReplicaFactory:
                 logger.info('Creating x-database links in target...')
                 self.config.target_profile.adapter.enable_cross_database()
                 logger.info('X-database enabled.')
+            self.config.target_profile.adapter.create_all_database_extensions()
 
             logger.info(
                 'Applying %s emulation functions to target...',

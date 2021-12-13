@@ -70,6 +70,9 @@ class BaseTargetAdapter(BaseSQLAdapter):
     def create_database_if_not_exists(self, database: str) -> str:
         raise NotImplementedError()
 
+    def create_all_database_extensions(self):
+        raise NotImplementedError()
+
     def create_schema_if_not_exists(self, database: str, schema: str) -> str:
         raise NotImplementedError()
 
