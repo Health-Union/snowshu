@@ -362,22 +362,15 @@ def test_x_db_incremental_import(end_to_end):
     if adapter.target != "localhost":
         adapter._credentials.host = 'integration-test'
 
-    cols = []
-    relation_one = Relation("snowshu_development", "external_data", "address_region_attributes",
-                            TABLE, cols)
-    relation_two = Relation("snowshu_development", "external_data", "address_attributes",
-                            TABLE, cols)
-    relations = relation_one, relation_two
-
-    def successfully_enabled_without_errors(adapter, relations):
+    def successfully_enabled_without_errors(adapter):
         try:
-            adapter.enable_cross_database(relations)
-            adapter.enable_cross_database(relations)
+            adapter.enable_cross_database()
+            adapter.enable_cross_database()
             return True
         except sqlalchemy.exc.ProgrammingError:
             return False
 
-    assert successfully_enabled_without_errors(adapter, relations)
+    assert successfully_enabled_without_errors(adapter)
 
 
 def test_using_different_image(end_to_end):
