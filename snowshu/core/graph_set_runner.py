@@ -4,7 +4,7 @@ import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 import networkx as nx
 
@@ -35,7 +35,7 @@ class GraphSetRunner:
         self.barf = None
 
     def execute_graph_set(self,     # noqa pylint: disable=too-many-arguments
-                          graph_set: List[nx.Graph],
+                          graph_set: Tuple[nx.Graph],
                           source_adapter: BaseSourceAdapter,
                           target_adapter: BaseTargetAdapter,
                           threads: int,
@@ -70,10 +70,60 @@ class GraphSetRunner:
         # the processing does not halt on exceptions
 
         # Tables need to come first to prevent deps deadlocks with views
+
         for graphs in [table_graph_set, view_graph_set]:
             with ThreadPoolExecutor(max_workers=threads) as executor:
-                for executable in make_executables(graphs):
-                    executor.submit(self._traverse_and_execute, executable)
+                def process_executables(executables, retries, wait_time=30):
+                    error = None
+                    re_executables = []
+                    futures = [executor.submit(self._traverse_and_execute, executable)
+                               for executable in executables]
+
+                    time.sleep(wait_time)
+                    wait_list = []
+                    for future, executable in zip(futures, executables):
+                        if future.done():
+                            exception = future.exception()
+                            if exception:
+                                # if exception in thread happened - record reference to it and append
+                                # actual executable to a list for re-execution
+                                error = future.result
+                                logger.warning("Concurrent thread finished work with exception:\n%s: %s",
+                                               str(exception.__class__),
+                                               str(exception))
+                                re_executables.append(executable)
+                        else:
+                            wait_list.append((future, executable))
+                    while wait_list:
+                        for future, executable in wait_list.copy():
+                            if future.done():
+                                wait_list.remove((future, executable))
+                                exception = future.exception()
+                                if exception:
+                                    error = future.result
+                                    logger.warning("Concurrent thread finished work with exception:\n%s: %s",
+                                                   str(exception.__class__),
+                                                   str(exception))
+                                    re_executables.append(executable)
+                        # if we finished traversing futures and some futures are still executing
+                        # give them some time to finish before checking again
+                        if wait_list:
+                            time.sleep(wait_time)
+                    if re_executables and retries > 0:
+                        # recursively try again to process executables, but only for executables from
+                        # failed futures
+                        retries -= 1
+                        process_executables(re_executables, retries)
+                    elif re_executables:
+                        # we tried retry_count to re-execute failed threads, but no luck, so fail whole
+                        # program with last recorded exception
+                        logger.error("Failed because some executables can't be finished successfully:\n%s",
+                                     str(re_executables))
+                        error()
+                retry_count = 3
+                if graphs:
+                    executables = make_executables(graphs)
+                    process_executables(executables, retry_count)
 
     def _traverse_and_execute(self, executable: GraphExecutable) -> None:   # noqa mccabe: disable=MC0001
         """ Processes a single graph and loads the data into the replica if required
