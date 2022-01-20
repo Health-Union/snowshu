@@ -1,5 +1,4 @@
 import time
-from unittest.mock import Mock
 from pathlib import Path
 from typing import Optional, TextIO, Union
 
@@ -40,8 +39,6 @@ class ReplicaFactory:
             self.config.name = name
 
         graph.build_graph(self.config)
-        cross_db_relations = list(graph.graph.nodes) if graph.graph is not None and \
-            not isinstance(graph.graph, Mock) else None
 
         if self.incremental:
             # TODO replica container should not be started for analyze commands
@@ -75,18 +72,18 @@ class ReplicaFactory:
                                  barf=barf)
         if not self.run_analyze:
             relations = [relation for graph in graphs for relation in graph.nodes]
-            cross_db_relations = cross_db_relations if cross_db_relations is not None else relations
             if self.config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:
                 logger.info('Creating x-database links in target...')
-                self.config.target_profile.adapter.enable_cross_database(cross_db_relations)
+                self.config.target_profile.adapter.enable_cross_database()
                 logger.info('X-database enabled.')
+            self.config.target_profile.adapter.create_all_database_extensions()
 
             logger.info(
                 'Applying %s emulation functions to target...',
                 self.config.source_profile.adapter.name)
             for function in self.config.source_profile.adapter.SUPPORTED_FUNCTIONS:
                 self.config.target_profile.adapter.create_function_if_available(
-                    function, cross_db_relations)
+                    function, relations)
             logger.info('Emulation functions applied.')
             self.config.target_profile.adapter.finalize_replica()
 

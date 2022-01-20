@@ -29,6 +29,10 @@ from snowshu.core.models.materializations import TABLE
 # 4. Spins down and cleans up
 
 BASE_CONN = 'postgresql://snowshu:snowshu@integration-test:9999/{}'
+INITIAL_INCREMENTAL_CONFIG_PATH = os.path.join(PACKAGE_ROOT, 
+                                               'tests', 
+                                               'assets', 
+                                               'replica_test_incremental_config.yml')
 CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
 SNOWSHU_META_STRING = BASE_CONN.format('snowshu')
 SNOWSHU_DEVELOPMENT_STRING = BASE_CONN.format('snowshu_development')
@@ -358,22 +362,15 @@ def test_x_db_incremental_import(end_to_end):
     if adapter.target != "localhost":
         adapter._credentials.host = 'integration-test'
 
-    cols = []
-    relation_one = Relation("snowshu_development", "external_data", "address_region_attributes",
-                            TABLE, cols)
-    relation_two = Relation("snowshu_development", "external_data", "address_attributes",
-                            TABLE, cols)
-    relations = relation_one, relation_two
-
-    def successfully_enabled_without_errors(adapter, relations):
+    def successfully_enabled_without_errors(adapter):
         try:
-            adapter.enable_cross_database(relations)
-            adapter.enable_cross_database(relations)
+            adapter.enable_cross_database()
+            adapter.enable_cross_database()
             return True
         except sqlalchemy.exc.ProgrammingError:
             return False
 
-    assert successfully_enabled_without_errors(adapter, relations)
+    assert successfully_enabled_without_errors(adapter)
 
 
 def test_using_different_image(end_to_end):
@@ -400,14 +397,3 @@ def test_using_different_image(end_to_end):
     target_container.reload()
     assert target_container.status == 'running'
     target_container.remove(force=True)
-
-
-def test_incremental_build_with_override_image(end_to_end):
-    runner = CliRunner()
-    create_result = runner.invoke(cli, ('create', '--replica-file', CONFIGURATION_PATH, 
-                                        '--incremental', 'snowshu_integration-tests:latest'))
-    if create_result.exit_code:
-        print(create_result.exc_info)
-        raise create_result.exception
-    create_output = create_result.output.split('\n')
-    assert any_appearance_of('The provided override image does not exists', create_output)

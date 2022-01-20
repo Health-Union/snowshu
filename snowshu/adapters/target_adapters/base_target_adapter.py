@@ -45,7 +45,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         self.container: "Container" = None
         self.replica_meta = replica_metadata
 
-    def enable_cross_database(self, relations: Iterable['Relation']) -> None:
+    def enable_cross_database(self) -> None:
         """ Create x-database links, if available to the target.
 
         Args:
@@ -68,6 +68,9 @@ class BaseTargetAdapter(BaseSQLAdapter):
         raise NotImplementedError()
 
     def create_database_if_not_exists(self, database: str) -> str:
+        raise NotImplementedError()
+
+    def create_all_database_extensions(self):
         raise NotImplementedError()
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> str:
