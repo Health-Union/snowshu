@@ -1,15 +1,15 @@
 ## because snowflake has loose pins on _everything_ the connectors break constantly. 
 ## this hard pins the requirements for snowflake-connector-python so we can manage them. 
 
-snowflake-sqlalchemy==1.2.4
-sqlalchemy==1.3.24
+snowflake-sqlalchemy==1.3.2
+sqlalchemy==1.4.0
 snowflake-connector-python==2.7.2
 
 asn1crypto==1.4.0
 azure-common==1.1.27
-azure-storage-blob==12.8.0
-boto3==1.17.48
-botocore==1.20.48
+azure-storage-blob==12.9.0
+boto3==1.20.38
+botocore==1.23.38
 certifi==2020.12.5
 cffi==1.15.0
 chardet==3.0.4
