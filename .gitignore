@@ -11,8 +11,6 @@ build/
 *.log.*
 snowshu_barf_output/
 keyfile.json
-credentials.yml
-replica.yml
 
 tests/assets/integration/trail-path.yml
 tests/assets/integration/credentials.yml
