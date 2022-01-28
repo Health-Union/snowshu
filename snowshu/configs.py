@@ -19,7 +19,7 @@ def _is_in_docker() -> bool:
     # running horizontal,
     # this should work for Unix AND Windows
     # https://stackoverflow.com/questions/36765138/bind-to-docker-socket-on-windows
-    if os.path.exists(os.path.join(os.path.sep, 'var', 'run', 'docker.sock')
+    if os.path.exists(os.path.join('var', 'run', 'docker.sock')
                       ) and not which('docker'):
         return True
     # running vertical (not recommended)
