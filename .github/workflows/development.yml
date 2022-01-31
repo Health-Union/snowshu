@@ -26,7 +26,9 @@ jobs:
     - name: Creating new release package
       run: docker-compose exec -T snowshu python3 setup.py sdist bdist_wheel
     - name: Publishing to PyPI
-      run: docker-compose exec -T snowshu pip3 install twine==3.7.1 && twine upload -u $TWINE_USERNAME -p $TWINE_PASSWORD dist/*
+      run: |
+        docker-compose exec -T snowshu pip3 install twine==3.7.1
+        docker-compose exec -T snowshu twine upload -u $TWINE_USERNAME -p $TWINE_PASSWORD dist/*
       env:
           TWINE_USERNAME: ${{ secrets.twine_username }}
           TWINE_PASSWORD: ${{ secrets.twine_password }}
