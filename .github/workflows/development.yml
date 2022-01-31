@@ -12,14 +12,17 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+        TWINE_USERNAME: ${{ secret.twine_username }}
+        TWINE_PASSWORD: ${{ secret.twine_password }}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
-    - name: Setup template credentials
-      run: cp snowshu/templates/credentials.yml tests/assets/integration/credentials.yml
-    - name: Build the Docker image
-      run: docker-compose up -d
-    - name: Run Linter
       run: docker-compose exec -T snowshu prospector
     - name: Run Unit Test
       run: docker-compose exec -T snowshu py.test --cov=snowshu tests/unit
+    - name: Creating new release package
+      run: docker-compose exec -T snowshu python3 setup.py sdist bdist_wheel
+    - name: Publishing to PyPI
+      run: docker-compose exec -T snowshu pip3 install twine==3.7.1 && twine upload -u $TWINE_USERNAME -p $TWINE_PASSWORD dist/*
