@@ -1,14 +1,13 @@
-name: Development Workflow
+name: Deployment to PyPI
 
 on:
   push:
-    branches: [ '**' ]
-  pull_request:
-    branches: [ '**' ]
+    branches:
+      - master
 
 jobs:
 
-  build-and-test:
+  deploy-to-pypi:
 
     runs-on: ubuntu-latest
 
@@ -19,14 +18,10 @@ jobs:
       run: cp snowshu/templates/credentials.yml tests/assets/integration/credentials.yml
     - name: Build the Docker image
       run: docker-compose up -d
-    - name: Run Linter
-      run: docker-compose exec -T snowshu prospector
-    - name: Run Unit Test
-      run: docker-compose exec -T snowshu py.test --cov=snowshu tests/unit
     - name: Creating new release package
       run: docker-compose exec -T snowshu python3 setup.py sdist bdist_wheel
     - name: Publishing to PyPI
-      run: docker-compose exec -T snowshu twine upload --repository testpypi -u "$TWINE_USERNAME" -p "$TWINE_PASSWORD" dist/*
+      run: docker-compose exec -T snowshu ./.github/scripts/deploy_to_pypi.sh
       env:
         TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
