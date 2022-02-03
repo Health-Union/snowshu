@@ -1,6 +1,6 @@
-FROM python:3.7
+FROM python:3.8
 
-RUN pip3 install snowshu>=0.0.3 && \
+RUN pip3 install snowshu && \
 mkdir /workspace
 
 WORKDIR /workspace
