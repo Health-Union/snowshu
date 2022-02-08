@@ -1,0 +1,25 @@
+name: Live Deployment to PyPI
+
+on:
+  workflow_dispatch
+
+jobs:
+
+  live-deployment-to-pypi:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Setup template credentials
+      run: cp snowshu/templates/credentials.yml tests/assets/integration/credentials.yml
+    - name: Build the Docker image
+      run: docker-compose up -d
+    - name: Creating new release package
+      run: docker-compose exec -T snowshu python3 setup.py sdist bdist_wheel
+    - name: Publishing to PyPI
+      run: docker-compose exec -T snowshu ./.github/scripts/deploy_to_pypi.sh live_deploy
+      env:
+        PYPI_KEY: ${{ secrets.PYPI_KEY }}
+        TEST_PYPI_KEY: ${{ secrets.TEST_PYPI_KEY }}

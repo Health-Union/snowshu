@@ -1,4 +1,4 @@
-name: Deployment to PyPI
+name: Test Deployment to PyPI
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  deploy-to-pypi:
+  test-deployment-to-pypi:
 
     runs-on: ubuntu-latest
 
@@ -21,6 +21,7 @@ jobs:
     - name: Creating new release package
       run: docker-compose exec -T snowshu python3 setup.py sdist bdist_wheel
     - name: Publishing to PyPI
-      run: docker-compose exec -T snowshu ./.github/scripts/deploy_to_pypi.sh
+      run: docker-compose exec -T snowshu ./.github/scripts/deploy_to_pypi.sh test_deploy
       env:
-        TWINE_PASSWORD: ${{ secrets.PYPI_KEY }}
+        PYPI_KEY: ${{ secrets.PYPI_KEY }}
+        TEST_PYPI_KEY: ${{ secrets.TEST_PYPI_KEY }}
