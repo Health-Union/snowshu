@@ -6,8 +6,7 @@ on:
       - master
 
 env:
-  PYPI_KEY: ${{ secrets.PYPI_KEY }}
-  TEST_PYPI_KEY: ${{ secrets.TEST_PYPI_KEY }}
+  PYPI_KEY: ${{ secrets.TEST_PYPI_KEY }}
 
 jobs:
 
@@ -33,4 +32,4 @@ jobs:
     - name: Copy release package
       run: docker cp $(docker ps -alq):/app/dist/ .
     - name: Publishing to PyPI
-      run: ./.github/scripts/deploy_to_pypi.sh test_deploy
+      run: twine upload -u __token__ -p "$PYPI_KEY" --repository testpypi dist/*
