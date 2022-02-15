@@ -16,3 +16,5 @@ To use the image with your `replica.yml` and `credentials.yml` files in the same
 ```
     docker run --network snowshu --rm -v /var/run/docker.sock:/var/run/docker.sock -v ${PWD}:/workspace hutech/snowshu init 
 ```
+
+*Note:* Ensure the docker socket is included as a volume. 
