@@ -41,7 +41,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
     REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
     ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
     # snowflake in-db is UPPER, but connector is actually lower :(
-    DEFAULT_CASE = 'lower'
+    DEFAULT_CASE = 'upper'
 
     DATA_TYPE_MAPPINGS = {
         "array": dtypes.JSON,
@@ -190,11 +190,21 @@ LIMIT 1
 SELECT
     *
 FROM
-    {relation.quoted_dot_notation}
+    {self.quoted_dot_notation(relation)}
 """
         if sample_type is not None:
             query += f"{self._sample_type_to_query_sql(sample_type)}"
         return query
+
+    def quoted_dot_notation(self, x: Relation) -> str:
+        return '.'.join([self.quoted(getattr(x, relation))
+                        for relation in ('database', 'schema', 'name',)])
+
+    @staticmethod
+    def quoted(val: str) -> str:
+        """Returns quoted value if appropriate."""
+        return f'"{val}"' if any({val.isupper(),
+                                  val.islower(), }) and ' ' in val else val
 
     @staticmethod
     def union_constraint_statement(subject: Relation,

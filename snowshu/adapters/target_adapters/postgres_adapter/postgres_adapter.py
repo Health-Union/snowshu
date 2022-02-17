@@ -20,6 +20,7 @@ class PostgresAdapter(BaseTargetAdapter):
     PRELOADED_PACKAGES = ['postgresql-plpython3-12']
     MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
+    DEFAULT_CASE = 'lower'
 
     # NOTE: either start container with db listening on port 9999,
     # or override with DOCKER_TARGET_PORT
@@ -89,6 +90,7 @@ class PostgresAdapter(BaseTargetAdapter):
         So ask for forgiveness instead.
         """
         conn = self.get_connection()
+        database = self.quoted(database)
         statement = f'CREATE DATABASE {database}'
         try:
             conn.execute(statement)
@@ -110,6 +112,8 @@ class PostgresAdapter(BaseTargetAdapter):
         return database
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
+        database = self.quoted(database)
+        schema = self.quoted(schema)
         conn = self.get_connection(database_override=database)
         statement = f'CREATE SCHEMA IF NOT EXISTS {schema}'
         try:
@@ -153,7 +157,7 @@ class PostgresAdapter(BaseTargetAdapter):
 
     @overrides
     def _get_relations_from_database(self, schema_obj: BaseTargetAdapter._DatabaseObject) -> List[Relation]:
-        quoted_database = schema_obj.full_relation.quoted(schema_obj.full_relation.database)  # quoted db name
+        quoted_database = self.quoted(schema_obj.full_relation.database)  # quoted db name
         relation_database = schema_obj.full_relation.database  # case corrected db name
         case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schame name
         relations_sql = f"""
@@ -238,6 +242,11 @@ class PostgresAdapter(BaseTargetAdapter):
                                    "(excluding bounding single quotes)", col, self.x00_replacement)
                     relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
         return relation
+
+    @staticmethod
+    def quoted(val: str) -> str:
+        """Returns quoted value if appropriate."""
+        return f'"{val}"' if ' ' in val else val
 
     @classmethod
     def _build_snowshu_envars(cls, snowshu_envars: list) -> list:

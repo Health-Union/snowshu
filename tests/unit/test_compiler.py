@@ -162,7 +162,7 @@ def test_run_deps_polymorphic_idtype(stub_relation_set):
             * 
         FROM 
         {parent.quoted_dot_notation}
-        WHERE ( ({childid} IN ('1','2') AND LOWER({childtype}) = LOWER('child_type_1_record') ) OR ({childid} IN ('1','3') AND LOWER({childtype}) = LOWER('{child2type_override}') ) OR ({childid} IN ('1','4') AND LOWER({childtype}) = LOWER('child_type_3_record') ) )
+        WHERE ( ({childid} IN ('1','2') AND LOWER({childtype}) = LOWER('CHILD_TYPE_1_RECORD') ) OR ({childid} IN ('1','3') AND LOWER({childtype}) = LOWER('{child2type_override}') ) OR ({childid} IN ('1','4') AND LOWER({childtype}) = LOWER('CHILD_TYPE_3_RECORD') ) )
     """
     assert query_equalize(parent.compiled_query)==query_equalize(expected_query)
 

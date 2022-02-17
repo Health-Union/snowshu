@@ -111,8 +111,8 @@ class Relation:
     @staticmethod
     def quoted(val: str) -> str:
         """Returns quoted value if appropriate."""
-        return f'"{val}"' if all({val.isupper(),
-                                  val.islower(), }) and ' ' not in val else val
+        return f'"{val}"' if any({val.isupper(),
+                                  val.islower(), }) and ' ' in val else val
 
     def scoped_cte(self, string: Optional[str] = None) -> str:
         """ returns a CTE name scoped to the relation.
