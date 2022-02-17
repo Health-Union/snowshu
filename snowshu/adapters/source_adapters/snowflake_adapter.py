@@ -196,8 +196,8 @@ FROM
             query += f"{self._sample_type_to_query_sql(sample_type)}"
         return query
 
-    def quoted_dot_notation(self, x: Relation) -> str:
-        return '.'.join([self.quoted(getattr(x, relation))
+    def quoted_dot_notation(self, rel: Relation) -> str:
+        return '.'.join([self.quoted(getattr(rel, relation))
                         for relation in ('database', 'schema', 'name',)])
 
     @staticmethod
