@@ -14,7 +14,7 @@ certifi==2021.10.8
 cffi==1.15.0
 chardet==3.0.4
 cryptography==3.4.8
-docutils==0.18
+docutils<=0.16 # should be pinned to <=0.16 since sphinx has a conflicts with higher versions
 idna==2.10
 oscrypto==1.2.1
 pycryptodomex==3.10.1
