@@ -73,15 +73,15 @@ class RelationTestHelper:
             attributes=[])
 
         self.parent_relation_childid_type = Relation(
-            name='PARENT_RELATION_CHILDID_TYPE'.upper(), **self.rand_relation_helper())
+            name='PARENT_RELATION_CHILDID_TYPE', **self.rand_relation_helper())
         self.parent_relation_parentid = Relation(
-            name='PARENT_RELATION_PARENTID'.upper(), **self.rand_relation_helper())
+            name='PARENT_RELATION_PARENTID', **self.rand_relation_helper())
         self.child_relation_type_1 = Relation(
-            name='CHILD_TYPE_1_RECORDS'.upper(), **self.rand_relation_helper())
+            name='CHILD_TYPE_1_RECORDS', **self.rand_relation_helper())
         self.child_relation_type_2 = Relation(
-            name='CHILD_TYPE_2_RECORDS'.upper(), **self.rand_relation_helper())
+            name='CHILD_TYPE_2_RECORDS', **self.rand_relation_helper())
         self.child_relation_type_3 = Relation(
-            name='CHILD_TYPE_3_RECORDS'.upper(), **self.rand_relation_helper())
+            name='CHILD_TYPE_3_RECORDS', **self.rand_relation_helper())
 
         self.bidirectional_key_left = rand_string(10)
         self.bidirectional_key_right = rand_string(8)

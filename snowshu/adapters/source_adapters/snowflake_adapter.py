@@ -30,7 +30,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
     """The Snowflake Data Warehouse source adapter.
 
     Args:
-        preserve_case: By default the adapter folds case-insensitive strings to lowercase.
+        preserve_case: By default the adapter folds case-insensitive strings to uppercase.
                        If preserve_case is True,SnowShu will __not__ alter cases (dangerous!).
     """
 
