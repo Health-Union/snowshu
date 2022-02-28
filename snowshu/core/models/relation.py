@@ -6,7 +6,7 @@ import pandas as pd
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
-from snowshu.core.utils import correct_case, key_for_value
+from snowshu.core.utils import correct_case
 from snowshu.logger import Logger
 
 if TYPE_CHECKING:

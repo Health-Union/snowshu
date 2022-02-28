@@ -228,10 +228,10 @@ class PostgresAdapter(BaseTargetAdapter):
             if 'cannot contain NUL' in str(exc):
                 logger.warning("Invalid 0x00 char found in %s. "
                                "Removing from affected columns and trying again", 
-                               PostgresAdapter.quoted_dot_notation(relation))
+                               self.quoted_dot_notation(relation))
                 fixed_relation = self.replace_x00_values(relation)
                 logger.info("Retrying data load for %s", 
-                            PostgresAdapter.quoted_dot_notation(relation))
+                            self.quoted_dot_notation(relation))
                 return super().load_data_into_relation(fixed_relation)
 
             raise exc

@@ -108,7 +108,7 @@ AS
         engine = self.get_connection(database_override=relation.database,
                                      schema_override=relation.schema)
         logger.info('Loading data into relation %s...', 
-                    BaseTargetAdapter.quoted_dot_notation(relation))
+                    self.quoted_dot_notation(relation))
         try:
             attribute_type_map = {attr.name: attr.data_type.sqlalchemy_type
                                   for attr in relation.attributes}
@@ -124,10 +124,10 @@ AS
                                  method='multi')
         except Exception as exc:
             logger.info("Exception encountered loading data into %s:%s", 
-                        BaseTargetAdapter.quoted_dot_notation(relation), exc)
+                        self.quoted_dot_notation(relation), exc)
             raise exc
         logger.info('Data loaded into relation %s', 
-                    BaseTargetAdapter.quoted_dot_notation(relation))
+                    self.quoted_dot_notation(relation))
 
     def initialize_replica(self, source_adapter_name: str, override_image: str = None) -> None:
         """shimming but will want to move _init_image public with this

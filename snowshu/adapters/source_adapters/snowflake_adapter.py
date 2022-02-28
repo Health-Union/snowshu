@@ -109,14 +109,16 @@ class SnowflakeAdapter(BaseSourceAdapter):
         Returns:
             a query that results in a single row, single column, integer value of the unsampled relation population size
         """
-        return f"SELECT COUNT(*) FROM {SnowflakeAdapter.quoted_dot_notation(relation)}"
+        adapter = SnowflakeAdapter()
+        return f"SELECT COUNT(*) FROM {SnowflakeAdapter.quoted_dot_notation(adapter, relation)}"
 
     @staticmethod
     def view_creation_statement(relation: Relation) -> str:
+        adapter = SnowflakeAdapter()
         return f"""
 SELECT
-SUBSTRING(GET_DDL('view','{SnowflakeAdapter.quoted_dot_notation(relation)}'),
-POSITION(' AS ' IN UPPER(GET_DDL('view','{SnowflakeAdapter.quoted_dot_notation(relation)}')))+3)
+SUBSTRING(GET_DDL('view','{SnowflakeAdapter.quoted_dot_notation(adapter, relation)}'),
+POSITION(' AS ' IN UPPER(GET_DDL('view','{SnowflakeAdapter.quoted_dot_notation(adapter, relation)}')))+3)
 """
 
     @staticmethod
@@ -287,7 +289,7 @@ LIMIT {max_number_of_outliers})
     @staticmethod
     def quoted(val: str) -> str:
         return f'"{val}"' if ' ' in val else val
-    
+
     def _correct_case(self, val: str) -> str:
         """The base case correction method for a sql adapter.
         """
