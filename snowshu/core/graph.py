@@ -3,6 +3,7 @@ from typing import List, Set, Optional, Union
 
 import networkx
 
+from snowshu.adapters.source_adapters import SnowflakeAdapter
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models.relation import (Relation,
                                           single_full_pattern_match)
@@ -282,7 +283,8 @@ class SnowShuGraph:
                 f'as they are usually unintended side effects of lenient regex.'
             )
         # check to make sure found upstream relation is not a view
-        view_relations = [r.quoted_dot_notation for r in upstream_relations if r.is_view]
+        adapter = SnowflakeAdapter()
+        view_relations = [adapter.quoted_dot_notation(r) for r in upstream_relations if r.is_view]
         if view_relations:
             raise InvalidRelationshipException(
                 f'Relations {view_relations} are views, '

@@ -87,11 +87,6 @@ class Relation:
         return f"{self.database}.{self.schema}.{self.name}"
 
     @property
-    def quoted_dot_notation(self) -> str:
-        return '.'.join([self.quoted(getattr(self, x))
-                        for x in ('database', 'schema', 'name',)])
-
-    @property
     def star(self) -> str:
         attr_string = str()
         for attr in self.attributes:
@@ -108,24 +103,10 @@ class Relation:
     def relation(self, value: str) -> None:
         self.name = value
 
-    @staticmethod
-    def quoted(val: str) -> str:
-        """Returns quoted value if appropriate."""
-        return f'"{val}"' if any({val.isupper(),
-                                  val.islower(), }) and ' ' in val else val
-
     def scoped_cte(self, string: Optional[str] = None) -> str:
         """ returns a CTE name scoped to the relation.
             If _string_ is provided, this will be suffixed to the name."""
         return "__".join([self.database, self.schema, self.name, string])
-
-    def typed_columns(self, data_type_mappings: dict) -> str:
-        """generates the column section of a create statement in format <attr>
-        <datatype>"""
-        attr_string = str()
-        for attr in self.attributes:
-            attr_string += f',{self.quoted(attr.name)} {key_for_value(data_type_mappings, attr.data_type)}\n'
-        return attr_string[1:]
 
     def lookup_attribute(self, attr: str) -> Union[Attribute, None]:
         """finds the attribute by name or returns None."""

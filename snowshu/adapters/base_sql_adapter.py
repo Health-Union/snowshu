@@ -218,8 +218,7 @@ class BaseSQLAdapter:
         # get all schemas in all databases
         filtered_schemas = []
         for db_rel in filtered_databases:
-            schemas = self._get_all_schemas(
-                database=db_rel.quoted(db_rel.database))
+            schemas = self._get_all_schemas(database=db_rel.database)
             schema_objs = [
                 BaseSQLAdapter._DatabaseObject(
                     schema, 

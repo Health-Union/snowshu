@@ -9,6 +9,7 @@ from snowshu.core.models.attribute import Attribute
 import snowshu.core.models.data_types as dtypes
 from snowshu.logger import Logger
 from snowshu.core.models.relation import Relation
+from snowshu.core.utils import correct_case
 
 logger = Logger().logger
 
@@ -142,6 +143,7 @@ class PostgresAdapter(BaseTargetAdapter):
 
     @overrides
     def _get_all_schemas(self, database: str) -> List[str]:
+        database = self.quoted(database)
         logger.debug(f'Collecting schemas from {database} in postgres...')
         query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND \
             schema_name NOT IN ('information_schema', 'pg_catalog')"
@@ -225,9 +227,11 @@ class PostgresAdapter(BaseTargetAdapter):
         except ValueError as exc:
             if 'cannot contain NUL' in str(exc):
                 logger.warning("Invalid 0x00 char found in %s. "
-                               "Removing from affected columns and trying again", relation.quoted_dot_notation)
+                               "Removing from affected columns and trying again", 
+                               PostgresAdapter.quoted_dot_notation(relation))
                 fixed_relation = self.replace_x00_values(relation)
-                logger.info("Retrying data load for %s", relation.quoted_dot_notation)
+                logger.info("Retrying data load for %s", 
+                            PostgresAdapter.quoted_dot_notation(relation))
                 return super().load_data_into_relation(fixed_relation)
 
             raise exc
@@ -242,6 +246,10 @@ class PostgresAdapter(BaseTargetAdapter):
                                    "(excluding bounding single quotes)", col, self.x00_replacement)
                     relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
         return relation
+
+    def quoted_dot_notation(self, rel: Relation) -> str:
+        return '.'.join([self.quoted(getattr(rel, relation))
+                        for relation in ('database', 'schema', 'name',)])
 
     @staticmethod
     def quoted(val: str) -> str:
@@ -261,8 +269,9 @@ class PostgresAdapter(BaseTargetAdapter):
         return commands
 
     def enable_cross_database(self, relations: Iterable['Relation']) -> None:
-        unique_schemas = {(rel.database, rel.schema,) for rel in relations}
-        unique_databases = {rel.database for rel in relations}
+        unique_schemas = {(correct_case(rel.database, self.DEFAULT_CASE == 'upper'), 
+                           correct_case(rel.schema, self.DEFAULT_CASE == 'upper'),) for rel in relations}
+        unique_databases = {correct_case(rel.database, self.DEFAULT_CASE == 'upper') for rel in relations}
         unique_databases.add('snowshu')
         unique_schemas.add(('snowshu', 'snowshu',))
 

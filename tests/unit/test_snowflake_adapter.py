@@ -89,7 +89,7 @@ WITH
 SELECT
     COUNT(*) AS population_size
 FROM
-    {relation.quoted_dot_notation}
+    {sf.quoted_dot_notation(relation)}
 )
 ,{relation.scoped_cte('SNOWSHU_CORE_SAMPLE')} AS (
 {sql}

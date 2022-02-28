@@ -107,7 +107,8 @@ AS
     def load_data_into_relation(self, relation: Relation) -> None:
         engine = self.get_connection(database_override=relation.database,
                                      schema_override=relation.schema)
-        logger.info('Loading data into relation %s...', relation.quoted_dot_notation)
+        logger.info('Loading data into relation %s...', 
+                    BaseTargetAdapter.quoted_dot_notation(relation))
         try:
             attribute_type_map = {attr.name: attr.data_type.sqlalchemy_type
                                   for attr in relation.attributes}
@@ -122,9 +123,11 @@ AS
                                  chunksize=DEFAULT_INSERT_CHUNK_SIZE,
                                  method='multi')
         except Exception as exc:
-            logger.info("Exception encountered loading data into %s:%s", relation.quoted_dot_notation, exc)
+            logger.info("Exception encountered loading data into %s:%s", 
+                        BaseTargetAdapter.quoted_dot_notation(relation), exc)
             raise exc
-        logger.info('Data loaded into relation %s', relation.quoted_dot_notation)
+        logger.info('Data loaded into relation %s', 
+                    BaseTargetAdapter.quoted_dot_notation(relation))
 
     def initialize_replica(self, source_adapter_name: str, override_image: str = None) -> None:
         """shimming but will want to move _init_image public with this
@@ -197,6 +200,10 @@ AS
             logger.error(
                 '%s adapter does not support data type %s.', self.CLASSNAME, source_type)
             raise err
+
+    def quoted_dot_notation(self, rel: Relation) -> str:
+        return '.'.join([self.quoted(getattr(rel, relation))
+                        for relation in ('database', 'schema', 'name',)])
 
     @staticmethod
     def _build_snowshu_envars(snowshu_envars: list) -> list:
