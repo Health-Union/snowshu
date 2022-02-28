@@ -7,11 +7,11 @@ import pandas as pd
 import sqlalchemy
 from sqlalchemy.pool import NullPool
 
+from snowshu.configs import DEFAULT_PRESERVE_CASE
 from snowshu.core.models import Relation
 from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, USER,
                                              Credentials)
 from snowshu.core.models.relation import at_least_one_full_pattern_match
-from snowshu.core.utils import correct_case
 from snowshu.logger import Logger, duration
 
 logger = Logger().logger
@@ -36,7 +36,7 @@ class BaseSQLAdapter:
             self.case_sensitive_name = case_sensitive_name
             self.full_relation = full_relation
 
-    def __init__(self, preserve_case: bool = False):
+    def __init__(self, preserve_case: dict = DEFAULT_PRESERVE_CASE):  # noqa pylint: disable=dangerous-default-value
         self.CLASSNAME = self.__class__.__name__     # noqa pylint: disable=invalid-name
         self.preserve_case = preserve_case
         for attr in ('REQUIRED_CREDENTIALS', 'ALLOWED_CREDENTIALS',
@@ -210,7 +210,7 @@ class BaseSQLAdapter:
                 db_filters.append(new_filter)
 
         databases = self._get_all_databases()
-        database_relations = [Relation(self._correct_case(database), "", "", None, None)
+        database_relations = [Relation(self._correct_case(database, 'database'), "", "", None, None)
                               for database in databases]
         filtered_databases = [rel for rel in database_relations
                               if at_least_one_full_pattern_match(rel, db_filters)]
@@ -222,7 +222,7 @@ class BaseSQLAdapter:
             schema_objs = [
                 BaseSQLAdapter._DatabaseObject(
                     schema, 
-                    Relation(db_rel.database, self._correct_case(schema), "", None, None))
+                    Relation(db_rel.database, self._correct_case(schema, 'schema'), "", None, None))
                 for schema in schemas]
             filtered_schemas += [
                 d for d in schema_objs if at_least_one_full_pattern_match(d.full_relation, schema_filters)]
@@ -231,8 +231,3 @@ class BaseSQLAdapter:
 
     def _get_relations_from_database(self, schema_obj: _DatabaseObject):
         raise NotImplementedError()
-
-    def _correct_case(self, val: str) -> str:
-        """The base case correction method for a sql adapter.
-        """
-        return val if self.preserve_case else correct_case(val, self.DEFAULT_CASE == 'upper')

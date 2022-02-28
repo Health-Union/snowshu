@@ -290,9 +290,12 @@ LIMIT {max_number_of_outliers})
     def quoted(val: str) -> str:
         return f'"{val}"' if ' ' in val else val
 
-    def _correct_case(self, val: str) -> str:
+    def _correct_case(self, val: str, attr: str = None) -> str:
         """The base case correction method for a sql adapter.
         """
+        preserve_case = self.preserve_case[attr] if attr in ['database', 'schema', 'relation'] else False
+        if preserve_case:
+            return val
         return val.upper() if self.DEFAULT_CASE == 'upper' else val
 
     # TODO: change arg name in parent to the fix issue here

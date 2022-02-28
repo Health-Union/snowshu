@@ -3,7 +3,8 @@ from typing import Any
 import pandas as pd
 
 from snowshu.adapters import BaseSQLAdapter
-from snowshu.configs import MAX_ALLOWED_DATABASES, MAX_ALLOWED_ROWS
+from snowshu.configs import (DEFAULT_PRESERVE_CASE, MAX_ALLOWED_DATABASES, 
+                             MAX_ALLOWED_ROWS)
 from snowshu.core.models import DataType
 from snowshu.logger import Logger
 
@@ -17,7 +18,7 @@ class BaseSourceAdapter(BaseSQLAdapter):
     SUPPORTS_CROSS_DATABASE = False
     SUPPORTED_FUNCTIONS = set()
 
-    def __init__(self, preserve_case: bool = False):
+    def __init__(self, preserve_case: dict = DEFAULT_PRESERVE_CASE):  # noqa pylint: disable=dangerous-default-value
         self.preserve_case = preserve_case
         super().__init__()
         for attr in ('DATA_TYPE_MAPPINGS', 'SUPPORTED_SAMPLE_METHODS',):

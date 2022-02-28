@@ -210,8 +210,8 @@ class PostgresAdapter(BaseTargetAdapter):
                     ))
 
                 relation = Relation(relation_database,
-                                self._correct_case(attribute.schema),   # noqa pylint: disable=undefined-loop-variable
-                                self._correct_case(attribute.relation),   # noqa pylint: disable=undefined-loop-variable
+                                self._correct_case(attribute.schema, 'schema'),   # noqa pylint: disable=undefined-loop-variable
+                                self._correct_case(attribute.relation, 'relation'),   # noqa pylint: disable=undefined-loop-variable
                                 self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")],   # noqa pylint: disable=undefined-loop-variable
                                 attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')
@@ -255,6 +255,14 @@ class PostgresAdapter(BaseTargetAdapter):
     def quoted(val: str) -> str:
         """Returns quoted value if appropriate."""
         return f'"{val}"' if ' ' in val else val
+
+    def _correct_case(self, val: str, attr: str = None) -> str:
+        """The case correction method for a postgresql adapter.
+        """
+        preserve_case = self.preserve_case[attr] if attr in ['database', 'schema', 'relation'] else False
+        if preserve_case:
+            return val
+        return val.upper() if self.DEFAULT_CASE == 'upper' else val
 
     @classmethod
     def _build_snowshu_envars(cls, snowshu_envars: list) -> list:

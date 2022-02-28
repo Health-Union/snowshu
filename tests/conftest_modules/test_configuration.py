@@ -65,6 +65,11 @@ CONFIGURATION = {
             ]
         },
         "include_outliers": True,
+        "preserve_case": {
+            "database": True,
+            "schema": True,
+            "relation": True
+        },
         "specified_relations": [
             {
                 "database": "SNOWSHU_DEVELOPMENT",

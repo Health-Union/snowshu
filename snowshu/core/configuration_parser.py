@@ -94,7 +94,7 @@ class Configuration:  # noqa pylint: disable=too-many-instance-attributes
     short_description: str
     long_description: str
     threads: int
-    preserve_case: bool
+    preserve_case: dict
     source_profile: AdapterProfile
     target_profile: AdapterProfile
     include_outliers: bool
@@ -106,7 +106,7 @@ class Configuration:  # noqa pylint: disable=too-many-instance-attributes
 
 class ConfigurationParser:
     default_case: str = None
-    preserve_case: bool = False
+    preserve_case: dict = DEFAULT_PRESERVE_CASE
 
     def _get_dict_from_anything(self,
                                 dict_like_object: Union[str, 'StringIO', dict],
@@ -149,10 +149,9 @@ class ConfigurationParser:
                      attr: str,
                      default: Any = '') -> None:
         """sets default for a given dict key."""
-
         dict_from[attr] = dict_from.get(attr, default)
 
-    def case(self, val: str) -> str:
+    def case(self, val: str, attr: str = None) -> str:
         """Does the up-front case correction.
         SnowShu uses the default source case as the "case insensitive" fold.
         Args:
@@ -160,10 +159,13 @@ class ConfigurationParser:
         Returns:
             The corrected string.
         """
-        if self.preserve_case:
-            return val
+        preserve_case = False
+        if self.preserve_case is not None:
+            if attr in ('database', 'schema', 'relation') and \
+                    attr in self.preserve_case.keys():
+                preserve_case = self.preserve_case[attr]
 
-        return correct_case(val, self.default_case == 'upper')
+        return val if preserve_case else correct_case(val, self.default_case == 'upper')
 
     # TODO: now that there's an instance dependency on preserve_case and correct_case,
     # this should be migrated to an init
@@ -180,8 +182,8 @@ class ConfigurationParser:
         source_adapter_profile = self._build_adapter_profile('source', loaded)
         self.default_case = source_adapter_profile.adapter.DEFAULT_CASE
 
-        def case(val: str) -> str:
-            return self.case(val)
+        def case(val: str, attr: str = None) -> str:
+            return self.case(val, attr)
 
         # make sure no empty sections
         try:
