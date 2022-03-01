@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Iterable, List, Optional
 from overrides import overrides
 import sqlalchemy
 
@@ -147,7 +147,7 @@ class PostgresAdapter(BaseTargetAdapter):
         return [d[0] for d in databases] if len(databases) > 0 else databases
 
     @overrides
-    def _get_all_schemas(self, database: str) -> List[str]:
+    def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         database = self.quoted(database)
         logger.debug(f'Collecting schemas from {database} in postgres...')
         query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND \
