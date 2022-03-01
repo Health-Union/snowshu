@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import List, Optional
 from overrides import overrides
 import sqlalchemy
 
@@ -101,16 +101,21 @@ class PostgresAdapter(BaseTargetAdapter):
                 logger.debug('Database %s already exists, skipping.', database)
             else:
                 raise sql_errs
-
-        # load any pg extensions that are required
-        db_conn = self.get_connection(database_override=database)
-        for ext in self.extensions:
-            statement = f'create extension if not exists \"{ext}\"'
-            try:
-                db_conn.execute(statement)
-            except sqlalchemy.exc.IntegrityError as error:
-                logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
         return database
+
+    def create_all_database_extensions(self) -> str:
+        """Post-processing step to create extensions on all existing databases
+        """
+        unique_databases = set(self._get_all_databases())
+        for database in unique_databases:
+            # load any pg extensions that are required
+            db_conn = self.get_connection(database_override=database)
+            for ext in self.extensions:
+                statement = f'create extension if not exists \"{ext}\"'
+                try:
+                    db_conn.execute(statement)
+                except sqlalchemy.exc.IntegrityError as error:
+                    logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
         database = self.quoted(database)
@@ -147,6 +152,10 @@ class PostgresAdapter(BaseTargetAdapter):
         logger.debug(f'Collecting schemas from {database} in postgres...')
         query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND \
             schema_name NOT IN ('information_schema', 'pg_catalog')"
+        if exclude_defaults:
+            query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' \
+                AND schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast', 'pg_temp_1', \
+                'pg_toast_temp_1', 'public')"
         engine = self.get_connection(database_override=database)
         try:
             result = engine.execute(query)
