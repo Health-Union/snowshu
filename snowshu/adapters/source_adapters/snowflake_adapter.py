@@ -199,10 +199,6 @@ FROM
             query += f"{self._sample_type_to_query_sql(sample_type)}"
         return query
 
-    def quoted_dot_notation(self, rel: Relation) -> str:
-        return '.'.join([self.quoted(getattr(rel, relation))
-                        for relation in ('database', 'schema', 'name',)])
-
     @staticmethod
     def union_constraint_statement(subject: Relation,
                                    constraint: Relation,
@@ -290,14 +286,6 @@ LIMIT {max_number_of_outliers})
     def quoted(val: str) -> str:
         return f'"{val}"' if ' ' in val else val
 
-    def _correct_case(self, val: str, attr: str = None) -> str:
-        """The base case correction method for a sql adapter.
-        """
-        preserve_case = self.preserve_case[attr] if attr in ['database', 'schema', 'relation'] else False
-        if preserve_case:
-            return val
-        return val.upper() if self.DEFAULT_CASE == 'upper' else val
-
     # TODO: change arg name in parent to the fix issue here
     @overrides
     def _build_conn_string(self, overrides: Optional[dict] = None) -> str:  # noqa pylint: disable=redefined-outer-name
@@ -366,8 +354,8 @@ LIMIT {max_number_of_outliers})
                     ))
 
             relation = Relation(schema_obj.full_relation.database,
-                                self._correct_case(attribute.schema),   # noqa pylint: disable=undefined-loop-variable
-                                self._correct_case(attribute.relation),   # noqa pylint: disable=undefined-loop-variable
+                                self._correct_case(attribute.schema, "schema"),   # noqa pylint: disable=undefined-loop-variable
+                                self._correct_case(attribute.relation, "relation"),   # noqa pylint: disable=undefined-loop-variable
                                 self.MATERIALIZATION_MAPPINGS[attribute.materialization],   # noqa pylint: disable=undefined-loop-variable
                                 attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')

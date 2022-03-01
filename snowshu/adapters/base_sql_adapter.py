@@ -12,6 +12,7 @@ from snowshu.core.models import Relation
 from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, USER,
                                              Credentials)
 from snowshu.core.models.relation import at_least_one_full_pattern_match
+from snowshu.core.utils import correct_case
 from snowshu.logger import Logger, duration
 
 logger = Logger().logger
@@ -231,3 +232,15 @@ class BaseSQLAdapter:
 
     def _get_relations_from_database(self, schema_obj: _DatabaseObject):
         raise NotImplementedError()
+
+    def quoted_dot_notation(self, rel: Relation) -> str:
+        return '.'.join([self.quoted(getattr(rel, relation))
+                        for relation in ('database', 'schema', 'name',)])
+
+    def _correct_case(self, val: str, attr: str = None) -> str:
+        """The base case correction method for a sql adapter.
+        """
+        preserve_case = self.preserve_case[attr] if attr in ['database', 'schema', 'relation'] else False
+        if preserve_case:
+            return val
+        return val if preserve_case else correct_case(val, self.DEFAULT_CASE == 'upper')

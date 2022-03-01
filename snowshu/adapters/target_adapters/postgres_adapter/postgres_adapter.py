@@ -91,6 +91,8 @@ class PostgresAdapter(BaseTargetAdapter):
         So ask for forgiveness instead.
         """
         conn = self.get_connection()
+        database = database if self.preserve_case \
+            else correct_case(database, self.DEFAULT_CASE == 'upper')
         database = self.quoted(database)
         statement = f'CREATE DATABASE {database}'
         try:
@@ -118,6 +120,10 @@ class PostgresAdapter(BaseTargetAdapter):
                     logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
+        database = database if self.preserve_case \
+            else correct_case(database, self.DEFAULT_CASE == 'upper')
+        schema = schema if self.preserve_case \
+            else correct_case(schema, self.DEFAULT_CASE == 'upper')
         database = self.quoted(database)
         schema = self.quoted(schema)
         conn = self.get_connection(database_override=database)
@@ -256,22 +262,10 @@ class PostgresAdapter(BaseTargetAdapter):
                     relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
         return relation
 
-    def quoted_dot_notation(self, rel: Relation) -> str:
-        return '.'.join([self.quoted(getattr(rel, relation))
-                        for relation in ('database', 'schema', 'name',)])
-
     @staticmethod
     def quoted(val: str) -> str:
         """Returns quoted value if appropriate."""
         return f'"{val}"' if ' ' in val else val
-
-    def _correct_case(self, val: str, attr: str = None) -> str:
-        """The case correction method for a postgresql adapter.
-        """
-        preserve_case = self.preserve_case[attr] if attr in ['database', 'schema', 'relation'] else False
-        if preserve_case:
-            return val
-        return val.upper() if self.DEFAULT_CASE == 'upper' else val
 
     @classmethod
     def _build_snowshu_envars(cls, snowshu_envars: list) -> list:
