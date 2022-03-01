@@ -190,7 +190,7 @@ class BaseSQLAdapter:
     def _get_all_databases(self) -> List[str]:
         raise NotImplementedError()
 
-    def _get_all_schemas(self, database: str) -> List[str]:
+    def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         """ Returns the raw names of the schemas in the given database (raw case) """
         raise NotImplementedError()
 
