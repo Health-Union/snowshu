@@ -45,7 +45,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         self.container: "Container" = None
         self.replica_meta = replica_metadata
 
-    def enable_cross_database(self) -> None:
+    def enable_cross_database(self, relations: Iterable['Relation']) -> None:
         """ Create x-database links, if available to the target.
 
         Args:
