@@ -199,10 +199,6 @@ FROM
             query += f"{self._sample_type_to_query_sql(sample_type)}"
         return query
 
-    def quoted_dot_notation(self, rel: Relation) -> str:
-        return '.'.join([self.quoted(getattr(rel, relation))
-                        for relation in ('database', 'schema', 'name',)])
-
     @staticmethod
     def union_constraint_statement(subject: Relation,
                                    constraint: Relation,
@@ -289,11 +285,6 @@ LIMIT {max_number_of_outliers})
     @staticmethod
     def quoted(val: str) -> str:
         return f'"{val}"' if ' ' in val else val
-
-    def _correct_case(self, val: str) -> str:
-        """The base case correction method for a sql adapter.
-        """
-        return val.upper() if self.DEFAULT_CASE == 'upper' else val
 
     # TODO: change arg name in parent to the fix issue here
     @overrides

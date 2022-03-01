@@ -91,6 +91,8 @@ class PostgresAdapter(BaseTargetAdapter):
         So ask for forgiveness instead.
         """
         conn = self.get_connection()
+        database = database if self.preserve_case \
+            else correct_case(database, self.DEFAULT_CASE == 'upper')
         database = self.quoted(database)
         statement = f'CREATE DATABASE {database}'
         try:
@@ -113,6 +115,10 @@ class PostgresAdapter(BaseTargetAdapter):
         return database
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
+        database = database if self.preserve_case \
+            else correct_case(database, self.DEFAULT_CASE == 'upper')
+        schema = schema if self.preserve_case \
+            else correct_case(schema, self.DEFAULT_CASE == 'upper')
         database = self.quoted(database)
         schema = self.quoted(schema)
         conn = self.get_connection(database_override=database)
@@ -246,10 +252,6 @@ class PostgresAdapter(BaseTargetAdapter):
                                    "(excluding bounding single quotes)", col, self.x00_replacement)
                     relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
         return relation
-
-    def quoted_dot_notation(self, rel: Relation) -> str:
-        return '.'.join([self.quoted(getattr(rel, relation))
-                        for relation in ('database', 'schema', 'name',)])
 
     @staticmethod
     def quoted(val: str) -> str:

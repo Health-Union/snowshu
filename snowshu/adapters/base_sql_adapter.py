@@ -232,6 +232,10 @@ class BaseSQLAdapter:
     def _get_relations_from_database(self, schema_obj: _DatabaseObject):
         raise NotImplementedError()
 
+    def quoted_dot_notation(self, rel: Relation) -> str:
+        return '.'.join([self.quoted(getattr(rel, relation))
+                        for relation in ('database', 'schema', 'name',)])
+
     def _correct_case(self, val: str) -> str:
         """The base case correction method for a sql adapter.
         """

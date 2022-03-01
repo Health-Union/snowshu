@@ -89,7 +89,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
         """
         ddl_statement = f"""CREATE OR REPLACE VIEW
-{relation.quoted_dot_notation}
+{self.quoted_dot_notation(relation)}
 AS
 {relation.view_ddl}
 """ 
@@ -99,10 +99,10 @@ AS
             engine.execute(ddl_statement)
         except Exception as exc:
             logger.info("Failed to create %s %s:%s", relation.materialization.name,
-                        relation.quoted_dot_notation,
+                        self.quoted_dot_notation(relation),
                         exc)
             raise exc
-        logger.info('Created relation %s', relation.quoted_dot_notation)
+        logger.info('Created relation %s', self.quoted_dot_notation(relation))
 
     def load_data_into_relation(self, relation: Relation) -> None:
         engine = self.get_connection(database_override=relation.database,
