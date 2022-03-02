@@ -233,9 +233,18 @@ class BaseSQLAdapter:
     def _get_relations_from_database(self, schema_obj: _DatabaseObject):
         raise NotImplementedError()
 
+    @staticmethod
+    def quoted(val: str) -> str:
+        raise NotImplementedError()
+
     def quoted_dot_notation(self, rel: Relation) -> str:
-        return '.'.join([self.quoted(getattr(rel, relation))
-                        for relation in ('database', 'schema', 'name',)])
+        case_corrected_database = self._correct_case(rel.database, 'database')
+        case_corrected_schema = self._correct_case(rel.schema, 'schema')
+        case_corrected_name = self._correct_case(rel.name, 'relation')
+        return '.'.join([self.quoted(val) for val in 
+                        (case_corrected_database, 
+                         case_corrected_schema, 
+                         case_corrected_name)])
 
     def _correct_case(self, val: str, attr: str = None) -> str:
         """The base case correction method for a sql adapter.
