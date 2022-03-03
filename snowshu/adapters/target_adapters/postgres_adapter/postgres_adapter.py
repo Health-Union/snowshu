@@ -91,9 +91,7 @@ class PostgresAdapter(BaseTargetAdapter):
         So ask for forgiveness instead.
         """
         conn = self.get_connection()
-        database = database if self.preserve_case \
-            else correct_case(database, self.DEFAULT_CASE == 'upper')
-        database = self.quoted(database)
+        database = self.quoted(self._correct_case(database))
         statement = f'CREATE DATABASE {database}'
         try:
             conn.execute(statement)
@@ -120,12 +118,8 @@ class PostgresAdapter(BaseTargetAdapter):
                     logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
-        database = database if self.preserve_case \
-            else correct_case(database, self.DEFAULT_CASE == 'upper')
-        schema = schema if self.preserve_case \
-            else correct_case(schema, self.DEFAULT_CASE == 'upper')
-        database = self.quoted(database)
-        schema = self.quoted(schema)
+        database = self.quoted(self._correct_case(database))
+        schema = self.quoted(self._correct_case(schema))
         conn = self.get_connection(database_override=database)
         statement = f'CREATE SCHEMA IF NOT EXISTS {schema}'
         try:

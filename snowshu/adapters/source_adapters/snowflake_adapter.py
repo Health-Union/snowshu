@@ -110,24 +110,25 @@ class SnowflakeAdapter(BaseSourceAdapter):
             a query that results in a single row, single column, integer value of the unsampled relation population size
         """
         adapter = SnowflakeAdapter()
-        return f"SELECT COUNT(*) FROM {SnowflakeAdapter.quoted_dot_notation(adapter, relation)}"
+        return f"SELECT COUNT(*) FROM {adapter.quoted_dot_notation(adapter, relation)}"
 
     @staticmethod
     def view_creation_statement(relation: Relation) -> str:
         adapter = SnowflakeAdapter()
         return f"""
 SELECT
-SUBSTRING(GET_DDL('view','{SnowflakeAdapter.quoted_dot_notation(adapter, relation)}'),
-POSITION(' AS ' IN UPPER(GET_DDL('view','{SnowflakeAdapter.quoted_dot_notation(adapter, relation)}')))+3)
+SUBSTRING(GET_DDL('view','{adapter.quoted_dot_notation(adapter, relation)}'),
+POSITION(' AS ' IN UPPER(GET_DDL('view','{adapter.quoted_dot_notation(adapter, relation)}')))+3)
 """
 
     @staticmethod
     def unsampled_statement(relation: Relation) -> str:
+        adapter = SnowflakeAdapter()
         return f"""
 SELECT
     *
 FROM
-    {SnowflakeAdapter.quoted_dot_notation(SnowflakeAdapter, relation)}
+    {adapter.quoted_dot_notation(relation)}
 """
 
     def directionally_wrap_statement(self,
@@ -157,13 +158,14 @@ FROM
 
     @staticmethod
     def analyze_wrap_statement(sql: str, relation: Relation) -> str:
+        adapter = SnowflakeAdapter()
         return f"""
 WITH
     {relation.scoped_cte('SNOWSHU_COUNT_POPULATION')} AS (
 SELECT
     COUNT(*) AS population_size
 FROM
-    {SnowflakeAdapter.quoted_dot_notation(SnowflakeAdapter, relation)}
+    {adapter.quoted_dot_notation(relation)}
 )
 ,{relation.scoped_cte('SNOWSHU_CORE_SAMPLE')} AS (
 {sql}
@@ -205,19 +207,20 @@ FROM
                                    subject_key: str,
                                    constraint_key: str,
                                    max_number_of_outliers: int) -> str:
+        adapter = SnowflakeAdapter()
         """ Union statements to select outliers. This does not pull in NULL values. """
         return f"""
 (SELECT
     *
 FROM
-{SnowflakeAdapter.quoted_dot_notation(SnowflakeAdapter, subject)}
+{adapter.quoted_dot_notation(subject)}
 WHERE
     {subject_key}
 NOT IN
 (SELECT
     {constraint_key}
 FROM
-{SnowflakeAdapter.quoted_dot_notation(SnowflakeAdapter, constraint)})
+{adapter.quoted_dot_notation(constraint)})
 LIMIT {max_number_of_outliers})
 """
 
@@ -226,8 +229,9 @@ LIMIT {max_number_of_outliers})
                                       local_key: str,
                                       remote_key: str) -> str:
         """ builds upstream where constraints against downstream full population"""
+        adapter = SnowflakeAdapter()
         return f" {local_key} in (SELECT {remote_key} FROM \
-                {SnowflakeAdapter.quoted_dot_notation(SnowflakeAdapter, relation)})"
+                {adapter.quoted_dot_notation(relation)})"
 
     @staticmethod
     def predicate_constraint_statement(relation: Relation,
