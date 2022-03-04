@@ -94,7 +94,7 @@ class BaseSQLAdapter:
         conn = None
         cursor = None
         try:
-            database = self._correct_case(database)
+            database = database if not database else self._correct_case(database)
             # database_override is needed for databases like postgre
             conn = self.get_connection() if not database else self.get_connection(database_override=database)
             cursor = conn.connect()
