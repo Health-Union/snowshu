@@ -278,6 +278,8 @@ AS
 
             unique_schemas = {(rel.database, rel.schema,) for rel in relations}
             for db, schema in unique_schemas:   # noqa pylint: disable=invalid-name
+                db = self._correct_case(db)
+                schema = self._correct_case(schema)
                 conn = self.get_connection(database_override=db,
                                            schema_override=schema)
                 logger.debug('Applying function %s to "%s"."%s"...', function, db, schema)
