@@ -265,6 +265,48 @@ LIMIT {max_number_of_outliers})
             type_match_val = relation.name[:-1] if relation.name[-1].lower() == 's' else relation.name
         return f" ({predicate} AND LOWER({local_type}) = LOWER('{type_match_val}') ) "
 
+    def get_matching_relations(self, relation: Relation) -> List[str]:
+        """ Use the SHOW api to get all the available db structures."""
+        logger.debug('Collecting matching relations from snowflake via regex...')
+        table = f"{relation.database}.information_schema.tables"
+        query = f"""
+SELECT table_name FROM {table} WHERE table_name REGEXP '{relation.quoted(relation.name)}'
+"""
+        show_result = tuple(self._safe_query(query)['table_name'].tolist())
+        relations = list(set(show_result))
+        logger.debug(f'Done. Found {len(relations)} matching relations.')
+        return relations
+
+    @staticmethod
+    def polymorphic_union_constraint_statement(subject: Relation,
+                                               constraint: Relation,
+                                               matching_relations: List[str],
+                                               subject_key: str,
+                                               constraint_key: str,
+                                               max_number_of_outliers: int) -> str:
+        """ Union statements to select outliers for polymorphic relations. 
+        This does not pull in NULL values. """
+        statements = []
+        for name in matching_relations:
+            constraint_table = ".".join([constraint.database, 
+                                         constraint.schema,
+                                         name])
+            statements.append(f"""
+(SELECT
+    *
+FROM
+{subject.quoted_dot_notation}
+WHERE
+    {subject_key}
+NOT IN
+(SELECT
+    {constraint_key}
+FROM
+{constraint_table})
+LIMIT {max_number_of_outliers})
+""")
+        return statements
+
     @staticmethod
     def _sample_type_to_query_sql(sample_type: 'BaseSampleMethod') -> str:
         if sample_type.name == 'BERNOULLI':
