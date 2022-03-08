@@ -278,12 +278,12 @@ SELECT table_name FROM {table} WHERE table_name REGEXP '{relation.quoted(relatio
         return relations
 
     @staticmethod
-    def polymorphic_union_constraint_statement(subject: Relation,
-                                               constraint: Relation,
-                                               matching_relations: List[str],
-                                               subject_key: str,
-                                               constraint_key: str,
-                                               max_number_of_outliers: int) -> str:
+    def polymorphic_constraint_statements(subject: Relation,  # noqa pylint: disable=too-many-arguments
+                                          constraint: Relation,
+                                          matching_relations: List[str],
+                                          subject_key: str,
+                                          constraint_key: str,
+                                          max_number_of_outliers: int) -> str:
         """ Union statements to select outliers for polymorphic relations. 
         This does not pull in NULL values. """
         statements = []

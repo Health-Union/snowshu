@@ -50,13 +50,13 @@ class RuntimeSourceCompiler:
                 if relation.include_outliers:
                     if edge['direction'] == 'polymorphic':
                         match_relations = source_adapter.get_matching_relations(child)
-                        polymorphic_unions = source_adapter.polymorphic_union_constraint_statement(relation,
-                                                                                                   child,
-                                                                                                   match_relations, 
-                                                                                                   edge['remote_attribute'],
-                                                                                                   edge['local_attribute'],
-                                                                                                   relation.max_number_of_outliers)
-                        unions += polymorphic_unions
+                        p_unions = source_adapter.polymorphic_constraint_statements(relation,
+                                                                                    child,
+                                                                                    match_relations, 
+                                                                                    edge['remote_attribute'],
+                                                                                    edge['local_attribute'],
+                                                                                    relation.max_number_of_outliers)
+                        unions += p_unions
                     else:
                         unions.append(source_adapter.union_constraint_statement(relation,
                                                                                 child,
@@ -95,13 +95,13 @@ class RuntimeSourceCompiler:
                 if relation.include_outliers:
                     if edge['direction'] == 'polymorphic':
                         match_relations = source_adapter.get_matching_relations(parent)
-                        polymorphic_unions = source_adapter.polymorphic_union_constraint_statement(relation,
-                                                                                                   parent,
-                                                                                                   match_relations, 
-                                                                                                   edge['local_attribute'],
-                                                                                                   edge['remote_attribute'],
-                                                                                                   relation.max_number_of_outliers)
-                        unions += polymorphic_unions
+                        p_unions = source_adapter.polymorphic_constraint_statements(relation,
+                                                                                    parent,
+                                                                                    match_relations, 
+                                                                                    edge['local_attribute'],
+                                                                                    edge['remote_attribute'],
+                                                                                    relation.max_number_of_outliers)
+                        unions += p_unions
                     else:
                         unions.append(source_adapter.union_constraint_statement(relation,
                                                                                 parent,
