@@ -91,13 +91,15 @@ class BaseTargetAdapter(BaseSQLAdapter):
             relation: the :class:`Relation <snowshu.core.models.relation.Relation>` object to be created as a view.
 
         """
+        database = self.quoted(self._correct_case(relation.database))
+        schema = self.quoted(self._correct_case(relation.schema))
         ddl_statement = f"""CREATE OR REPLACE VIEW
 {self.quoted_dot_notation(relation)}
 AS
 {relation.view_ddl}
 """ 
-        engine = self.get_connection(database_override=relation.database,
-                                     schema_override=relation.schema)
+        engine = self.get_connection(database_override=database,
+                                     schema_override=schema)
         try:
             engine.execute(ddl_statement)
         except Exception as exc:
@@ -108,18 +110,21 @@ AS
         logger.info('Created relation %s', self.quoted_dot_notation(relation))
 
     def load_data_into_relation(self, relation: Relation) -> None:
-        engine = self.get_connection(database_override=relation.database,
-                                     schema_override=relation.schema)
+        database = self.quoted(self._correct_case(relation.database))
+        schema = self.quoted(self._correct_case(relation.schema))
+        engine = self.get_connection(database_override=database,
+                                     schema_override=schema)
         logger.info('Loading data into relation %s...', 
                     self.quoted_dot_notation(relation))
         try:
             attribute_type_map = {attr.name: attr.data_type.sqlalchemy_type
                                   for attr in relation.attributes}
-            data_type_map = {col: case_insensitive_dict_value(attribute_type_map, col)
+            data_type_map = {self._correct_case(col): case_insensitive_dict_value(attribute_type_map, 
+                                                                                  self._correct_case(col))
                              for col in relation.data.columns.to_list()}
             relation.data.to_sql(relation.name,
                                  engine,
-                                 schema=relation.schema,
+                                 schema=schema,
                                  if_exists='replace',
                                  index=False,
                                  dtype=data_type_map,
