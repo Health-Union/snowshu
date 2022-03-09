@@ -1,11 +1,12 @@
-name: Live Deployment to PyPI
+name: Test Deployment to PyPI
 
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+      - master
 
 env:
-  PYPI_KEY: ${{ secrets.PYPI_KEY }}
+  PYPI_KEY: ${{ secrets.TEST_PYPI_KEY }}
 
 jobs:
 
@@ -28,5 +29,3 @@ jobs:
       run: docker-compose up -d
     - name: Creating new release package
       run: docker-compose exec -T snowshu python3 setup.py sdist bdist_wheel
-    - name: Publishing to PyPI
-      run: twine upload -u __token__ -p "$PYPI_KEY" dist/*
