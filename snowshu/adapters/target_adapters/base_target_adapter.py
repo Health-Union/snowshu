@@ -116,20 +116,22 @@ AS
                                      schema_override=schema)
         logger.info('Loading data into relation %s...', 
                     self.quoted_dot_notation(relation))
+        original_columns = relation.data.columns.copy()
+        relation.data.columns = [self._correct_case(col) for col in original_columns]
         try:
             attribute_type_map = {attr.name: attr.data_type.sqlalchemy_type
                                   for attr in relation.attributes}
-            data_type_map = {self._correct_case(col): case_insensitive_dict_value(attribute_type_map, 
-                                                                                  self._correct_case(col))
+            data_type_map = {col: case_insensitive_dict_value(attribute_type_map, col)
                              for col in relation.data.columns.to_list()}
-            relation.data.to_sql(relation.name,
+            relation.data.to_sql(self._correct_case(relation.name),
                                  engine,
-                                 schema=schema,
+                                 schema=self._correct_case(schema),
                                  if_exists='replace',
                                  index=False,
                                  dtype=data_type_map,
                                  chunksize=DEFAULT_INSERT_CHUNK_SIZE,
                                  method='multi')
+            relation.data.columns = original_columns
         except Exception as exc:
             logger.info("Exception encountered loading data into %s:%s", 
                         self.quoted_dot_notation(relation), exc)
