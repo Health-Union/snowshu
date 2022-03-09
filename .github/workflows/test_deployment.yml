@@ -29,7 +29,5 @@ jobs:
       run: docker-compose up -d
     - name: Creating new release package
       run: docker-compose exec -T snowshu python3 setup.py sdist bdist_wheel
-    - name: Copy release package
-      run: docker cp $(docker ps -alq):/app/dist/ .
     - name: Publishing to PyPI
       run: twine upload -u __token__ -p "$PYPI_KEY" --repository testpypi dist/*
