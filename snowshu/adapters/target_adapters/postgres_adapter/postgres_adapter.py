@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional
+from typing import List, Optional
 from overrides import overrides
 import sqlalchemy
 
