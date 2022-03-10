@@ -271,24 +271,24 @@ class PostgresAdapter(BaseTargetAdapter):
         unique_schemas.add(('snowshu', 'snowshu',))
 
         def statement_runner(statement: str):
-            logger.info('executing statement `%s...`', statement)
+            logger.info('executing statement `%s`...', statement)
             conn.execute(statement)
             logger.debug('Executed.')
 
-        for u_db in unique_databases:
-            conn = self.get_connection(database_override=u_db)
-            statement_runner('CREATE EXTENSION IF NOT EXISTS postgres_fdw')
-            for remote_database in filter((lambda x, current_db=u_db: x != current_db), unique_databases):
-                statement_runner(f"CREATE SERVER IF NOT EXISTS {remote_database} FOREIGN DATA WRAPPER "
-                                 f"postgres_fdw OPTIONS (dbname '{remote_database}',port '9999')")
+        snowshu_db = 'snowshu'
+        conn = self.get_connection(database_override=snowshu_db)
+        statement_runner('CREATE EXTENSION IF NOT EXISTS postgres_fdw')
+        for remote_database in filter((lambda x, current_db=snowshu_db: x != current_db), unique_databases):
+            statement_runner(f"CREATE SERVER IF NOT EXISTS {remote_database} FOREIGN DATA WRAPPER "
+                             f"postgres_fdw OPTIONS (dbname '{remote_database}',port '9999')")
 
-                statement_runner(f"CREATE USER MAPPING IF NOT EXISTS for snowshu SERVER {remote_database} "
-                                 f"OPTIONS (user 'snowshu', password 'snowshu')")
+            statement_runner(f"CREATE USER MAPPING IF NOT EXISTS for snowshu SERVER {remote_database} "
+                             f"OPTIONS (user 'snowshu', password 'snowshu')")
 
-            for schema_database, schema in unique_schemas:
-                if schema_database != u_db:
-                    statement_runner(f'DROP SCHEMA IF EXISTS {schema_database}__{schema} CASCADE')
-                    statement_runner(f'CREATE SCHEMA {schema_database}__{schema}')
+        for schema_database, schema in unique_schemas:
+            if schema_database != snowshu_db:
+                statement_runner(f'DROP SCHEMA IF EXISTS {schema_database}__{schema} CASCADE')
+                statement_runner(f'CREATE SCHEMA {schema_database}__{schema}')
 
-                    statement_runner(f'IMPORT FOREIGN SCHEMA {schema} FROM SERVER '
-                                     f'{schema_database} INTO {schema_database}__{schema}')
+                statement_runner(f'IMPORT FOREIGN SCHEMA {schema} FROM SERVER '
+                                 f'{schema_database} INTO {schema_database}__{schema}')
