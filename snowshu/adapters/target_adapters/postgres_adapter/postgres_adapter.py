@@ -278,8 +278,11 @@ class PostgresAdapter(BaseTargetAdapter):
         unique_databases.remove('postgres')
         schemas = []
         for database in unique_databases:
-            schemas += [(correct_case(database, self.DEFAULT_CASE == 'upper'), 
-                         correct_case(schema, self.DEFAULT_CASE == 'upper')) for schema in self._get_all_schemas(database, True)]
+            schemas += [(correct_case(database, 
+                                      self.DEFAULT_CASE == 'upper'), 
+                         correct_case(schema, 
+                                      self.DEFAULT_CASE == 'upper')) for schema in self._get_all_schemas(database, 
+                                                                                                         True)]
 
         unique_schemas = set(schemas)
         unique_databases.add('snowshu')
