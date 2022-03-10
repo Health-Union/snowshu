@@ -1,12 +1,9 @@
-name: Test Deployment to PyPI
+name: Test Build Packages
 
 on:
   push:
     branches:
       - master
-
-env:
-  PYPI_KEY: ${{ secrets.TEST_PYPI_KEY }}
 
 jobs:
 
