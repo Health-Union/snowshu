@@ -35,53 +35,53 @@ class RelationTestHelper:
     """builds a collection of different relations for testing"""
 
     def rand_relation_helper(self) -> dict:
-        return dict(database=rand_string(10),
-                    schema=rand_string(15),
+        return dict(database=rand_string(10).upper(),
+                    schema=rand_string(15).upper(),
                     materialization=mz.TABLE,
                     attributes=[]
                     )
 
     def __init__(self):
         self.downstream_relation = Relation(
-            name='downstream_relation', **self.rand_relation_helper())
+            name='DOWNSTREAM_RELATION', **self.rand_relation_helper())
         self.upstream_relation = Relation(
-            name='upstream_relation', **self.rand_relation_helper())
+            name='UPSTREAM_RELATION', **self.rand_relation_helper())
         self.iso_relation = Relation(
-            name='iso_relation', **self.rand_relation_helper())
+            name='ISO_RELATION', **self.rand_relation_helper())
         self.birelation_left = Relation(
-            name='birelation_left', **self.rand_relation_helper())
+            name='BIRELATION_LEFT', **self.rand_relation_helper())
         self.birelation_right = Relation(
-            name='birelation_right', **self.rand_relation_helper())
+            name='BIRELATION_RIGHT', **self.rand_relation_helper())
         self.view_relation = Relation(
-            name='view_relation', **self.rand_relation_helper())
+            name='VIEW_RELATION', **self.rand_relation_helper())
 
         self.downstream_wildcard_relation_1 = Relation(
-            name='downstream_wildcard_relation_1', **self.rand_relation_helper())
+            name='DOWNSTREAM_WILDCARD_RELATION_1', **self.rand_relation_helper())
         self.downstream_wildcard_relation_2 = Relation(
-            name='downstream_wildcard_relation_2', **self.rand_relation_helper())
+            name='DOWNSTREAM_WILDCARD_RELATION_2', **self.rand_relation_helper())
         self.upstream_wildcard_relation_1 = Relation(
-            name='upstream_wildcard_relation_1',
+            name='UPSTREAM_WILDCARD_RELATION_1',
             schema=self.downstream_wildcard_relation_1.schema,
             database=self.downstream_wildcard_relation_1.database,
             materialization=mz.TABLE,
             attributes=[])
         self.upstream_wildcard_relation_2 = Relation(
-            name='upstream_wildcard_relation_2',
+            name='UPSTREAM_WILDCARD_RELATION_2',
             schema=self.downstream_wildcard_relation_2.schema,
             database=self.downstream_wildcard_relation_2.database,
             materialization=mz.TABLE,
             attributes=[])
 
         self.parent_relation_childid_type = Relation(
-            name='parent_relation_childid_type', **self.rand_relation_helper())
+            name='PARENT_RELATION_CHILDID_TYPE', **self.rand_relation_helper())
         self.parent_relation_parentid = Relation(
-            name='parent_relation_parentid', **self.rand_relation_helper())
+            name='PARENT_RELATION_PARENTID', **self.rand_relation_helper())
         self.child_relation_type_1 = Relation(
-            name='child_type_1_records', **self.rand_relation_helper())
+            name='CHILD_TYPE_1_RECORDS', **self.rand_relation_helper())
         self.child_relation_type_2 = Relation(
-            name='child_type_2_records', **self.rand_relation_helper())
+            name='CHILD_TYPE_2_RECORDS', **self.rand_relation_helper())
         self.child_relation_type_3 = Relation(
-            name='child_type_3_records', **self.rand_relation_helper())
+            name='CHILD_TYPE_3_RECORDS', **self.rand_relation_helper())
 
         self.bidirectional_key_left = rand_string(10)
         self.bidirectional_key_right = rand_string(8)

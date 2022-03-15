@@ -194,14 +194,14 @@ def test_build_graph_partitions_wildcards(stub_graph_set):
         {
             "database": f"({vals.downstream_wildcard_relation_1.database}|{vals.downstream_wildcard_relation_2.database})",
             "schema": f"({vals.downstream_wildcard_relation_1.schema}|{vals.downstream_wildcard_relation_2.schema})",
-            "relation": ".*downstream.*$",
+            "relation": ".*DOWNSTREAM.*$",
             "relationships": {
                 "directional": [
                     {
                         "local_attribute": vals.directional_key,
                         "database": "",
                         "schema": "",
-                        "relation": ".*upstream.*$",
+                        "relation": ".*UPSTREAM.*$",
                         "remote_attribute": vals.directional_key
                     }
                 ]
@@ -241,7 +241,7 @@ def test_build_graph_allows_upstream_regex(stub_graph_set):
                         "local_attribute": vals.directional_key,
                         "database": ".*",
                         "schema": ".*",
-                        "relation": ".*relation.*$",  # incl birelations
+                        "relation": ".*RELATION.*$",  # incl birelations
                         "remote_attribute": vals.directional_key
                     }
                 ]
@@ -372,14 +372,14 @@ def test_build_graph_fails_many_to_many(stub_graph_set):
         {
             "database": ".*",
             "schema": ".*",
-            "relation": ".*relation_.*$",  # birelations
+            "relation": ".*RELATION_.*$",  # birelations
             "relationships": {
                 "directional": [
                     {
                         "local_attribute": vals.directional_key,
                         "database": ".*",
                         "schema": ".*",
-                        "relation": ".*relation$",  # non birelations
+                        "relation": ".*RELATION$",  # non birelations
                         "remote_attribute": vals.directional_key
                     }
                 ]
@@ -458,7 +458,7 @@ def test_graph_difference_empty_target(stub_graph_set):
                         "local_attribute": vals.directional_key,
                         "database": ".*",
                         "schema": ".*",
-                        "relation": ".*relation.*$",
+                        "relation": ".*RELATION.*$",
                         "remote_attribute": vals.directional_key
                     }
                 ]
@@ -497,7 +497,7 @@ def test_graph_difference_no_changes(stub_graph_set):
                         "local_attribute": vals.directional_key,
                         "database": ".*",
                         "schema": ".*",
-                        "relation": ".*relation.*$",  # incl birelations
+                        "relation": ".*RELATION.*$",  # incl birelations
                         "remote_attribute": vals.directional_key
                     }
                 ]
@@ -541,7 +541,7 @@ def test_graph_difference_less_relations_source(stub_graph_set):
                         "local_attribute": vals.directional_key,
                         "database": ".*",
                         "schema": ".*",
-                        "relation": ".*relation.*$",  # incl birelations
+                        "relation": ".*RELATION.*$",  # incl birelations
                         "remote_attribute": vals.directional_key
                     }
                 ]
@@ -583,7 +583,7 @@ def test_graph_difference_more_isolated_relations_source(stub_graph_set, stub_re
                         "local_attribute": vals.directional_key,
                         "database": ".*",
                         "schema": ".*",
-                        "relation": ".*relation.*$",
+                        "relation": ".*RELATION.*$",
                         "remote_attribute": vals.directional_key
                     }
                 ]
@@ -632,7 +632,7 @@ def test_graph_difference_more_non_isolated_relations_source(stub_graph_set, stu
                         "local_attribute": vals.directional_key,
                         "database": ".*",
                         "schema": ".*",
-                        "relation": ".*relation.*$",
+                        "relation": ".*RELATION.*$",
                         "remote_attribute": vals.directional_key
                     }
                 ]
@@ -682,7 +682,7 @@ def test_graph_difference_more_both_isolated_non_isolated_relations_source(stub_
                         "local_attribute": vals.directional_key,
                         "database": ".*",
                         "schema": ".*",
-                        "relation": ".*relation.*$",
+                        "relation": ".*RELATION.*$",
                         "remote_attribute": vals.directional_key
                     }
                 ]

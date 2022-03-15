@@ -9,6 +9,7 @@ from snowshu.core.models.attribute import Attribute
 import snowshu.core.models.data_types as dtypes
 from snowshu.logger import Logger
 from snowshu.core.models.relation import Relation
+from snowshu.core.utils import correct_case
 
 logger = Logger().logger
 
@@ -20,6 +21,7 @@ class PostgresAdapter(BaseTargetAdapter):
     PRELOADED_PACKAGES = ['postgresql-plpython3-12']
     MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
+    DEFAULT_CASE = 'lower'
 
     # NOTE: either start container with db listening on port 9999,
     # or override with DOCKER_TARGET_PORT
@@ -89,6 +91,7 @@ class PostgresAdapter(BaseTargetAdapter):
         So ask for forgiveness instead.
         """
         conn = self.get_connection()
+        database = self.quoted(self._correct_case(database))
         statement = f'CREATE DATABASE {database}'
         try:
             conn.execute(statement)
@@ -115,6 +118,8 @@ class PostgresAdapter(BaseTargetAdapter):
                     logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
+        database = self.quoted(self._correct_case(database))
+        schema = self.quoted(self._correct_case(schema))
         conn = self.get_connection(database_override=database)
         statement = f'CREATE SCHEMA IF NOT EXISTS {schema}'
         try:
@@ -143,6 +148,7 @@ class PostgresAdapter(BaseTargetAdapter):
 
     @overrides
     def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
+        database = self.quoted(database)
         logger.debug(f'Collecting schemas from {database} in postgres...')
         query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND \
             schema_name NOT IN ('information_schema', 'pg_catalog')"
@@ -162,7 +168,7 @@ class PostgresAdapter(BaseTargetAdapter):
 
     @overrides
     def _get_relations_from_database(self, schema_obj: BaseTargetAdapter._DatabaseObject) -> List[Relation]:
-        quoted_database = schema_obj.full_relation.quoted(schema_obj.full_relation.database)  # quoted db name
+        quoted_database = self.quoted(schema_obj.full_relation.database)  # quoted db name
         relation_database = schema_obj.full_relation.database  # case corrected db name
         case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schame name
         relations_sql = f"""
@@ -230,9 +236,11 @@ class PostgresAdapter(BaseTargetAdapter):
         except ValueError as exc:
             if 'cannot contain NUL' in str(exc):
                 logger.warning("Invalid 0x00 char found in %s. "
-                               "Removing from affected columns and trying again", relation.quoted_dot_notation)
+                               "Removing from affected columns and trying again", 
+                               self.quoted_dot_notation(relation))
                 fixed_relation = self.replace_x00_values(relation)
-                logger.info("Retrying data load for %s", relation.quoted_dot_notation)
+                logger.info("Retrying data load for %s", 
+                            self.quoted_dot_notation(relation))
                 return super().load_data_into_relation(fixed_relation)
 
             raise exc
@@ -248,6 +256,11 @@ class PostgresAdapter(BaseTargetAdapter):
                     relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
         return relation
 
+    @staticmethod
+    def quoted(val: str) -> str:
+        """Returns quoted value if appropriate."""
+        return f'"{val}"' if ' ' in val else val
+
     @classmethod
     def _build_snowshu_envars(cls, snowshu_envars: list) -> list:
         """helper method to populate envars with `snowshu`"""
@@ -261,11 +274,16 @@ class PostgresAdapter(BaseTargetAdapter):
         return commands
 
     def enable_cross_database(self) -> None:
-        unique_databases = set(self._get_all_databases())
+        unique_databases = {correct_case(d, self.DEFAULT_CASE == 'upper') for d in self._get_all_databases()}
         unique_databases.remove('postgres')
         schemas = []
         for database in unique_databases:
-            schemas += [(database, schema) for schema in self._get_all_schemas(database, True)]
+            schemas += [(correct_case(database, 
+                                      self.DEFAULT_CASE == 'upper'), 
+                         correct_case(schema, 
+                                      self.DEFAULT_CASE == 'upper')) for schema in self._get_all_schemas(database, 
+                                                                                                         True)]
+
         unique_schemas = set(schemas)
         unique_databases.add('snowshu')
         unique_schemas.add(('snowshu', 'snowshu',))

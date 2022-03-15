@@ -94,6 +94,7 @@ class BaseSQLAdapter:
         conn = None
         cursor = None
         try:
+            database = database if not database else self._correct_case(database)
             # database_override is needed for databases like postgre
             conn = self.get_connection() if not database else self.get_connection(database_override=database)
             cursor = conn.connect()
@@ -218,8 +219,7 @@ class BaseSQLAdapter:
         # get all schemas in all databases
         filtered_schemas = []
         for db_rel in filtered_databases:
-            schemas = self._get_all_schemas(
-                database=db_rel.quoted(db_rel.database))
+            schemas = self._get_all_schemas(database=db_rel.database)
             schema_objs = [
                 BaseSQLAdapter._DatabaseObject(
                     schema, 
@@ -232,6 +232,19 @@ class BaseSQLAdapter:
 
     def _get_relations_from_database(self, schema_obj: _DatabaseObject):
         raise NotImplementedError()
+
+    @staticmethod
+    def quoted(val: str) -> str:
+        raise NotImplementedError()
+
+    def quoted_dot_notation(self, rel: Relation) -> str:
+        case_corrected_database = self._correct_case(rel.database)
+        case_corrected_schema = self._correct_case(rel.schema)
+        case_corrected_name = self._correct_case(rel.name)
+        return '.'.join([self.quoted(val) for val in 
+                        (case_corrected_database, 
+                         case_corrected_schema, 
+                         case_corrected_name)])
 
     def _correct_case(self, val: str) -> str:
         """The base case correction method for a sql adapter.

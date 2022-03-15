@@ -153,10 +153,10 @@ class GraphSetRunner:
                             f'Analysis of relation {relation.dot_notation} completed in {duration(start_time)}.')
                 else:
                     executable.target_adapter.create_database_if_not_exists(
-                        relation.quoted(relation.database))
+                        relation.database)
                     executable.target_adapter.create_schema_if_not_exists(
-                        relation.quoted(relation.database),
-                        relation.quoted(relation.schema))
+                        relation.database,
+                        relation.schema)
                     if relation.is_view:
                         logger.info(
                             f'Retrieving DDL statement for view {relation.dot_notation} in source...')
@@ -168,8 +168,8 @@ class GraphSetRunner:
                         except Exception:
                             raise SystemError(
                                 f'Failed to extract DDL statement: {relation.compiled_query}')
-                        logger.info(
-                            f'Successfully extracted DDL statement for view {relation.quoted_dot_notation}')
+                        logger.info('Successfully extracted DDL statement for view ' 
+                                    f'{executable.target_adapter.quoted_dot_notation(relation)}')
                     else:
                         logger.info(
                             f'Retrieving records from source {relation.dot_notation}...')
@@ -184,17 +184,19 @@ class GraphSetRunner:
                         logger.info(
                             f'{relation.sample_size} records retrieved for relation {relation.dot_notation}.')
 
-                    logger.info(
-                        f'Inserting relation {relation.quoted_dot_notation} into target...')
+                    logger.info(f'Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}' 
+                                ' into target...')
                     try:
                         executable.target_adapter.create_and_load_relation(
                             relation)
                     except Exception as exc:
-                        raise SystemError(
-                            f'Failed to load relation {relation.quoted_dot_notation} into target: {exc}')
+                        raise SystemError('Failed to load relation '
+                                          f'{executable.target_adapter.quoted_dot_notation(relation)} ' 
+                                          f' into target: {exc}')
 
-                    logger.info(
-                        f'Done replication of relation {relation.dot_notation} in {duration(start_time)}.')
+                    logger.info('Done replication of relation ' 
+                                f'{executable.target_adapter.quoted_dot_notation(relation)} ' 
+                                f' in {duration(start_time)}.')
                     relation.target_loaded = True
                 relation.source_extracted = True
                 logger.info(

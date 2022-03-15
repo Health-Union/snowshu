@@ -31,13 +31,13 @@ def test_analyze_unsampled(stub_relation_set):
         SELECT
             COUNT(*) AS population_size
         FROM
-            {upstream.quoted_dot_notation}
+            {adapter.quoted_dot_notation(upstream)}
         )
         ,{upstream.scoped_cte('SNOWSHU_CORE_SAMPLE')} AS (
         SELECT
             *
         FROM
-            {upstream.quoted_dot_notation}
+            {adapter.quoted_dot_notation(upstream)}
         )
         ,{upstream.scoped_cte('SNOWSHU_CORE_SAMPLE_COUNT')} AS (
         SELECT
@@ -68,7 +68,7 @@ def test_run_unsampled(stub_relation_set):
     assert query_equalize(upstream.compiled_query) == query_equalize(f"""
         SELECT
             *
-        FROM {upstream.quoted_dot_notation}
+        FROM {adapter.quoted_dot_notation(upstream)}
     """)
 
 
@@ -85,13 +85,13 @@ def test_analyze_iso(stub_relation_set):
         SELECT
             COUNT(*) AS population_size
         FROM
-            {iso.quoted_dot_notation}
+            {adapter.quoted_dot_notation(iso)}
         )
         ,{iso.scoped_cte('SNOWSHU_CORE_SAMPLE')} AS (
         SELECT
             *
         FROM 
-            {iso.quoted_dot_notation}
+            {adapter.quoted_dot_notation(iso)}
             SAMPLE BERNOULLI (1500 ROWS)
         )
         ,{iso.scoped_cte('SNOWSHU_CORE_SAMPLE')}_COUNT AS (
@@ -124,7 +124,7 @@ def test_run_iso(stub_relation_set):
         SELECT
             *
         FROM 
-            {iso.quoted_dot_notation}
+            {adapter.quoted_dot_notation(iso)}
             SAMPLE BERNOULLI (1500 ROWS)
         """)
 
@@ -161,8 +161,8 @@ def test_run_deps_polymorphic_idtype(stub_relation_set):
         SELECT 
             * 
         FROM 
-        {parent.quoted_dot_notation}
-        WHERE ( ({childid} IN ('1','2') AND LOWER({childtype}) = LOWER('child_type_1_record') ) OR ({childid} IN ('1','3') AND LOWER({childtype}) = LOWER('{child2type_override}') ) OR ({childid} IN ('1','4') AND LOWER({childtype}) = LOWER('child_type_3_record') ) )
+        {adapter.quoted_dot_notation(parent)}
+        WHERE ( ({childid} IN ('1','2') AND LOWER({childtype}) = LOWER('CHILD_TYPE_1_RECORD') ) OR ({childid} IN ('1','3') AND LOWER({childtype}) = LOWER('{child2type_override}') ) OR ({childid} IN ('1','4') AND LOWER({childtype}) = LOWER('CHILD_TYPE_3_RECORD') ) )
     """
     assert query_equalize(parent.compiled_query)==query_equalize(expected_query)
 
@@ -192,7 +192,7 @@ def test_run_deps_polymorphic_parentid(stub_relation_set):
         SELECT 
             * 
         FROM 
-        {parent.quoted_dot_notation}
+        {adapter.quoted_dot_notation(parent)}
         WHERE ( {parentid} IN ('1','10') OR {parentid} IN ('2','20') OR {parentid} IN ('3','30') )
     """
     assert query_equalize(parent.compiled_query)==query_equalize(expected_query)
@@ -216,7 +216,7 @@ def test_run_deps_directional(stub_relation_set):
         SELECT 
             * 
         FROM 
-        {downstream.quoted_dot_notation}
+        {adapter.quoted_dot_notation(downstream)}
         WHERE id IN (1,2,3) 
         )
         ,{downstream.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
@@ -250,22 +250,22 @@ def test_run_deps_bidirectional_include_outliers(stub_relation_set):
     assert query_equalize(downstream.compiled_query)==query_equalize(f"""
         SELECT
                 *
-        FROM {downstream.quoted_dot_notation}
+        FROM {adapter.quoted_dot_notation(downstream)}
         WHERE id IN (1,2,3) 
         UNION (SELECT
                 *
-            FROM {downstream.quoted_dot_notation}
-            WHERE id NOT IN (SELECT id FROM {upstream.quoted_dot_notation})
+            FROM {adapter.quoted_dot_notation(downstream)}
+            WHERE id NOT IN (SELECT id FROM {adapter.quoted_dot_notation(upstream)})
             LIMIT 100)
         """)
 
     assert query_equalize(upstream.compiled_query)==query_equalize(f"""
         WITH {upstream.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS ( 
         SELECT * FROM 
-        {upstream.quoted_dot_notation} 
+        {adapter.quoted_dot_notation(upstream)} 
             WHERE id in (SELECT id 
             FROM 
-        {downstream.quoted_dot_notation}) 
+        {adapter.quoted_dot_notation(downstream)}) 
         )
         ,{upstream.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
         SELECT 
@@ -281,14 +281,14 @@ def test_run_deps_bidirectional_include_outliers(stub_relation_set):
         (SELECT 
             * 
         FROM 
-        {upstream.quoted_dot_notation} 
+        {adapter.quoted_dot_notation(upstream)} 
         WHERE 
             id 
         NOT IN 
             (SELECT 
                 id 
             FROM 
-        {downstream.quoted_dot_notation}) LIMIT 100)
+        {adapter.quoted_dot_notation(downstream)}) LIMIT 100)
         """
         )
 
@@ -309,7 +309,7 @@ def test_run_deps_bidirectional_exclude_outliers(stub_relation_set):
     assert query_equalize(downstream.compiled_query)==query_equalize(f"""
             SELECT
                 *
-            FROM {downstream.quoted_dot_notation}
+            FROM {adapter.quoted_dot_notation(downstream)}
             WHERE id IN (1,2,3)
     """)
 
@@ -318,13 +318,13 @@ def test_run_deps_bidirectional_exclude_outliers(stub_relation_set):
         SELECT 
             * 
         FROM 
-            {upstream.quoted_dot_notation} 
+            {adapter.quoted_dot_notation(upstream)} 
         WHERE 
             id 
         in (SELECT 
                 id 
             FROM 
-                {downstream.quoted_dot_notation}) ) 
+                {adapter.quoted_dot_notation(downstream)}) ) 
         ,{upstream.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
             SELECT 
                 * 
@@ -371,7 +371,7 @@ def test_run_deps_directional_line_graph():
         SELECT
             *
         FROM
-            {relation_a.quoted_dot_notation}
+            {adapter.quoted_dot_notation(relation_a)}
         SAMPLE BERNOULLI (1500 ROWS)
     """)
     assert query_equalize(relation_b.compiled_query) == query_equalize(f"""
@@ -380,7 +380,7 @@ def test_run_deps_directional_line_graph():
         SELECT 
             * 
         FROM 
-        {relation_b.quoted_dot_notation}
+        {adapter.quoted_dot_notation(relation_b)}
         WHERE col_b_a IN (1,2,3,4,5) 
         )
         ,{relation_b.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
@@ -400,7 +400,7 @@ def test_run_deps_directional_line_graph():
         SELECT 
             * 
         FROM 
-        {relation_c.quoted_dot_notation}
+        {adapter.quoted_dot_notation(relation_c)}
         WHERE col_c IN ('val1','val3','val4') 
         )
         ,{relation_c.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
@@ -450,13 +450,13 @@ def test_run_deps_bidirectional_line_graph():
         SELECT 
             * 
         FROM 
-            {relation_a.quoted_dot_notation} 
+            {adapter.quoted_dot_notation(relation_a)} 
         WHERE 
             col_a 
         in (SELECT 
                 col_b_a 
             FROM 
-                {relation_b.quoted_dot_notation}) ) 
+                {adapter.quoted_dot_notation(relation_b)}) ) 
         ,{relation_a.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
             SELECT 
                 * 
@@ -472,18 +472,18 @@ def test_run_deps_bidirectional_line_graph():
         SELECT 
             * 
         FROM 
-        {relation_b.quoted_dot_notation}
+        {adapter.quoted_dot_notation(relation_b)}
         WHERE col_b_c 
         in (SELECT 
                 col_c 
             FROM 
-                {relation_c.quoted_dot_notation})
+                {adapter.quoted_dot_notation(relation_c)})
         AND col_b_a IN (1,2,3,4,5) 
     """)
     assert query_equalize(relation_c.compiled_query) == query_equalize(f"""
             SELECT
                 *
-            FROM {relation_c.quoted_dot_notation} 
+            FROM {adapter.quoted_dot_notation(relation_c)} 
             WHERE col_c IN ('val1','val3','val4')
     """)
 
@@ -518,14 +518,14 @@ def test_run_deps_directional_multi_deps():
         SELECT
             *
         FROM
-            {relation_a.quoted_dot_notation}
+            {adapter.quoted_dot_notation(relation_a)}
         SAMPLE BERNOULLI (1500 ROWS)
     """)
     assert query_equalize(relation_b.compiled_query) == query_equalize(f"""
         SELECT
             *
         FROM
-            {relation_b.quoted_dot_notation}
+            {adapter.quoted_dot_notation(relation_b)}
         SAMPLE BERNOULLI (1500 ROWS)
     """)
     assert query_equalize(relation_c.compiled_query) == query_equalize(f"""
@@ -534,7 +534,7 @@ def test_run_deps_directional_multi_deps():
         SELECT 
             * 
         FROM 
-        {relation_c.quoted_dot_notation}
+        {adapter.quoted_dot_notation(relation_c)}
         WHERE 
             col_c_a IN (1,2,3,4,5) 
         AND
@@ -584,13 +584,13 @@ def test_run_deps_bidirectional_multi_deps():
         SELECT 
             * 
         FROM 
-            {relation_a.quoted_dot_notation} 
+            {adapter.quoted_dot_notation(relation_a)} 
         WHERE 
             col_a 
         in (SELECT 
                 col_c_a 
             FROM 
-                {relation_c.quoted_dot_notation}) ) 
+                {adapter.quoted_dot_notation(relation_c)}) ) 
         ,{relation_a.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
             SELECT 
                 * 
@@ -608,13 +608,13 @@ def test_run_deps_bidirectional_multi_deps():
         SELECT 
             * 
         FROM 
-        {relation_b.quoted_dot_notation}
+        {adapter.quoted_dot_notation(relation_b)}
         WHERE 
             col_b 
         in (SELECT 
                 col_c_b 
             FROM 
-                {relation_c.quoted_dot_notation})
+                {adapter.quoted_dot_notation(relation_c)})
         )
         ,{relation_b.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
         SELECT 
@@ -630,7 +630,7 @@ def test_run_deps_bidirectional_multi_deps():
     assert query_equalize(relation_c.compiled_query) == query_equalize(f"""
             SELECT
                 *
-            FROM {relation_c.quoted_dot_notation} 
+            FROM {adapter.quoted_dot_notation(relation_c)} 
             WHERE
                 col_c_a IN (1,2,3,4,5)
             AND
@@ -695,13 +695,13 @@ def test_run_deps_mixed_multi_deps():
         SELECT 
             * 
         FROM 
-            {relation_a.quoted_dot_notation} 
+            {adapter.quoted_dot_notation(relation_a)} 
         WHERE 
             col_a_c 
         in (SELECT 
                 col_c_ae 
             FROM 
-                {relation_c.quoted_dot_notation}) ) 
+                {adapter.quoted_dot_notation(relation_c)}) ) 
         ,{relation_a.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS ( 
             SELECT 
                 * 
@@ -717,20 +717,20 @@ def test_run_deps_mixed_multi_deps():
         SELECT
             *
         FROM
-            {relation_b.quoted_dot_notation}
+            {adapter.quoted_dot_notation(relation_b)}
         SAMPLE BERNOULLI (1500 ROWS)
     """)
     assert query_equalize(relation_c.compiled_query) == query_equalize(f"""
         SELECT 
             * 
         FROM 
-            {relation_c.quoted_dot_notation} 
+            {adapter.quoted_dot_notation(relation_c)} 
         WHERE 
             col_c_bd 
         in (SELECT 
                 col_d_c 
             FROM 
-                {relation_d.quoted_dot_notation})
+                {adapter.quoted_dot_notation(relation_d)})
         AND
             col_c_ae IN (1,2,3,4,5)
         AND
@@ -740,7 +740,7 @@ def test_run_deps_mixed_multi_deps():
         SELECT 
             * 
         FROM 
-            {relation_d.quoted_dot_notation}
+            {adapter.quoted_dot_notation(relation_d)}
         WHERE 
             col_d_a IN ('var_a_1','var_a_2','var_a_3') 
         AND
@@ -752,7 +752,7 @@ def test_run_deps_mixed_multi_deps():
         SELECT 
             * 
         FROM 
-        {relation_e.quoted_dot_notation}
+        {adapter.quoted_dot_notation(relation_e)}
         WHERE 
             col_e_c IN (1,2,5) 
         )
