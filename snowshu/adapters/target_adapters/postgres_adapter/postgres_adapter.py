@@ -9,7 +9,6 @@ from snowshu.core.models.attribute import Attribute
 import snowshu.core.models.data_types as dtypes
 from snowshu.logger import Logger
 from snowshu.core.models.relation import Relation
-from snowshu.core.utils import correct_case
 
 logger = Logger().logger
 

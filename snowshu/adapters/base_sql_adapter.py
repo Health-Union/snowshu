@@ -247,7 +247,7 @@ class BaseSQLAdapter:
                          case_corrected_schema, 
                          case_corrected_name)])
 
-    def _correct_case(self, val: str, attr: str = None) -> str:
+    def _correct_case(self, val: str, attr: str = None) -> str:  # noqa pylint: disable=too-many-function-args
         """The base case correction method for a sql adapter.
         """
         preserve_case = self.preserve_case[attr] if attr in ['database', 'schema', 'relation'] else False

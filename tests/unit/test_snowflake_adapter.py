@@ -46,6 +46,33 @@ FROM
 """)
 
 
+def test_preserve_case():
+    sf = SnowflakeAdapter()
+    db, schema, table = [rand_string(10) for _ in range(3)]
+    DATABASE = sf._correct_case(db, 'database')
+    SCHEMA = sf._correct_case(schema, 'schema')
+    TABLE = sf._correct_case(table, 'relation')
+    assert DATABASE.isupper()  # Using Snowflake Adapter default case: Uppercase
+    sf.preserve_case = {'database': True, 'schema': True, 'relation': True}
+    DATABASE = sf._correct_case(db, 'database')
+    SCHEMA = sf._correct_case(schema, 'schema')
+    TABLE = sf._correct_case(table, 'relation')
+    assert DATABASE == db  # After preserve_case has been updated to True 
+    relation = Relation(database=DATABASE,
+                        schema=SCHEMA,
+                        name=TABLE,
+                        materialization=TABLE,
+                        attributes=[])
+    sample = sf.sample_statement_from_relation(relation, BernoulliSampleMethod(10,units="probability"))
+    assert query_equalize(sample) == query_equalize(f"""
+SELECT
+    *
+FROM 
+    {db}.{schema}.{table}
+    SAMPLE BERNOULLI (10)
+""")
+
+
 def test_directional_statement():
     sf = SnowflakeAdapter()
     DATABASE, SCHEMA, TABLE, LOCAL_KEY, REMOTE_KEY = [
