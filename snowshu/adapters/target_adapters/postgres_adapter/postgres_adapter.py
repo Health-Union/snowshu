@@ -1,4 +1,4 @@
-from typing import Iterable, List, Optional
+from typing import List, Optional
 from overrides import overrides
 import sqlalchemy
 
@@ -273,10 +273,15 @@ class PostgresAdapter(BaseTargetAdapter):
         commands = [f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}']
         return commands
 
-    def enable_cross_database(self, relations: Iterable['Relation']) -> None:
-        unique_schemas = {(correct_case(rel.database, self.DEFAULT_CASE == 'upper'), 
-                           correct_case(rel.schema, self.DEFAULT_CASE == 'upper'),) for rel in relations}
-        unique_databases = {correct_case(rel.database, self.DEFAULT_CASE == 'upper') for rel in relations}
+    def enable_cross_database(self) -> None:
+        unique_databases = {self._correct_case(d, "database") for d in self._get_all_databases()}
+        unique_databases.remove('postgres')
+        schemas = []
+        for database in unique_databases:
+            schemas += [(self._correct_case(database, "database"), 
+                         self._correct_case(schema, "schema")) for schema in self._get_all_schemas(database, True)]
+
+        unique_schemas = set(schemas)
         unique_databases.add('snowshu')
         unique_schemas.add(('snowshu', 'snowshu',))
 

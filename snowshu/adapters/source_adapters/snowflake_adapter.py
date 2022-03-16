@@ -110,15 +110,15 @@ class SnowflakeAdapter(BaseSourceAdapter):
             a query that results in a single row, single column, integer value of the unsampled relation population size
         """
         adapter = SnowflakeAdapter()
-        return f"SELECT COUNT(*) FROM {adapter.quoted_dot_notation(adapter, relation)}"
+        return f"SELECT COUNT(*) FROM {adapter.quoted_dot_notation(relation)}"
 
     @staticmethod
     def view_creation_statement(relation: Relation) -> str:
         adapter = SnowflakeAdapter()
         return f"""
 SELECT
-SUBSTRING(GET_DDL('view','{adapter.quoted_dot_notation(adapter, relation)}'),
-POSITION(' AS ' IN UPPER(GET_DDL('view','{adapter.quoted_dot_notation(adapter, relation)}')))+3)
+SUBSTRING(GET_DDL('view','{adapter.quoted_dot_notation(relation)}'),
+POSITION(' AS ' IN UPPER(GET_DDL('view','{adapter.quoted_dot_notation(relation)}')))+3)
 """
 
     @staticmethod

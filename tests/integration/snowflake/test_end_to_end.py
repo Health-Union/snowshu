@@ -85,7 +85,7 @@ def test_finds_n_relations(end_to_end):
 
 def test_replicates_order_items(end_to_end):
     result_lines = end_to_end
-    assert any_appearance_of('Done replication of relation snowshu_development.source_system.order_items', result_lines)
+    assert any_appearance_of('Done replication of relation SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS', result_lines)
 
 
 @pytest.mark.skip
