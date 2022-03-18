@@ -30,7 +30,7 @@ def test_sample_statement():
     DATABASE, SCHEMA, TABLE = [rand_string(10) for _ in range(3)]
     DATABASE = sf._correct_case(DATABASE, 'database')
     SCHEMA = sf._correct_case(SCHEMA, 'schema')
-    TABLE = sf._correct_case(TABLE, 'table')
+    TABLE = sf._correct_case(TABLE, 'relation')
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,

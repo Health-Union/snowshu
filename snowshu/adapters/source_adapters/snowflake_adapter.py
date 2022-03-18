@@ -79,6 +79,9 @@ class SnowflakeAdapter(BaseSourceAdapter):
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.VIEW}
 
+    def __init__(self):  # noqa pylint: disable=dangerous-default-value
+        super().__init__()
+
     @overrides
     def _get_all_databases(self) -> List[str]:
         """ Use the SHOW api to get all the available db structures."""

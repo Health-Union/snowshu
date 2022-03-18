@@ -250,7 +250,6 @@ class BaseSQLAdapter:
     def _correct_case(self, val: str, attr: str = None) -> str:  # noqa pylint: disable=too-many-function-args
         """The base case correction method for a sql adapter.
         """
-        preserve_case = self.preserve_case[attr] if attr in ['database', 'schema', 'relation'] else False
-        if preserve_case:
-            return val
-        return val if preserve_case else correct_case(val, self.DEFAULT_CASE == 'upper')
+        if attr and attr not in ['database', 'schema', 'relation']:
+            raise NotImplementedError(f"preserve_case attribute '{attr}' is not supported.")
+        return val if self.preserve_case[attr] else correct_case(val, self.DEFAULT_CASE == 'upper')
