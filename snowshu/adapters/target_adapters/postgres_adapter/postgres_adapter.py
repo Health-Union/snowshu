@@ -289,7 +289,7 @@ class PostgresAdapter(BaseTargetAdapter):
         unique_schemas.add(('snowshu', 'snowshu',))
 
         def statement_runner(statement: str):
-            logger.info('executing statement `%s...`', statement)
+            logger.info('executing statement `%s`...', statement)
             conn.execute(statement)
             logger.debug('Executed.')
 
@@ -304,9 +304,14 @@ class PostgresAdapter(BaseTargetAdapter):
                                  f"OPTIONS (user 'snowshu', password 'snowshu')")
 
             for schema_database, schema in unique_schemas:
-                if schema_database != u_db:
+                if schema_database != u_db and not self.is_fdw_schema(schema, unique_databases):
                     statement_runner(f'DROP SCHEMA IF EXISTS {schema_database}__{schema} CASCADE')
                     statement_runner(f'CREATE SCHEMA {schema_database}__{schema}')
 
                     statement_runner(f'IMPORT FOREIGN SCHEMA {schema} FROM SERVER '
                                      f'{schema_database} INTO {schema_database}__{schema}')
+
+    @staticmethod
+    def is_fdw_schema(schema, unique_databases) -> bool:
+        splitted = schema.split('__')
+        return len(splitted) == 2 and splitted[0] in unique_databases

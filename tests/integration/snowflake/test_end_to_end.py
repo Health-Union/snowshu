@@ -366,6 +366,13 @@ def test_x_db_incremental_import(end_to_end):
         try:
             adapter.enable_cross_database()
             adapter.enable_cross_database()
+            unique_databases = set(adapter._get_all_databases())
+            unique_databases.remove('postgres')
+            schemas_len = []
+            for database in unique_databases:
+                for schema in adapter._get_all_schemas(database, True):
+                    schemas_len.append(len(schema.split('__')))
+            assert all(x <= 2 for x in schemas_len)
             return True
         except sqlalchemy.exc.ProgrammingError:
             return False
