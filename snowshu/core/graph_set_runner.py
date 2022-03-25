@@ -51,7 +51,7 @@ class GraphSetRunner:
                 analyze (bool): whether to run analyze or actually transfer the sampled data
                 barf (bool): whether to dump diagnostic files to disk
         """
-        retry_count = 3
+        retry_count = 1
         self.barf = barf
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
