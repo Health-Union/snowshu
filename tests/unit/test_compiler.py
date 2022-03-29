@@ -366,13 +366,13 @@ def test_run_deps_polymorphic_include_outliers(stub_relation_set):
     child1_expected_query = f""" 
         SELECT 
                 * 
-        FROM {child1.quoted_dot_notation} 
+        FROM {adapter.quoted_dot_notation(child1)} 
         SAMPLE BERNOULLI (1500 ROWS) 
         UNION (SELECT 
                 * 
-            FROM {child1.quoted_dot_notation} 
+            FROM {adapter.quoted_dot_notation(child1)} 
             WHERE {parentid} NOT IN (SELECT {parentid} FROM 
-            {parent.quoted_dot_notation}) 
+            {adapter.quoted_dot_notation(parent)}) 
             LIMIT 100) 
     """
     assert query_equalize(child1.compiled_query)==query_equalize(child1_expected_query)
@@ -380,13 +380,13 @@ def test_run_deps_polymorphic_include_outliers(stub_relation_set):
     child2_expected_query = f""" 
         SELECT 
                 * 
-        FROM {child2.quoted_dot_notation} 
+        FROM {adapter.quoted_dot_notation(child2)} 
         SAMPLE BERNOULLI (1500 ROWS) 
         UNION (SELECT 
                 * 
-            FROM {child2.quoted_dot_notation} 
+            FROM {adapter.quoted_dot_notation(child2)} 
             WHERE {parentid} NOT IN (SELECT {parentid} FROM 
-            {parent.quoted_dot_notation}) 
+            {adapter.quoted_dot_notation(parent)}) 
             LIMIT 100) 
     """
     assert query_equalize(child2.compiled_query)==query_equalize(child2_expected_query)
@@ -395,7 +395,7 @@ def test_run_deps_polymorphic_include_outliers(stub_relation_set):
         SELECT 
             * 
         FROM 
-            {parent.quoted_dot_notation} 
+            {adapter.quoted_dot_notation(parent)} 
         WHERE ( {parentid} IN ('1','10')  OR {parentid} IN ('2','20')  )"""
 
     for child in parent_relations:
@@ -404,14 +404,14 @@ def test_run_deps_polymorphic_include_outliers(stub_relation_set):
             (SELECT 
                 * 
             FROM 
-            {parent.quoted_dot_notation} 
+            {adapter.quoted_dot_notation(parent)} 
             WHERE 
                 {parentid} 
             NOT IN 
             (SELECT 
                 {parentid} 
             FROM 
-            {child.quoted_dot_notation}) 
+            {adapter.quoted_dot_notation(child)}) 
             LIMIT 100)
         """
     assert query_equalize(expected_query) in query_equalize(parent.compiled_query)

@@ -286,8 +286,8 @@ WHERE table_name REGEXP '{relation.quoted(relation.name)}'
         logger.debug(f'Done. Found {len(relations)} matching relations.')
         return relations
 
-    @staticmethod
-    def polymorphic_constraint_statements(subject: Relation,  # noqa pylint: disable=too-many-arguments
+    def polymorphic_constraint_statements(self,
+                                          subject: Relation,  # noqa pylint: disable=too-many-arguments
                                           matching_relations: list,
                                           subject_key: str,
                                           constraint_key: str,
@@ -301,7 +301,7 @@ WHERE table_name REGEXP '{relation.quoted(relation.name)}'
 (SELECT
     *
 FROM
-{subject.quoted_dot_notation}
+{self.quoted_dot_notation(subject)}
 WHERE
     {subject_key}
 NOT IN
