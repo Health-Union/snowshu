@@ -286,8 +286,8 @@ WHERE table_name REGEXP '{relation.quoted(relation.name)}'
         logger.debug(f'Done. Found {len(relations)} matching relations.')
         return relations
 
-    def polymorphic_constraint_statements(self,
-                                          subject: Relation,  # noqa pylint: disable=too-many-arguments
+    def polymorphic_constraint_statements(self,  # noqa pylint: disable=too-many-arguments
+                                          subject: Relation,
                                           matching_relations: list,
                                           subject_key: str,
                                           constraint_key: str,
