@@ -1,6 +1,6 @@
 pyyaml==5.4.1
 pandas==1.2.3
-docker==4.2.0
+docker==5.0.2
 click==7.0
 coloredlogs==14.0
 networkx==2.4

@@ -270,9 +270,10 @@ LIMIT {max_number_of_outliers})
         logger.debug('Collecting matching relations from snowflake via regex...')
         table = f"{relation.database}.information_schema.tables"
         query = f"""
-SELECT table_name FROM {table} WHERE table_name REGEXP '{relation.quoted(relation.name)}'
+SELECT table_catalog, table_schema, table_name FROM {table} 
+WHERE table_name REGEXP '{relation.quoted(relation.name)}'
 """
-        show_result = tuple(self._safe_query(query)['table_name'].tolist())
+        show_result = tuple(self._safe_query(query).values.tolist())
         relations = list(set(show_result))
         logger.debug(f'Done. Found {len(relations)} matching relations.')
         return relations
@@ -280,17 +281,15 @@ SELECT table_name FROM {table} WHERE table_name REGEXP '{relation.quoted(relatio
     @staticmethod
     def polymorphic_constraint_statements(subject: Relation,  # noqa pylint: disable=too-many-arguments
                                           constraint: Relation,
-                                          matching_relations: List[str],
+                                          matching_relations: list,
                                           subject_key: str,
                                           constraint_key: str,
                                           max_number_of_outliers: int) -> str:
         """ Union statements to select outliers for polymorphic relations. 
         This does not pull in NULL values. """
         statements = []
-        for name in matching_relations:
-            constraint_table = ".".join([constraint.database, 
-                                         constraint.schema,
-                                         name])
+        for relation in matching_relations:
+            constraint_table = ".".join([relation[0], relation[1], relation[2]])
             statements.append(f"""
 (SELECT
     *

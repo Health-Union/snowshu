@@ -338,6 +338,85 @@ def test_run_deps_bidirectional_exclude_outliers(stub_relation_set):
     """)
 
 
+def test_run_deps_polymorphic_include_outliers(stub_relation_set):
+    child1 = stub_relation_set.child_relation_type_1
+    child2 = stub_relation_set.child_relation_type_2
+    parent = stub_relation_set.parent_relation_parentid
+    parentid = stub_relation_set.parentid_key
+    for relation in (child1, child2, parent,):
+        relation.include_outliers = True
+        relation.max_number_of_outliers = 100
+        relation = stub_out_sampling(relation)
+
+    child1.data=pd.DataFrame([{parentid: "1"},{parentid: "10"}])
+    child2.data=pd.DataFrame([{parentid: "2"},{parentid: "20"}])
+    dag=nx.DiGraph()
+    dag.add_edge(child1,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid)
+    dag.add_edge(child2,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid)
+
+    adapter=SnowflakeAdapter()
+    relations1 = [c for c in dag.successors(child1)]
+    relations2 = [c for c in dag.successors(child2)]
+    parent_relations = [c for c in dag.predecessors(parent)]
+
+    child1 = RuntimeSourceCompiler.compile_queries_for_relation(child1,dag,adapter,False,relations1)
+    child2 = RuntimeSourceCompiler.compile_queries_for_relation(child2,dag,adapter,False,relations2)
+    parent = RuntimeSourceCompiler.compile_queries_for_relation(parent,dag,adapter,False,parent_relations)
+
+    child1_expected_query = f""" 
+        SELECT 
+                * 
+        FROM {child1.quoted_dot_notation} 
+        SAMPLE BERNOULLI (1500 ROWS) 
+        UNION (SELECT 
+                * 
+            FROM {child1.quoted_dot_notation} 
+            WHERE {parentid} NOT IN (SELECT {parentid} FROM 
+            {parent.quoted_dot_notation}) 
+            LIMIT 100) 
+    """
+    assert query_equalize(child1.compiled_query)==query_equalize(child1_expected_query)
+
+    child2_expected_query = f""" 
+        SELECT 
+                * 
+        FROM {child2.quoted_dot_notation} 
+        SAMPLE BERNOULLI (1500 ROWS) 
+        UNION (SELECT 
+                * 
+            FROM {child2.quoted_dot_notation} 
+            WHERE {parentid} NOT IN (SELECT {parentid} FROM 
+            {parent.quoted_dot_notation}) 
+            LIMIT 100) 
+    """
+    assert query_equalize(child2.compiled_query)==query_equalize(child2_expected_query)
+
+    expected_query = f"""
+        SELECT 
+            * 
+        FROM 
+            {parent.quoted_dot_notation} 
+        WHERE ( {parentid} IN ('1','10')  OR {parentid} IN ('2','20')  )"""
+
+    for child in parent_relations:
+        expected_query += f"""
+            UNION  
+            (SELECT 
+                * 
+            FROM 
+            {parent.quoted_dot_notation} 
+            WHERE 
+                {parentid} 
+            NOT IN 
+            (SELECT 
+                {parentid} 
+            FROM 
+            {child.quoted_dot_notation}) 
+            LIMIT 100)
+        """
+    assert query_equalize(expected_query) in query_equalize(parent.compiled_query)
+
+
 def test_run_deps_directional_line_graph():
     """
         a --dir--> b --dir--> c

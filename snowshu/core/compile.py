@@ -1,4 +1,4 @@
-from typing import Type
+from typing import List, Type
 
 import networkx
 
@@ -17,7 +17,8 @@ class RuntimeSourceCompiler:
     def compile_queries_for_relation(relation: Relation,  # noqa pylint: disable=too-many-branches
                                      dag: networkx.Graph,
                                      source_adapter: Type[BaseSourceAdapter],
-                                     analyze: bool) -> Relation:
+                                     analyze: bool,
+                                     match_relations: List[Relation] = []) -> Relation:
         """ Generates the sql statements for the given relation
 
             Args:
@@ -49,10 +50,13 @@ class RuntimeSourceCompiler:
                                                                                    edge['local_attribute']))
                 if relation.include_outliers:
                     if edge['direction'] == 'polymorphic':
-                        match_relations = source_adapter.get_matching_relations(child)
+                        if len(match_relations) > 0:
+                            relations = [[m.database, m.schema, m.name] for m in match_relations]
+                        else:
+                            relations = source_adapter.get_matching_relations(child)
                         p_unions = source_adapter.polymorphic_constraint_statements(relation,
                                                                                     child,
-                                                                                    match_relations, 
+                                                                                    relations, 
                                                                                     edge['remote_attribute'],
                                                                                     edge['local_attribute'],
                                                                                     relation.max_number_of_outliers)
@@ -94,10 +98,13 @@ class RuntimeSourceCompiler:
                                                                                     edge['remote_attribute']))
                 if relation.include_outliers:
                     if edge['direction'] == 'polymorphic':
-                        match_relations = source_adapter.get_matching_relations(parent)
+                        if len(match_relations) > 0:
+                            relations = [[m.database, m.schema, m.name] for m in match_relations]
+                        else:
+                            relations = source_adapter.get_matching_relations(parent)
                         p_unions = source_adapter.polymorphic_constraint_statements(relation,
                                                                                     parent,
-                                                                                    match_relations, 
+                                                                                    relations, 
                                                                                     edge['local_attribute'],
                                                                                     edge['remote_attribute'],
                                                                                     relation.max_number_of_outliers)
@@ -129,3 +136,4 @@ class RuntimeSourceCompiler:
             query = source_adapter.analyze_wrap_statement(query, relation)
         relation.compiled_query = query
         return relation
+    
