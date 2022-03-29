@@ -36,15 +36,17 @@ def graph_to_result_list(graphs: nx.Graph) -> list:
             for relation in graph.nodes:
                 deps = len(nx.ancestors(graph, relation))
                 deps = " " if deps == 0 else str(deps)
-                target_sample_size = relation.population_size if \
-                    relation.unsampled or (relation.population_size < relation.sampling.size) \
-                    else relation.sampling.size
 
                 if isinstance(relation.population_size, str):
+                    target_sample_size = "N/A"
                     percent = "N/A"
                 elif int(relation.population_size) < 1:
                     percent = 0
+                    target_sample_size = relation.population_size
                 else:
+                    target_sample_size = relation.population_size if \
+                        relation.unsampled or (relation.population_size < relation.sampling.size) \
+                        else relation.sampling.size
                     percent = int(round(
                         100.0 * (relation.sample_size / target_sample_size)))
 

@@ -282,7 +282,7 @@ class SnowShuGraph:
                 f'as they are usually unintended side effects of lenient regex.'
             )
         # check to make sure found upstream relation is not a view
-        view_relations = [r.quoted_dot_notation for r in upstream_relations if r.is_view]
+        view_relations = [r for r in upstream_relations if r.is_view]
         if view_relations:
             raise InvalidRelationshipException(
                 f'Relations {view_relations} are views, '

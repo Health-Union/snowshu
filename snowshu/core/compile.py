@@ -55,7 +55,6 @@ class RuntimeSourceCompiler:
                         else:
                             relations = source_adapter.get_matching_relations(child)
                         p_unions = source_adapter.polymorphic_constraint_statements(relation,
-                                                                                    child,
                                                                                     relations, 
                                                                                     edge['remote_attribute'],
                                                                                     edge['local_attribute'],
@@ -103,7 +102,6 @@ class RuntimeSourceCompiler:
                         else:
                             relations = source_adapter.get_matching_relations(parent)
                         p_unions = source_adapter.polymorphic_constraint_statements(relation,
-                                                                                    parent,
                                                                                     relations, 
                                                                                     edge['local_attribute'],
                                                                                     edge['remote_attribute'],
@@ -136,4 +134,3 @@ class RuntimeSourceCompiler:
             query = source_adapter.analyze_wrap_statement(query, relation)
         relation.compiled_query = query
         return relation
-    

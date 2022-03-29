@@ -4,7 +4,7 @@ import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import List
+from typing import Tuple
 
 import networkx as nx
 
@@ -35,7 +35,7 @@ class GraphSetRunner:
         self.barf = None
 
     def execute_graph_set(self,     # noqa pylint: disable=too-many-arguments
-                          graph_set: List[nx.Graph],
+                          graph_set: Tuple[nx.Graph],
                           source_adapter: BaseSourceAdapter,
                           target_adapter: BaseTargetAdapter,
                           threads: int,
@@ -51,6 +51,7 @@ class GraphSetRunner:
                 analyze (bool): whether to run analyze or actually transfer the sampled data
                 barf (bool): whether to dump diagnostic files to disk
         """
+        retry_count = 3
         self.barf = barf
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
@@ -59,21 +60,53 @@ class GraphSetRunner:
         view_graph_set = [graph for graph in graph_set if graph.contains_views]
         table_graph_set = list(set(graph_set) - set(view_graph_set))
 
-        def make_executables(graphs) -> List[GraphExecutable]:
-            return [GraphExecutable(graph,
-                                    source_adapter,
-                                    target_adapter,
-                                    analyze) for graph in graphs]
-
-        # TODO errors in the parallel execution are never handled
-        # This can result in replicas with missing relations as
-        # the processing does not halt on exceptions
-
         # Tables need to come first to prevent deps deadlocks with views
         for graphs in [table_graph_set, view_graph_set]:
             with ThreadPoolExecutor(max_workers=threads) as executor:
-                for executable in make_executables(graphs):
-                    executor.submit(self._traverse_and_execute, executable)
+                if graphs:
+                    executables = [GraphExecutable(graph,
+                                                   source_adapter,
+                                                   target_adapter,
+                                                   analyze)
+                                   for graph in graphs]
+                    self.process_executables(executables,
+                                             executor,
+                                             retry_count)
+
+    def process_executables(self,
+                            executables,
+                            executor,
+                            retries,
+                            wait_time=30):
+        re_executables = []
+
+        def execute_with_retry(executables):
+            error = None
+            re_executables.clear()
+            futures = [executor.submit(self._traverse_and_execute, executable)
+                       for executable in executables]
+            while futures:
+                time.sleep(wait_time)
+                for future, executable in zip(futures.copy(), executables.copy()):
+                    if future.done():
+                        futures.remove(future)
+                        executables.remove(executable)
+                        if exception := future.exception():
+                            error = future.result
+                            logger.warning("Concurrent thread finished work with exception:\n%s: %s",
+                                           str(exception.__class__),
+                                           str(exception))
+                            re_executables.append(executable)
+            return error
+
+        while error := execute_with_retry(executables):
+            if retries < 1:
+                logger.error("Failed because '%i' executables can't be finished successfully:\n%s",
+                             len(re_executables), str(re_executables))
+                error()
+            retries -= 1
+            executables = re_executables.copy()
+
 
     def _traverse_and_execute(self, executable: GraphExecutable) -> None:   # noqa mccabe: disable=MC0001
         """ Processes a single graph and loads the data into the replica if required
@@ -120,10 +153,10 @@ class GraphSetRunner:
                             f'Analysis of relation {relation.dot_notation} completed in {duration(start_time)}.')
                 else:
                     executable.target_adapter.create_database_if_not_exists(
-                        relation.quoted(relation.database))
+                        relation.database)
                     executable.target_adapter.create_schema_if_not_exists(
-                        relation.quoted(relation.database),
-                        relation.quoted(relation.schema))
+                        relation.database,
+                        relation.schema)
                     if relation.is_view:
                         logger.info(
                             f'Retrieving DDL statement for view {relation.dot_notation} in source...')
@@ -135,8 +168,8 @@ class GraphSetRunner:
                         except Exception:
                             raise SystemError(
                                 f'Failed to extract DDL statement: {relation.compiled_query}')
-                        logger.info(
-                            f'Successfully extracted DDL statement for view {relation.quoted_dot_notation}')
+                        logger.info('Successfully extracted DDL statement for view ' 
+                                    f'{executable.target_adapter.quoted_dot_notation(relation)}')
                     else:
                         logger.info(
                             f'Retrieving records from source {relation.dot_notation}...')
@@ -151,17 +184,19 @@ class GraphSetRunner:
                         logger.info(
                             f'{relation.sample_size} records retrieved for relation {relation.dot_notation}.')
 
-                    logger.info(
-                        f'Inserting relation {relation.quoted_dot_notation} into target...')
+                    logger.info(f'Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}' 
+                                ' into target...')
                     try:
                         executable.target_adapter.create_and_load_relation(
                             relation)
                     except Exception as exc:
-                        raise SystemError(
-                            f'Failed to load relation {relation.quoted_dot_notation} into target: {exc}')
+                        raise SystemError('Failed to load relation '
+                                          f'{executable.target_adapter.quoted_dot_notation(relation)} ' 
+                                          f' into target: {exc}')
 
-                    logger.info(
-                        f'Done replication of relation {relation.dot_notation} in {duration(start_time)}.')
+                    logger.info('Done replication of relation ' 
+                                f'{executable.target_adapter.quoted_dot_notation(relation)} ' 
+                                f' in {duration(start_time)}.')
                     relation.target_loaded = True
                 relation.source_extracted = True
                 logger.info(
