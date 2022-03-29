@@ -28,6 +28,9 @@ def test_conn_string_basic():
 def test_sample_statement():
     sf = SnowflakeAdapter()
     DATABASE, SCHEMA, TABLE = [rand_string(10) for _ in range(3)]
+    DATABASE = sf._correct_case(DATABASE)
+    SCHEMA = sf._correct_case(SCHEMA)
+    TABLE = sf._correct_case(TABLE)
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
@@ -89,7 +92,7 @@ WITH
 SELECT
     COUNT(*) AS population_size
 FROM
-    {relation.quoted_dot_notation}
+    {sf.quoted_dot_notation(relation)}
 )
 ,{relation.scoped_cte('SNOWSHU_CORE_SAMPLE')} AS (
 {sql}

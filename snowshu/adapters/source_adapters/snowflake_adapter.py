@@ -30,7 +30,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
     """The Snowflake Data Warehouse source adapter.
 
     Args:
-        preserve_case: By default the adapter folds case-insensitive strings to lowercase.
+        preserve_case: By default the adapter folds case-insensitive strings to uppercase.
                        If preserve_case is True,SnowShu will __not__ alter cases (dangerous!).
     """
 
@@ -41,7 +41,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
     REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
     ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
     # snowflake in-db is UPPER, but connector is actually lower :(
-    DEFAULT_CASE = 'lower'
+    DEFAULT_CASE = 'upper'
 
     DATA_TYPE_MAPPINGS = {
         "array": dtypes.JSON,
@@ -90,7 +90,8 @@ class SnowflakeAdapter(BaseSourceAdapter):
         return databases
 
     @overrides
-    def _get_all_schemas(self, database: str) -> List[str]:
+    def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
+        database = self.quoted(database)
         logger.debug(f'Collecting schemas from {database} in snowflake...')
         show_result = self._safe_query(f'SHOW TERSE SCHEMAS IN DATABASE {database}')[
             'name'].tolist()
@@ -108,23 +109,26 @@ class SnowflakeAdapter(BaseSourceAdapter):
         Returns:
             a query that results in a single row, single column, integer value of the unsampled relation population size
         """
-        return f"SELECT COUNT(*) FROM {relation.quoted_dot_notation}"
+        adapter = SnowflakeAdapter()
+        return f"SELECT COUNT(*) FROM {adapter.quoted_dot_notation(relation)}"
 
     @staticmethod
     def view_creation_statement(relation: Relation) -> str:
+        adapter = SnowflakeAdapter()
         return f"""
 SELECT
-SUBSTRING(GET_DDL('view','{relation.quoted_dot_notation}'),
-POSITION(' AS ' IN UPPER(GET_DDL('view','{relation.quoted_dot_notation}')))+3)
+SUBSTRING(GET_DDL('view','{adapter.quoted_dot_notation(relation)}'),
+POSITION(' AS ' IN UPPER(GET_DDL('view','{adapter.quoted_dot_notation(relation)}')))+3)
 """
 
     @staticmethod
     def unsampled_statement(relation: Relation) -> str:
+        adapter = SnowflakeAdapter()
         return f"""
 SELECT
     *
 FROM
-    {relation.quoted_dot_notation}
+    {adapter.quoted_dot_notation(relation)}
 """
 
     def directionally_wrap_statement(self,
@@ -154,13 +158,14 @@ FROM
 
     @staticmethod
     def analyze_wrap_statement(sql: str, relation: Relation) -> str:
+        adapter = SnowflakeAdapter()
         return f"""
 WITH
     {relation.scoped_cte('SNOWSHU_COUNT_POPULATION')} AS (
 SELECT
     COUNT(*) AS population_size
 FROM
-    {relation.quoted_dot_notation}
+    {adapter.quoted_dot_notation(relation)}
 )
 ,{relation.scoped_cte('SNOWSHU_CORE_SAMPLE')} AS (
 {sql}
@@ -190,7 +195,7 @@ LIMIT 1
 SELECT
     *
 FROM
-    {relation.quoted_dot_notation}
+    {self.quoted_dot_notation(relation)}
 """
         if sample_type is not None:
             query += f"{self._sample_type_to_query_sql(sample_type)}"
@@ -203,18 +208,19 @@ FROM
                                    constraint_key: str,
                                    max_number_of_outliers: int) -> str:
         """ Union statements to select outliers. This does not pull in NULL values. """
+        adapter = SnowflakeAdapter()
         return f"""
 (SELECT
     *
 FROM
-{subject.quoted_dot_notation}
+{adapter.quoted_dot_notation(subject)}
 WHERE
     {subject_key}
 NOT IN
 (SELECT
     {constraint_key}
 FROM
-{constraint.quoted_dot_notation})
+{adapter.quoted_dot_notation(constraint)})
 LIMIT {max_number_of_outliers})
 """
 
@@ -223,7 +229,9 @@ LIMIT {max_number_of_outliers})
                                       local_key: str,
                                       remote_key: str) -> str:
         """ builds upstream where constraints against downstream full population"""
-        return f" {local_key} in (SELECT {remote_key} FROM {relation.quoted_dot_notation})"
+        adapter = SnowflakeAdapter()
+        return f" {local_key} in (SELECT {remote_key} FROM \
+                {adapter.quoted_dot_notation(relation)})"
 
     @staticmethod
     def predicate_constraint_statement(relation: Relation,
@@ -319,6 +327,10 @@ LIMIT {max_number_of_outliers})
         logger.error(message)
         raise NotImplementedError(message)
 
+    @staticmethod
+    def quoted(val: str) -> str:
+        return f'"{val}"' if ' ' in val else val
+
     # TODO: change arg name in parent to the fix issue here
     @overrides
     def _build_conn_string(self, overrides: Optional[dict] = None) -> str:  # noqa pylint: disable=redefined-outer-name
@@ -338,9 +350,7 @@ LIMIT {max_number_of_outliers})
     @overrides
     def _get_relations_from_database(
             self, schema_obj: BaseSourceAdapter._DatabaseObject) -> List[Relation]:
-        quoted_database = schema_obj.full_relation.quoted(
-            schema_obj.full_relation.database)  # quoted db name
-        relation_database = schema_obj.full_relation.database  # case corrected db name
+        quoted_database = self.quoted(schema_obj.full_relation.database)  # quoted db name
         case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schame name
         relations_sql = f"""
                                  SELECT
@@ -388,7 +398,7 @@ LIMIT {max_number_of_outliers})
                         self._get_data_type(attribute.data_type)
                     ))
 
-            relation = Relation(relation_database,
+            relation = Relation(schema_obj.full_relation.database,
                                 self._correct_case(attribute.schema),   # noqa pylint: disable=undefined-loop-variable
                                 self._correct_case(attribute.relation),   # noqa pylint: disable=undefined-loop-variable
                                 self.MATERIALIZATION_MAPPINGS[attribute.materialization],   # noqa pylint: disable=undefined-loop-variable

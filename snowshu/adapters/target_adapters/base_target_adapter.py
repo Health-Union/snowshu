@@ -45,7 +45,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         self.container: "Container" = None
         self.replica_meta = replica_metadata
 
-    def enable_cross_database(self, relations: Iterable['Relation']) -> None:
+    def enable_cross_database(self) -> None:
         """ Create x-database links, if available to the target.
 
         Args:
@@ -91,45 +91,57 @@ class BaseTargetAdapter(BaseSQLAdapter):
             relation: the :class:`Relation <snowshu.core.models.relation.Relation>` object to be created as a view.
 
         """
+        database = self.quoted(self._correct_case(relation.database))
+        schema = self.quoted(self._correct_case(relation.schema))
         ddl_statement = f"""CREATE OR REPLACE VIEW
-{relation.quoted_dot_notation}
+{self.quoted_dot_notation(relation)}
 AS
 {relation.view_ddl}
 """ 
-        engine = self.get_connection(database_override=relation.database,
-                                     schema_override=relation.schema)
+        engine = self.get_connection(database_override=database,
+                                     schema_override=schema)
         try:
             engine.execute(ddl_statement)
         except Exception as exc:
             logger.info("Failed to create %s %s:%s", relation.materialization.name,
-                        relation.quoted_dot_notation,
+                        self.quoted_dot_notation(relation),
                         exc)
             raise exc
-        logger.info('Created relation %s', relation.quoted_dot_notation)
+        logger.info('Created relation %s', self.quoted_dot_notation(relation))
 
     def load_data_into_relation(self, relation: Relation) -> None:
-        engine = self.get_connection(database_override=relation.database,
-                                     schema_override=relation.schema)
-        logger.info('Loading data into relation %s...', relation.quoted_dot_notation)
+        database = self.quoted(self._correct_case(relation.database))
+        schema = self.quoted(self._correct_case(relation.schema))
+        engine = self.get_connection(database_override=database,
+                                     schema_override=schema)
+        logger.info('Loading data into relation %s...', 
+                    self.quoted_dot_notation(relation))
+        original_columns = relation.data.columns.copy()
+        relation.data.columns = [self._correct_case(col) for col in original_columns]
         try:
             attribute_type_map = {attr.name: attr.data_type.sqlalchemy_type
                                   for attr in relation.attributes}
             data_type_map = {col: case_insensitive_dict_value(attribute_type_map, col)
                              for col in relation.data.columns.to_list()}
-            relation.data.to_sql(relation.name,
+            relation.data.to_sql(self._correct_case(relation.name),
                                  engine,
-                                 schema=relation.schema,
+                                 schema=self._correct_case(schema),
                                  if_exists='replace',
                                  index=False,
                                  dtype=data_type_map,
                                  chunksize=DEFAULT_INSERT_CHUNK_SIZE,
                                  method='multi')
+            relation.data.columns = original_columns
         except Exception as exc:
-            logger.info("Exception encountered loading data into %s:%s", relation.quoted_dot_notation, exc)
+            logger.info("Exception encountered loading data into %s:%s", 
+                        self.quoted_dot_notation(relation), exc)
             raise exc
-        logger.info('Data loaded into relation %s', relation.quoted_dot_notation)
+        logger.info('Data loaded into relation %s', 
+                    self.quoted_dot_notation(relation))
 
-    def initialize_replica(self, source_adapter_name: str, override_image: str = None) -> None:
+    def initialize_replica(self, 
+                           source_adapter_name: str, 
+                           override_image: str = None) -> None: # noqa pylint:disable=too-many-branches
         """shimming but will want to move _init_image public with this
         interface.
 
@@ -139,12 +151,23 @@ AS
                 if specified will override default image
         """
         if override_image:
-            self.__class__.DOCKER_IMAGE = override_image
-        try:
-            self._init_image(source_adapter_name)
-        except Exception as error:
-            logger.error("Looks like provided DOCKER_IMAGE does not exists, error:\n%s", error)
-            raise
+            try:
+                shdocker = SnowShuDocker()
+                images = shdocker.client.images.list(name=override_image)
+                logger.debug(f"List of images found with name {override_image}: {images}")
+                image_commands = []
+                for item in images[0].history():
+                    if ("postgres" in item["CreatedBy"]) or ("PGDATA" in item["CreatedBy"]):
+                        image_commands.append(item["CreatedBy"])
+                if len(image_commands) > 0:
+                    self.__class__.DOCKER_IMAGE = override_image
+                else:
+                    logger.error(f"The override image is not a Postgres image: {override_image}")
+                    raise Exception(f"The override image is not a Postgres image: {override_image}")
+            except Exception as error:
+                logger.error("Looks like provided DOCKER_IMAGE does not exists, error:\n%s", error)
+                raise error
+        self._init_image(source_adapter_name)
 
     def _init_image(self, 
                     source_adapter_name: str) -> None:
@@ -200,6 +223,10 @@ AS
             logger.error(
                 '%s adapter does not support data type %s.', self.CLASSNAME, source_type)
             raise err
+
+    def quoted_dot_notation(self, rel: Relation) -> str:
+        return '.'.join([self.quoted(getattr(rel, relation))
+                        for relation in ('database', 'schema', 'name',)])
 
     @staticmethod
     def _build_snowshu_envars(snowshu_envars: list) -> list:
@@ -258,7 +285,9 @@ AS
 
             unique_schemas = {(rel.database, rel.schema,) for rel in relations}
             for db, schema in unique_schemas:   # noqa pylint: disable=invalid-name
-                conn = self.get_connection(database_override=db,
+                database = self._correct_case(db)
+                schema = self._correct_case(schema)
+                conn = self.get_connection(database_override=database,
                                            schema_override=schema)
                 logger.debug('Applying function %s to "%s"."%s"...', function, db, schema)
                 conn.execute(function_sql)

@@ -29,6 +29,10 @@ from snowshu.core.models.materializations import TABLE
 # 4. Spins down and cleans up
 
 BASE_CONN = 'postgresql://snowshu:snowshu@integration-test:9999/{}'
+INITIAL_INCREMENTAL_CONFIG_PATH = os.path.join(PACKAGE_ROOT, 
+                                               'tests', 
+                                               'assets', 
+                                               'replica_test_incremental_config.yml')
 CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
 SNOWSHU_META_STRING = BASE_CONN.format('snowshu')
 SNOWSHU_DEVELOPMENT_STRING = BASE_CONN.format('snowshu_development')
@@ -81,7 +85,7 @@ def test_finds_n_relations(end_to_end):
 
 def test_replicates_order_items(end_to_end):
     result_lines = end_to_end
-    assert any_appearance_of('Done replication of relation snowshu_development.source_system.order_items', result_lines)
+    assert any_appearance_of('Done replication of relation SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS', result_lines)
 
 
 @pytest.mark.skip
@@ -358,22 +362,22 @@ def test_x_db_incremental_import(end_to_end):
     if adapter.target != "localhost":
         adapter._credentials.host = 'integration-test'
 
-    cols = []
-    relation_one = Relation("snowshu_development", "external_data", "address_region_attributes",
-                            TABLE, cols)
-    relation_two = Relation("snowshu_development", "external_data", "address_attributes",
-                            TABLE, cols)
-    relations = relation_one, relation_two
-
-    def successfully_enabled_without_errors(adapter, relations):
+    def successfully_enabled_without_errors(adapter):
         try:
-            adapter.enable_cross_database(relations)
-            adapter.enable_cross_database(relations)
+            adapter.enable_cross_database()
+            adapter.enable_cross_database()
+            unique_databases = set(adapter._get_all_databases())
+            unique_databases.remove('postgres')
+            schemas_len = []
+            for database in unique_databases:
+                for schema in adapter._get_all_schemas(database, True):
+                    schemas_len.append(len(schema.split('__')))
+            assert all(x <= 2 for x in schemas_len)
             return True
         except sqlalchemy.exc.ProgrammingError:
             return False
 
-    assert successfully_enabled_without_errors(adapter, relations)
+    assert successfully_enabled_without_errors(adapter)
 
 
 def test_using_different_image(end_to_end):
