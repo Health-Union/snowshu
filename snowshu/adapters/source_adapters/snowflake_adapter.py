@@ -377,7 +377,7 @@ LIMIT {max_number_of_outliers})
         return count
 
     @tenacity.retry(wait=wait_exponential(),
-                    stop=stop_after_attempt(4),
+                    stop=stop_after_attempt(1),
                     before_sleep=Logger().log_retries,
                     reraise=True)
     @overrides
@@ -389,8 +389,8 @@ LIMIT {max_number_of_outliers})
             logger.debug('Checking count for query...')
             start_time = time.time()
             count = self._count_query(query)
-            if unsampled and count > max_count:
-                warn_msg = (f'Unsampled relation has {count} rows which is over '
+            if count > max_count:
+                warn_msg = (f'Relation has {count} rows which is over '
                             f'the max allowed rows for this type of query ({max_count}). '
                             f'All records will be loaded into replica.')
                 logger.warning(warn_msg)
