@@ -6,9 +6,11 @@ import yaml
 from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
 from snowshu.core.models.credentials import Credentials
 from snowshu.core.models.relation import Relation
+from snowshu.exceptions import TooManyRecords
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from snowshu.adapters.source_adapters import BaseSourceAdapter
 import snowshu.core.models.materializations as mz
+import urllib.parse
 from tests.assets.integration_test_setup import CREDENTIALS, get_connection_profile
 from tests.common import query_equalize, rand_string
 
@@ -327,3 +329,15 @@ def test_predicate_constraint_statement(sf_adapter):
             SAMPLE BERNOULLI (10)
         ))
         """)
+
+
+def test_get_connection(sf_adapter):
+    conn_string = sf_adapter.get_connection()
+    DATABASE = sf_adapter.credentials.database
+    USER = sf_adapter.credentials.user
+    PASSWORD = sf_adapter.credentials.password
+    ACCOUNT = sf_adapter.credentials.account
+    ROLE = sf_adapter.credentials.role
+
+    assert conn_string.url.render_as_string(hide_password=False) == \
+        f'snowflake://{USER}:{urllib.parse.quote_plus(PASSWORD)}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
