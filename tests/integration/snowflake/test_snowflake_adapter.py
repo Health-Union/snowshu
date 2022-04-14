@@ -237,9 +237,7 @@ def test_get_relations_from_database(sf_adapter):
 
 
 def test_sample_statement_from_relation(sf_adapter):
-    DATABASE = "HU_DATA"
-    SCHEMA = "FEATUREDATA2540ENGAGEMENTS_LAKE"
-    TABLE = "SITE_LOOKUP"
+    DATABASE, SCHEMA, TABLE = "HU_DATA", "FEATUREDATA2540ENGAGEMENTS_LAKE", "SITE_LOOKUP"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
@@ -257,10 +255,7 @@ def test_sample_statement_from_relation(sf_adapter):
 
 
 def test_analyze_wrap_statement(sf_adapter):
-    DATABASE = "HU_DATA"
-    SCHEMA = "PROD"
-    NAME = "SITE_LOOKUP"
-    TABLE = "SITE_LOOKUP"
+    DATABASE, SCHEMA, NAME, TABLE = "HU_DATA", "PROD", "SITE_LOOKUP", "SITE_LOOKUP"
     relation = Relation(database=DATABASE, 
                         schema=SCHEMA,
                         name=NAME, 
@@ -341,3 +336,12 @@ def test_get_connection(sf_adapter):
 
     assert conn_string.url.render_as_string(hide_password=False) == \
         f'snowflake://{USER}:{urllib.parse.quote_plus(PASSWORD)}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
+
+
+def test_check_count_and_query(sf_adapter):
+    query = 'SELECT COMMUNITY_NAME from "HU_DATA"."PROD"."site_lookup"'
+    with pytest.raises(TooManyRecords) as exc:
+        sf_adapter.check_count_and_query(query, 10, False)
+    
+    assert exc.errisinstance(TooManyRecords)
+    assert sf_adapter.check_count_and_query.retry.statistics["attempt_number"] == 4
