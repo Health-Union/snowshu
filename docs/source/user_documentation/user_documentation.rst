@@ -125,6 +125,21 @@ SnowShu will report details of the created replica once completed.
 
 .. image:: /../assets/completed_replica.png 
 
+Creating An Incremental Replica
+------------------
+
+You have already built a replica but made some changes in ``replica.yml`` file. Instead of building a new replica, you can apply changes to the existing replica.
+Incremental replica creates relations and loads data only for new entries found in ``replica.yml`` file, which are not already present in target replica image.
+So for a replica named *hamburger-sandwich*:
+
+>>> snowshu create -i snowshu_replica_hamburger-sandwich
+
+or
+
+>>> snowshu create --incremental snowshu_replica_hamburger-sandwich
+
+Once completed you'll get a report with details of the incremental replica. 
+
 Using Your Replica
 ------------------
 
