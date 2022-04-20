@@ -83,7 +83,6 @@ def test_population_count_statement(sf_adapter):
 
 
 def test_get_all_databases(sf_adapter):
-    sf_adapter.credentials.role = 'public'
     databases_list = ["HU_DATA", "SNOWFLAKE_SAMPLE_DATA", "DEMO_DB", "UTIL_DB"]
 
     assert databases_list.sort() == sf_adapter._get_all_databases().sort()
@@ -221,17 +220,21 @@ def test_build_conn_string(sf_adapter):
 
 
 def test_count_query(sf_adapter):
-    DATABASE, SCHEMA, TABLE = "HU_DATA", "PROD", "site_lookup"
-    query = f'SELECT * FROM "{DATABASE}"."{SCHEMA}"."{TABLE}"'
-    assert sf_adapter._count_query(query) == 47
+    sf_adapter.credentials.role = 'sysadmin'
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
+    query = f'SELECT * FROM {DATABASE}.{SCHEMA}.{TABLE}'
+    assert sf_adapter._count_query(query) == 14
 
 
 def test_get_relations_from_database(sf_adapter):
-    SCHEMA_OBJ = BaseSourceAdapter._DatabaseObject("TESTS_DATA",
-                                                   Relation("snowshu_development", "TESTS_DATA", "", None, None))
-    relations_list = [Relation("snowshu_development", "TESTS_DATA", "DATA_TYPES", mz.TABLE, None),
-                      Relation("snowshu_development", "TESTS_DATA", "CASE_TESTING", mz.TABLE, None),
-                      Relation("snowshu_development", "TESTS_DATA", "ORDER_ITEMS_VIEW", mz.VIEW, None)]
+    sf_adapter.credentials.role = 'sysadmin'
+    SCHEMA_OBJ = BaseSourceAdapter._DatabaseObject("POLYMORPHIC_DATA",
+                                                   Relation("snowshu_development", "POLYMORPHIC_DATA", "", None, None))
+    relations_list = [Relation("snowshu_development", "POLYMORPHIC_DATA", "PARENT_TABLE_2", mz.TABLE, None),
+                      Relation("snowshu_development", "POLYMORPHIC_DATA", "CHILD_TYPE_2_ITEMS", mz.TABLE, None),
+                      Relation("snowshu_development", "POLYMORPHIC_DATA", "PARENT_TABLE", mz.TABLE, None),
+                      Relation("snowshu_development", "POLYMORPHIC_DATA", "CHILD_TYPE_1_ITEMS", mz.TABLE, None),
+                      Relation("snowshu_development", "POLYMORPHIC_DATA", "CHILD_TYPE_0_ITEMS", mz.TABLE, None)]
     received_relations_list = sf_adapter._get_relations_from_database(schema_obj=SCHEMA_OBJ)
     relations_list.sort(key=lambda relation_item: relation_item.name)
     received_relations_list.sort(key=lambda relation_item: relation_item.name)
@@ -240,7 +243,7 @@ def test_get_relations_from_database(sf_adapter):
 
 
 def test_sample_statement_from_relation(sf_adapter):
-    DATABASE, SCHEMA, TABLE = "HU_DATA", "FEATUREDATA2540ENGAGEMENTS_LAKE", "SITE_LOOKUP"
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
@@ -258,7 +261,7 @@ def test_sample_statement_from_relation(sf_adapter):
 
 
 def test_analyze_wrap_statement(sf_adapter):
-    DATABASE, SCHEMA, NAME, TABLE = "HU_DATA", "PROD", "SITE_LOOKUP", "SITE_LOOKUP"
+    DATABASE, SCHEMA, NAME, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE", "PARENT_TABLE"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=NAME,
@@ -299,7 +302,7 @@ def test_analyze_wrap_statement(sf_adapter):
 
 def test_predicate_constraint_statement(sf_adapter):
     LOCAL_KEY, REMOTE_KEY = [rand_string(10) for _ in range(2)]
-    DATABASE, SCHEMA, TABLE = "HU_DATA", "PROD", "site_lookup"
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
@@ -342,7 +345,8 @@ def test_get_connection(sf_adapter):
 
 
 def test_check_count_and_query(sf_adapter):
-    query = 'SELECT COMMUNITY_NAME from "HU_DATA"."PROD"."site_lookup"'
+    sf_adapter.credentials.role = 'sysadmin'
+    query = 'SELECT CHILD_ID from "SNOWSHU_DEVELOPMENT"."POLYMORPHIC_DATA"."PARENT_TABLE"'
     with pytest.raises(TooManyRecords) as exc:
         sf_adapter.check_count_and_query(query, 10, False)
 
