@@ -142,7 +142,7 @@ or
 
 >>> snowshu create --incremental snowshu_replica_hamburger-sandwich
 
-Once completed you'll get a report with details of the replica with updated relations. 
+Once completed you'll get the updated replica image with updated relations and the report with details of it. 
 
 Using Your Replica
 ------------------
