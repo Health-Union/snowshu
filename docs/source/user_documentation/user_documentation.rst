@@ -142,7 +142,12 @@ or
 
 >>> snowshu create --incremental snowshu_replica_hamburger-sandwich
 
-Once completed you'll get the updated replica image with updated relations and the report with details of it. 
+Once completed you'll get the updated replica image with updated relations and the report with details of it.
+
+The ``latest`` tag is applied by default to reference an image, if no version is present. But in case you need to explicitly specify the version of the image, you can include the tag.
+For example, in order to use ``1.0.0`` version of the image:
+
+>>> snowshu create -i snowshu_replica_hamburger-sandwich:1.0.0
 
 Using Your Replica
 ------------------
