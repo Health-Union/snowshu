@@ -21,7 +21,7 @@ def sf_adapter():
         credentials = yaml.safe_load(cred_file)
 
     profile_dict = get_connection_profile(credentials)
-    profile_dict.update({"role": "public"})
+    profile_dict.update({"role": "snowshu_development_role"})
     adapter = SnowflakeAdapter()
     adapter.credentials = Credentials(**profile_dict)
     return adapter
@@ -83,16 +83,14 @@ def test_population_count_statement(sf_adapter):
 
 
 def test_get_all_databases(sf_adapter):
-    databases_list = ["HU_DATA", "SNOWFLAKE_SAMPLE_DATA", "DEMO_DB", "UTIL_DB"]
+    databases_list = ["SNOWSHU_DEVELOPMENT", "HU_DATA", "SNOWFLAKE_SAMPLE_DATA", "DEMO_DB", "UTIL_DB"]
 
     assert databases_list.sort() == sf_adapter._get_all_databases().sort()
 
 
 def test_get_all_schemas(sf_adapter):
-    DATABASE = "SNOWFLAKE"
-    sf_adapter.credentials.role = 'sysadmin'
-    schemas_set = {"INFORMATION_SCHEMA", "CORE", "DATA_SHARING_USAGE", "ORGANIZATION_USAGE",
-                   "READER_ACCOUNT_USAGE", "ACCOUNT_USAGE"}
+    DATABASE = "SNOWSHU_DEVELOPMENT"
+    schemas_set = {"INFORMATION_SCHEMA", "POLYMORPHIC_DATA", "EXTERNAL_DATA", "TESTS_DATA"}
 
     assert schemas_set.issubset(sf_adapter._get_all_schemas(database=DATABASE))
 
@@ -220,14 +218,12 @@ def test_build_conn_string(sf_adapter):
 
 
 def test_count_query(sf_adapter):
-    sf_adapter.credentials.role = 'sysadmin'
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
     query = f'SELECT * FROM {DATABASE}.{SCHEMA}.{TABLE}'
     assert sf_adapter._count_query(query) == 14
 
 
 def test_get_relations_from_database(sf_adapter):
-    sf_adapter.credentials.role = 'sysadmin'
     SCHEMA_OBJ = BaseSourceAdapter._DatabaseObject("POLYMORPHIC_DATA",
                                                    Relation("snowshu_development", "POLYMORPHIC_DATA", "", None, None))
     relations_list = [Relation("snowshu_development", "POLYMORPHIC_DATA", "PARENT_TABLE_2", mz.TABLE, None),
@@ -341,11 +337,10 @@ def test_get_connection(sf_adapter):
     ROLE = sf_adapter.credentials.role
 
     assert conn_string.url.render_as_string(hide_password=False) == \
-           f'snowflake://{USER}:{urllib.parse.quote_plus(PASSWORD)}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
+           f'snowflake://{USER}:{PASSWORD.replace("@", urllib.parse.quote_plus("@"))}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
 
 
 def test_check_count_and_query(sf_adapter):
-    sf_adapter.credentials.role = 'sysadmin'
     query = 'SELECT CHILD_ID from "SNOWSHU_DEVELOPMENT"."POLYMORPHIC_DATA"."PARENT_TABLE"'
     with pytest.raises(TooManyRecords) as exc:
         sf_adapter.check_count_and_query(query, 10, False)
