@@ -21,23 +21,27 @@ def sf_adapter():
         credentials = yaml.safe_load(cred_file)
 
     profile_dict = get_connection_profile(credentials)
-    profile_dict.update({"role": "snowshu_development_role"})
     adapter = SnowflakeAdapter()
     adapter.credentials = Credentials(**profile_dict)
+
     return adapter
 
 
-def test_directionally_wrap_statement_directional(sf_adapter):
+def test_directionally_wrap_statement(sf_adapter):
     sampling = BernoulliSampleMethod(50, units='probability')
-    query = "SELECT * FROM highly_conditional_query"
-    DATABASE, SCHEMA, TABLE = [rand_string(10) for _ in range(3)]
+    query = """SELECT * FROM "SNOWSHU_DEVELOPMENT"."EXTERNAL_DATA"."ADDRESS_REGION_ATTRIBUTES"
+            WHERE IS_CURRENTLY_TARGETED = TRUE
+            AND SALES_REGION IN ('northeast', 'southeast')
+            AND PRIMARY_REGIONAL_CREDIT_PROVIDER = 'mastercard'"""
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "EXTERNAL_DATA", "ADDRESS_REGION_ATTRIBUTES"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
                         materialization=TABLE,
                         attributes=[])
+    statement = sf_adapter.directionally_wrap_statement(query, relation, sampling)
 
-    assert query_equalize(sf_adapter.directionally_wrap_statement(query, relation, sampling)) == query_equalize(f"""
+    assert query_equalize(statement) == query_equalize(f"""
             WITH
                 {relation.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
             {query}
@@ -55,9 +59,12 @@ def test_directionally_wrap_statement_directional(sf_adapter):
                 {relation.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
             """)
 
+    assert len(sf_adapter._safe_query(statement)) > 0
+
 
 def test_upstream_constraint_statement(sf_adapter):
-    DATABASE, SCHEMA, TABLE, LOCAL_KEY, REMOTE_KEY = [rand_string(10) for _ in range(5)]
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "CHILD_TYPE_2_ITEMS"
+    LOCAL_KEY, REMOTE_KEY = "ID", "PARENT_2_ID"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
@@ -70,7 +77,7 @@ def test_upstream_constraint_statement(sf_adapter):
 
 
 def test_population_count_statement(sf_adapter):
-    DATABASE, SCHEMA, TABLE = [rand_string(10) for _ in range(3)]
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
@@ -81,11 +88,13 @@ def test_population_count_statement(sf_adapter):
     assert query_equalize(statement) == query_equalize(
         f"SELECT COUNT(*) FROM {sf_adapter.quoted_dot_notation(relation)}")
 
+    assert len(sf_adapter._safe_query(statement)) > 0
+
 
 def test_get_all_databases(sf_adapter):
-    databases_list = ["SNOWSHU_DEVELOPMENT", "HU_DATA", "SNOWFLAKE_SAMPLE_DATA", "DEMO_DB", "UTIL_DB"]
+    databases_list = ["SNOWSHU_DEVELOPMENT"]
 
-    assert databases_list.sort() == sf_adapter._get_all_databases().sort()
+    assert set(databases_list).issubset(set(sf_adapter._get_all_databases()))
 
 
 def test_get_all_schemas(sf_adapter):
@@ -96,7 +105,7 @@ def test_get_all_schemas(sf_adapter):
 
 
 def test_view_creation_statement(sf_adapter):
-    DATABASE, SCHEMA, TABLE = [rand_string(10) for _ in range(3)]
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
@@ -112,7 +121,7 @@ def test_view_creation_statement(sf_adapter):
 
 
 def test_unsampled_statement(sf_adapter):
-    DATABASE, SCHEMA, TABLE = [rand_string(10) for _ in range(3)]
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
@@ -127,22 +136,24 @@ def test_unsampled_statement(sf_adapter):
                 {sf_adapter.quoted_dot_notation(relation)}
             """)
 
+    assert len(sf_adapter._safe_query(statement)) > 0
+
 
 def test_union_constraint_statement(sf_adapter):
-    DATABASE, SCHEMA, TABLE = [rand_string(10) for _ in range(3)]
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE_2"
     subject = Relation(database=DATABASE,
                        schema=SCHEMA,
                        name=TABLE,
                        materialization=TABLE,
                        attributes=[])
-    DATABASE, SCHEMA, TABLE = [rand_string(10) for _ in range(3)]
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "CHILD_TYPE_1_ITEMS"
     constraint = Relation(database=DATABASE,
                           schema=SCHEMA,
                           name=TABLE,
                           materialization=TABLE,
                           attributes=[])
     max_number_of_outliers = randrange(10)
-    subject_key, constraint_key = [rand_string(10) for _ in range(2)]
+    subject_key, constraint_key = "ID", "PARENT_2_ID"
     statement = sf_adapter.union_constraint_statement(subject, constraint, subject_key, constraint_key,
                                                       max_number_of_outliers)
 
@@ -161,21 +172,13 @@ def test_union_constraint_statement(sf_adapter):
             LIMIT {max_number_of_outliers})
             """)
 
-
-def test_quoted(sf_adapter):
-    val = rand_string(10)
-    assert val == sf_adapter.quoted(val)
-
-
-def test_quoted_for_spaced_string(sf_adapter):
-    val = rand_string(5) + ' ' + rand_string(6)
-    assert f'"{val}"' == sf_adapter.quoted(val)
+    assert len(sf_adapter._safe_query(statement)) > 0
 
 
 def test_polymorphic_constraint_statement(sf_adapter):
-    DATABASE, SCHEMA, TABLE, LOCAL_KEY, REMOTE_KEY = [rand_string(10) for _ in range(5)]
-    LOCAL_TYPE = "CHAR"
-    TYPE_MATCH_VAL = "CHAR"
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
+    LOCAL_KEY, REMOTE_KEY = "ID", "CHILD_ID"
+    LOCAL_TYPE, TYPE_MATCH_VAL = "CHILD_TYPE", "type_2"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
@@ -197,13 +200,6 @@ def test_polymorphic_constraint_statement(sf_adapter):
                                                        REMOTE_KEY,
                                                        LOCAL_TYPE,
                                                        TYPE_MATCH_VAL)
-
-
-def test_sample_type_to_query_sql(sf_adapter):
-    sample_type = BernoulliSampleMethod(10, units="probability")
-    qualifier = sample_type.probability
-
-    assert sf_adapter._sample_type_to_query_sql(sample_type) == f"SAMPLE BERNOULLI ({qualifier})"
 
 
 def test_build_conn_string(sf_adapter):
@@ -239,7 +235,7 @@ def test_get_relations_from_database(sf_adapter):
 
 
 def test_sample_statement_from_relation(sf_adapter):
-    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
+    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "EXTERNAL_DATA", "ADDRESS_REGION_ATTRIBUTES"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
@@ -254,6 +250,8 @@ def test_sample_statement_from_relation(sf_adapter):
             {DATABASE}.{SCHEMA}.{TABLE}
             SAMPLE BERNOULLI (10)
         """)
+
+    assert len(sf_adapter._safe_query(sample)) > 0
 
 
 def test_analyze_wrap_statement(sf_adapter):
@@ -297,8 +295,8 @@ def test_analyze_wrap_statement(sf_adapter):
 
 
 def test_predicate_constraint_statement(sf_adapter):
-    LOCAL_KEY, REMOTE_KEY = [rand_string(10) for _ in range(2)]
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
+    LOCAL_KEY, REMOTE_KEY = "ID", "CHILD_ID"
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,

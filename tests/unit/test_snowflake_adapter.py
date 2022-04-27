@@ -152,3 +152,25 @@ def test_retry_count_query():
         # assert that the 4th error was raised
         assert exc.errisinstance(SystemError)
         assert sf.check_count_and_query.retry.statistics["attempt_number"] == 4
+
+
+def test_quoted():
+    sf = SnowflakeAdapter()
+    val = rand_string(10)
+    
+    assert val == sf.quoted(val)
+
+
+def test_quoted_for_spaced_string():
+    sf = SnowflakeAdapter()
+    val = rand_string(5) + ' ' + rand_string(6)
+    
+    assert f'"{val}"' == sf.quoted(val)
+
+
+def test_sample_type_to_query_sql():
+    sf = SnowflakeAdapter()
+    sample_type = BernoulliSampleMethod(10, units="probability")
+    qualifier = sample_type.probability
+
+    assert sf._sample_type_to_query_sql(sample_type) == f"SAMPLE BERNOULLI ({qualifier})"
