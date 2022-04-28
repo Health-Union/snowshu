@@ -10,9 +10,9 @@ from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from tests.common import query_equalize, rand_string
 
 
-def test_conn_string_basic():
+def test_get_connection():
     sf = SnowflakeAdapter()
-    USER, PASSWORD, ACCOUNT, DATABASE = [rand_string(15) for _ in range(4)]
+    USER, PASSWORD, ACCOUNT, DATABASE, ROLE = [rand_string(15) for _ in range(5)]
 
     creds = Credentials(user=USER, password=PASSWORD,
                         account=ACCOUNT, database=DATABASE)
@@ -23,6 +23,27 @@ def test_conn_string_basic():
 
     assert str(
         conn_string.url) == f'snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/'
+
+    sf.credentials.role = ROLE
+    conn_string = sf.get_connection()
+
+    assert conn_string.url.render_as_string(hide_password=False) == \
+           f'snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
+
+
+def test_build_conn_string():
+    sf = SnowflakeAdapter()
+    USER, PASSWORD, ACCOUNT, DATABASE, ROLE = [rand_string(15) for _ in range(5)]
+
+    creds = Credentials(user=USER,
+                        password=PASSWORD,
+                        account=ACCOUNT,
+                        database=DATABASE,
+                        role=ROLE)
+    sf.credentials = creds
+    conn_string = sf._build_conn_string()
+
+    assert str(conn_string) == f'snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
 
 
 def test_sample_statement():

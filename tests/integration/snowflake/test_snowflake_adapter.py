@@ -1,4 +1,3 @@
-import urllib.parse
 from random import randrange
 
 import pytest
@@ -12,7 +11,7 @@ from snowshu.core.models.relation import Relation
 from snowshu.exceptions import TooManyRecords
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from tests.assets.integration_test_setup import CREDENTIALS, get_connection_profile
-from tests.common import query_equalize, rand_string
+from tests.common import query_equalize
 
 
 @pytest.fixture(scope='session')
@@ -37,7 +36,7 @@ def test_directionally_wrap_statement(sf_adapter):
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
-                        materialization=TABLE,
+                        materialization=[],
                         attributes=[])
     statement = sf_adapter.directionally_wrap_statement(query, relation, sampling)
 
@@ -68,7 +67,7 @@ def test_upstream_constraint_statement(sf_adapter):
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
-                        materialization=TABLE,
+                        materialization=[],
                         attributes=[])
     statement = sf_adapter.upstream_constraint_statement(relation, LOCAL_KEY, REMOTE_KEY)
 
@@ -81,7 +80,7 @@ def test_population_count_statement(sf_adapter):
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
-                        materialization=TABLE,
+                        materialization=[],
                         attributes=[])
     statement = sf_adapter.population_count_statement(relation)
 
@@ -109,7 +108,7 @@ def test_view_creation_statement(sf_adapter):
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
-                        materialization=TABLE,
+                        materialization=[],
                         attributes=[])
     statement = sf_adapter.view_creation_statement(relation)
 
@@ -125,7 +124,7 @@ def test_unsampled_statement(sf_adapter):
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
-                        materialization=TABLE,
+                        materialization=[],
                         attributes=[])
     statement = sf_adapter.unsampled_statement(relation)
 
@@ -144,15 +143,15 @@ def test_union_constraint_statement(sf_adapter):
     subject = Relation(database=DATABASE,
                        schema=SCHEMA,
                        name=TABLE,
-                       materialization=TABLE,
+                       materialization=[],
                        attributes=[])
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "CHILD_TYPE_1_ITEMS"
     constraint = Relation(database=DATABASE,
                           schema=SCHEMA,
                           name=TABLE,
-                          materialization=TABLE,
+                          materialization=[],
                           attributes=[])
-    max_number_of_outliers = randrange(10)
+    max_number_of_outliers = randrange(1, 10)
     subject_key, constraint_key = "ID", "PARENT_2_ID"
     statement = sf_adapter.union_constraint_statement(subject, constraint, subject_key, constraint_key,
                                                       max_number_of_outliers)
@@ -182,7 +181,7 @@ def test_polymorphic_constraint_statement(sf_adapter):
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
-                        materialization=TABLE,
+                        materialization=[],
                         attributes=[])
     relation.core_query = f"""
         SELECT
@@ -200,17 +199,6 @@ def test_polymorphic_constraint_statement(sf_adapter):
                                                        REMOTE_KEY,
                                                        LOCAL_TYPE,
                                                        TYPE_MATCH_VAL)
-
-
-def test_build_conn_string(sf_adapter):
-    conn_string = sf_adapter._build_conn_string()
-    DATABASE = sf_adapter.credentials.database
-    USER = sf_adapter.credentials.user
-    PASSWORD = sf_adapter.credentials.password
-    ACCOUNT = sf_adapter.credentials.account
-    ROLE = sf_adapter.credentials.role
-
-    assert str(conn_string) == f'snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
 
 
 def test_count_query(sf_adapter):
@@ -239,7 +227,7 @@ def test_sample_statement_from_relation(sf_adapter):
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
-                        materialization=TABLE,
+                        materialization=[],
                         attributes=[])
     sample = sf_adapter.sample_statement_from_relation(relation, BernoulliSampleMethod(10, units="probability"))
 
@@ -259,7 +247,7 @@ def test_analyze_wrap_statement(sf_adapter):
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=NAME,
-                        materialization=TABLE,
+                        materialization=[],
                         attributes=[])
     sql = f'SELECT * from {DATABASE}.{SCHEMA}.{TABLE}'
     statement = sf_adapter.analyze_wrap_statement(sql, relation)
@@ -293,6 +281,8 @@ def test_analyze_wrap_statement(sf_adapter):
         LIMIT 1
         """)
 
+    assert len(sf_adapter._safe_query(statement)) > 0
+
 
 def test_predicate_constraint_statement(sf_adapter):
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
@@ -300,7 +290,7 @@ def test_predicate_constraint_statement(sf_adapter):
     relation = Relation(database=DATABASE,
                         schema=SCHEMA,
                         name=TABLE,
-                        materialization=TABLE,
+                        materialization=[],
                         attributes=[])
     relation.core_query = f"""
         SELECT
@@ -324,18 +314,6 @@ def test_predicate_constraint_statement(sf_adapter):
             SAMPLE BERNOULLI (10)
         ))
         """)
-
-
-def test_get_connection(sf_adapter):
-    conn_string = sf_adapter.get_connection()
-    DATABASE = sf_adapter.credentials.database
-    USER = sf_adapter.credentials.user
-    PASSWORD = sf_adapter.credentials.password
-    ACCOUNT = sf_adapter.credentials.account
-    ROLE = sf_adapter.credentials.role
-
-    assert conn_string.url.render_as_string(hide_password=False) == \
-           f'snowflake://{USER}:{PASSWORD.replace("@", urllib.parse.quote_plus("@"))}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
 
 
 def test_check_count_and_query(sf_adapter):
