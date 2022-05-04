@@ -10,9 +10,9 @@ from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from tests.common import query_equalize, rand_string
 
 
-def test_conn_string_basic():
+def test_get_connection():
     sf = SnowflakeAdapter()
-    USER, PASSWORD, ACCOUNT, DATABASE = [rand_string(15) for _ in range(4)]
+    USER, PASSWORD, ACCOUNT, DATABASE, ROLE = [rand_string(15) for _ in range(5)]
 
     creds = Credentials(user=USER, password=PASSWORD,
                         account=ACCOUNT, database=DATABASE)
@@ -23,6 +23,27 @@ def test_conn_string_basic():
 
     assert str(
         conn_string.url) == f'snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/'
+
+    sf.credentials.role = ROLE
+    conn_string = sf.get_connection()
+
+    assert conn_string.url.render_as_string(hide_password=False) == \
+           f'snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
+
+
+def test_build_conn_string():
+    sf = SnowflakeAdapter()
+    USER, PASSWORD, ACCOUNT, DATABASE, ROLE = [rand_string(15) for _ in range(5)]
+
+    creds = Credentials(user=USER,
+                        password=PASSWORD,
+                        account=ACCOUNT,
+                        database=DATABASE,
+                        role=ROLE)
+    sf.credentials = creds
+    conn_string = sf._build_conn_string()
+
+    assert str(conn_string) == f'snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
 
 
 def test_sample_statement():
@@ -152,3 +173,25 @@ def test_retry_count_query():
         # assert that the 4th error was raised
         assert exc.errisinstance(SystemError)
         assert sf.check_count_and_query.retry.statistics["attempt_number"] == 4
+
+
+def test_quoted():
+    sf = SnowflakeAdapter()
+    val = rand_string(10)
+    
+    assert val == sf.quoted(val)
+
+
+def test_quoted_for_spaced_string():
+    sf = SnowflakeAdapter()
+    val = rand_string(5) + ' ' + rand_string(6)
+    
+    assert f'"{val}"' == sf.quoted(val)
+
+
+def test_sample_type_to_query_sql():
+    sf = SnowflakeAdapter()
+    sample_type = BernoulliSampleMethod(10, units="probability")
+    qualifier = sample_type.probability
+
+    assert sf._sample_type_to_query_sql(sample_type) == f"SAMPLE BERNOULLI ({qualifier})"

@@ -125,6 +125,30 @@ SnowShu will report details of the created replica once completed.
 
 .. image:: /../assets/completed_replica.png 
 
+Creating An Incremental Replica
+------------------
+
+There's a simple way to rebuild an existing replica in case the ``replica.yml`` file has been changed. Instead of building a brand new replica, you can apply changes to the existing one.
+Incremental replica creates relations and loads data only for new entries found in ``replica.yml`` file, which are not already present in target replica image.
+The target for the incremental replica is actually a docker image name, which you can find by typing: 
+
+>>> docker images
+
+It usually starts with ``snowshu_replica_``. So for a replica named *hamburger-sandwich*:
+
+>>> snowshu create -i snowshu_replica_hamburger-sandwich
+
+or
+
+>>> snowshu create --incremental snowshu_replica_hamburger-sandwich
+
+Once completed you'll get the updated replica image with updated relations and the report with details of it.
+
+The ``latest`` tag is applied by default to reference an image, if no version is present. But in case you need to explicitly specify the version of the image, you can include the tag.
+For example, in order to use ``1.0.0`` version of the image:
+
+>>> snowshu create -i snowshu_replica_hamburger-sandwich:1.0.0
+
 Using Your Replica
 ------------------
 
