@@ -26,7 +26,7 @@ def end_to_end(docker_flush_session):
     if create_result.exit_code:
         print(create_result.exc_info)
         raise create_result.exception
-    create_output = create_result.output.split('\n')
+    create_result.output.split('\n')
     client = docker.from_env()
     client.containers.run('snowshu_replica_integration-test',
                           ports={'9999/tcp': 9999},
@@ -34,12 +34,13 @@ def end_to_end(docker_flush_session):
                           network='snowshu',
                           detach=True)
     time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # the replica needs a second to initialize
-    return create_output
 
-def test_create_database_if_not_exists(end_to_end):
+
+def test_create_database_if_not_exists():
     pg_adapter = PostgresAdapter(replica_metadata={})
     if pg_adapter.target != "localhost":
         pg_adapter._credentials.host = 'integration-test'
+
     DATABASE = rand_string(10)
     pg_adapter.create_database_if_not_exists(DATABASE)
     database_list = pg_adapter._get_all_databases()
@@ -47,10 +48,11 @@ def test_create_database_if_not_exists(end_to_end):
     assert DATABASE in database_list
 
 
-def test_create_schema_if_not_exists(end_to_end):
+def test_create_schema_if_not_exists():
     pg_adapter = PostgresAdapter(replica_metadata={})
     if pg_adapter.target != "localhost":
         pg_adapter._credentials.host = 'integration-test'
+
     DATABASE, SCHEMA = [rand_string(10) for _ in range(2)]
     pg_adapter.create_database_if_not_exists(DATABASE)
     pg_adapter.create_schema_if_not_exists(DATABASE, SCHEMA)
@@ -59,42 +61,46 @@ def test_create_schema_if_not_exists(end_to_end):
     assert SCHEMA in list
 
 
-def test_get_all_databases(end_to_end):
+def test_get_all_databases():
     pg_adapter = PostgresAdapter(replica_metadata={})
     if pg_adapter.target != "localhost":
         pg_adapter._credentials.host = 'integration-test'
+    
     db_list = pg_adapter._get_all_databases()
     databases = ['postgres', 'snowshu', 'snowshu_development']
 
-    assert set(databases).issubset(set(db_list))
+    assert set(databases).issubset(db_list)
 
 
-def test_get_all_schemas(end_to_end):
+def test_get_all_schemas():
     pg_adapter = PostgresAdapter(replica_metadata={})
     if pg_adapter.target != "localhost":
         pg_adapter._credentials.host = 'integration-test'
+
     schemas_list = pg_adapter._get_all_schemas('snowshu_development')
     schemas_set = {'polymorphic_data', 'external_data', 'tests_data', 'source_system'}
 
-    assert schemas_set.issubset(set(schemas_list))
+    assert schemas_set.issubset(schemas_list)
 
 
-def test_get_relations_from_database(end_to_end):
+def test_get_relations_from_database():
     pg_adapter = PostgresAdapter(replica_metadata={})
     if pg_adapter.target != "localhost":
         pg_adapter._credentials.host = 'integration-test'
+
     SCHEMA_OBJ = BaseTargetAdapter._DatabaseObject("snowshu",
                                                    Relation("snowshu", "snowshu", "replica_meta", "", None))
     relations_list = [Relation("snowshu", "snowshu", "replica_meta", TABLE, None)]
     received_relations_list = pg_adapter._get_relations_from_database(schema_obj=SCHEMA_OBJ)
 
-    assert set(relations_list).issubset(set(received_relations_list))
+    assert set(relations_list).issubset(received_relations_list)
 
 
-def test_create_all_database_extensions(end_to_end):
+def test_create_all_database_extensions():
     pg_adapter = PostgresAdapter(replica_metadata={})
     if pg_adapter.target != "localhost":
         pg_adapter._credentials.host = 'integration-test'
+
     extensions = 'citext'
     pg_adapter.create_all_database_extensions()
     statement = 'SELECT extname FROM pg_extension'
@@ -105,11 +111,11 @@ def test_create_all_database_extensions(end_to_end):
     assert extensions in extensions_list
 
 
-def test_load_data_into_relation(end_to_end):
+def test_load_data_into_relation():
     pg_adapter = PostgresAdapter(replica_metadata={})
     if pg_adapter.target != "localhost":
         pg_adapter._credentials.host = 'integration-test'
-    
+
     id_column = "id"
     content_column = "content"
     columns = [
@@ -117,10 +123,10 @@ def test_load_data_into_relation(end_to_end):
         Attribute(content_column, data_types.VARCHAR)
     ]
     relation = Relation("snowshu", "snowshu", "replica_meta", TABLE, columns)
-    relation.data = DataFrame({id_column:[1, 2, 3], content_column: [rand_string(5) for _ in range(3)]})
+    relation.data = DataFrame({id_column: [1, 2, 3], content_column: [rand_string(5) for _ in range(3)]})
     pg_adapter.load_data_into_relation(relation)
 
-    statement = f"SELECT * FROM snowshu.snowshu.replica_meta"
+    statement = "SELECT * FROM snowshu.snowshu.replica_meta"
     conn = pg_adapter.get_connection()
     result = conn.execute(statement).fetchall()
 
