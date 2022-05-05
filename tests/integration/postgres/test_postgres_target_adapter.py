@@ -1,7 +1,6 @@
 import os
 
 import time
-from datetime import datetime
 from pandas.core.frame import DataFrame
 import docker
 import pytest
@@ -18,7 +17,7 @@ from tests.common import rand_string
 CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
 DOCKER_SPIN_UP_TIMEOUT = 15
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def end_to_end(docker_flush_session):
     runner = CliRunner()
 
