@@ -1,10 +1,8 @@
 import json
 import os
 import re
-import time
 from datetime import datetime
 
-import docker
 import pytest
 import sqlalchemy
 import yaml
@@ -37,25 +35,6 @@ CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test
 SNOWSHU_META_STRING = BASE_CONN.format('snowshu')
 SNOWSHU_DEVELOPMENT_STRING = BASE_CONN.format('snowshu_development')
 DOCKER_SPIN_UP_TIMEOUT = 15
-
-
-@pytest.fixture(scope="session", autouse=True)
-def end_to_end(docker_flush_session):
-    runner = CliRunner()
-
-    create_result = runner.invoke(cli, ('create', '--replica-file', CONFIGURATION_PATH, '--barf'))
-    if create_result.exit_code:
-        print(create_result.exc_info)
-        raise create_result.exception
-    create_output = create_result.output.split('\n')
-    client = docker.from_env()
-    client.containers.run('snowshu_replica_integration-test',
-                          ports={'9999/tcp': 9999},
-                          name='integration-test',
-                          network='snowshu',
-                          detach=True)
-    time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # the replica needs a second to initialize
-    return create_output
 
 
 def any_appearance_of(string, strings):
