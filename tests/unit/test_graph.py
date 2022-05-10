@@ -12,7 +12,7 @@ from snowshu.core.models import Relation
 from snowshu.core.models import materializations as mz
 from snowshu.exceptions import InvalidRelationshipException
 from snowshu.samplings.samplings import BruteForceSampling, DefaultSampling
-from tests.conftest import CONFIGURATION, BASIC_CONFIGURATION, rand_string
+from tests.conftest import CONFIGURATION, BASIC_CONFIGURATION, CYCLE_CONFIGURATION, rand_string
 
 
 def test_graph_builds_dags_correctly(stub_graph_set):
@@ -699,3 +699,15 @@ def test_graph_difference_more_both_isolated_non_isolated_relations_source(stub_
         expected_nodes = source_catalog[1:]
         actual = SnowShuGraph.catalog_difference(shgraph, target_catalog)
         assert list(actual.nodes) == expected_nodes
+
+
+def test_build_graph_cycle_output():
+    """ Tests useful output """
+    shgraph = SnowShuGraph()
+    config_dict = copy.deepcopy(CYCLE_CONFIGURATION)
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
+    with pytest.raises(ValueError) as exc:
+        shgraph.build_graph(config)
+    assert ("<Relation object SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.PRODUCTS>" in str(exc.value)) or \
+        ("<Relation object SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS>" in str(exc.value))
