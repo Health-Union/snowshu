@@ -300,6 +300,9 @@
         },
         "min_sample_size": {
           "type": "integer"
+        },
+        "max_allowed_rows": {
+          "type": "integer"
         }
       }
     }

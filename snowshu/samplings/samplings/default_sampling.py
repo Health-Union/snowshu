@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+from snowshu.configs import MAX_ALLOWED_ROWS
 
 from snowshu.core.samplings.bases.base_sampling import BaseSampling
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
@@ -31,8 +32,10 @@ class DefaultSampling(BaseSampling):
     def __init__(self,
                  margin_of_error: float = 0.02,
                  confidence: float = 0.99,
-                 min_sample_size: int = 1000):
+                 min_sample_size: int = 1000,
+                 max_allowed_rows: int = MAX_ALLOWED_ROWS):
         self.min_sample_size = min_sample_size
+        self.max_allowed_rows = max_allowed_rows
         self.sample_size_method = CochransSampleSize(margin_of_error,
                                                      confidence)
 

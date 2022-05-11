@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING
+from snowshu.configs import MAX_ALLOWED_ROWS
 
 from snowshu.core.samplings.bases.base_sampling import BaseSampling
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
@@ -22,8 +23,10 @@ class BruteForceSampling(BaseSampling):
 
     def __init__(self,
                  probability: float = 0.10,
-                 min_sample_size: int = 1000):
+                 min_sample_size: int = 1000,
+                 max_allowed_rows: int = MAX_ALLOWED_ROWS):
         self.min_sample_size = min_sample_size
+        self.max_allowed_rows = max_allowed_rows
         self.sample_size_method = BruteForceSampleSize(probability)
 
     def prepare(self,
