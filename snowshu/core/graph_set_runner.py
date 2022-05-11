@@ -12,7 +12,6 @@ from snowshu.adapters.source_adapters.base_source_adapter import \
     BaseSourceAdapter
 from snowshu.adapters.target_adapters.base_target_adapter import \
     BaseTargetAdapter
-from snowshu.configs import MAX_ALLOWED_ROWS
 from snowshu.core.compile import RuntimeSourceCompiler
 from snowshu.logger import Logger, duration
 
