@@ -707,7 +707,7 @@ def test_build_graph_cycle_output():
     config_dict = copy.deepcopy(CYCLE_CONFIGURATION)
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
+    error_message = 'The graph created by the specified trail path is not directed (circular reference detected).'
     with pytest.raises(ValueError) as exc:
         shgraph.build_graph(config)
-    assert ("<Relation object SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.PRODUCTS>" in str(exc.value)) or \
-        ("<Relation object SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS>" in str(exc.value))
+        assert str(exc.value) == error_message

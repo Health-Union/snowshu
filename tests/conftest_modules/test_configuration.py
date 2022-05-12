@@ -211,6 +211,15 @@ CYCLE_CONFIGURATION = {
                             "remote_attribute": "ID"
                         }
                     ],
+                    "directional": [
+                        {
+                            "local_attribute": "ORDER_ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "SOURCE_SYSTEM",
+                            "relation": "ORDERS",
+                            "remote_attribute": "ID"
+                        }
+                    ]
                 }
             },
             {
@@ -229,6 +238,70 @@ CYCLE_CONFIGURATION = {
                     ],
                 }
             },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "SOURCE_SYSTEM",
+                "relation": "ORDERS",
+                "relationships": {
+                    "bidirectional": [
+                        {
+                            "local_attribute": "ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "SOURCE_SYSTEM",
+                            "relation": "ORDER_ITEMS",
+                            "remote_attribute": "ORDER_ID"
+                        }
+                    ],
+                }
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "POLYMORPHIC_DATA",
+                "relation": "PARENT_TABLE",
+                "relationships": {
+                    "polymorphic": [
+                        {
+                            "local_attribute": "CHILD_ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "POLYMORPHIC_DATA",
+                            "relation": "CHILD_TYPE_2_ITEMS",
+                            "remote_attribute": "ID",
+                        }
+                    ],
+                }
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "POLYMORPHIC_DATA",
+                "relation": "CHILD_TYPE_2_ITEMS",
+                "relationships": {
+                    "polymorphic": [
+                        {
+                            "local_attribute": "ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "POLYMORPHIC_DATA",
+                            "relation": "PARENT_TABLE_2",
+                            "remote_attribute": "CHILD_ID",
+                        }
+                    ],
+                }
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "POLYMORPHIC_DATA",
+                "relation": "PARENT_TABLE_2",
+                "relationships": {
+                    "polymorphic": [
+                        {
+                            "local_attribute": "PARENT_ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "POLYMORPHIC_DATA",
+                            "relation": "PARENT_TABLE",
+                            "remote_attribute": "ID",
+                        }
+                    ],
+                }
+            }
         ]
     },
     "target": {
