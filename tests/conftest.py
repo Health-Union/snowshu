@@ -215,7 +215,7 @@ def docker_flush():
 
 
 @pytest.fixture(scope="module")
-def docker_flush_session():
+def docker_flush_module():
     sanitize_docker_environment()
     yield
     sanitize_docker_environment()
@@ -227,7 +227,7 @@ def mock_docker_image():
 
 
 @pytest.fixture(scope="module")
-def end_to_end(docker_flush_session):
+def end_to_end(docker_flush_module):
     runner = CliRunner()
 
     create_result = runner.invoke(cli, ('create', '--replica-file', CONFIGURATION_PATH, '--barf'))
