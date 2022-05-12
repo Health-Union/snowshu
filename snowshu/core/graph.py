@@ -93,9 +93,6 @@ class SnowShuGraph:
 
         logger.info(
             f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
-        label_dictionary = {}
-        for node in graph.nodes():
-            label_dictionary[node] = str(node)[17:-1].replace('.', '\n')
 
         if not networkx.algorithms.is_directed_acyclic_graph(self.graph):
             graph_cycles = list(networkx.simple_cycles(self.graph))
@@ -107,7 +104,7 @@ class SnowShuGraph:
                 for i, node in enumerate(cycle):
                     nodes_in_cycles.append(node)
                     if i != len(cycle) - 1:
-                        cycle_graph.add_edge(node, cycle[i+1])
+                        cycle_graph.add_edge(node, cycle[i + 1])
                         message = message + '\033[1;34m' + str(node)[17:-1] + '\t\033[1;32m----\t'
                     else:
                         cycle_graph.add_edge(node, cycle[0])
@@ -120,19 +117,17 @@ class SnowShuGraph:
                 label_dict[node] = str(node)[17:-1].replace('.', '\n')
 
             created_at = datetime.now()
-            time = created_at.strftime("%d/%m/%Y %H:%M:%S")
-            time_stamp = created_at.strftime("%d_%m_%Y_%H_%M_%S")
-            title = f'\nGraph of the simple cycles, created at: {time}'
             plt.figure(figsize=(8, 8))
             plt.margins(0.1)
-            plt.title(title)
-            pos = networkx.planar_layout(cycle_graph)
+            plt.title(f'\nGraph of the simple cycles, created at: {created_at.strftime("%d/%m/%Y %H:%M:%S")}')
 
-            networkx.draw(cycle_graph, pos, labels=label_dict, with_labels=True, node_size=1000, node_color='skyblue',
-                        font_size=6, font_color='green', width=2, horizontalalignment='center',
-                        verticalalignment='center', connectionstyle='arc3, rad=0.05')
-            filename_png = f'snowshu_barf_output/{time_stamp}.png'
-            filename_graphml = f'snowshu_barf_output/{time_stamp}.graphml'
+            networkx.draw(
+                cycle_graph, pos=networkx.planar_layout(cycle_graph), labels=label_dict, with_labels=True,
+                node_size=1000, node_color='skyblue', font_size=6, font_color='green', width=2,
+                horizontalalignment='center', verticalalignment='center', connectionstyle='arc3, rad=0.05')
+
+            filename_png = f'snowshu_barf_output/{created_at.strftime("%d_%m_%Y_%H_%M_%S")}.png'
+            filename_graphml = f'snowshu_barf_output/{created_at.strftime("%d_%m_%Y_%H_%M_%S")}.graphml'
             plt.savefig(filename_png, bbox_inches='tight', pad_inches=0, dpi=1000)
             networkx.write_graphml(cycle_graph, filename_graphml)
 
