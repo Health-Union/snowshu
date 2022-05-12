@@ -3,8 +3,6 @@ from itertools import chain
 from typing import List, Set, Optional, Union
 
 import networkx
-import numpy as np
-import pylab
 import matplotlib.pyplot as plt
 
 from snowshu.core.configuration_parser import Configuration
