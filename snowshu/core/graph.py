@@ -1,11 +1,12 @@
 from datetime import datetime
 from itertools import chain
-from typing import List, Set, Optional, Union
+from typing import List, Set, Tuple, Optional, Union
 
 import networkx
 import matplotlib.pyplot as plt
 
 from snowshu.core.configuration_parser import Configuration
+from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.models.relation import (Relation,
                                           single_full_pattern_match)
 from snowshu.exceptions import InvalidRelationshipException
@@ -68,6 +69,58 @@ class SnowShuGraph:
         source_graph.remove_nodes_from(nodes_to_delete)
         return source_graph
 
+    @staticmethod
+    def _build_graph_cycles(graph_cycles: list) -> Tuple[str, str]:
+        """ Builds simple cycles in a directed graph per replica config.
+
+            Args:
+                configs: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object.
+
+            Returns:
+                The :rtype: Tuple[str, str]: `message`, `filename`,
+                the `message` represents the list of the simple cycles in the graph,
+                the `filename` corresponds to the name of .png and .graphml files where cycles image is saved.
+        """
+
+        cycle_graph = networkx.DiGraph()
+        message = ""
+        nodes = []
+
+        # create a message with list of nodes for each simple cycle, add nodes and edges to the graph
+        for cycle in graph_cycles:
+            for i, node in enumerate(cycle):
+                nodes.append(node)
+                if i != len(cycle) - 1:
+                    cycle_graph.add_edge(node, cycle[i + 1])
+                    message = message + '\033[1;34m' + str(node)[17:-1] + '\t\033[1;32m----\t'
+                else:
+                    cycle_graph.add_edge(node, cycle[0])
+                    message = message + '\033[1;34m' + str(node)[17:-1]
+            message = message + '\n\t'
+
+        # label each node as DataBase.Schema.Table
+        nodes = set(nodes)
+        label_dict = {}
+        for node in cycle_graph.nodes():
+            label_dict[node] = str(node)[17:-1].replace('.', '\n')
+
+        # make an image for the existing simple cycles
+        created_at = datetime.now()
+        plt.figure(figsize=(8, 8))
+        plt.margins(0.1)
+        plt.title(f'\nGraph of the simple cycles, created at: {created_at.strftime("%d/%m/%Y %H:%M:%S")}')
+
+        networkx.draw(
+            cycle_graph, pos=networkx.planar_layout(cycle_graph), labels=label_dict, with_labels=True,
+            node_size=1000, node_color='skyblue', font_size=6, font_color='green', width=2,
+            horizontalalignment='center', verticalalignment='center', connectionstyle='arc3, rad=0.05')
+
+        filename = f'{GraphSetRunner.barf_output}/{created_at.strftime("%d_%m_%Y_%H_%M_%S")}'
+        plt.savefig(f'{filename}.png', bbox_inches='tight', pad_inches=0, dpi=1000)
+        networkx.write_graphml(cycle_graph, f'{filename}.graphml')
+
+        return message, filename
+
     def build_graph(self, configs: Configuration) -> None:
         """ Builds a directed graph per replica config.
 
@@ -94,45 +147,13 @@ class SnowShuGraph:
 
         if not networkx.algorithms.is_directed_acyclic_graph(self.graph):
             graph_cycles = list(networkx.simple_cycles(self.graph))
-            cycle_graph = networkx.DiGraph()
-            message = ""
-            nodes_in_cycles = []
-
-            for cycle in graph_cycles:
-                for i, node in enumerate(cycle):
-                    nodes_in_cycles.append(node)
-                    if i != len(cycle) - 1:
-                        cycle_graph.add_edge(node, cycle[i + 1])
-                        message = message + '\033[1;34m' + str(node)[17:-1] + '\t\033[1;32m----\t'
-                    else:
-                        cycle_graph.add_edge(node, cycle[0])
-                        message = message + '\033[1;34m' + str(node)[17:-1]
-                message = message + '\n\t'
-
-            nodes_in_cycles = set(nodes_in_cycles)
-            label_dict = {}
-            for node in cycle_graph.nodes():
-                label_dict[node] = str(node)[17:-1].replace('.', '\n')
-
-            created_at = datetime.now()
-            plt.figure(figsize=(8, 8))
-            plt.margins(0.1)
-            plt.title(f'\nGraph of the simple cycles, created at: {created_at.strftime("%d/%m/%Y %H:%M:%S")}')
-
-            networkx.draw(
-                cycle_graph, pos=networkx.planar_layout(cycle_graph), labels=label_dict, with_labels=True,
-                node_size=1000, node_color='skyblue', font_size=6, font_color='green', width=2,
-                horizontalalignment='center', verticalalignment='center', connectionstyle='arc3, rad=0.05')
-
-            filename = f'snowshu_barf_output/{created_at.strftime("%d_%m_%Y_%H_%M_%S")}.'
-            plt.savefig(f'{filename}png', bbox_inches='tight', pad_inches=0, dpi=1000)
-            networkx.write_graphml(cycle_graph, f'{filename}graphml')
+            message, filename = self._build_graph_cycles(graph_cycles)
 
             logger.error(
                 'The dependency graph generated by the given specified relations yields a cyclic graph. \
                 \n\tCyclic dependency found in the following relations:\n\t%s \
                 \n\t\033[1;37mThe network topology diagram has been saved to: \
-                \n\t\033[0;36m%spng \033[1;37m and \033[0;36m%sgraphml', message, filename, filename)
+                \n\t\033[0;36m%s.png \033[1;37m and \033[0;36m%s.graphml', message, filename, filename)
             raise ValueError(
                 'The graph created by the specified trail path is not directed (circular reference detected).')
 
