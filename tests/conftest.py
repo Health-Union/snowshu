@@ -1,20 +1,29 @@
 import copy
 import re
 from io import StringIO
+import os
 
+import time
 import docker
 import networkx as nx
 import pytest
 import yaml
 
+from click.testing import CliRunner
 import snowshu.core.models.data_types as dt
 import snowshu.core.models.materializations as mz
+from snowshu.configs import PACKAGE_ROOT
+from snowshu.core.main import cli
 from snowshu.core.configuration_parser import ConfigurationParser
 from snowshu.core.models import Attribute, Relation
 from tests.common import rand_string
 from tests.conftest_modules.mock_docker_images import MockImageFactory
 from tests.conftest_modules.test_configuration import CONFIGURATION, BASIC_CONFIGURATION
 from tests.conftest_modules.test_credentials import CREDENTIALS
+
+
+CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
+DOCKER_SPIN_UP_TIMEOUT = 15
 
 
 @pytest.fixture
@@ -204,8 +213,9 @@ def docker_flush():
     yield
     sanitize_docker_environment()
 
-@pytest.fixture(scope="session")
-def docker_flush_session():
+
+@pytest.fixture(scope="module")
+def docker_flush_module():
     sanitize_docker_environment()
     yield
     sanitize_docker_environment()
@@ -214,3 +224,22 @@ def docker_flush_session():
 @pytest.fixture
 def mock_docker_image():
     return MockImageFactory()
+
+
+@pytest.fixture(scope="module")
+def end_to_end(docker_flush_module):
+    runner = CliRunner()
+
+    create_result = runner.invoke(cli, ('create', '--replica-file', CONFIGURATION_PATH, '--barf'))
+    if create_result.exit_code:
+        print(create_result.exc_info)
+        raise create_result.exception
+    create_output = create_result.output.split('\n')
+    client = docker.from_env()
+    client.containers.run('snowshu_replica_integration-test',
+                          ports={'9999/tcp': 9999},
+                          name='integration-test',
+                          network='snowshu',
+                          detach=True)
+    time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # the replica needs a second to initialize
+    return create_output
