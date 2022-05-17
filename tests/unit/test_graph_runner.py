@@ -3,6 +3,7 @@ from unittest import mock
 
 import pandas as pd
 import networkx as nx
+from requests import patch
 
 from snowshu.core.graph_set_runner import GraphExecutable, GraphSetRunner
 from snowshu.samplings.samplings import DefaultSampling
@@ -77,21 +78,20 @@ def test_traverse_and_execute_custom_max_rows_pass():
         executables = [GraphExecutable(graph,
                                        self.config.source_profile.adapter,
                                        self.config.target_profile.adapter,
-                                       analyze=self.run_analyze) for graph in graphs]
+                                       analyze=True) for graph in graphs]
         return executables
 
-    ReplicaFactory._execute = mock_execute
 
-    config = CONFIGURATION
+    with mock.patch.object(ReplicaFactory, '_execute', new=mock_execute):   
+        config = CONFIGURATION
+        replica = ReplicaFactory()
+        replica.load_config(config)
+        executables = replica._execute(False, 'name')
 
-    replica = ReplicaFactory()
-    replica.load_config(config)
-    executables = replica._execute(False, 'name')
+        sampling_passed_values = {}
+        for executable in executables:
+            for i, relation in enumerate(
+                        nx.algorithms.dag.topological_sort(executable.graph)):
 
-    sampling_passed_values = {}
-    for executable in executables:
-        for i, relation in enumerate(
-                    nx.algorithms.dag.topological_sort(executable.graph)):
-
-            sampling_passed_values[relation.dot_notation] = relation.sampling.max_allowed_rows
-    assert sampling_passed_values['SNOWSHU_DEVELOPMENT.EXTERNAL_DATA.SOCIAL_USERS_IMPORT'] == 123456
+                sampling_passed_values[relation.dot_notation] = relation.sampling.max_allowed_rows
+        assert sampling_passed_values['SNOWSHU_DEVELOPMENT.EXTERNAL_DATA.SOCIAL_USERS_IMPORT'] == 123456
