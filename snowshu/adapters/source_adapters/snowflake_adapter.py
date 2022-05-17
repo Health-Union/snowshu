@@ -273,6 +273,46 @@ LIMIT {max_number_of_outliers})
             type_match_val = relation.name[:-1] if relation.name[-1].lower() == 's' else relation.name
         return f" ({predicate} AND LOWER({local_type}) = LOWER('{type_match_val}') ) "
 
+    def get_matching_relations(self, relation: Relation) -> List[str]:
+        """ Use the SHOW api to get all the available db structures."""
+        logger.debug('Collecting matching relations from snowflake via regex...')
+        table = f"{relation.database}.information_schema.tables"
+        query = f"""
+SELECT table_catalog, table_schema, table_name FROM {table} 
+WHERE table_name REGEXP '{relation.quoted(relation.name)}'
+"""
+        show_result = tuple(self._safe_query(query).values.tolist())
+        relations = list(set(show_result))
+        logger.debug(f'Done. Found {len(relations)} matching relations.')
+        return relations
+
+    def polymorphic_constraint_statements(self,  # noqa pylint: disable=too-many-arguments
+                                          subject: Relation,
+                                          matching_relations: list,
+                                          subject_key: str,
+                                          constraint_key: str,
+                                          max_number_of_outliers: int) -> str:
+        """ Union statements to select outliers for polymorphic relations. 
+        This does not pull in NULL values. """
+        statements = []
+        for relation in matching_relations:
+            constraint_table = ".".join([relation[0], relation[1], relation[2]])
+            statements.append(f"""
+(SELECT
+    *
+FROM
+{self.quoted_dot_notation(subject)}
+WHERE
+    {subject_key}
+NOT IN
+(SELECT
+    {constraint_key}
+FROM
+{constraint_table})
+LIMIT {max_number_of_outliers})
+""")
+        return statements
+
     @staticmethod
     def _sample_type_to_query_sql(sample_type: 'BaseSampleMethod') -> str:
         if sample_type.name == 'BERNOULLI':

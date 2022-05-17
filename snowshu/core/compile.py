@@ -1,4 +1,4 @@
-from typing import Type
+from typing import List, Type
 
 import networkx
 
@@ -17,7 +17,8 @@ class RuntimeSourceCompiler:
     def compile_queries_for_relation(relation: Relation,  # noqa pylint: disable=too-many-branches
                                      dag: networkx.Graph,
                                      source_adapter: Type[BaseSourceAdapter],
-                                     analyze: bool) -> Relation:
+                                     analyze: bool,
+                                     match_relations: List[Relation] = []) -> Relation:
         """ Generates the sql statements for the given relation
 
             Args:
@@ -47,16 +48,24 @@ class RuntimeSourceCompiler:
                     predicates.append(source_adapter.upstream_constraint_statement(child,
                                                                                    edge['remote_attribute'],
                                                                                    edge['local_attribute']))
-                if relation.include_outliers and edge['direction'] == 'polymorphic':
-                    logger.warning("Polymorphic relationships currently do not support including outliers. "
-                                   "Ignoring include_outliers flag for edge "
-                                   f"from {relation.dot_notation} to {child.dot_notation}. ")
-                elif relation.include_outliers:
-                    unions.append(source_adapter.union_constraint_statement(relation,
-                                                                            child,
-                                                                            edge['remote_attribute'],
-                                                                            edge['local_attribute'],
-                                                                            relation.max_number_of_outliers))
+                if relation.include_outliers:
+                    if edge['direction'] == 'polymorphic':
+                        if len(match_relations) > 0:
+                            relations = [[m.database, m.schema, m.name] for m in match_relations]
+                        else:
+                            relations = source_adapter.get_matching_relations(child)
+                        p_unions = source_adapter.polymorphic_constraint_statements(relation,
+                                                                                    relations, 
+                                                                                    edge['remote_attribute'],
+                                                                                    edge['local_attribute'],
+                                                                                    relation.max_number_of_outliers)
+                        unions += p_unions
+                    else:
+                        unions.append(source_adapter.union_constraint_statement(relation,
+                                                                                child,
+                                                                                edge['remote_attribute'],
+                                                                                edge['local_attribute'],
+                                                                                relation.max_number_of_outliers))
 
             for parent in dag.predecessors(relation):
                 edge = dag.edges[parent, relation]
@@ -86,16 +95,24 @@ class RuntimeSourceCompiler:
                                                                                     analyze,
                                                                                     edge['local_attribute'],
                                                                                     edge['remote_attribute']))
-                if relation.include_outliers and edge['direction'] == 'polymorphic':
-                    logger.warning("Polymorphic relationships currently do not support including outliers. "
-                                   "Ignoring include_outliers flag for edge "
-                                   f"from {parent.dot_notation} to {relation.dot_notation}. ")
-                elif relation.include_outliers:
-                    unions.append(source_adapter.union_constraint_statement(relation,
-                                                                            parent,
-                                                                            edge['local_attribute'],
-                                                                            edge['remote_attribute'],
-                                                                            relation.max_number_of_outliers))
+                if relation.include_outliers:
+                    if edge['direction'] == 'polymorphic':
+                        if len(match_relations) > 0:
+                            relations = [[m.database, m.schema, m.name] for m in match_relations]
+                        else:
+                            relations = source_adapter.get_matching_relations(parent)
+                        p_unions = source_adapter.polymorphic_constraint_statements(relation,
+                                                                                    relations, 
+                                                                                    edge['local_attribute'],
+                                                                                    edge['remote_attribute'],
+                                                                                    relation.max_number_of_outliers)
+                        unions += p_unions
+                    else:
+                        unions.append(source_adapter.union_constraint_statement(relation,
+                                                                                parent,
+                                                                                edge['local_attribute'],
+                                                                                edge['remote_attribute'],
+                                                                                relation.max_number_of_outliers))
 
             # if polymorphic predicates are set up, then generate the or predicate
             if polymorphic_predicates:
