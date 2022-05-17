@@ -1,5 +1,6 @@
 import copy
 from unittest import mock
+from unittest.mock import ANY
 
 import pandas as pd
 import networkx as nx
@@ -61,37 +62,44 @@ def test_traverse_and_execute_analyze(stub_graph_set):
     assert iso_relation.population_size == 1000
 
 
-def test_traverse_and_execute_custom_max_rows_pass():
+def test_traverse_and_execute_custom_max_rows_pass(stub_graph_set):
     """
     Tests if the values stated in config are correctly passed to check_count_and_query() method
     """
 
-    def mock_execute(self,
-                 barf: bool = False,
-                 name=None):
-        graph = SnowShuGraph()
+    source_adapter,target_adapter=[mock.MagicMock() for _ in range(2)]
+    source_adapter.predicate_constraint_statement.return_value=str()
+    source_adapter.upstream_constraint_statement.return_value=str()
+    source_adapter.union_constraint_statement.return_value=str()
+    source_adapter.sample_statement_from_relation.return_value=str()
+    runner=GraphSetRunner()
+    runner.barf=False
+    graph_set,vals=stub_graph_set
+    source_adapter.scalar_query.return_value=1000
+    source_adapter.check_count_and_query.return_value=pd.DataFrame([dict(population_size=1000,sample_size=100)])
+    dag=copy.deepcopy(graph_set[-1]) # last graph in the set is the dag
+    
+    # test if defaults are passed
+    for rel in dag.nodes:
+        rel.unsampled=False
+        rel.include_outliers=False
+        rel.sampling=DefaultSampling()
 
-        graph.build_graph(self.config)
+    dag_executable = GraphExecutable(dag, source_adapter, target_adapter, True)
 
-        graphs = graph.get_connected_subgraphs()
+    with mock.patch.object(source_adapter, 'check_count_and_query') as mock_1:
+        runner._traverse_and_execute(dag_executable)
+        mock_1.assert_called_with(ANY, 1000000, ANY)
 
-        executables = [GraphExecutable(graph,
-                                       self.config.source_profile.adapter,
-                                       self.config.target_profile.adapter,
-                                       analyze=True) for graph in graphs]
-        return executables
+    # test if custom values are passed
+    for rel in dag.nodes:
+        rel.unsampled=False
+        rel.include_outliers=False
+        rel.sampling=DefaultSampling()
+        rel.sampling.max_allowed_rows = 1234567
 
+    dag_executable = GraphExecutable(dag, source_adapter, target_adapter, True)
 
-    with mock.patch.object(ReplicaFactory, '_execute', new=mock_execute):   
-        config = CONFIGURATION
-        replica = ReplicaFactory()
-        replica.load_config(config)
-        executables = replica._execute(False, 'name')
-
-        sampling_passed_values = {}
-        for executable in executables:
-            for i, relation in enumerate(
-                        nx.algorithms.dag.topological_sort(executable.graph)):
-
-                sampling_passed_values[relation.dot_notation] = relation.sampling.max_allowed_rows
-        assert sampling_passed_values['SNOWSHU_DEVELOPMENT.EXTERNAL_DATA.SOCIAL_USERS_IMPORT'] == 123456
+    with mock.patch.object(source_adapter, 'check_count_and_query') as mock_1:
+        runner._traverse_and_execute(dag_executable)
+        mock_1.assert_called_with(ANY, 1234567, ANY)
