@@ -3,15 +3,9 @@ from unittest import mock
 from unittest.mock import ANY
 
 import pandas as pd
-import networkx as nx
-from requests import patch
 
 from snowshu.core.graph_set_runner import GraphExecutable, GraphSetRunner
 from snowshu.samplings.samplings import DefaultSampling
-from snowshu.core.replica.replica_factory import ReplicaFactory
-from tests.conftest_modules.test_configuration import CONFIGURATION
-from snowshu.core.graph import SnowShuGraph
-from snowshu.core.compile import RuntimeSourceCompiler
 
 
 def test_traverse_and_execute_analyze(stub_graph_set):
