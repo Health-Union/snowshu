@@ -98,7 +98,7 @@ class SnowShuGraph:
                     cycle_graph.add_edge(node, cycle[0])
                     message = message + '\033[1;34m' + str(node)[17:-1]
             message = message + '\n\t'
-        
+
         filename = ''
 
         # create output .png and .graphml files in case of existing output directory
