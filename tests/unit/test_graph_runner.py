@@ -2,9 +2,14 @@ import copy
 from unittest import mock
 
 import pandas as pd
+import networkx as nx
 
 from snowshu.core.graph_set_runner import GraphExecutable, GraphSetRunner
 from snowshu.samplings.samplings import DefaultSampling
+from snowshu.core.replica.replica_factory import ReplicaFactory
+from tests.conftest_modules.test_configuration import CONFIGURATION
+from snowshu.core.graph import SnowShuGraph
+from snowshu.core.compile import RuntimeSourceCompiler
 
 
 def test_traverse_and_execute_analyze(stub_graph_set):
@@ -53,3 +58,40 @@ def test_traverse_and_execute_analyze(stub_graph_set):
     assert iso_relation.target_loaded is False
     assert iso_relation.sample_size == 100
     assert iso_relation.population_size == 1000
+
+
+def test_traverse_and_execute_custom_max_rows_pass():
+    """
+    Tests if the values stated in config are correctly passed to check_count_and_query() method
+    """
+
+    def mock_execute(self,
+                 barf: bool = False,
+                 name=None):
+        graph = SnowShuGraph()
+
+        graph.build_graph(self.config)
+
+        graphs = graph.get_connected_subgraphs()
+
+        executables = [GraphExecutable(graph,
+                                       self.config.source_profile.adapter,
+                                       self.config.target_profile.adapter,
+                                       analyze=self.run_analyze) for graph in graphs]
+        return executables
+
+    ReplicaFactory._execute = mock_execute
+
+    config = CONFIGURATION
+
+    replica = ReplicaFactory()
+    replica.load_config(config)
+    executables = replica._execute(False, 'name')
+
+    sampling_passed_values = {}
+    for executable in executables:
+        for i, relation in enumerate(
+                    nx.algorithms.dag.topological_sort(executable.graph)):
+
+            sampling_passed_values[relation.dot_notation] = relation.sampling.max_allowed_rows
+    assert sampling_passed_values['SNOWSHU_DEVELOPMENT.EXTERNAL_DATA.SOCIAL_USERS_IMPORT'] == 123456

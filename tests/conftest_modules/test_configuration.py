@@ -105,7 +105,8 @@ CONFIGURATION = {
                     "default": {
                         "margin_of_error": 0.05,
                         "confidence": 0.95,
-                        "min_sample_size": 300
+                        "min_sample_size": 300,
+                        "max_allowed_rows": 123456
                     }
                 }
             },
