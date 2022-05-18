@@ -72,10 +72,10 @@ class SnowShuGraph:
 
     @staticmethod
     def _build_graph_cycles_output(graph_cycles: list) -> Tuple[str, str]:
-        """ Builds simple cycles in a directed graph per replica config.
+        """ Builds simple cycles output according to the list of graph_cycles.
 
             Args:
-                configs: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object.
+                graph_cycles: list of simple cycles in the directed graph built per replica config.
 
             Returns:
                 The :rtype: Tuple[str, str]: `message`, `filename`,
