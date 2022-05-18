@@ -90,7 +90,8 @@ Your initial replica file will look something like `this
          default:
            margin_of_error: 0.05
            confidence: 0.95
-          min_sample_size: 300
+           min_sample_size: 300
+           max_allowed_rows: 1500000
      - database: SNOWSHU_DEVELOPMENT
        schema: POLYMORPHIC_DATA
        relation: PARENT_TABLE

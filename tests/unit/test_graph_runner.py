@@ -1,10 +1,12 @@
 import copy
 from unittest import mock
+from unittest.mock import ANY
 
 import pandas as pd
 
 from snowshu.core.graph_set_runner import GraphExecutable, GraphSetRunner
 from snowshu.samplings.samplings import DefaultSampling
+from snowshu.core.models.relation import Relation
 
 
 def test_traverse_and_execute_analyze(stub_graph_set):
@@ -53,3 +55,55 @@ def test_traverse_and_execute_analyze(stub_graph_set):
     assert iso_relation.target_loaded is False
     assert iso_relation.sample_size == 100
     assert iso_relation.population_size == 1000
+
+
+def test_traverse_and_execute_custom_max_rows_pass(stub_graph_set):
+    """
+    Tests if the values stated in config are correctly passed to check_count_and_query() method
+    """
+
+    source_adapter,target_adapter=[mock.MagicMock() for _ in range(2)]
+    source_adapter.predicate_constraint_statement.return_value=str()
+    source_adapter.upstream_constraint_statement.return_value=str()
+    source_adapter.union_constraint_statement.return_value=str()
+    source_adapter.sample_statement_from_relation.return_value=str()
+    runner=GraphSetRunner()
+    runner.barf=False
+    graph_set,vals=stub_graph_set
+    source_adapter.scalar_query.return_value=1000
+    source_adapter.check_count_and_query.return_value=pd.DataFrame([dict(population_size=1000,sample_size=100)])
+    dag=copy.deepcopy(graph_set[-1])  # last graph in the set is the dag
+    
+    def fake_data(self, val: pd.DataFrame):
+        self._data = val
+
+
+    for do_analyze in [True, False]:
+        # test if defaults are passed
+        for rel in dag.nodes:
+            rel.unsampled = False
+            rel.include_outliers = False
+            rel.sampling = DefaultSampling()
+
+        dag_executable = GraphExecutable(
+            dag, source_adapter, target_adapter, do_analyze)
+
+        with mock.patch.object(source_adapter, 'check_count_and_query') as mock_1,\
+             mock.patch.object(Relation, 'data', new=fake_data):
+            runner._traverse_and_execute(dag_executable)
+            mock_1.assert_called_with(ANY, 1000000, ANY)
+
+        # test if custom values are passed
+        for rel in dag.nodes:
+            rel.unsampled = False
+            rel.include_outliers = False
+            rel.sampling = DefaultSampling()
+            rel.sampling.max_allowed_rows = 1234567
+
+        dag_executable = GraphExecutable(
+            dag, source_adapter, target_adapter, do_analyze)
+
+        with mock.patch.object(source_adapter, 'check_count_and_query') as mock_2,\
+             mock.patch.object(Relation, 'data', new=fake_data):
+            runner._traverse_and_execute(dag_executable)
+            mock_2.assert_called_with(ANY, 1234567, ANY)
