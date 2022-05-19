@@ -18,7 +18,7 @@ from snowshu.core.configuration_parser import ConfigurationParser
 from snowshu.core.models import Attribute, Relation
 from tests.common import rand_string
 from tests.conftest_modules.mock_docker_images import MockImageFactory
-from tests.conftest_modules.test_configuration import CONFIGURATION, BASIC_CONFIGURATION
+from tests.conftest_modules.test_configuration import CONFIGURATION, BASIC_CONFIGURATION, CYCLE_CONFIGURATION
 from tests.conftest_modules.test_credentials import CREDENTIALS
 
 

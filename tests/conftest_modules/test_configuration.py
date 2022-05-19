@@ -163,3 +163,155 @@ CONFIGURATION = {
         "profile": "default"
     }
 }
+
+
+CYCLE_CONFIGURATION = {
+    "version": "1",
+    "credpath": "tests/assets/integration/credentials.yml",
+    "name": "integration trail path",
+    "short_description": "this is a sample with LIVE CREDS for integration",
+    "long_description": "this is for testing against a live db",
+    "threads": 10,
+    "source": {
+        "profile": "default",
+        "sampling": "default",
+        "general_relations": {
+            "databases": [
+                {
+                    "pattern": "SNOWSHU_DEVELOPMENT",
+                    "schemas": [
+                        {
+                            "pattern": ".*",
+                            "relations": [
+                                "^(?!.+_VIEW).+$"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "include_outliers": True,
+        "specified_relations": [
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "SOURCE_SYSTEM",
+                "relation": "ORDERS",
+                "unsampled": True
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "SOURCE_SYSTEM",
+                "relation": "ORDER_ITEMS",
+                "relationships": {
+                    "bidirectional": [
+                        {
+                            "local_attribute": "PRODUCT_ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "SOURCE_SYSTEM",
+                            "relation": "PRODUCTS",
+                            "remote_attribute": "ID"
+                        }
+                    ],
+                    "directional": [
+                        {
+                            "local_attribute": "ORDER_ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "SOURCE_SYSTEM",
+                            "relation": "ORDERS",
+                            "remote_attribute": "ID"
+                        }
+                    ]
+                }
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "SOURCE_SYSTEM",
+                "relation": "PRODUCTS",
+                "relationships": {
+                    "bidirectional": [
+                        {
+                            "local_attribute": "ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "SOURCE_SYSTEM",
+                            "relation": "ORDER_ITEMS",
+                            "remote_attribute": "PRODUCT_ID"
+                        }
+                    ],
+                }
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "SOURCE_SYSTEM",
+                "relation": "ORDERS",
+                "relationships": {
+                    "bidirectional": [
+                        {
+                            "local_attribute": "ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "SOURCE_SYSTEM",
+                            "relation": "ORDER_ITEMS",
+                            "remote_attribute": "ORDER_ID"
+                        }
+                    ],
+                }
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "POLYMORPHIC_DATA",
+                "relation": "PARENT_TABLE",
+                "relationships": {
+                    "polymorphic": [
+                        {
+                            "local_attribute": "CHILD_ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "POLYMORPHIC_DATA",
+                            "relation": "CHILD_TYPE_2_ITEMS",
+                            "remote_attribute": "ID",
+                        }
+                    ],
+                }
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "POLYMORPHIC_DATA",
+                "relation": "CHILD_TYPE_2_ITEMS",
+                "relationships": {
+                    "polymorphic": [
+                        {
+                            "local_attribute": "ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "POLYMORPHIC_DATA",
+                            "relation": "PARENT_TABLE_2",
+                            "remote_attribute": "CHILD_ID",
+                        }
+                    ],
+                }
+            },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "POLYMORPHIC_DATA",
+                "relation": "PARENT_TABLE_2",
+                "relationships": {
+                    "polymorphic": [
+                        {
+                            "local_attribute": "PARENT_ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "POLYMORPHIC_DATA",
+                            "relation": "PARENT_TABLE",
+                            "remote_attribute": "ID",
+                        }
+                    ],
+                }
+            }
+        ]
+    },
+    "target": {
+        "adapter": "postgres",
+        "adapter_args": {
+            "pg_extensions": ["citext"]
+        }
+    },
+    "storage": {
+        "profile": "default"
+    }
+}
