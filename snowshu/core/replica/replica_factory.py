@@ -20,6 +20,7 @@ class ReplicaFactory:
         self.config: Optional[Configuration] = None
         self.run_analyze: Optional[bool] = None
         self.incremental: Optional[str] = None
+        self.retry_count: Optional[int] = None
 
     def create(self,
                name: Optional[str],

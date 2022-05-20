@@ -103,7 +103,7 @@ def create(replica_file: click.Path,
     replica = ReplicaFactory()
     replica.load_config(replica_file)
     replica.incremental = incremental
-    click.echo(replica.create(name, barf, retry_count))
+    click.echo(replica.create(name=name, barf=barf, retry_count=retry_count))
 
 
 @cli.command()
