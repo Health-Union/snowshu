@@ -5,7 +5,6 @@ from typing import Optional, TextIO, Union
 from snowshu.core.configuration_parser import (Configuration,
                                                ConfigurationParser)
 from snowshu.core.graph import SnowShuGraph
-from snowshu.configs import DEFAULT_RETRY_COUNT
 from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.printable_result import (graph_to_result_list,
                                            printable_result)
@@ -21,12 +20,13 @@ class ReplicaFactory:
         self.config: Optional[Configuration] = None
         self.run_analyze: Optional[bool] = None
         self.incremental: Optional[str] = None
-        self.retry_count: int = DEFAULT_RETRY_COUNT
 
     def create(self,
                name: Optional[str],
-               barf: bool) -> Optional[str]:
+               barf: bool,
+               retry_count: int) -> Optional[str]:
         self.run_analyze = False
+        self.retry_count = retry_count
         return self._execute(name=name, barf=barf)
 
     def analyze(self, barf: bool) -> None:
