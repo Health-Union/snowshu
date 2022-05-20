@@ -23,8 +23,10 @@ class ReplicaFactory:
 
     def create(self,
                name: Optional[str],
-               barf: bool) -> Optional[str]:
+               barf: bool,
+               retry_count: int) -> Optional[str]:
         self.run_analyze = False
+        self.retry_count = retry_count
         return self._execute(name=name, barf=barf)
 
     def analyze(self, barf: bool) -> None:
@@ -69,7 +71,8 @@ class ReplicaFactory:
                                  self.config.target_profile.adapter,
                                  threads=self.config.threads,
                                  analyze=self.run_analyze,
-                                 barf=barf)
+                                 barf=barf,
+                                 retry_count=self.retry_count)
         if not self.run_analyze:
             relations = [relation for graph in graphs for relation in graph.nodes]
             if self.config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:

@@ -5,7 +5,7 @@ from shutil import copyfile, which
 
 import click
 
-from snowshu.configs import IS_IN_DOCKER
+from snowshu.configs import IS_IN_DOCKER, DEFAULT_RETRY_COUNT
 from snowshu.core.replica.replica_factory import ReplicaFactory
 from snowshu.core.replica.replica_manager import ReplicaManager
 from snowshu.logger import Logger
@@ -88,16 +88,22 @@ def init(path: click.Path) -> None:
     '--incremental', '-i',
     help="creates relations and loads data only for new entries found in replica.yml, "
          "which are not already present in target replica image")
+@click.option(
+    '--retry-count', '-r',
+    help="Overrides default retry count (default is 1)",
+    default=DEFAULT_RETRY_COUNT
+)
 def create(replica_file: click.Path,
            name: str,
            barf: bool,
-           incremental: str):
+           incremental: str,
+           retry_count: int):
     """Generate a new replica from a replica.yml file.
     """
     replica = ReplicaFactory()
     replica.load_config(replica_file)
     replica.incremental = incremental
-    click.echo(replica.create(name, barf))
+    click.echo(replica.create(name, barf, retry_count))
 
 
 @cli.command()

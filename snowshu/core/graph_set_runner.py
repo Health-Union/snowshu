@@ -38,6 +38,7 @@ class GraphSetRunner:
                           source_adapter: BaseSourceAdapter,
                           target_adapter: BaseTargetAdapter,
                           threads: int,
+                          retry_count: int,
                           analyze: bool = False,
                           barf: bool = False) -> None:
         """ Processes the given graphs in parallel based on the provided adapters
@@ -50,7 +51,6 @@ class GraphSetRunner:
                 analyze (bool): whether to run analyze or actually transfer the sampled data
                 barf (bool): whether to dump diagnostic files to disk
         """
-        retry_count = 3
         self.barf = barf
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
