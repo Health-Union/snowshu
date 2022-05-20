@@ -100,10 +100,10 @@ def create(replica_file: click.Path,
            retry_count: int):
     """Generate a new replica from a replica.yml file.
     """
-    replica = ReplicaFactory()
+    replica = ReplicaFactory(retry_count=retry_count)
     replica.load_config(replica_file)
     replica.incremental = incremental
-    click.echo(replica.create(name, barf, retry_count))
+    click.echo(replica.create(name, barf))
 
 
 @cli.command()
