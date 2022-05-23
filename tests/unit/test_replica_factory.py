@@ -13,7 +13,7 @@ def tests_replica_rename(_, build_graph, stub_configs):
     replica = ReplicaFactory()
     replica.load_config(stub_configs())
     test_name = rand_string(10)
-    replica.create(test_name, False)
+    replica.create(test_name, False, 1)
     assert build_graph.call_args[0][0].name == test_name
 
 
@@ -25,7 +25,7 @@ def tests_incremental_flag(graph, stub_configs):
     test_name = rand_string(10)
     replica.incremental = rand_string(10)
     adapter = replica.config.target_profile.adapter = mock.Mock(spec=BaseTargetAdapter)
-    result = replica.create(test_name, False)
+    result = replica.create(test_name, False, 1)
     adapter.initialize_replica.assert_called_once_with('default', replica.incremental)
     adapter.build_catalog.assert_called()
     assert 'image up-to-date' in result

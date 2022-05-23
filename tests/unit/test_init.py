@@ -48,7 +48,7 @@ def test_sample_defaults(load, create, temporary_replica):
     EXPECTED_REPLICA_FILE = temporary_replica
     result = runner.invoke(main.cli, ('create',))
     ACTUAL_REPLICA_FILE = load.call_args_list[0][0][0]
-    run_args = create.call_args_list[0][0][0]
+    #run_args = create.call_args_list[0][0][0]   # wasn't used and broke down
     assert ACTUAL_REPLICA_FILE == EXPECTED_REPLICA_FILE
 
 

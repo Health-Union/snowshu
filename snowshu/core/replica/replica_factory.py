@@ -9,6 +9,7 @@ from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.printable_result import (graph_to_result_list,
                                            printable_result)
 from snowshu.logger import Logger, duration
+from snowshu.configs import DEFAULT_RETRY_COUNT
 
 logger = Logger().logger
 
@@ -20,14 +21,15 @@ class ReplicaFactory:
         self.config: Optional[Configuration] = None
         self.run_analyze: Optional[bool] = None
         self.incremental: Optional[str] = None
-        self.retry_count: Optional[int] = None
+        self.retry_count: Optional[int] = DEFAULT_RETRY_COUNT
 
     def create(self,
                name: Optional[str],
                barf: bool,
-               retry_count: int) -> Optional[str]:
+               retry_count: Optional[int]) -> Optional[str]:
         self.run_analyze = False
-        self.retry_count = retry_count
+        if retry_count:
+            self.retry_count = retry_count
         return self._execute(name=name, barf=barf)
 
     def analyze(self, barf: bool) -> None:
@@ -71,9 +73,9 @@ class ReplicaFactory:
                                  self.config.source_profile.adapter,
                                  self.config.target_profile.adapter,
                                  threads=self.config.threads,
+                                 retry_count=self.retry_count,
                                  analyze=self.run_analyze,
-                                 barf=barf,
-                                 retry_count=self.retry_count)
+                                 barf=barf)
         if not self.run_analyze:
             relations = [relation for graph in graphs for relation in graph.nodes]
             if self.config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:
