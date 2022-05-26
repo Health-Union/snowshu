@@ -57,6 +57,9 @@
         "include_outliers": {
           "type": "boolean"
         },
+        "preserve_case": {
+          "$ref": "#/definitions/preserve_case"
+        },
         "max_number_of_outliers": {
           "type": "integer",
           "default": 100
@@ -128,6 +131,23 @@
             "pattern",
             "relations"
           ]
+      }
+    },
+    "preserve_case": {
+      "type": "object",
+      "properties": {
+        "database": {
+          "type": "boolean",
+          "default": false
+        },
+        "schema": {
+          "type": "boolean",
+          "default": false
+        },
+        "relation": {
+          "type": "boolean",
+          "default": false
+        }
       }
     },
     "specified_relations": {

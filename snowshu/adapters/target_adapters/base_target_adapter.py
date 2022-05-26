@@ -91,8 +91,8 @@ class BaseTargetAdapter(BaseSQLAdapter):
             relation: the :class:`Relation <snowshu.core.models.relation.Relation>` object to be created as a view.
 
         """
-        database = self.quoted(self._correct_case(relation.database))
-        schema = self.quoted(self._correct_case(relation.schema))
+        database = self.quoted(self._correct_case(relation.database, "database"))
+        schema = self.quoted(self._correct_case(relation.schema, "schema"))
         ddl_statement = f"""CREATE OR REPLACE VIEW
 {self.quoted_dot_notation(relation)}
 AS
@@ -110,8 +110,8 @@ AS
         logger.info('Created relation %s', self.quoted_dot_notation(relation))
 
     def load_data_into_relation(self, relation: Relation) -> None:
-        database = self.quoted(self._correct_case(relation.database))
-        schema = self.quoted(self._correct_case(relation.schema))
+        database = self.quoted(self._correct_case(relation.database, "database"))
+        schema = self.quoted(self._correct_case(relation.schema, "schema"))
         engine = self.get_connection(database_override=database,
                                      schema_override=schema)
         logger.info('Loading data into relation %s...', 
@@ -123,9 +123,9 @@ AS
                                   for attr in relation.attributes}
             data_type_map = {col: case_insensitive_dict_value(attribute_type_map, col)
                              for col in relation.data.columns.to_list()}
-            relation.data.to_sql(self._correct_case(relation.name),
+            relation.data.to_sql(self._correct_case(relation.name, "relation"),
                                  engine,
-                                 schema=self._correct_case(schema),
+                                 schema=self._correct_case(schema, "schema"),
                                  if_exists='replace',
                                  index=False,
                                  dtype=data_type_map,
@@ -285,8 +285,8 @@ AS
 
             unique_schemas = {(rel.database, rel.schema,) for rel in relations}
             for db, schema in unique_schemas:   # noqa pylint: disable=invalid-name
-                database = self._correct_case(db)
-                schema = self._correct_case(schema)
+                database = self._correct_case(db, "database")
+                schema = self._correct_case(schema, "schema")
                 conn = self.get_connection(database_override=database,
                                            schema_override=schema)
                 logger.debug('Applying function %s to "%s"."%s"...', function, db, schema)

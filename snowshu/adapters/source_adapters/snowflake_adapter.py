@@ -79,6 +79,9 @@ class SnowflakeAdapter(BaseSourceAdapter):
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.VIEW}
 
+    def __init__(self):  # noqa pylint: disable=dangerous-default-value
+        super().__init__()
+
     @overrides
     def _get_all_databases(self) -> List[str]:
         """ Use the SHOW api to get all the available db structures."""
@@ -358,8 +361,8 @@ LIMIT {max_number_of_outliers})
                     ))
 
             relation = Relation(schema_obj.full_relation.database,
-                                self._correct_case(attribute.schema),   # noqa pylint: disable=undefined-loop-variable
-                                self._correct_case(attribute.relation),   # noqa pylint: disable=undefined-loop-variable
+                                self._correct_case(attribute.schema, "schema"),   # noqa pylint: disable=undefined-loop-variable
+                                self._correct_case(attribute.relation, "relation"),   # noqa pylint: disable=undefined-loop-variable
                                 self.MATERIALIZATION_MAPPINGS[attribute.materialization],   # noqa pylint: disable=undefined-loop-variable
                                 attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')

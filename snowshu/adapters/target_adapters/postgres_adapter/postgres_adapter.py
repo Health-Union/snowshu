@@ -9,7 +9,6 @@ from snowshu.core.models.attribute import Attribute
 import snowshu.core.models.data_types as dtypes
 from snowshu.logger import Logger
 from snowshu.core.models.relation import Relation
-from snowshu.core.utils import correct_case
 
 logger = Logger().logger
 
@@ -91,7 +90,7 @@ class PostgresAdapter(BaseTargetAdapter):
         So ask for forgiveness instead.
         """
         conn = self.get_connection()
-        database = self.quoted(self._correct_case(database))
+        database = self.quoted(self._correct_case(database, 'database'))
         statement = f'CREATE DATABASE {database}'
         try:
             conn.execute(statement)
@@ -118,8 +117,8 @@ class PostgresAdapter(BaseTargetAdapter):
                     logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
-        database = self.quoted(self._correct_case(database))
-        schema = self.quoted(self._correct_case(schema))
+        database = self.quoted(self._correct_case(database, 'database'))
+        schema = self.quoted(self._correct_case(schema, 'schema'))
         conn = self.get_connection(database_override=database)
         statement = f'CREATE SCHEMA IF NOT EXISTS {schema}'
         try:
@@ -219,8 +218,8 @@ class PostgresAdapter(BaseTargetAdapter):
                     ))
 
                 relation = Relation(relation_database,
-                                self._correct_case(attribute.schema),   # noqa pylint: disable=undefined-loop-variable
-                                self._correct_case(attribute.relation),   # noqa pylint: disable=undefined-loop-variable
+                                self._correct_case(attribute.schema, 'schema'),   # noqa pylint: disable=undefined-loop-variable
+                                self._correct_case(attribute.relation, 'relation'),   # noqa pylint: disable=undefined-loop-variable
                                 self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")],   # noqa pylint: disable=undefined-loop-variable
                                 attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')
@@ -274,15 +273,12 @@ class PostgresAdapter(BaseTargetAdapter):
         return commands
 
     def enable_cross_database(self) -> None:
-        unique_databases = {correct_case(d, self.DEFAULT_CASE == 'upper') for d in self._get_all_databases()}
+        unique_databases = {self._correct_case(d, "database") for d in self._get_all_databases()}
         unique_databases.remove('postgres')
         schemas = []
         for database in unique_databases:
-            schemas += [(correct_case(database, 
-                                      self.DEFAULT_CASE == 'upper'), 
-                         correct_case(schema, 
-                                      self.DEFAULT_CASE == 'upper')) for schema in self._get_all_schemas(database, 
-                                                                                                         True)]
+            schemas += [(self._correct_case(database, "database"), 
+                         self._correct_case(schema, "schema")) for schema in self._get_all_schemas(database, True)]
 
         unique_schemas = set(schemas)
         unique_databases.add('snowshu')

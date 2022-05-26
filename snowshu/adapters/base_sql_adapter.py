@@ -7,6 +7,7 @@ import pandas as pd
 import sqlalchemy
 from sqlalchemy.pool import NullPool
 
+from snowshu.configs import DEFAULT_PRESERVE_CASE
 from snowshu.core.models import Relation
 from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, USER,
                                              Credentials)
@@ -36,7 +37,7 @@ class BaseSQLAdapter:
             self.case_sensitive_name = case_sensitive_name
             self.full_relation = full_relation
 
-    def __init__(self, preserve_case: bool = False):
+    def __init__(self, preserve_case: dict = DEFAULT_PRESERVE_CASE):  # noqa pylint: disable=dangerous-default-value
         self.CLASSNAME = self.__class__.__name__     # noqa pylint: disable=invalid-name
         self.preserve_case = preserve_case
         for attr in ('REQUIRED_CREDENTIALS', 'ALLOWED_CREDENTIALS',
@@ -94,7 +95,7 @@ class BaseSQLAdapter:
         conn = None
         cursor = None
         try:
-            database = database if not database else self._correct_case(database)
+            database = database if not database else self._correct_case(database, "database")
             # database_override is needed for databases like postgre
             conn = self.get_connection() if not database else self.get_connection(database_override=database)
             cursor = conn.connect()
@@ -211,7 +212,7 @@ class BaseSQLAdapter:
                 db_filters.append(new_filter)
 
         databases = self._get_all_databases()
-        database_relations = [Relation(self._correct_case(database), "", "", None, None)
+        database_relations = [Relation(self._correct_case(database, 'database'), "", "", None, None)
                               for database in databases]
         filtered_databases = [rel for rel in database_relations
                               if at_least_one_full_pattern_match(rel, db_filters)]
@@ -223,7 +224,7 @@ class BaseSQLAdapter:
             schema_objs = [
                 BaseSQLAdapter._DatabaseObject(
                     schema, 
-                    Relation(db_rel.database, self._correct_case(schema), "", None, None))
+                    Relation(db_rel.database, self._correct_case(schema, 'schema'), "", None, None))
                 for schema in schemas]
             filtered_schemas += [
                 d for d in schema_objs if at_least_one_full_pattern_match(d.full_relation, schema_filters)]
@@ -238,15 +239,17 @@ class BaseSQLAdapter:
         raise NotImplementedError()
 
     def quoted_dot_notation(self, rel: Relation) -> str:
-        case_corrected_database = self._correct_case(rel.database)
-        case_corrected_schema = self._correct_case(rel.schema)
-        case_corrected_name = self._correct_case(rel.name)
+        case_corrected_database = self._correct_case(rel.database, 'database')
+        case_corrected_schema = self._correct_case(rel.schema, 'schema')
+        case_corrected_name = self._correct_case(rel.name, 'relation')
         return '.'.join([self.quoted(val) for val in 
                         (case_corrected_database, 
                          case_corrected_schema, 
                          case_corrected_name)])
 
-    def _correct_case(self, val: str) -> str:
+    def _correct_case(self, val: str, attr: str = None) -> str:  # noqa pylint: disable=too-many-function-args
         """The base case correction method for a sql adapter.
         """
-        return val if self.preserve_case else correct_case(val, self.DEFAULT_CASE == 'upper')
+        if attr and attr not in ['database', 'schema', 'relation']:
+            raise NotImplementedError(f"preserve_case attribute '{attr}' is not supported.")
+        return val if self.preserve_case[attr] else correct_case(val, self.DEFAULT_CASE == 'upper')
