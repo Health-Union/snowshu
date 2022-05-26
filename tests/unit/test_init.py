@@ -106,7 +106,7 @@ def test_custom_retry_count_cli_input(create):
     create.assert_called_with(name=ANY, barf=ANY, retry_count=50)
 
 
-def test_custom_retry_count_passed_correctly():
+def test_custom_retry_count_passed_correctly_through_create():
     # test if replica.create passes retry count value to internal attribute retry_count
     with patch.object(ReplicaFactory, '_execute'):
         replica = ReplicaFactory()
@@ -116,7 +116,7 @@ def test_custom_retry_count_passed_correctly():
 
 @patch('snowshu.core.replica.replica_factory.printable_result')
 @patch('snowshu.core.replica.replica_factory.graph_to_result_list')
-def test_custom_retry_count_passed_correctly_1(graph_to_result_list, printable_result, stub_graph_set, stub_configs): # noqa pylint: disable=unused-argument
+def test_custom_retry_count_passed_correctly_through_execute(graph_to_result_list, printable_result, stub_graph_set, stub_configs): # noqa pylint: disable=unused-argument
 
     # test if replica._execute passes retry count to GraphSetRunner.execute_graph_set
     def fake_build_graph(self, configs: Configuration) -> None: # noqa pylint: disable=unused-argument
