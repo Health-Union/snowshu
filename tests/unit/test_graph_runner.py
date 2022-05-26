@@ -73,10 +73,9 @@ def test_traverse_and_execute_custom_max_rows_pass(stub_graph_set):
     source_adapter.scalar_query.return_value=1000
     source_adapter.check_count_and_query.return_value=pd.DataFrame([dict(population_size=1000,sample_size=100)])
     dag=copy.deepcopy(graph_set[-1])  # last graph in the set is the dag
-    
+
     def fake_data(self, val: pd.DataFrame):
         self._data = val
-
 
     for do_analyze in [True, False]:
         # test if defaults are passed

@@ -1,13 +1,17 @@
 import os
 from logging import DEBUG
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch, ANY
 
 import pytest
 from click.testing import CliRunner
 
 from snowshu.core import main
+from snowshu.core.graph import SnowShuGraph
+from snowshu.core.graph_set_runner import GraphSetRunner
+from snowshu.core.replica.replica_factory import ReplicaFactory
 from snowshu.logger import Logger
+from snowshu.core.configuration_parser import Configuration
 from tests.common import rand_string
 
 
@@ -86,3 +90,55 @@ def test_analyze_does_all_but_run(replica, create_relation):
         assert '().analyze' == replica_methods[2][0]
         replica.assert_called_once()
         create_relation.assert_not_called()
+
+
+@patch('snowshu.core.main.ReplicaFactory.create')
+def test_custom_retry_count_cli_input(create):
+    # test if CLI input is passed to replica.create
+    runner = CliRunner()
+    runner.invoke(main.cli, ('create'))
+    create.assert_called_with(name=ANY, barf=ANY, retry_count=1)
+
+    runner.invoke(main.cli, ('create --retry-count 5'))
+    create.assert_called_with(name=ANY, barf=ANY, retry_count=5)
+
+    runner.invoke(main.cli, ('create -r 50'))
+    create.assert_called_with(name=ANY, barf=ANY, retry_count=50)
+
+
+def test_custom_retry_count_passed_correctly():
+    # test if replica.create passes retry count value to internal attribute retry_count
+    with patch.object(ReplicaFactory, '_execute'):
+        replica = ReplicaFactory()
+        replica.create(name=None, barf=False, retry_count=5)
+        assert replica.retry_count == 5
+
+
+@patch('snowshu.core.replica.replica_factory.printable_result')
+@patch('snowshu.core.replica.replica_factory.graph_to_result_list')
+def test_custom_retry_count_passed_correctly_1(graph_to_result_list, printable_result, stub_graph_set, stub_configs): # noqa pylint: disable=unused-argument
+
+    # test if replica._execute passes retry count to GraphSetRunner.execute_graph_set
+    def fake_build_graph(self, configs: Configuration) -> None: # noqa pylint: disable=unused-argument
+        self.graph = stub_graph_set[0][-1]
+
+
+    with patch.object(SnowShuGraph, 'build_graph', new=fake_build_graph),\
+         patch.object(GraphSetRunner, 'execute_graph_set') as execute_graph_set_mock:
+        for do_analyze in [True, False]:
+            replica = ReplicaFactory()
+            replica.retry_count = 5
+            replica.run_analyze = do_analyze
+            replica.load_config(stub_configs())
+
+            # disable any target related functions
+            replica.config.target_profile.adapter = MagicMock()
+
+            replica._execute(name=None, barf=False)   # noqa pylint: disable=protected-access
+            execute_graph_set_mock.assert_called_with(ANY,
+                                                 ANY,
+                                                 ANY,
+                                                 threads=ANY,
+                                                 retry_count=5,
+                                                 analyze=do_analyze,
+                                                 barf=ANY)
