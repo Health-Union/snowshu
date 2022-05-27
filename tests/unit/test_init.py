@@ -94,7 +94,7 @@ def test_analyze_does_all_but_run(replica, create_relation):
 
 @patch('snowshu.core.main.ReplicaFactory.load_config')
 @patch('snowshu.core.main.ReplicaFactory.create')
-def test_custom_retry_count_cli_input(create, load):  # noqa pylint: disable=unused-argument
+def test_custom_retry_count_cli_input(create, load, temporary_replica):  # noqa pylint: disable=unused-argument
     # test if CLI input is passed to replica.create
     runner = CliRunner()
     runner.invoke(main.cli, ('create'))
