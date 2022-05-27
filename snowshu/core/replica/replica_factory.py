@@ -1,3 +1,4 @@
+import re
 import time
 from pathlib import Path
 from typing import Optional, TextIO, Union
@@ -9,6 +10,7 @@ from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.printable_result import (graph_to_result_list,
                                            printable_result)
 from snowshu.logger import Logger, duration
+from snowshu.core.models.relation import alter_relation_case
 
 logger = Logger().logger
 
@@ -42,16 +44,22 @@ class ReplicaFactory:
 
         if self.incremental:
             # TODO replica container should not be started for analyze commands
+
             self.config.target_profile.adapter.initialize_replica(
                 self.config.source_profile.name,
                 self.incremental)
 
             incremental_target_catalog = self.config.target_profile.adapter.build_catalog(
                 patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
-                thread_workers=self.config.threads)
+                thread_workers=self.config.threads,
+                flags=re.IGNORECASE)
+
+            apply_source_case = alter_relation_case(case_function=self.config.source_profile.adapter._correct_case)
+            incremental_target_catalog_casted = set(map(apply_source_case, incremental_target_catalog))
 
             graph.graph = SnowShuGraph.catalog_difference(graph.graph,
-                                                          incremental_target_catalog)
+                                                          incremental_target_catalog_casted)
+
         graphs = graph.get_connected_subgraphs()
         if len(graphs) < 1:
             args = (' new ', ' incremental ', '; image up-to-date') if self.incremental else (' ', ' ', '')
