@@ -5,6 +5,7 @@ from unittest import mock
 import networkx as nx
 import pytest
 import yaml
+from contextlib import nullcontext as does_not_raise
 
 from snowshu.core.configuration_parser import ConfigurationParser
 from snowshu.core.graph import SnowShuGraph
@@ -258,6 +259,86 @@ def test_build_graph_allows_upstream_regex(stub_graph_set):
         assert (vals.upstream_relation, vals.downstream_relation) in shgraph.graph.edges()
         assert (vals.birelation_left, vals.downstream_relation) in shgraph.graph.edges()
         assert (vals.birelation_right, vals.downstream_relation) in shgraph.graph.edges()
+
+
+outputs_to_check = [
+    (
+
+        'Not valid local_attribute',
+        rand_string(5).upper(),  # not valid attribute
+        None,  # it will be taken from vals - valid
+        pytest.raises(
+            InvalidRelationshipException,
+            match=r".* please ensure that remote_attribute & local_attribute are correctly defined.")
+
+    ),
+    (
+
+        'Not valid remote_attribute',
+        None,  # it will be taken from vals - valid
+        rand_string(5).upper(),  # not valid attribute
+        pytest.raises(
+            InvalidRelationshipException,
+            match=r".* please ensure that remote_attribute & local_attribute are correctly defined.")
+
+    ),
+    (
+
+        'Not valid local attribute',
+        rand_string(5).upper(),  # not valid attribute
+        None,  # it will be taken from vals - valid attribute
+        pytest.raises(
+            InvalidRelationshipException,
+            match=r".* please ensure that remote_attribute & local_attribute are correctly defined.")
+
+    ),
+    (
+
+        'No issues',
+        None,  # it will be taken from vals - valid attribute
+        None,  # it will be taken from vals - valid attribute
+        does_not_raise()
+
+    )
+]
+
+
+@pytest.mark.parametrize('test_name, local_attribute, remote_attribute, expectation', outputs_to_check,
+                         ids=[i[0] for i in outputs_to_check])
+def test_build_graph_not_valid_edge(stub_graph_set, test_name, local_attribute, remote_attribute, expectation):
+    """ Tests not valid relation - the incorrect local_attribute/remote_attribute is defined """
+    shgraph = SnowShuGraph()
+    _, vals = stub_graph_set
+    full_catalog = [vals.downstream_relation,
+                    vals.upstream_relation,
+                    ]
+    config_dict = copy.deepcopy(BASIC_CONFIGURATION)
+    config_dict["source"]["specified_relations"] = [
+        {
+            "database": vals.downstream_relation.database,
+            "schema": vals.downstream_relation.schema,
+            "relation": vals.downstream_relation.name,
+            "relationships": {
+                "directional": [
+                    {
+                        "local_attribute": local_attribute if local_attribute else vals.directional_key,
+                        "database": vals.upstream_relation.database,
+                        "schema": vals.upstream_relation.schema,
+                        "relation": vals.upstream_relation.name,  # incl birelations
+                        "remote_attribute": remote_attribute if remote_attribute else vals.directional_key
+                    }
+                ]
+            }
+        }
+    ]
+    config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
+
+    with mock.MagicMock() as adapter_mock:
+        adapter_mock.build_catalog.return_value = full_catalog
+        config.source_profile.adapter = adapter_mock
+        with expectation:
+            # building the graph should raise when <local/remote>_attribute is not valid
+            shgraph.build_graph(config)
 
 
 def test_build_graph_fails_no_downstream():
