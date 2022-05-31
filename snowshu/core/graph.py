@@ -273,8 +273,7 @@ class SnowShuGraph:
             # determine downstream relations from relation patterns
             downstream_relations = set(
                 filter(
-                    lambda x: single_full_pattern_match(x, relation_pattern_dict),
-                    # noqa  pylint: disable=cell-var-from-loop
+                    lambda x: single_full_pattern_match(x, relation_pattern_dict), # noqa  pylint: disable=cell-var-from-loop
                     available_nodes
                 )
             )
@@ -442,12 +441,11 @@ class SnowShuGraph:
                 name=lower_level.relation_pattern
             ) for upper_level in config.specified_relations
             for lower_level in
-            upper_level.relationships.bidirectional + upper_level.relationships.directional + upper_level.relationships.polymorphic
-            # noqa pep8: E501
+            upper_level.relationships.bidirectional + upper_level.relationships.directional + upper_level.relationships.polymorphic # noqa pep8: E501
         ]
 
-        all_patterns = approved_default_patterns + \
-                       approved_specified_patterns + approved_second_level_specified_patterns
+        all_patterns = approved_default_patterns + approved_specified_patterns + approved_second_level_specified_patterns  # noqa pep8: E501
+
         logger.debug(f'All config primary patterns: {all_patterns}')
         return all_patterns
 
