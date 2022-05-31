@@ -3,8 +3,8 @@ from datetime import datetime
 from itertools import chain
 from typing import List, Set, Tuple, Optional, Union
 
-import networkx
 import matplotlib.pyplot as plt
+import networkx
 
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.graph_set_runner import GraphSetRunner
@@ -148,7 +148,6 @@ class SnowShuGraph:
         graph = networkx.DiGraph()
         graph.add_nodes_from(catalog)
         self.graph = self._apply_specifications(configs, graph, catalog)
-
 
         logger.info(
             f'Identified a total of {len(self.graph)} relations to sample based on the specified configurations.')
