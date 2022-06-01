@@ -269,7 +269,7 @@ outputs_to_check = [
         None,  # it will be taken from vals - valid
         pytest.raises(
             InvalidRelationshipException,
-            match=r".* please ensure that remote_attribute & local_attribute are correctly defined.")
+            match=r".* Please ensure that remote_attribute & local_attribute are correctly defined.")
 
     ),
     (
@@ -279,7 +279,7 @@ outputs_to_check = [
         rand_string(5).upper(),  # not valid attribute
         pytest.raises(
             InvalidRelationshipException,
-            match=r".* please ensure that remote_attribute & local_attribute are correctly defined.")
+            match=r".* Please ensure that remote_attribute & local_attribute are correctly defined.")
 
     ),
     (
@@ -289,7 +289,7 @@ outputs_to_check = [
         None,  # it will be taken from vals - valid attribute
         pytest.raises(
             InvalidRelationshipException,
-            match=r".* please ensure that remote_attribute & local_attribute are correctly defined.")
+            match=r".* Please ensure that remote_attribute & local_attribute are correctly defined.")
 
     ),
     (
