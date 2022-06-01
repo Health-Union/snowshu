@@ -116,13 +116,19 @@ def create(replica_file: click.Path,
 @click.option('--barf', '-b',
               is_flag=True,
               help="outputs the source query sql to a local folder snowshu_barf_output")
+@click.option(
+    '--retry-count', '-r',
+    help="Overrides default retry count (default is 1)",
+    default=DEFAULT_RETRY_COUNT
+)
 def analyze(replica_file: click.Path,
-            barf: bool):
-    """Perform a "dry run" of the replica creation without actually executing, and return the expected results."""
-
+            barf: bool,
+            retry_count: int):
+    """Perform a "dry run" of the replica creation without actually executing, and return the expected results.
+    """
     replica = ReplicaFactory()
     replica.load_config(replica_file)
-    click.echo(replica.analyze(barf))
+    click.echo(replica.analyze(barf=barf, retry_count=retry_count))
 
 
 @cli.command()

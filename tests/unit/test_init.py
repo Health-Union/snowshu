@@ -94,7 +94,8 @@ def test_analyze_does_all_but_run(replica, create_relation):
 
 @patch('snowshu.core.main.ReplicaFactory.load_config')
 @patch('snowshu.core.main.ReplicaFactory.create')
-def test_custom_retry_count_cli_input(create, load, temporary_replica):  # noqa pylint: disable=unused-argument
+@patch('snowshu.core.main.ReplicaFactory.analyze')
+def test_custom_retry_count_cli_input(analyze, create, load, temporary_replica):  # noqa pylint: disable=unused-argument
     # test if CLI input is passed to replica.create
     runner = CliRunner()
     runner.invoke(main.cli, ('create'))
@@ -106,12 +107,25 @@ def test_custom_retry_count_cli_input(create, load, temporary_replica):  # noqa 
     runner.invoke(main.cli, ('create -r 50'))
     create.assert_called_with(name=ANY, barf=ANY, retry_count=50)
 
+    runner.invoke(main.cli, ('analyze'))
+    analyze.assert_called_with(barf=ANY, retry_count=1)
+
+    runner.invoke(main.cli, ('analyze --retry-count 5'))
+    analyze.assert_called_with(barf=ANY, retry_count=5)
+
+    runner.invoke(main.cli, ('analyze -r 50'))
+    analyze.assert_called_with(barf=ANY, retry_count=50)
+
 
 def test_custom_retry_count_passed_correctly_through_create():
     # test if replica.create passes retry count value to internal attribute retry_count
     with patch.object(ReplicaFactory, '_execute'):
         replica = ReplicaFactory()
         replica.create(name=None, barf=False, retry_count=5)
+        assert replica.retry_count == 5
+
+        replica = ReplicaFactory()
+        replica.analyze(barf=False, retry_count=5)
         assert replica.retry_count == 5
 
 

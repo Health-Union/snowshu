@@ -32,8 +32,9 @@ class ReplicaFactory:
             self.retry_count = retry_count
         return self._execute(name=name, barf=barf)
 
-    def analyze(self, barf: bool) -> None:
+    def analyze(self, barf: bool, retry_count: int) -> None:
         self.run_analyze = True
+        self.retry_count = retry_count
         return self._execute(barf=barf)
 
     def _execute(self,
