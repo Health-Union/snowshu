@@ -325,6 +325,7 @@ class SnowShuGraph:
             graph: networkx.DiGraph,
             full_relation_set: Set[Relation]) -> networkx.Graph:
         """ Adds the appropriate edges to the graph for the given relationship """
+        # pylint: disable-msg=too-many-locals
         # find any of the upstream relations
         upstream_relations = set(
             filter(
@@ -370,6 +371,7 @@ class SnowShuGraph:
         catalog_dict = dict(map(lambda x: (x.dot_notation, dict(map(lambda a: (a.name, a.data_type), x.attributes))),
                                 full_relation_set))
 
+        is_valid_graph = True
         for downstream_relation in downstream_set:
             for upstream_relation in upstream_without_downstream:
                 # validate whether relation is valid
@@ -381,15 +383,23 @@ class SnowShuGraph:
                 is_local_attribute_valid = local_attribute in catalog_dict.get(downstream_relation.dot_notation, {})
 
                 if not is_remote_attribute_valid or not is_local_attribute_valid:
-                    raise InvalidRelationshipException(
+                    is_valid_graph = False
+                    logger.warning(
                         f'Edge {upstream_relation.dot_notation}({remote_attribute}) -> '
                         f'{downstream_relation.dot_notation}({local_attribute}) '
-                        f'is incorrectly defined.'
-                        f' please ensure that remote_attribute & local_attribute are correctly defined.'
+                        f'was incorrectly defined. Please verify the replica config file.'
                     )
+
                 graph.add_edge(upstream_relation,
                                downstream_relation,
                                **relationship['edge_attributes'])
+
+        if not is_valid_graph:
+            raise InvalidRelationshipException(
+                'Some of the edge(s) were incorrectly defined. '
+                'Please ensure that remote_attribute & local_attribute are correctly defined.'
+            )
+
         return graph
 
     def get_connected_subgraphs(self) -> tuple:
