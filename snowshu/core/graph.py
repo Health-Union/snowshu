@@ -322,7 +322,7 @@ class SnowShuGraph:
             downstream_set: Set[Relation],
             graph: networkx.DiGraph,
             full_relation_set: Set[Relation]) -> networkx.Graph:
-        """ Adds the appropriate edges to the graph for the given relationship """
+        """ Adds the appropriate edges to the graph for the given relationship. """
         # find any of the upstream relations
         upstream_relations = set(
             filter(
