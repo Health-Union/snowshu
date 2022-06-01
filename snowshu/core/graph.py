@@ -325,6 +325,7 @@ class SnowShuGraph:
             graph: networkx.DiGraph,
             full_relation_set: Set[Relation]) -> networkx.Graph:
         """ Adds the appropriate edges to the graph for the given relationship """
+        # pylint: disable-msg=too-many-locals
         # find any of the upstream relations
         upstream_relations = set(
             filter(
@@ -395,8 +396,8 @@ class SnowShuGraph:
 
         if not is_valid_graph:
             raise InvalidRelationshipException(
-                f'Some of the edge(s) were incorrectly defined.'
-                f' Please ensure that remote_attribute & local_attribute are correctly defined.'
+                'Some of the edge(s) were incorrectly defined. '
+                'Please ensure that remote_attribute & local_attribute are correctly defined.'
             )
 
         return graph
