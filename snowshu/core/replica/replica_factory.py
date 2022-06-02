@@ -92,7 +92,7 @@ class ReplicaFactory:
             self.run_analyze)
 
     def load_config(self, config: Union[Path, str, TextIO]):
-        """Does all the initial work to make the resulting ReplicaFactory
+        """!Does all the initial work to make the resulting ReplicaFactory
         object usable."""
         logger.info('Loading configuration...')
         start_timer = time.time()
