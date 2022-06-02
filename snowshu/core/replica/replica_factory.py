@@ -59,7 +59,7 @@ class ReplicaFactory:
             return message
 
         if not self.config.target_profile.adapter.container:
-            # TODO replica container should not be started for analyze commands
+            # TODO replica container should not be started for analyze commands.
             self.config.target_profile.adapter.initialize_replica(
                 self.config.source_profile.name)
 
@@ -92,7 +92,7 @@ class ReplicaFactory:
             self.run_analyze)
 
     def load_config(self, config: Union[Path, str, TextIO]):
-        """does all the initial work to make the resulting ReplicaFactory
+        """Does all the initial work to make the resulting ReplicaFactory
         object usable."""
         logger.info('Loading configuration...')
         start_timer = time.time()
