@@ -92,13 +92,13 @@ class RelationTestHelper:
         self.child_relation_type_3 = Relation(
             name='CHILD_TYPE_3_RECORDS', **self.rand_relation_helper())
 
-        self.bidirectional_key_left = rand_string(10)
-        self.bidirectional_key_right = rand_string(8)
-        self.directional_key = rand_string(15)
-        self.parentid_key = rand_string(15)
-        self.childid_key = rand_string(15)
-        self.childtype_key = rand_string(15)
-        self.child2override_key = rand_string(20)
+        self.bidirectional_key_left = rand_string(10).upper()
+        self.bidirectional_key_right = rand_string(8).upper()
+        self.directional_key = rand_string(15).upper()
+        self.parentid_key = rand_string(15).upper()
+        self.childid_key = rand_string(15).upper()
+        self.childtype_key = rand_string(15).upper()
+        self.child2override_key = rand_string(20).upper()
 
         # update specifics
         self.view_relation.materialization = mz.VIEW
@@ -119,9 +119,9 @@ class RelationTestHelper:
         ]
 
         self.birelation_right.attributes = [
-            Attribute(self.bidirectional_key_right, dt.VARCHAR)]
+            Attribute(self.bidirectional_key_right, dt.VARCHAR), Attribute(self.directional_key, dt.INTEGER)]
         self.birelation_left.attributes = [
-            Attribute(self.bidirectional_key_left, dt.VARCHAR)]
+            Attribute(self.bidirectional_key_left, dt.VARCHAR), Attribute(self.directional_key, dt.INTEGER)]
 
         for r in ('downstream_relation', 'upstream_relation', 'iso_relation', 'birelation_left', 'birelation_right', 'view_relation',
                 'downstream_wildcard_relation_1', 'downstream_wildcard_relation_2', 'upstream_wildcard_relation_1', 'upstream_wildcard_relation_2',

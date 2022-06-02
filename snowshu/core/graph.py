@@ -3,8 +3,8 @@ from datetime import datetime
 from itertools import chain
 from typing import List, Set, Tuple, Optional, Union
 
-import networkx
 import matplotlib.pyplot as plt
+import networkx
 
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.graph_set_runner import GraphSetRunner
@@ -55,6 +55,7 @@ class SnowShuGraph:
                 non_isolated_relations[relation_base].append(relation)
             else:
                 non_isolated_relations[relation_base] = [relation]
+
         non_isolated_relations = [(relation_base, *relations)
                                   for relation_base, relations in non_isolated_relations.items()]
         isolated_relations = list(networkx.isolates(source_graph))
@@ -137,6 +138,7 @@ class SnowShuGraph:
         catalog = configs.source_profile.adapter.build_catalog(
             patterns=self.build_sum_patterns_from_configs(configs),
             thread_workers=configs.threads)
+
         # set defaults for all relations in the catalog
         for relation in catalog:
             self._set_globals_for_node(relation, configs)
@@ -195,7 +197,7 @@ class SnowShuGraph:
                     relation.sampling = pattern.sampling
         return relation
 
-    @staticmethod   # noqa mccabe: disable=MC0001
+    @staticmethod  # noqa mccabe: disable=MC0001
     def _apply_specifications(  # noqa pylint: disable=too-many-locals
             configs: Configuration,
             graph: networkx.DiGraph,
@@ -227,7 +229,7 @@ class SnowShuGraph:
                     filter(
                         lambda x: single_full_pattern_match(
                             x,
-                            relation_pattern_dict),     # noqa pylint: disable=cell-var-from-loop
+                            relation_pattern_dict),  # noqa pylint: disable=cell-var-from-loop
                         available_nodes))
                 for uns_rel in unsampled_relations:
                     uns_rel.unsampled = True
@@ -271,7 +273,7 @@ class SnowShuGraph:
             # determine downstream relations from relation patterns
             downstream_relations = set(
                 filter(
-                    lambda x: single_full_pattern_match(x, relation_pattern_dict),  # noqa  pylint: disable=cell-var-from-loop
+                    lambda x: single_full_pattern_match(x, relation_pattern_dict), # noqa  pylint: disable=cell-var-from-loop
                     available_nodes
                 )
             )
@@ -323,6 +325,7 @@ class SnowShuGraph:
             graph: networkx.DiGraph,
             full_relation_set: Set[Relation]) -> networkx.Graph:
         """ Adds the appropriate edges to the graph for the given relationship """
+        # pylint: disable-msg=too-many-locals
         # find any of the upstream relations
         upstream_relations = set(
             filter(
@@ -365,11 +368,38 @@ class SnowShuGraph:
                 f'View dependencies are not allowed by SnowShu.'
             )
 
+        catalog_dict = dict(map(lambda x: (x.dot_notation, dict(map(lambda a: (a.name, a.data_type), x.attributes))),
+                                full_relation_set))
+
+        is_valid_graph = True
         for downstream_relation in downstream_set:
             for upstream_relation in upstream_without_downstream:
+                # validate whether relation is valid
+                attributes = dict(filter(lambda item: item[0] in ['remote_attribute', 'local_attribute'],
+                                         relationship['edge_attributes'].items()))
+                remote_attribute = attributes.get('remote_attribute')
+                local_attribute = attributes.get('local_attribute')
+                is_remote_attribute_valid = remote_attribute in catalog_dict.get(upstream_relation.dot_notation, {})
+                is_local_attribute_valid = local_attribute in catalog_dict.get(downstream_relation.dot_notation, {})
+
+                if not is_remote_attribute_valid or not is_local_attribute_valid:
+                    is_valid_graph = False
+                    logger.warning(
+                        f'Edge {upstream_relation.dot_notation}({remote_attribute}) -> '
+                        f'{downstream_relation.dot_notation}({local_attribute}) '
+                        f'was incorrectly defined. Please verify the replica config file.'
+                    )
+
                 graph.add_edge(upstream_relation,
                                downstream_relation,
                                **relationship['edge_attributes'])
+
+        if not is_valid_graph:
+            raise InvalidRelationshipException(
+                'Some of the edge(s) were incorrectly defined. '
+                'Please ensure that remote_attribute & local_attribute are correctly defined.'
+            )
+
         return graph
 
     def get_connected_subgraphs(self) -> tuple:
@@ -420,11 +450,12 @@ class SnowShuGraph:
                 schema=lower_level.schema_pattern if lower_level.schema_pattern else upper_level.schema_pattern,
                 name=lower_level.relation_pattern
             ) for upper_level in config.specified_relations
-            for lower_level in upper_level.relationships.bidirectional + upper_level.relationships.directional + upper_level.relationships.polymorphic  # noqa pep8: E501
+            for lower_level in
+            upper_level.relationships.bidirectional + upper_level.relationships.directional + upper_level.relationships.polymorphic # noqa pep8: E501
         ]
 
-        all_patterns = approved_default_patterns + \
-            approved_specified_patterns + approved_second_level_specified_patterns
+        all_patterns = approved_default_patterns + approved_specified_patterns + approved_second_level_specified_patterns  # noqa pep8: E501
+
         logger.debug(f'All config primary patterns: {all_patterns}')
         return all_patterns
 
