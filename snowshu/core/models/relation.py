@@ -153,7 +153,7 @@ def lookup_relations(lookup: dict, relation_set: iter) -> List[Relation]:
 
 
 def single_full_pattern_match(rel: Relation,
-                              pattern: Union[dict, 'SpecifiedMatchPattern']) -> bool:
+                              pattern: Union[dict, 'SpecifiedMatchPattern'], flags: re.RegexFlag = 0) -> bool:
     """determines if a relation matches a regex pattern.
 
     Pattern can be a dictionary of or a
@@ -163,7 +163,7 @@ def single_full_pattern_match(rel: Relation,
         rel: The :class:`Relation <snowshu.core.models.relation.Relation>` to be tested.
         pattern: Either a dict of database,schema,name(relation) or a
                     :class:`SpecifiedMatchPattern <snowshu.core.configuration_parser.SpecifiedMatchPattern>`.
-
+        flags (re.RegexFlag): regex flag, by default flags=0(no flags are defined)
     Returns:
         If the pattern matches the relation.
     """
@@ -177,14 +177,25 @@ def single_full_pattern_match(rel: Relation,
         pass
     if not all([pattern[attribute] for attribute in attributes]):
         return False
-    return all([re.fullmatch(pattern[attr], rel.__dict__[attr])
+    return all([re.fullmatch(pattern[attr], rel.__dict__[attr], flags)
                 for attr in attributes])
 
 
-def at_least_one_full_pattern_match(rel: Relation, patterns: iter) -> bool:
+def at_least_one_full_pattern_match(rel: Relation, patterns: iter, flags: re.RegexFlag = 0) -> bool:
     """determines if a relation matches any of a collection of pattern
     dictionaries (database,schema,name)."""
     patterns = list(filter(lambda p: all(
         p[attr] for attr in ('database', 'schema', 'name',)), patterns))
-    return any([single_full_pattern_match(rel, pattern)
+    return any([single_full_pattern_match(rel, pattern, flags)
                 for pattern in patterns])
+
+
+def alter_relation_case(case_function):
+    """
+        Applies a case_function to all relevant attributes of a relation
+    """
+    def apply_function(rel):
+        for attr in ('name', 'schema', 'database'):
+            rel.__dict__[attr] = case_function(rel.__dict__[attr])
+        return rel
+    return apply_function
