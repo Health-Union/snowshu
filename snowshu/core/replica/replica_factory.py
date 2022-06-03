@@ -10,6 +10,7 @@ from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.printable_result import (graph_to_result_list,
                                            printable_result)
 from snowshu.logger import Logger, duration
+from snowshu.configs import DEFAULT_RETRY_COUNT
 from snowshu.core.models.relation import alter_relation_case
 
 logger = Logger().logger
@@ -22,15 +23,20 @@ class ReplicaFactory:
         self.config: Optional[Configuration] = None
         self.run_analyze: Optional[bool] = None
         self.incremental: Optional[str] = None
+        self.retry_count: Optional[int] = DEFAULT_RETRY_COUNT
 
     def create(self,
                name: Optional[str],
-               barf: bool) -> Optional[str]:
+               barf: bool,
+               retry_count: Optional[int]) -> Optional[str]:
         self.run_analyze = False
+        if retry_count:
+            self.retry_count = retry_count
         return self._execute(name=name, barf=barf)
 
-    def analyze(self, barf: bool) -> None:
+    def analyze(self, barf: bool, retry_count: int) -> None:
         self.run_analyze = True
+        self.retry_count = retry_count
         return self._execute(barf=barf)
 
     def _execute(self,
@@ -76,6 +82,7 @@ class ReplicaFactory:
                                  self.config.source_profile.adapter,
                                  self.config.target_profile.adapter,
                                  threads=self.config.threads,
+                                 retry_count=self.retry_count,
                                  analyze=self.run_analyze,
                                  barf=barf)
         if not self.run_analyze:

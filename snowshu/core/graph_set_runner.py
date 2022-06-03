@@ -38,6 +38,7 @@ class GraphSetRunner:
                           source_adapter: BaseSourceAdapter,
                           target_adapter: BaseTargetAdapter,
                           threads: int,
+                          retry_count: int,
                           analyze: bool = False,
                           barf: bool = False) -> None:
         """ Processes the given graphs in parallel based on the provided adapters
@@ -47,10 +48,10 @@ class GraphSetRunner:
                 source_adapter (BaseSourceAdapter): source adapter for the relations
                 target_adapter (BaseTargetAdapter): target adapter for the relations
                 threads (int): number of threads to use for parallelization
+                retry_count (int): number of times to retry failed query
                 analyze (bool): whether to run analyze or actually transfer the sampled data
                 barf (bool): whether to dump diagnostic files to disk
         """
-        retry_count = 3
         self.barf = barf
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
