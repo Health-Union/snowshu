@@ -1,9 +1,9 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from overrides import overrides
 import sqlalchemy
 
 from snowshu.adapters.target_adapters import BaseTargetAdapter
-from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
+from snowshu.configs import DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
 import snowshu.core.models.data_types as dtypes
@@ -21,6 +21,7 @@ class PostgresAdapter(BaseTargetAdapter):
     PRELOADED_PACKAGES = ['postgresql-plpython3-12']
     MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
+    DOCKER_REPLICA_MOUNT_FOLDER = DOCKER_REPLICA_MOUNT_FOLDER
     DEFAULT_CASE = 'lower'
 
     # NOTE: either start container with db listening on port 9999,
@@ -75,11 +76,12 @@ class PostgresAdapter(BaseTargetAdapter):
         self.extensions = kwargs.get("pg_extensions", [])
         self.x00_replacement = kwargs.get("pg_0x00_replacement", "")
 
-        self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port} ' # noqa pylint: disable=invalid-name
-        self.DOCKER_READY_COMMAND = (f'pg_isready -p {self._credentials.port} ' # noqa pylint: disable=invalid-name
+        self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port} '  # noqa pylint: disable=invalid-name
+        self.DOCKER_READY_COMMAND = (f'pg_isready -p {self._credentials.port} '  # noqa pylint: disable=invalid-name
                                      f'-h {self._credentials.host} '
                                      f'-U {self._credentials.user} '
                                      f'-d {self._credentials.database}')
+        self.DOCKER_SHARE_REPLICA_DATA = f"cp -a $PGDATA/* /{self.DOCKER_REPLICA_MOUNT_FOLDER}"
 
     @staticmethod
     def _create_snowshu_schema_statement() -> str:
@@ -197,19 +199,20 @@ class PostgresAdapter(BaseTargetAdapter):
             f'Collecting detailed relations from database {quoted_database}...')
         relations_frame = self._safe_query(relations_sql, quoted_database)
         unique_relations = (
-            relations_frame['schema'] +
-            '.' +
-            relations_frame['relation']).unique().tolist()
+                relations_frame['schema'] +
+                '.' +
+                relations_frame['relation']).unique().tolist()
         logger.debug(
             f'Done collecting relations. Found a total of {len(unique_relations)} '
             f'unique relations in database {quoted_database}')
         relations = list()
         for relation in unique_relations:
-            logger.debug(f'Building relation { quoted_database + "." + relation }...')
+            logger.debug(f'Building relation {quoted_database + "." + relation}...')
             attributes = list()
 
             for attribute in relations_frame.loc[(
-                    relations_frame['schema'] + '.' + relations_frame['relation']) == relation].itertuples():
+                                                         relations_frame['schema'] + '.' + relations_frame[
+                                                     'relation']) == relation].itertuples():
                 logger.debug(
                     f'adding attribute {attribute.attribute} to relation..')
                 attributes.append(
@@ -219,10 +222,10 @@ class PostgresAdapter(BaseTargetAdapter):
                     ))
 
                 relation = Relation(relation_database,
-                                self._correct_case(attribute.schema),   # noqa pylint: disable=undefined-loop-variable
-                                self._correct_case(attribute.relation),   # noqa pylint: disable=undefined-loop-variable
-                                self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")],   # noqa pylint: disable=undefined-loop-variable
-                                attributes)
+                                    self._correct_case(attribute.schema), # noqa pylint: disable=undefined-loop-variable
+                                    self._correct_case(attribute.relation), # noqa pylint: disable=undefined-loop-variable
+                                    self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")], # noqa pylint: disable=undefined-loop-variable
+                                    attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')
             relations.append(relation)
         logger.debug(
@@ -236,10 +239,10 @@ class PostgresAdapter(BaseTargetAdapter):
         except ValueError as exc:
             if 'cannot contain NUL' in str(exc):
                 logger.warning("Invalid 0x00 char found in %s. "
-                               "Removing from affected columns and trying again", 
+                               "Removing from affected columns and trying again",
                                self.quoted_dot_notation(relation))
                 fixed_relation = self.replace_x00_values(relation)
-                logger.info("Retrying data load for %s", 
+                logger.info("Retrying data load for %s",
                             self.quoted_dot_notation(relation))
                 return super().load_data_into_relation(fixed_relation)
 
@@ -278,10 +281,10 @@ class PostgresAdapter(BaseTargetAdapter):
         unique_databases.remove('postgres')
         schemas = []
         for database in unique_databases:
-            schemas += [(correct_case(database, 
-                                      self.DEFAULT_CASE == 'upper'), 
-                         correct_case(schema, 
-                                      self.DEFAULT_CASE == 'upper')) for schema in self._get_all_schemas(database, 
+            schemas += [(correct_case(database,
+                                      self.DEFAULT_CASE == 'upper'),
+                         correct_case(schema,
+                                      self.DEFAULT_CASE == 'upper')) for schema in self._get_all_schemas(database,
                                                                                                          True)]
 
         unique_schemas = set(schemas)
@@ -310,6 +313,10 @@ class PostgresAdapter(BaseTargetAdapter):
 
                     statement_runner(f'IMPORT FOREIGN SCHEMA {schema} FROM SERVER '
                                      f'{schema_database} INTO {schema_database}__{schema}')
+
+    def copy_replica_data(self) -> Tuple[bool, str]:
+        status = self.container.exec_run(f"/bin/bash -c '{self.DOCKER_SHARE_REPLICA_DATA}'", tty=True)
+        return status
 
     @staticmethod
     def is_fdw_schema(schema, unique_databases) -> bool:

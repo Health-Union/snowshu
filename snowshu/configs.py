@@ -13,6 +13,8 @@ DEFAULT_RETRY_COUNT = 1
 DOCKER_NETWORK = 'snowshu'
 DOCKER_TARGET_CONTAINER = 'snowshu_target'
 DOCKER_REMOUNT_DIRECTORY = 'snowshu_replica_data'
+DOCKER_REPLICA_MOUNT_FOLDER = 'snowshu_replica_data_common'
+LOCAL_REPLICA_MOUNT_FOLDER = os.path.join(os.path.sep, PACKAGE_ROOT, 'snowshu_replica_data')
 DOCKER_TARGET_PORT = 9999
 
 

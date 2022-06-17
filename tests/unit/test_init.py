@@ -52,7 +52,7 @@ def test_sample_defaults(load, create, temporary_replica):
     EXPECTED_REPLICA_FILE = temporary_replica
     result = runner.invoke(main.cli, ('create',))
     ACTUAL_REPLICA_FILE = load.call_args_list[0][0][0]
-    #run_args = create.call_args_list[0][0][0]   # wasn't used and broke down
+    # run_args = create.call_args_list[0][0][0]   # wasn't used and broke down
     assert ACTUAL_REPLICA_FILE == EXPECTED_REPLICA_FILE
 
 
@@ -131,15 +131,15 @@ def test_custom_retry_count_passed_correctly_through_create():
 
 @patch('snowshu.core.replica.replica_factory.printable_result')
 @patch('snowshu.core.replica.replica_factory.graph_to_result_list')
-def test_custom_retry_count_passed_correctly_through_execute(graph_to_result_list, printable_result, stub_graph_set, stub_configs): # noqa pylint: disable=unused-argument
+def test_custom_retry_count_passed_correctly_through_execute(graph_to_result_list, printable_result, stub_graph_set,
+                                                             stub_configs):  # noqa pylint: disable=unused-argument
 
     # test if replica._execute passes retry count to GraphSetRunner.execute_graph_set
-    def fake_build_graph(self, configs: Configuration) -> None: # noqa pylint: disable=unused-argument
+    def fake_build_graph(self, configs: Configuration) -> None:  # noqa pylint: disable=unused-argument
         self.graph = stub_graph_set[0][-1]
 
-
-    with patch.object(SnowShuGraph, 'build_graph', new=fake_build_graph),\
-         patch.object(GraphSetRunner, 'execute_graph_set') as execute_graph_set_mock:
+    with patch.object(SnowShuGraph, 'build_graph', new=fake_build_graph), \
+            patch.object(GraphSetRunner, 'execute_graph_set') as execute_graph_set_mock:
         for do_analyze in [True, False]:
             replica = ReplicaFactory()
             replica.retry_count = 5
@@ -148,12 +148,13 @@ def test_custom_retry_count_passed_correctly_through_execute(graph_to_result_lis
 
             # disable any target related functions
             replica.config.target_profile.adapter = MagicMock()
+            replica.config.target_profile.adapter.copy_replica_data = MagicMock(return_value=(0, ANY))
 
-            replica._execute(name=None, barf=False)   # noqa pylint: disable=protected-access
+            replica._execute(name=None, barf=False)  # noqa pylint: disable=protected-access
             execute_graph_set_mock.assert_called_with(ANY,
-                                                 ANY,
-                                                 ANY,
-                                                 threads=ANY,
-                                                 retry_count=5,
-                                                 analyze=do_analyze,
-                                                 barf=ANY)
+                                                      ANY,
+                                                      ANY,
+                                                      threads=ANY,
+                                                      retry_count=5,
+                                                      analyze=do_analyze,
+                                                      barf=ANY)

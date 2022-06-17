@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
 from time import sleep
-from typing import TYPE_CHECKING, Iterable, List, Optional
+from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 
 import pandas as pd
 
@@ -33,8 +33,8 @@ class BaseTargetAdapter(BaseSQLAdapter):
     def __init__(self, replica_metadata: dict):
         super().__init__()
         for attr in (
-            'DOCKER_IMAGE',
-            'DOCKER_SNOWSHU_ENVARS',
+                'DOCKER_IMAGE',
+                'DOCKER_SNOWSHU_ENVARS',
         ):
             if not hasattr(self, attr):
                 raise NotImplementedError(
@@ -50,6 +50,12 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
         Args:
             relations: an iterable of relations to collect databases and schemas from.
+        """
+        raise NotImplementedError()
+
+    def copy_replica_data(self) -> Tuple[bool, str]:
+        """
+            A service function that copies replica data to a shared location
         """
         raise NotImplementedError()
 
@@ -97,7 +103,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
 {self.quoted_dot_notation(relation)}
 AS
 {relation.view_ddl}
-""" 
+"""
         engine = self.get_connection(database_override=database,
                                      schema_override=schema)
         try:
@@ -114,7 +120,7 @@ AS
         schema = self.quoted(self._correct_case(relation.schema))
         engine = self.get_connection(database_override=database,
                                      schema_override=schema)
-        logger.info('Loading data into relation %s...', 
+        logger.info('Loading data into relation %s...',
                     self.quoted_dot_notation(relation))
         original_columns = relation.data.columns.copy()
         relation.data.columns = [self._correct_case(col) for col in original_columns]
@@ -133,15 +139,15 @@ AS
                                  method='multi')
             relation.data.columns = original_columns
         except Exception as exc:
-            logger.info("Exception encountered loading data into %s:%s", 
+            logger.info("Exception encountered loading data into %s:%s",
                         self.quoted_dot_notation(relation), exc)
             raise exc
-        logger.info('Data loaded into relation %s', 
+        logger.info('Data loaded into relation %s',
                     self.quoted_dot_notation(relation))
 
-    def initialize_replica(self, 
-                           source_adapter_name: str, 
-                           override_image: str = None) -> None: # noqa pylint:disable=too-many-branches
+    def initialize_replica(self,
+                           source_adapter_name: str,
+                           override_image: str = None) -> None:  # noqa pylint:disable=too-many-branches
         """shimming but will want to move _init_image public with this
         interface.
 
@@ -169,7 +175,7 @@ AS
                 raise error
         self._init_image(source_adapter_name)
 
-    def _init_image(self, 
+    def _init_image(self,
                     source_adapter_name: str) -> None:
         shdocker = SnowShuDocker()
         logger.info('Initializing target container...')
@@ -226,7 +232,7 @@ AS
 
     def quoted_dot_notation(self, rel: Relation) -> str:
         return '.'.join([self.quoted(getattr(rel, relation))
-                        for relation in ('database', 'schema', 'name',)])
+                         for relation in ('database', 'schema', 'name',)])
 
     @staticmethod
     def _build_snowshu_envars(snowshu_envars: list) -> list:
@@ -277,14 +283,14 @@ AS
         """
         try:
             functions_path = os.path.abspath(os.path.join(
-                                             os.path.dirname(__file__),
-                                             self.name + '_adapter',
-                                             'functions'))
+                os.path.dirname(__file__),
+                self.name + '_adapter',
+                'functions'))
             with open(os.path.join(functions_path, f'{function}.sql'), 'r') as function_file:
                 function_sql = function_file.read()
 
             unique_schemas = {(rel.database, rel.schema,) for rel in relations}
-            for db, schema in unique_schemas:   # noqa pylint: disable=invalid-name
+            for db, schema in unique_schemas:  # noqa pylint: disable=invalid-name
                 database = self._correct_case(db)
                 schema = self._correct_case(schema)
                 conn = self.get_connection(database_override=database,

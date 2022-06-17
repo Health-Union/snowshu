@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING, List, Optional, Type
 
 import docker
 
-from snowshu.configs import DOCKER_NETWORK, DOCKER_TARGET_CONTAINER
+from snowshu.configs import DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER, \
+    LOCAL_REPLICA_MOUNT_FOLDER
 from snowshu.logger import Logger
 
 if TYPE_CHECKING:
@@ -40,8 +41,9 @@ class SnowShuDocker:
         self.remove_container(container.name)
 
         return replica
+
     # TODO: this is all holdover from storages, and can be greatly simplified.
-    def get_stopped_container(      # noqa pylint: disable=too-many-arguments
+    def get_stopped_container(  # noqa pylint: disable=too-many-arguments
             self,
             image,
             start_command: str,
@@ -79,18 +81,21 @@ class SnowShuDocker:
                                                   ports=port_dict,
                                                   environment=envars,
                                                   labels=labels,
-                                                  detach=True)
+                                                  detach=True,
+                                                  volumes={f'{LOCAL_REPLICA_MOUNT_FOLDER}': {
+                                                      'bind': f'/{DOCKER_REPLICA_MOUNT_FOLDER}',
+                                                      'mode': 'rw'}})
         logger.info(f"Created stopped container {container.name}.")
         return container
 
-    def startup(self,   # noqa pylint: disable=too-many-arguments
+    def startup(self,  # noqa pylint: disable=too-many-arguments
                 image: str,
                 start_command: str,
                 port: int,
                 target_adapter: Type['BaseTargetAdapter'],
                 source_adapter: str,
                 envars: list,
-                protocol: str = "tcp") -> docker.models.containers.Container:   # noqa pylint: disable=unused-argument
+                protocol: str = "tcp") -> docker.models.containers.Container:  # noqa pylint: disable=unused-argument
 
         container = self.get_stopped_container(
             image,

@@ -15,7 +15,9 @@ from snowshu.configs import (DEFAULT_PRESERVE_CASE,
                              DEFAULT_MAX_NUMBER_OF_OUTLIERS,
                              DOCKER_REMOUNT_DIRECTORY,
                              DOCKER_TARGET_CONTAINER,
-                             PACKAGE_ROOT)
+                             PACKAGE_ROOT,
+                             DOCKER_REPLICA_MOUNT_FOLDER,
+                             )
 from snowshu.core.main import cli
 from snowshu.core.models import Relation, Attribute, data_types
 from snowshu.core.models.materializations import TABLE
@@ -27,9 +29,9 @@ from snowshu.core.models.materializations import TABLE
 # 4. Spins down and cleans up
 
 BASE_CONN = 'postgresql://snowshu:snowshu@integration-test:9999/{}'
-INITIAL_INCREMENTAL_CONFIG_PATH = os.path.join(PACKAGE_ROOT, 
-                                               'tests', 
-                                               'assets', 
+INITIAL_INCREMENTAL_CONFIG_PATH = os.path.join(PACKAGE_ROOT,
+                                               'tests',
+                                               'assets',
                                                'replica_test_incremental_config.yml')
 CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
 SNOWSHU_META_STRING = BASE_CONN.format('snowshu')
@@ -379,6 +381,7 @@ def test_using_different_image(end_to_end):
             source_adapter='SnowflakeAdapter'))
     assert target_container.status == 'created'
     assert target_container.image.tags[0] == 'snowshu_replica_integration-test:latest'
+    assert f'/{DOCKER_REPLICA_MOUNT_FOLDER}' in target_container.image.attrs['Config']['Volumes']
     target_container.start()
     target_container.reload()
     assert target_container.status == 'running'

@@ -1,10 +1,10 @@
 ## docker image is intended for development environments only.
 ## to use snowshu in production install the package via pip
-FROM python:3.8-slim-buster
+FROM python:3.9-slim-buster
 
-RUN mkdir /app
-COPY . /app
-WORKDIR /app
+RUN mkdir /tmp/app
+COPY . /tmp/app
+WORKDIR /tmp/app
 RUN apt-get update && \
 apt-get install -y --reinstall build-essential && \
 apt-get install -y gcc && \

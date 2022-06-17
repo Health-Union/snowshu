@@ -7,7 +7,7 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - .:/app
+      - .:/tmp/app
       - /var/run/docker.sock:/var/run/docker.sock
     command: tail -f /dev/null
     networks:
