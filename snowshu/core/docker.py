@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, List, Optional, Type
 
 import docker
 
-from snowshu.configs import DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER, \
-    LOCAL_REPLICA_MOUNT_FOLDER
+from snowshu.configs import (DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER,
+                             LOCAL_REPLICA_MOUNT_FOLDER, DOCKER_CONTAINER_NAME, DOCKER_WORKING_DIR, IS_IN_DOCKER)
 from snowshu.logger import Logger
 
 if TYPE_CHECKING:
@@ -82,9 +82,12 @@ class SnowShuDocker:
                                                   environment=envars,
                                                   labels=labels,
                                                   detach=True,
-                                                  volumes={f'{LOCAL_REPLICA_MOUNT_FOLDER}': {
-                                                      'bind': f'/{DOCKER_REPLICA_MOUNT_FOLDER}',
-                                                      'mode': 'rw'}})
+                                                  volumes={} if IS_IN_DOCKER else {f'{LOCAL_REPLICA_MOUNT_FOLDER}': {
+                                                      'bind': f'{DOCKER_REPLICA_MOUNT_FOLDER}',
+                                                      'mode': 'rw'
+                                                  }},
+                                                  working_dir=DOCKER_WORKING_DIR,
+                                                  volumes_from=DOCKER_CONTAINER_NAME)
         logger.info(f"Created stopped container {container.name}.")
         return container
 

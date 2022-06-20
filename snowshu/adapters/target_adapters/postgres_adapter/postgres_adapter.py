@@ -1,15 +1,16 @@
 from typing import List, Optional, Tuple
-from overrides import overrides
-import sqlalchemy
 
+import sqlalchemy
+from overrides import overrides
+
+import snowshu.core.models.data_types as dtypes
 from snowshu.adapters.target_adapters import BaseTargetAdapter
 from snowshu.configs import DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
-import snowshu.core.models.data_types as dtypes
-from snowshu.logger import Logger
 from snowshu.core.models.relation import Relation
 from snowshu.core.utils import correct_case
+from snowshu.logger import Logger
 
 logger = Logger().logger
 
@@ -81,7 +82,7 @@ class PostgresAdapter(BaseTargetAdapter):
                                      f'-h {self._credentials.host} '
                                      f'-U {self._credentials.user} '
                                      f'-d {self._credentials.database}')
-        self.DOCKER_SHARE_REPLICA_DATA = f"cp -a $PGDATA/* /{self.DOCKER_REPLICA_MOUNT_FOLDER}"
+        self.DOCKER_SHARE_REPLICA_DATA = f"mkdir {self.DOCKER_REPLICA_MOUNT_FOLDER} || true; cp -af $PGDATA/* {self.DOCKER_REPLICA_MOUNT_FOLDER}"
 
     @staticmethod
     def _create_snowshu_schema_statement() -> str:

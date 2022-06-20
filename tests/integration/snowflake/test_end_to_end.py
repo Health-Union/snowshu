@@ -381,7 +381,6 @@ def test_using_different_image(end_to_end):
             source_adapter='SnowflakeAdapter'))
     assert target_container.status == 'created'
     assert target_container.image.tags[0] == 'snowshu_replica_integration-test:latest'
-    assert f'/{DOCKER_REPLICA_MOUNT_FOLDER}' in target_container.image.attrs['Config']['Volumes']
     target_container.start()
     target_container.reload()
     assert target_container.status == 'running'
