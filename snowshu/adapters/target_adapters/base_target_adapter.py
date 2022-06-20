@@ -286,7 +286,7 @@ AS
                 os.path.dirname(__file__),
                 self.name + '_adapter',
                 'functions'))
-            with open(os.path.join(functions_path, f'{function}.sql'), 'r') as function_file:
+            with open(os.path.join(functions_path, f'{function}.sql'), 'r') as function_file: # noqa pylint: disable=unspecified-encoding
                 function_sql = function_file.read()
 
             unique_schemas = {(rel.database, rel.schema,) for rel in relations}

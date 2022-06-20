@@ -124,7 +124,7 @@ class ConfigurationParser:
             try:
                 return yaml.safe_load(dict_like_object.read())
             except AttributeError:
-                with open(dict_like_object, 'r') as stream:
+                with open(dict_like_object, 'r') as stream:  # noqa pylint: disable=unspecified-encoding
                     instance = yaml.safe_load(stream.read())
                 return self._verify_schema(instance, Path(dict_like_object), schema_path)
 
@@ -133,7 +133,7 @@ class ConfigurationParser:
                        file_path: Path,
                        schema_path: Path):
         logger.debug("Parsing file at %s", file_path)
-        with open(schema_path) as schema_file:
+        with open(schema_path) as schema_file:  # noqa pylint: disable=unspecified-encoding
             schema = yaml.safe_load(schema_file.read())
 
         try:
@@ -187,7 +187,7 @@ class ConfigurationParser:
         try:
             [loaded[section].keys() for section in ('source', 'target',)]
         except TypeError as err:
-            raise KeyError(f'missing config section or section is none: {err}.')
+            raise KeyError(f'missing config section or section is none: {err}.') from err
 
         # set defaults
         for attr in ('short_description', 'long_description',):
@@ -229,7 +229,7 @@ class ConfigurationParser:
         except KeyError as err:
             message = f"Configuration missing required section: {err}."
             logger.critical(message)
-            raise AttributeError(message)
+            raise AttributeError(message) from err
 
     def _build_relationships(
             self,
@@ -267,7 +267,7 @@ class ConfigurationParser:
                 override_dict
             )
 
-        relationships = specified_pattern.get('relationships', dict())
+        relationships = specified_pattern.get('relationships', {})
         directional = relationships.get('directional', list())
         bidirectional = relationships.get('bidirectional', list())
         polymorphic = relationships.get('polymorphic', list())
@@ -312,7 +312,7 @@ class ConfigurationParser:
                         return creds_profile
                 raise KeyError(profile)
             except KeyError as err:
-                raise ValueError(f'Credentials missing required section: {err}')
+                raise ValueError(f'Credentials missing required section: {err}') from err
         try:
             profile_dict = lookup_profile_from_creds(self._get_dict_from_anything(credentials,
                                                                                   CREDENTIALS_JSON_SCHEMA),
@@ -336,7 +336,7 @@ class ConfigurationParser:
         adapter_type = fetch_adapter(full_config['target']['adapter'], 'target')
         adapter_args = full_config['target'].get('adapter_args')
         if not adapter_args:
-            adapter_args = dict()
+            adapter_args = {}
         metadata = {
             attr: full_config[attr] for attr in (
                 'name', 'short_description', 'long_description',)}

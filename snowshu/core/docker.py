@@ -53,7 +53,7 @@ class SnowShuDocker:
             labels: dict = None,
             protocol: str = "tcp") -> docker.models.containers.Container:
         if not labels:
-            labels = dict()
+            labels = {}
         name = name if name else self.replica_image_name_to_common_name(image)
         logger.info(f'Finding base image {image}...')
         try:
@@ -158,10 +158,10 @@ class SnowShuDocker:
     def get_adapter_name(self, name: str) -> str:
         try:
             return self.client.images.get(name).labels['target_adapter']
-        except KeyError:
+        except KeyError as exc:
             message = "Replica image {name} is corrupted; no label for `target_adapter`."
             logger.critical(message)
-            raise AttributeError(message)
+            raise AttributeError(message) from exc
 
     @staticmethod
     def sanitize_replica_name(name: str) -> str:

@@ -82,7 +82,8 @@ class PostgresAdapter(BaseTargetAdapter):
                                      f'-h {self._credentials.host} '
                                      f'-U {self._credentials.user} '
                                      f'-d {self._credentials.database}')
-        self.DOCKER_SHARE_REPLICA_DATA = f"mkdir {self.DOCKER_REPLICA_MOUNT_FOLDER} || true; cp -af $PGDATA/* {self.DOCKER_REPLICA_MOUNT_FOLDER}"
+        self.DOCKER_SHARE_REPLICA_DATA = f"mkdir {self.DOCKER_REPLICA_MOUNT_FOLDER} || " \
+                                         f"true; cp -af $PGDATA/* {self.DOCKER_REPLICA_MOUNT_FOLDER}"  # noqa pylint: disable=invalid-name
 
     @staticmethod
     def _create_snowshu_schema_statement() -> str:
@@ -199,10 +200,7 @@ class PostgresAdapter(BaseTargetAdapter):
         logger.debug(
             f'Collecting detailed relations from database {quoted_database}...')
         relations_frame = self._safe_query(relations_sql, quoted_database)
-        unique_relations = (
-                relations_frame['schema'] +
-                '.' +
-                relations_frame['relation']).unique().tolist()
+        unique_relations = (relations_frame['schema'] + '.' + relations_frame['relation']).unique().tolist()
         logger.debug(
             f'Done collecting relations. Found a total of {len(unique_relations)} '
             f'unique relations in database {quoted_database}')
@@ -211,9 +209,8 @@ class PostgresAdapter(BaseTargetAdapter):
             logger.debug(f'Building relation {quoted_database + "." + relation}...')
             attributes = list()
 
-            for attribute in relations_frame.loc[(
-                                                         relations_frame['schema'] + '.' + relations_frame[
-                                                     'relation']) == relation].itertuples():
+            for attribute in relations_frame.loc[(relations_frame['schema'] + '.'
+                                                  + relations_frame['relation']) == relation].itertuples():
                 logger.debug(
                     f'adding attribute {attribute.attribute} to relation..')
                 attributes.append(

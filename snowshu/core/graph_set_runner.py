@@ -165,9 +165,9 @@ class GraphSetRunner:
                         try:
                             relation.view_ddl = executable.source_adapter.scalar_query(
                                 relation.compiled_query)
-                        except Exception:
+                        except Exception as exc:
                             raise SystemError(
-                                f'Failed to extract DDL statement: {relation.compiled_query}')
+                                f'Failed to extract DDL statement: {relation.compiled_query}') from exc
                         logger.info('Successfully extracted DDL statement for view ' 
                                     f'{executable.target_adapter.quoted_dot_notation(relation)}')
                     else:
@@ -178,7 +178,8 @@ class GraphSetRunner:
                                 relation.compiled_query, relation.sampling.max_allowed_rows, relation.unsampled)
                         except Exception as exc:
                             raise SystemError(
-                                f'Failed execution of extraction sql statement: {relation.compiled_query} {exc}')
+                                f'Failed execution of extraction sql statement: {relation.compiled_query} {exc}') \
+                                from exc
 
                         relation.sample_size = len(relation.data)
                         logger.info(
@@ -192,7 +193,7 @@ class GraphSetRunner:
                     except Exception as exc:
                         raise SystemError('Failed to load relation '
                                           f'{executable.target_adapter.quoted_dot_notation(relation)} ' 
-                                          f' into target: {exc}')
+                                          f' into target: {exc}') from exc
 
                     logger.info('Done replication of relation ' 
                                 f'{executable.target_adapter.quoted_dot_notation(relation)} ' 
@@ -202,7 +203,7 @@ class GraphSetRunner:
                 logger.info(
                     f'population:{relation.population_size}, sample:{relation.sample_size}')
                 if self.barf:
-                    with open(os.path.join(self.barf_output, f'{relation.dot_notation}.sql'), 'w') as barf_file:
+                    with open(os.path.join(self.barf_output, f'{relation.dot_notation}.sql'), 'w') as barf_file:  # noqa pylint: disable=unspecified-encoding
                         barf_file.write(relation.compiled_query)
             try:
                 for relation in executable.graph.nodes:

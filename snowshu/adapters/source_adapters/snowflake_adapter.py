@@ -398,12 +398,12 @@ LIMIT {max_number_of_outliers})
                 assert count <= max_count
             logger.debug(
                 f'Query count safe at {count} rows in {time.time()-start_time} seconds.')
-        except AssertionError:
+        except AssertionError as exc:
             message = (f'failed to execute query, result would have returned {count} rows '
                        f'but the max allowed rows for this type of query is {max_count}.')
             logger.error(message)
             logger.debug(f'failed sql: {query}')
-            raise TooManyRecords(message)
+            raise TooManyRecords(message) from exc
         response = self._safe_query(query)
         return response
 

@@ -77,7 +77,7 @@ class Relation:
         # handle the fact that pandas.read_sql may not preserve json type on load
         for attr in self.attributes:
             if isinstance(attr.data_type.sqlalchemy_type, JSON):
-                transform_func = (lambda v: json.loads(v) if isinstance(v, str) else v)
+                transform_func = (lambda v: json.loads(v) if isinstance(v, str) else v)  # noqa pylint: disable=unnecessary-lambda-assignment
                 val[attr.name] = val[attr.name].transform(func=transform_func)
 
         self._data = val
@@ -175,9 +175,9 @@ def single_full_pattern_match(rel: Relation,
                        name=pattern.relation_pattern)
     except AttributeError:
         pass
-    if not all([pattern[attribute] for attribute in attributes]):
+    if not all([pattern[attribute] for attribute in attributes]):  # noqa pylint: disable=use-a-generator
         return False
-    return all([re.fullmatch(pattern[attr], rel.__dict__[attr], flags)
+    return all([re.fullmatch(pattern[attr], rel.__dict__[attr], flags) # noqa pylint: disable=use-a-generator
                 for attr in attributes])
 
 
@@ -185,9 +185,8 @@ def at_least_one_full_pattern_match(rel: Relation, patterns: iter, flags: re.Reg
     """determines if a relation matches any of a collection of pattern
     dictionaries (database,schema,name)."""
     patterns = list(filter(lambda p: all(
-        p[attr] for attr in ('database', 'schema', 'name',)), patterns))
-    return any([single_full_pattern_match(rel, pattern, flags)
-                for pattern in patterns])
+        p[attr] for attr in ('database', 'schema', 'name',)), patterns))  # noqa pylint: disable=use-a-generator
+    return any([single_full_pattern_match(rel, pattern, flags) for pattern in patterns])   # noqa pylint: disable=use-a-generator
 
 
 def alter_relation_case(case_function):

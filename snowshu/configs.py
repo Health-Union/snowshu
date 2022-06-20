@@ -27,9 +27,8 @@ def _is_in_docker() -> Tuple[bool, Optional[str]]:
         return True, os.uname().nodename
     # running vertical (not recommended)
     try:
-        with open('/proc/1/cgroup', 'rt') as ifh:
-            return any([indicator in line for line in ifh.readlines()
-                        for indicator in ('docker', 'kubepods',)])
+        with open('/proc/1/cgroup', 'rt') as ifh: # noqa pylint: disable=unspecified-encoding
+            return any([indicator in line for line in ifh.readlines() for indicator in ('docker', 'kubepods',)])  # noqa pylint: disable=use-a-generator
     except FileNotFoundError:
         return False, None
 

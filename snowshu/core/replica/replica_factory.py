@@ -71,7 +71,7 @@ class ReplicaFactory:
         graphs = graph.get_connected_subgraphs()
         if len(graphs) < 1:
             args = (' new ', ' incremental ', '; image up-to-date') if self.incremental else (' ', ' ', '')
-            message = "No{}relations found per provided{}replica configuration{}, exiting.".format(*args)
+            message = "No{}relations found per provided{}replica configuration{}, exiting.".format(*args)  # noqa pylint: consider-using-f-string
             return message
 
         if not self.config.target_profile.adapter.container:

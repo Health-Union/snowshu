@@ -56,7 +56,7 @@ class Logger:
 
     @staticmethod
     def remove_all_handlers(logger: logging.Logger) -> None:
-        logger.handlers = list()
+        logger.handlers = []
 
     def log_retries(self, retry_state):
         """ Function for passing to tenacity.retry decorator. """
