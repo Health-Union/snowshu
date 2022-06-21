@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, List, Optional, Type
 import docker
 
 from snowshu.configs import (DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER,
-                             LOCAL_REPLICA_MOUNT_FOLDER, DOCKER_CONTAINER_NAME, DOCKER_WORKING_DIR, IS_IN_DOCKER)
+                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME)
 from snowshu.logger import Logger
 
 if TYPE_CHECKING:
@@ -19,6 +19,14 @@ class SnowShuDocker:
 
     def __init__(self):
         self.client = docker.from_env()
+
+    def _create_snowshu_volume(self, volume_name: str) -> docker.models.volumes.Volume:
+        """ Creating a docker volume if not exists"""
+        try:
+            volume = self.client.volumes.get(volume_name)
+        except docker.errors.NotFound:
+            volume = self.client.volumes.create(name=volume_name, driver='local',)
+        return volume
 
     def convert_container_to_replica(
             self,
@@ -72,6 +80,10 @@ class SnowShuDocker:
 
         self.remove_container(name)
         network = self._get_or_create_network(DOCKER_NETWORK)
+
+        logger.info('Creating an external volume...')
+        replica_volume = self._create_snowshu_volume(DOCKER_REPLICA_VOLUME)
+
         logger.info(f"Creating stopped container {name}...")
         container = self.client.containers.create(image,
                                                   start_command,
@@ -82,12 +94,12 @@ class SnowShuDocker:
                                                   environment=envars,
                                                   labels=labels,
                                                   detach=True,
-                                                  volumes={} if IS_IN_DOCKER else {f'{LOCAL_REPLICA_MOUNT_FOLDER}': {
+                                                  volumes={replica_volume.name: {
                                                       'bind': f'{DOCKER_REPLICA_MOUNT_FOLDER}',
                                                       'mode': 'rw'
                                                   }},
-                                                  working_dir=DOCKER_WORKING_DIR,
-                                                  volumes_from=DOCKER_CONTAINER_NAME)
+                                                  working_dir=DOCKER_WORKING_DIR
+                                                  )
         logger.info(f"Created stopped container {container.name}.")
         return container
 

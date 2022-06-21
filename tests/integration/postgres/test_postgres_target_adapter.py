@@ -113,8 +113,8 @@ def test_load_data_into_relation(end_to_end):
     assert len(result) == 3
 
 
-@mock.patch('snowshu.configs.IS_IN_DOCKER', return_value=False)
-def test_restore_data_from_shared_replica(IS_IN_DOCKER, docker_flush):
+@mock.patch('snowshu.core.docker.DOCKER_REPLICA_VOLUME', 'snowshu_container_share_validations')
+def test_restore_data_from_shared_replica(docker_flush):
     shdocker = SnowShuDocker()
     target_adapter = PostgresAdapter(replica_metadata={})
     target_container = shdocker.startup(
