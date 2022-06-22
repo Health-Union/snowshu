@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING, List, Optional, Type, Dict
 
 import docker
 
@@ -210,3 +210,9 @@ class SnowShuDocker:
     def find_snowshu_images(self) -> List[docker.models.images.Image]:
         return list(filter((lambda x: len(x.tags) > 0), self.client.images.list(
             filters=dict(label='snowshu_replica=true'))))
+
+    def get_docker_image_attributes(self, image: str) -> Dict:
+        """
+            Retrieve image-related attributes
+        """
+        return self.client.images.get(image).attrs

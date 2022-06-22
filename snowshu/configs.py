@@ -1,6 +1,8 @@
 import os
+import re
 from pathlib import Path
 from shutil import which
+import platform
 
 PACKAGE_ROOT = Path().parent.absolute()
 MAX_ALLOWED_DATABASES = 2000
@@ -34,6 +36,17 @@ def _is_in_docker() -> bool:
         return False
 
 
+def _get_architecture() -> str:
+    """
+     Returns the machine type. An empty string is returned if the value cannot be determined.
+    """
+    iso_arch = platform.machine()
+    arch = re.sub(r"(?:aarch64).*", "arm64", iso_arch) if 'aarch' in iso_arch.lower() else re.sub(r"(?:x86_64).*",
+                                                                                                  "amd64", iso_arch)
+    return arch
+
+
+LOCAL_ARCHITECTURE = _get_architecture()
 IS_IN_DOCKER = _is_in_docker()
 DOCKER_SHARED_FOLDER_NAME = 'snowshu_replica_data_shared'
 DOCKER_REPLICA_MOUNT_FOLDER = os.path.join(os.path.sep, DOCKER_WORKING_DIR, DOCKER_SHARED_FOLDER_NAME)
