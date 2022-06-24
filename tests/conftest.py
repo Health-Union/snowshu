@@ -9,6 +9,7 @@ import networkx as nx
 import pytest
 import yaml
 
+from unittest import mock
 from click.testing import CliRunner
 import snowshu.core.models.data_types as dt
 import snowshu.core.models.materializations as mz
@@ -199,12 +200,18 @@ def sanitize_docker_environment():
             'integration-test',
             'snowshu_target',)])
 
+    def is_snowshu_related_replica_volume(volume)->bool:
+        return 'snowshu_container_' in volume.name
+
     for container in filter(is_snowshu_related_container,client.containers.list()):
         try_or_pass(container.kill)
         try_or_pass(container.remove,dict(force=True))
     
     for image in filter(is_snowshu_related_image,client.images.list()):
-        try_or_pass(client.images.remove,dict(image=image.tags[0],force=True))
+        try_or_pass(client.images.remove, dict(image=image.tags[0],force=True))
+
+    for volume in filter(is_snowshu_related_replica_volume, client.volumes.list()):
+        try_or_pass(volume.remove, dict(force=True))
 
 
 @pytest.fixture
@@ -227,6 +234,7 @@ def mock_docker_image():
 
 
 @pytest.fixture(scope="module")
+@mock.patch('snowshu.core.docker.DOCKER_REPLICA_VOLUME', 'snowshu_container_share_validation_end_to_end')
 def end_to_end(docker_flush_module):
     runner = CliRunner()
 
