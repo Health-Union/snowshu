@@ -180,7 +180,7 @@ AS
         shdocker = SnowShuDocker()
 
         image_architecture = shdocker.get_docker_image_attributes(self.DOCKER_IMAGE) \
-            .get('Architecture', LOCAL_ARCHITECTURE)
+            .get('Architecture', 'Unknown architecture')
 
         if image_architecture.lower() == LOCAL_ARCHITECTURE.lower():
             logger.info(f'The architecture of the docker image[{self.DOCKER_IMAGE}] is {image_architecture.lower()}')
