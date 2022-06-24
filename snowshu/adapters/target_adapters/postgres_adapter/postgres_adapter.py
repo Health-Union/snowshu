@@ -82,8 +82,7 @@ class PostgresAdapter(BaseTargetAdapter):
                                      f'-h {self._credentials.host} '
                                      f'-U {self._credentials.user} '
                                      f'-d {self._credentials.database}')
-        self.DOCKER_SHARE_REPLICA_DATA = f"mkdir {self.DOCKER_REPLICA_MOUNT_FOLDER} || " \
-                                         f"true; cp -af $PGDATA/* {self.DOCKER_REPLICA_MOUNT_FOLDER}"  # noqa pylint: disable=invalid-name
+        self.DOCKER_SHARE_REPLICA_DATA = f"cp -af $PGDATA/* {self.DOCKER_REPLICA_MOUNT_FOLDER}"  # noqa pylint: disable=invalid-name
 
     @staticmethod
     def _create_snowshu_schema_statement() -> str:

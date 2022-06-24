@@ -94,5 +94,5 @@ def test_copy_replica_command():
     pg_adapter.container.exec_run = MagicMock(return_value=(0, ANY))
     pg_adapter.copy_replica_data()
     pg_adapter.container.exec_run.assert_called_with(
-        f"/bin/bash -c 'mkdir {DOCKER_REPLICA_MOUNT_FOLDER} || true; cp -af $PGDATA/* {DOCKER_REPLICA_MOUNT_FOLDER}'",
+        f"/bin/bash -c 'cp -af $PGDATA/* {DOCKER_REPLICA_MOUNT_FOLDER}'",
         tty=True)
