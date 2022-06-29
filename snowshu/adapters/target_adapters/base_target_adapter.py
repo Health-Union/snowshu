@@ -8,7 +8,7 @@ import pandas as pd
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import (DEFAULT_INSERT_CHUNK_SIZE,
                              DOCKER_TARGET_CONTAINER, DOCKER_TARGET_PORT,
-                             IS_IN_DOCKER)
+                             IS_IN_DOCKER, LOCAL_ARCHITECTURE)
 from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models import Attribute, Credentials, Relation
 from snowshu.core.models import DataType, data_types as dt
@@ -178,6 +178,17 @@ AS
     def _init_image(self,
                     source_adapter_name: str) -> None:
         shdocker = SnowShuDocker()
+
+        image_architecture = shdocker.get_docker_image_attributes(self.DOCKER_IMAGE) \
+            .get('Architecture', 'Unknown architecture')
+
+        if image_architecture.lower() == LOCAL_ARCHITECTURE.lower():
+            logger.info(f'The architecture of the docker image[{self.DOCKER_IMAGE}] is {image_architecture.lower()}')
+        else:
+            logger.warning(f"""There is a mismatch between local and docker image architectures: '
+                                   The local architecture is {LOCAL_ARCHITECTURE} 
+                                   The image architecture is [{self.DOCKER_IMAGE}]({image_architecture})""")
+
         logger.info('Initializing target container...')
         self.container = shdocker.startup(
             self.DOCKER_IMAGE,
@@ -190,6 +201,7 @@ AS
         logger.info('Container initialized.')
         while not self.target_database_is_ready():
             sleep(.5)
+
         self._initialize_snowshu_meta_database()
 
     def target_database_is_ready(self) -> bool:
