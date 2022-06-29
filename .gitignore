@@ -14,3 +14,5 @@ keyfile.json
 
 tests/assets/integration/trail-path.yml
 tests/assets/integration/credentials.yml
+credentials.yml
+replica.yml
