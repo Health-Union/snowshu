@@ -17,7 +17,7 @@ docutils<=0.16 # should be pinned to <=0.16 since sphinx has a conflicts with hi
 idna==2.10
 oscrypto==1.2.1
 pycryptodomex==3.10.1
-pyjwt==2.0.1
+pyjwt==2.4.0
 pyOpenSSL==21.0.0
 pytz==2021.1
 requests==2.28.0
