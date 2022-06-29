@@ -1,5 +1,6 @@
 import time
 from typing import TYPE_CHECKING, Any, List, Optional, Union
+import logging
 
 import pandas as pd
 import sqlalchemy
@@ -8,7 +9,6 @@ from overrides import overrides
 from sqlalchemy.pool import NullPool
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
-import logging
 
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
@@ -386,8 +386,6 @@ LIMIT {max_number_of_outliers})
                               max_count: int,
                               unsampled: bool) -> pd.DataFrame:
         """checks the count, if count passes returns results as a dataframe."""
-               
-        
         try:
             logger.debug('Checking count for query...')
             start_time = time.time()

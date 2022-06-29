@@ -1,7 +1,7 @@
 from typing import Any
+import logging
 
 import pandas as pd
-import logging
 
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import MAX_ALLOWED_DATABASES, MAX_ALLOWED_ROWS

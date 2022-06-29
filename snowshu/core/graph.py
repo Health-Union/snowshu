@@ -2,10 +2,10 @@ import os.path
 from datetime import datetime
 from itertools import chain
 from typing import List, Set, Tuple, Optional, Union
+import logging
 
 import matplotlib.pyplot as plt
 import networkx
-import logging
 
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.graph_set_runner import GraphSetRunner

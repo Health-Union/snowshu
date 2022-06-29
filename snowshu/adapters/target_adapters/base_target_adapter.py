@@ -2,9 +2,9 @@ import os
 from datetime import datetime
 from time import sleep
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
+import logging
 
 import pandas as pd
-import logging
 
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import (DEFAULT_INSERT_CHUNK_SIZE,

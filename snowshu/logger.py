@@ -70,9 +70,9 @@ class Logger:
     def log_retries(self, retry_state):
         """ Function for passing to tenacity.retry decorator. """
         logging.getLogger('snowshu').warning('Retrying %s: attempt %s ended with: %s',
-                            retry_state.fn.__qualname__,
-                            retry_state.attempt_number,
-                            retry_state.outcome.exception())
+                                             retry_state.fn.__qualname__,
+                                             retry_state.attempt_number,
+                                             retry_state.outcome.exception())
 
     @property
     def logger(self) -> logging.Logger:

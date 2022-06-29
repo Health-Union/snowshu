@@ -3,11 +3,11 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable, List, Optional, Set
+import logging
 
 import pandas as pd
 import sqlalchemy
 from sqlalchemy.pool import NullPool
-import logging
 
 from snowshu.core.models import Relation
 from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, USER,

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import re
 from typing import TYPE_CHECKING, List, Optional, Type, Dict
+import logging
 
 import docker
-import logging
 
 from snowshu.configs import (DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER,
                              DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME)

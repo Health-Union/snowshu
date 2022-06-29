@@ -1,8 +1,8 @@
 from typing import List, Optional, Tuple
+import logging
 
 import sqlalchemy
 from overrides import overrides
-import logging
 
 import snowshu.core.models.data_types as dtypes
 from snowshu.adapters.target_adapters import BaseTargetAdapter

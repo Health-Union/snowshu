@@ -3,12 +3,12 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, List, TextIO, Type, Union
+import logging
 
 
 import jsonschema
 import yaml
 from jsonschema.exceptions import ValidationError
-import logging
 
 from snowshu.configs import (DEFAULT_MAX_NUMBER_OF_OUTLIERS,
                              DEFAULT_PRESERVE_CASE, DEFAULT_THREAD_COUNT)

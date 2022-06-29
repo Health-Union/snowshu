@@ -1,7 +1,7 @@
 from typing import Type
+import logging
 
 import networkx
-import logging
 
 from snowshu.adapters.source_adapters.base_source_adapter import \
     BaseSourceAdapter

@@ -5,9 +5,9 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Tuple
+import logging
 
 import networkx as nx
-import logging
 
 from snowshu.adapters.source_adapters.base_source_adapter import \
     BaseSourceAdapter
@@ -53,7 +53,6 @@ class GraphSetRunner:
                 analyze (bool): whether to run analyze or actually transfer the sampled data
                 barf (bool): whether to dump diagnostic files to disk
         """
-
 
         self.barf = barf
         if self.barf:
