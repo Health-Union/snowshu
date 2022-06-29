@@ -8,13 +8,13 @@ from typing import TYPE_CHECKING, Any, List, TextIO, Type, Union
 import jsonschema
 import yaml
 from jsonschema.exceptions import ValidationError
+import logging
 
 from snowshu.configs import (DEFAULT_MAX_NUMBER_OF_OUTLIERS,
                              DEFAULT_PRESERVE_CASE, DEFAULT_THREAD_COUNT)
 from snowshu.core.models import Credentials
 from snowshu.core.samplings.utils import get_sampling_from_partial
 from snowshu.core.utils import correct_case, fetch_adapter
-from snowshu.logger import Logger
 
 if TYPE_CHECKING:
     from io import StringIO
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
     from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 TEMPLATES_PATH = Path(os.path.dirname(__file__)).parent / 'templates'
 REPLICA_JSON_SCHEMA = TEMPLATES_PATH / 'replica_schema.json'

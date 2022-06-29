@@ -8,6 +8,7 @@ from overrides import overrides
 from sqlalchemy.pool import NullPool
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
+import logging
 
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
@@ -23,7 +24,7 @@ from snowshu.samplings.sample_methods import BernoulliSampleMethod
 if TYPE_CHECKING:
     from snowshu.core.samplings.bases.base_sample_method import BaseSampleMethod
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 class SnowflakeAdapter(BaseSourceAdapter):
@@ -385,6 +386,8 @@ LIMIT {max_number_of_outliers})
                               max_count: int,
                               unsampled: bool) -> pd.DataFrame:
         """checks the count, if count passes returns results as a dataframe."""
+               
+        
         try:
             logger.debug('Checking count for query...')
             start_time = time.time()

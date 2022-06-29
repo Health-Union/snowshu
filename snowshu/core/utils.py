@@ -4,9 +4,8 @@ from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, TextIO, Type, Union
 
+import logging
 import yaml
-
-from snowshu.logger import Logger
 
 if TYPE_CHECKING:
     from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
@@ -14,7 +13,7 @@ if TYPE_CHECKING:
     from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
 
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 def correct_case(val: str, upper: bool = True):

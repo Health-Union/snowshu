@@ -3,10 +3,10 @@ from typing import Any, List, Union
 
 import networkx as nx
 from tabulate import tabulate
+import logging
 
-from snowshu.logger import Logger
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 @dataclass

@@ -43,7 +43,7 @@ def init(path: click.Path) -> None:
         path: The full or relative path to where the files should be generated, defaults to current dir.
     """
 
-    logger = Logger().logger
+    logger = logging.getLogger(__name__)
     templates = os.path.join(Path(__file__).parent.parent, 'templates')
 
     def destination(filename):

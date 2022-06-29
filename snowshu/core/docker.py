@@ -4,15 +4,15 @@ import re
 from typing import TYPE_CHECKING, List, Optional, Type, Dict
 
 import docker
+import logging
 
 from snowshu.configs import (DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER,
                              DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME)
-from snowshu.logger import Logger
 
 if TYPE_CHECKING:
     from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 class SnowShuDocker:

@@ -1,13 +1,13 @@
 from typing import Type
 
 import networkx
+import logging
 
 from snowshu.adapters.source_adapters.base_source_adapter import \
     BaseSourceAdapter
 from snowshu.core.models import Relation
-from snowshu.logger import Logger
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 class RuntimeSourceCompiler:

@@ -3,18 +3,20 @@ import time
 from pathlib import Path
 from typing import Optional, TextIO, Union
 
+import logging
+
 from snowshu.core.configuration_parser import (Configuration,
                                                ConfigurationParser)
 from snowshu.core.graph import SnowShuGraph
 from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.printable_result import (graph_to_result_list,
                                            printable_result)
-from snowshu.logger import Logger, duration
+from snowshu.logger import duration
 from snowshu.configs import DEFAULT_RETRY_COUNT
 from snowshu.core.models.relation import alter_relation_case
 from snowshu.exceptions import UnableToExecuteCopyReplicaCommand
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 class ReplicaFactory:

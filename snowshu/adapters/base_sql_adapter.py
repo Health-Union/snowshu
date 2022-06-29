@@ -7,15 +7,16 @@ from typing import Iterable, List, Optional, Set
 import pandas as pd
 import sqlalchemy
 from sqlalchemy.pool import NullPool
+import logging
 
 from snowshu.core.models import Relation
 from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, USER,
                                              Credentials)
 from snowshu.core.models.relation import at_least_one_full_pattern_match
 from snowshu.core.utils import correct_case
-from snowshu.logger import Logger, duration
+from snowshu.logger import duration
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 class BaseSQLAdapter:

@@ -7,15 +7,16 @@ from dataclasses import dataclass
 from typing import Tuple
 
 import networkx as nx
+import logging
 
 from snowshu.adapters.source_adapters.base_source_adapter import \
     BaseSourceAdapter
 from snowshu.adapters.target_adapters.base_target_adapter import \
     BaseTargetAdapter
 from snowshu.core.compile import RuntimeSourceCompiler
-from snowshu.logger import Logger, duration
+from snowshu.logger import duration
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -52,6 +53,8 @@ class GraphSetRunner:
                 analyze (bool): whether to run analyze or actually transfer the sampled data
                 barf (bool): whether to dump diagnostic files to disk
         """
+
+
         self.barf = barf
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)

@@ -10,7 +10,7 @@ from snowshu.core import main
 from snowshu.core.graph import SnowShuGraph
 from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.replica.replica_factory import ReplicaFactory
-from snowshu.logger import Logger
+import logging
 from snowshu.core.configuration_parser import Configuration
 from tests.common import rand_string
 
@@ -61,7 +61,7 @@ def test_sample_defaults(load, create, temporary_replica):
 def test_sample_args_valid(run, replica):
     runner = CliRunner()
     with runner.isolated_filesystem():
-        logger = Logger().logger
+        logger = logging.getLogger('snowshu')
         tempfile = Path('./test-file.yml')
         tempfile.touch()
         EXPECTED_REPLICA_FILE = tempfile.absolute()
