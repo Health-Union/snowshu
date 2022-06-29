@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Any, Optional
 
-import sqlalchemy.types as types
+from sqlalchemy import types
 
 
 @dataclass

@@ -12,9 +12,10 @@ pylint:
     max-line-length: 120
   disable:
     - abstract-method
+    - use-list-literal
     - logging-fstring-interpolation
     - cyclic-import # https://github.com/PyCQA/pylint/issues/3525
 
-pep8:
+pycodestyle:
   options:
     max-line-length: 120

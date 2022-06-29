@@ -14,6 +14,7 @@ DOCKER_NETWORK = 'snowshu'
 DOCKER_TARGET_CONTAINER = 'snowshu_target'
 DOCKER_REMOUNT_DIRECTORY = 'snowshu_replica_data'
 DOCKER_TARGET_PORT = 9999
+DOCKER_WORKING_DIR = Path('/app').as_posix()
 
 
 def _is_in_docker() -> bool:
@@ -25,11 +26,16 @@ def _is_in_docker() -> bool:
         return True
     # running vertical (not recommended)
     try:
-        with open('/proc/1/cgroup', 'rt') as ifh:
-            return any([indicator in line for line in ifh.readlines()
-                        for indicator in ('docker', 'kubepods',)])
+        with open('/proc/1/cgroup', 'rt') as ifh:  # noqa pylint: disable=unspecified-encoding
+            # noqa pylint: disable=use-a-generator
+            return any([indicator in line for line in ifh.readlines() for indicator in
+                        ('docker', 'kubepods',)])
     except FileNotFoundError:
         return False
 
 
 IS_IN_DOCKER = _is_in_docker()
+DOCKER_SHARED_FOLDER_NAME = 'snowshu_replica_data_shared'
+DOCKER_REPLICA_MOUNT_FOLDER = os.path.join(os.path.sep, DOCKER_WORKING_DIR, DOCKER_SHARED_FOLDER_NAME)
+
+DOCKER_REPLICA_VOLUME = 'snowshu_container_share'

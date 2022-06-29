@@ -75,7 +75,7 @@ def get_config_value(
 
 def load_from_file_or_path(loadable: Union[Path, str, TextIO]) -> dict:
     try:
-        with open(loadable) as file_obj:
+        with open(loadable) as file_obj:  # noqa pylint: disable=unspecified-encoding
             logger.debug('loading from file %s', file_obj.name)
             loaded = yaml.safe_load(file_obj)
     except TypeError:

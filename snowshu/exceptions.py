@@ -8,3 +8,7 @@ class InvalidRelationshipException(Exception):
 
 class TooManyRecords(Exception):
     pass
+
+
+class UnableToExecuteCopyReplicaCommand(Exception):
+    pass

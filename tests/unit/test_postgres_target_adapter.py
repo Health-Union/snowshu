@@ -1,12 +1,15 @@
+from unittest.mock import MagicMock, ANY
+
 from pandas.core.frame import DataFrame
 
+from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
+from snowshu.configs import DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER
 from snowshu.core.models import data_types
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.materializations import TABLE
-from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
-from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
 from snowshu.core.models.relation import Relation
 from tests.common import rand_string
+
 
 def test_x00_replacement():
     adapter = PostgresAdapter(replica_metadata={})
@@ -22,7 +25,7 @@ def test_x00_replacement():
     ]
     # test default replacement
     relation = Relation("db", "schema", "relation", TABLE, cols)
-    relation.data = DataFrame({id_col:[1,2],content_col: [normal_val, weird_value]})
+    relation.data = DataFrame({id_col: [1, 2], content_col: [normal_val, weird_value]})
 
     fixed_relation = adapter.replace_x00_values(relation)
     assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 1, [content_col]] == normal_val)
@@ -31,11 +34,13 @@ def test_x00_replacement():
     # test custom replacement
     adapter = PostgresAdapter(replica_metadata={}, pg_0x00_replacement=custom_replacement)
     relation = Relation("db", "schema", "relation", TABLE, cols)
-    relation.data = DataFrame({id_col:[1,2],content_col: [normal_val, weird_value]})
+    relation.data = DataFrame({id_col: [1, 2], content_col: [normal_val, weird_value]})
 
     fixed_relation = adapter.replace_x00_values(relation)
     assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 1, [content_col]] == normal_val)
-    assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 2, [content_col]] == f"weird{custom_replacement}value")
+    assert all(
+        fixed_relation.data.loc[fixed_relation.data[id_col] == 2, [content_col]] == f"weird{custom_replacement}value")
+
 
 def test_create_snowshu_schema_statement():
     pg_adapter = PostgresAdapter(replica_metadata={})
@@ -58,7 +63,8 @@ def test_is_fdw_schema():
     unique_databases = ["HU_DATA", "SNOWFLAKE_SAMPLE_DATA", "DEMO_DB", "UTIL_DB"]
     splitted = schema.split('__')
 
-    assert pg_adapter.is_fdw_schema(schema, unique_databases) == (len(splitted) == 2 and splitted[0] in unique_databases)
+    assert pg_adapter.is_fdw_schema(schema, unique_databases) == (
+            len(splitted) == 2 and splitted[0] in unique_databases)
 
 
 def test_image_initialize_bash_commands():
@@ -72,10 +78,21 @@ def test_image_initialize_bash_commands():
 def test_build_snowshu_envars():
     pg_adapter = PostgresAdapter(replica_metadata={})
     snowshu_envars = ['POSTGRES_USER=snowshu',
-            'POSTGRES_PASSWORD=snowshu',
-            'POSTGRES_DB=snowshu',
-            f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
+                      'POSTGRES_PASSWORD=snowshu',
+                      'POSTGRES_DB=snowshu',
+                      f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
     envars = [f"{envar}=snowshu" for envar in snowshu_envars]
     envars.append(f"PGDATA=/{DOCKER_REMOUNT_DIRECTORY}")
 
     assert set(envars) == set(pg_adapter._build_snowshu_envars(snowshu_envars))
+
+
+def test_copy_replica_command():
+    """Test whether copy replica command is correctly called"""
+    pg_adapter = PostgresAdapter(replica_metadata={})
+    pg_adapter.container = MagicMock()
+    pg_adapter.container.exec_run = MagicMock(return_value=(0, ANY))
+    pg_adapter.copy_replica_data()
+    pg_adapter.container.exec_run.assert_called_with(
+        f"/bin/bash -c 'cp -af $PGDATA/* {DOCKER_REPLICA_MOUNT_FOLDER}'",
+        tty=True)

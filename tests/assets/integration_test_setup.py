@@ -50,7 +50,8 @@ def get_connection_profile(credentials):
         user=credentials['sources'][0]['user'],
         password=credentials['sources'][0]['password'],
         database=credentials['sources'][0]['database'],
-        role=credentials['sources'][0]['role']
+        role=credentials['sources'][0]['role'],
+        warehouse=credentials['sources'][0]['warehouse']
     )
 
 

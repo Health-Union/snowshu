@@ -30,7 +30,7 @@ class ReportRow:
 
 
 def graph_to_result_list(graphs: nx.Graph) -> list:
-    report = list()
+    report = []
     for graph in graphs:
         try:
             for relation in graph.nodes:
@@ -63,7 +63,7 @@ def graph_to_result_list(graphs: nx.Graph) -> list:
         except Exception as exc:
             message = f"failure in building row for relation {relation.dot_notation} : {exc}"
             logger.critical(message)
-            raise ValueError(message)
+            raise ValueError(message)  # noqa pylint: raise-missing-from
     return report
 
 
@@ -71,7 +71,7 @@ def printable_result(report: List[ReportRow], analyze: bool) -> str:
     colors = dict(reset="\033[0m",
                   red="\033[0;31m",
                   green="\033[0;32m")
-    printable = list()
+    printable = []
     for row in report:
         formatter = 'green' if row.percent_is_acceptable else 'red'
         row.percent_to_target = f"{colors[formatter]}{row.percent_to_target} %{colors['reset']}"

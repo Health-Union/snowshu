@@ -44,7 +44,7 @@ class PGScraper:
         res = methods.get(val, None)
         if res is not None:
             res = res[index] if index is not None else res
-            return "`{val} <{res}>`__".format(val=val, res=res)
+            return f"`{val} <{res}>`__"
         return "not supported"
 
     @staticmethod
@@ -52,7 +52,7 @@ class PGScraper:
         res = methods.get(val, None)
         if res is not None:
             res = res[index] if index is not None else res
-            return "{res}".format(res=res)
+            return f"{res}"
         return ""
 
     def get_pg_methods(self):
@@ -83,7 +83,7 @@ class PGScraper:
         for function in function_files:
             print(f'Found emulation {function}.')
             in_comment = False
-            with open(pg_function_filepath + function, 'r') as function_file:
+            with open(pg_function_filepath + function, 'r') as function_file:  # noqa pylint: disable=unspecified-encoding
                 comment = ''
                 for line in function_file.readlines():
                     if '/*' in line:
@@ -133,6 +133,7 @@ def main():
     in_order = sorted(snowflake_methods.items(), key=lambda x: x[0])
 
     for key, value in in_order:
+        # noqa pylint: disable=consider-using-f-string
         row = ('`{snowflake_function} <{snowflake_url}>`__,'
                '{postgres_val},'
                '{emulation_val},'
@@ -146,7 +147,7 @@ def main():
                                                                             key.upper(), 1))
         meshed.append(row)
 
-    with open('docs/source/user_documentation/snowflake_function_map.csv', 'w') as docs_file:
+    with open('docs/source/user_documentation/snowflake_function_map.csv', 'w') as docs_file:  # noqa pylint: disable=unspecified-encoding
         docs_file.write(
             '"Snowflake Function","Postgresql Function","Replica Emulation","Notes"\n')
         for row in meshed:

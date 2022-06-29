@@ -12,6 +12,7 @@ from snowshu.core.printable_result import (graph_to_result_list,
 from snowshu.logger import Logger, duration
 from snowshu.configs import DEFAULT_RETRY_COUNT
 from snowshu.core.models.relation import alter_relation_case
+from snowshu.exceptions import UnableToExecuteCopyReplicaCommand
 
 logger = Logger().logger
 
@@ -60,7 +61,8 @@ class ReplicaFactory:
                 thread_workers=self.config.threads,
                 flags=re.IGNORECASE)
 
-            apply_source_case = alter_relation_case(case_function=self.config.source_profile.adapter._correct_case) # noqa pylint: disable=protected-access
+            apply_source_case = alter_relation_case(
+                case_function=self.config.source_profile.adapter._correct_case)  # noqa pylint: disable=protected-access
             incremental_target_catalog_casted = set(map(apply_source_case, incremental_target_catalog))
 
             graph.graph = SnowShuGraph.catalog_difference(graph.graph,
@@ -69,7 +71,7 @@ class ReplicaFactory:
         graphs = graph.get_connected_subgraphs()
         if len(graphs) < 1:
             args = (' new ', ' incremental ', '; image up-to-date') if self.incremental else (' ', ' ', '')
-            message = "No{}relations found per provided{}replica configuration{}, exiting.".format(*args)
+            message = "No{}relations found per provided{}replica configuration{}, exiting.".format(*args)  # noqa pylint: consider-using-f-string
             return message
 
         if not self.config.target_profile.adapter.container:
@@ -100,6 +102,14 @@ class ReplicaFactory:
                 self.config.target_profile.adapter.create_function_if_available(
                     function, relations)
             logger.info('Emulation functions applied.')
+
+            logger.info('Copying replica data to shared location...')
+            status_message = self.config.target_profile.adapter.copy_replica_data()
+            if status_message[0] != 0:
+                message = (f'Failed to execute copy command: {status_message[1]}')
+                logger.error(message)
+                raise UnableToExecuteCopyReplicaCommand(message)
+
             self.config.target_profile.adapter.finalize_replica()
 
         return printable_result(

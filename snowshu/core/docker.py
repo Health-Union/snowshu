@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING, List, Optional, Type
 
 import docker
 
-from snowshu.configs import DOCKER_NETWORK, DOCKER_TARGET_CONTAINER
+from snowshu.configs import (DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER,
+                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME)
 from snowshu.logger import Logger
 
 if TYPE_CHECKING:
@@ -18,6 +19,14 @@ class SnowShuDocker:
 
     def __init__(self):
         self.client = docker.from_env()
+
+    def _create_snowshu_volume(self, volume_name: str) -> docker.models.volumes.Volume:
+        """ Creating a docker volume if not exists"""
+        try:
+            volume = self.client.volumes.get(volume_name)
+        except docker.errors.NotFound:
+            volume = self.client.volumes.create(name=volume_name, driver='local',)
+        return volume
 
     def convert_container_to_replica(
             self,
@@ -40,8 +49,9 @@ class SnowShuDocker:
         self.remove_container(container.name)
 
         return replica
+
     # TODO: this is all holdover from storages, and can be greatly simplified.
-    def get_stopped_container(      # noqa pylint: disable=too-many-arguments
+    def get_stopped_container(  # noqa pylint: disable=too-many-arguments
             self,
             image,
             start_command: str,
@@ -51,7 +61,7 @@ class SnowShuDocker:
             labels: dict = None,
             protocol: str = "tcp") -> docker.models.containers.Container:
         if not labels:
-            labels = dict()
+            labels = {}
         name = name if name else self.replica_image_name_to_common_name(image)
         logger.info(f'Finding base image {image}...')
         try:
@@ -70,6 +80,10 @@ class SnowShuDocker:
 
         self.remove_container(name)
         network = self._get_or_create_network(DOCKER_NETWORK)
+
+        logger.info('Creating an external volume...')
+        replica_volume = self._create_snowshu_volume(DOCKER_REPLICA_VOLUME)
+
         logger.info(f"Creating stopped container {name}...")
         container = self.client.containers.create(image,
                                                   start_command,
@@ -79,18 +93,24 @@ class SnowShuDocker:
                                                   ports=port_dict,
                                                   environment=envars,
                                                   labels=labels,
-                                                  detach=True)
+                                                  detach=True,
+                                                  volumes={replica_volume.name: {
+                                                      'bind': f'{DOCKER_REPLICA_MOUNT_FOLDER}',
+                                                      'mode': 'rw'
+                                                  }},
+                                                  working_dir=DOCKER_WORKING_DIR
+                                                  )
         logger.info(f"Created stopped container {container.name}.")
         return container
 
-    def startup(self,   # noqa pylint: disable=too-many-arguments
+    def startup(self,  # noqa pylint: disable=too-many-arguments
                 image: str,
                 start_command: str,
                 port: int,
                 target_adapter: Type['BaseTargetAdapter'],
                 source_adapter: str,
                 envars: list,
-                protocol: str = "tcp") -> docker.models.containers.Container:   # noqa pylint: disable=unused-argument
+                protocol: str = "tcp") -> docker.models.containers.Container:  # noqa pylint: disable=unused-argument
 
         container = self.get_stopped_container(
             image,
@@ -150,10 +170,10 @@ class SnowShuDocker:
     def get_adapter_name(self, name: str) -> str:
         try:
             return self.client.images.get(name).labels['target_adapter']
-        except KeyError:
+        except KeyError as exc:
             message = "Replica image {name} is corrupted; no label for `target_adapter`."
             logger.critical(message)
-            raise AttributeError(message)
+            raise AttributeError(message) from exc
 
     @staticmethod
     def sanitize_replica_name(name: str) -> str:
