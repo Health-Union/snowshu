@@ -1,4 +1,5 @@
 from typing import List, Optional, Tuple
+import logging
 
 import sqlalchemy
 from overrides import overrides
@@ -10,9 +11,8 @@ from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
 from snowshu.core.utils import correct_case
-from snowshu.logger import Logger
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 class PostgresAdapter(BaseTargetAdapter):

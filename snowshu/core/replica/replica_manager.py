@@ -1,13 +1,13 @@
 import os
 from datetime import datetime
+import logging
 
 from dateutil.parser import parse
 
 from snowshu.core.docker import SnowShuDocker
 from snowshu.core.printable_result import format_set_of_available_images
-from snowshu.logger import Logger
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 class ReplicaManager:

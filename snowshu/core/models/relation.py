@@ -1,18 +1,20 @@
 from typing import TYPE_CHECKING, List, Optional, Union
+import logging
 import json
 import re
 from sqlalchemy.types import JSON
 import pandas as pd
+
 from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.utils import correct_case
-from snowshu.logger import Logger
 
 if TYPE_CHECKING:
     from snowshu.core.configuration_parser import SpecifiedMatchPattern
     from snowshu.core.samplings.bases.base_sampling import BaseSampling
-logger = Logger().logger
+
+logger = logging.getLogger(__name__)
 
 
 class Relation:

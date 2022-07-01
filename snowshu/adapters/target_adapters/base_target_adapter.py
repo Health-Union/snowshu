@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from time import sleep
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
+import logging
 
 import pandas as pd
 
@@ -16,12 +17,11 @@ from snowshu.core.models import materializations as mz
 from snowshu.core.models.credentials import (DATABASE, HOST, PASSWORD, PORT,
                                              USER)
 from snowshu.core.utils import case_insensitive_dict_value
-from snowshu.logger import Logger
 
 if TYPE_CHECKING:
     from docker.models.containers import Container
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 class BaseTargetAdapter(BaseSQLAdapter):

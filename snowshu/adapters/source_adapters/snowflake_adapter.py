@@ -1,5 +1,6 @@
 import time
 from typing import TYPE_CHECKING, Any, List, Optional, Union
+import logging
 
 import pandas as pd
 import sqlalchemy
@@ -23,7 +24,7 @@ from snowshu.samplings.sample_methods import BernoulliSampleMethod
 if TYPE_CHECKING:
     from snowshu.core.samplings.bases.base_sample_method import BaseSampleMethod
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 class SnowflakeAdapter(BaseSourceAdapter):

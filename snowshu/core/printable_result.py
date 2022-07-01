@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing import Any, List, Union
+import logging
 
 import networkx as nx
 from tabulate import tabulate
 
-from snowshu.logger import Logger
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 @dataclass

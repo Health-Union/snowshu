@@ -2,6 +2,7 @@ import os.path
 from datetime import datetime
 from itertools import chain
 from typing import List, Set, Tuple, Optional, Union
+import logging
 
 import matplotlib.pyplot as plt
 import networkx
@@ -11,9 +12,8 @@ from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.models.relation import (Relation,
                                           single_full_pattern_match)
 from snowshu.exceptions import InvalidRelationshipException
-from snowshu.logger import Logger
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 class SnowShuGraph:

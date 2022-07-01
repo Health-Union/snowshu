@@ -1,13 +1,13 @@
 from typing import Any
+import logging
 
 import pandas as pd
 
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import MAX_ALLOWED_DATABASES, MAX_ALLOWED_ROWS
 from snowshu.core.models import DataType
-from snowshu.logger import Logger
 
-logger = Logger().logger
+logger = logging.getLogger(__name__)
 
 
 class BaseSourceAdapter(BaseSQLAdapter):

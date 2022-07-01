@@ -49,10 +49,19 @@ class Logger:
         self.logger.addHandler(self.file_handler)
 
     def set_log_level(self, level: str) -> None:
-        logging.getLogger().setLevel(level)
-        for handler in self.logger.handlers:
+        core_level = level
+        adapter_level = level
+
+        logging.getLogger('snowshu').setLevel(core_level)
+        logging.getLogger('snowshu.adapters').setLevel(adapter_level)
+
+        for handler in logging.getLogger('snowshu').handlers:
             if handler != self.file_handler:
-                handler.setLevel(level)
+                handler.setLevel(core_level)
+
+        for handler in logging.getLogger('snowshu.adapters').handlers:
+            if handler != self.file_handler:
+                handler.setLevel(adapter_level)
 
     @staticmethod
     def remove_all_handlers(logger: logging.Logger) -> None:
@@ -60,10 +69,10 @@ class Logger:
 
     def log_retries(self, retry_state):
         """ Function for passing to tenacity.retry decorator. """
-        self.logger.warning('Retrying %s: attempt %s ended with: %s',
-                            retry_state.fn.__qualname__,
-                            retry_state.attempt_number,
-                            retry_state.outcome.exception())
+        logging.getLogger('snowshu').warning('Retrying %s: attempt %s ended with: %s',
+                                             retry_state.fn.__qualname__,
+                                             retry_state.attempt_number,
+                                             retry_state.outcome.exception())
 
     @property
     def logger(self) -> logging.Logger:
