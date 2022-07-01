@@ -20,14 +20,21 @@ REPLICA_DEFAULT = os.path.join(os.getcwd(), 'replica.yml')
 
 
 @click.group()
-@click.option('--debug', '-d', is_flag=True, default=False,
-              help="run commands in debug mode")
-def cli(debug: bool):
+@click.option('--debug-core', '-v', is_flag=True, default=False, help='Set log level to debug only in core')
+@click.option('--debug-adapters', '-vv', is_flag=True, default=False, help='Set log level to debug everywhere')
+@click.option('--debug', '-d', is_flag=True, default=False, help='Set log level to debug everywhere')
+def cli(debug: bool, debug_core: bool, debug_adapters: bool):
     """SnowShu is a sampling engine designed to support testing in data development."""
-    log_level = logging.DEBUG if debug else logging.INFO
     log_engine = Logger()
     log_engine.initialize_logger()
-    log_engine.set_log_level(log_level)
+
+    if debug_core:
+        log_engine.set_log_level(core_level=logging.DEBUG, adapter_level=logging.INFO)
+    elif debug or debug_adapters:
+        log_engine.set_log_level(core_level=logging.DEBUG, adapter_level=logging.DEBUG)
+    else:
+        log_engine.set_log_level(core_level=logging.INFO, adapter_level=logging.INFO)
+
     logger = log_engine.logger
     if not which('docker') and not IS_IN_DOCKER:
         logger.warning(NO_DOCKER)

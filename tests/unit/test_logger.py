@@ -6,7 +6,7 @@ from testfixtures import LogCapture
 from snowshu.logger import Logger
 from tests.common import rand_string
 
-LOG_LEVELS = ('CRITICAL', 'ERROR', 'WARNING', 'DEBUG', 'INFO', 'NOTSET',)
+LOG_LEVELS = (logging.WARNING, logging.DEBUG, logging.INFO, logging.CRITICAL, logging.ERROR, logging.NOTSET)
 
 
 @pytest.fixture(autouse=True)
@@ -22,63 +22,57 @@ def test_logger_log_level(temp_log):
     # test for both combinations of info / debug for all combos of core and adapter loggers
     for core_log_level in [logging.INFO, logging.DEBUG]:
         for adapter_log_level in [logging.INFO, logging.DEBUG]:
-            core_logger = logging.getLogger('snowshu')
-            # this is temp until snowshu.logger can set both by itself
-            core_logger.setLevel(core_log_level)
+            log_engine.set_log_level(core_log_level, adapter_log_level)
+            loggers = [
+                {
+                    'logger': logging.getLogger('snowshu'),
+                    'name': 'snowshu',
+                    'expected_level': core_log_level
+                },
+                {
+                    'logger': logging.getLogger('snowshu.adapters'),
+                    'name': 'snowshu.adapters',
+                    'expected_level': adapter_log_level
+                },
+                {
+                    'logger': logging.getLogger('snowshu.non_existing_module'),
+                    'name': 'snowshu.non_existing_module',
+                    'expected_level': core_log_level
+                },
+            ]
 
-            adapter_logger = logging.getLogger('snowshu.adapters')
-            # this is temp until snowshu.logger can set both by itself
-            adapter_logger.setLevel(adapter_log_level)
+            for logger in loggers:
 
-            ERROR = rand_string(10)
-            INFO = rand_string(10)
-            DEBUG = rand_string(10)
-            WARNING = rand_string(10)
+                ERROR = rand_string(10)
+                INFO = rand_string(10)
+                DEBUG = rand_string(10)
+                WARNING = rand_string(10)
 
-            with LogCapture() as capture:
-                core_logger.warning(WARNING)
-                core_logger.error(ERROR)
-                core_logger.info(INFO)
-                core_logger.debug(DEBUG)
+                with LogCapture() as capture:
+                    logger['logger'].warning(WARNING)
+                    logger['logger'].error(ERROR)
+                    logger['logger'].info(INFO)
+                    logger['logger'].debug(DEBUG)
 
-                if core_log_level == logging.DEBUG:
-                    capture.check(
-                        ('snowshu', 'WARNING', WARNING),
-                        ('snowshu', 'ERROR', ERROR),
-                        ('snowshu', 'INFO', INFO),
-                        ('snowshu', 'DEBUG', DEBUG),
-                    )
-                else:
-                    capture.check(
-                        ('snowshu', 'WARNING', WARNING),
-                        ('snowshu', 'ERROR', ERROR),
-                        ('snowshu', 'INFO', INFO),
-                    )
-            
-            with LogCapture() as capture:
-                adapter_logger.warning(WARNING)
-                adapter_logger.error(ERROR)
-                adapter_logger.info(INFO)
-                adapter_logger.debug(DEBUG)
+                    if logger['expected_level'] == logging.DEBUG:
+                        capture.check(
+                            (logger['name'], 'WARNING', WARNING),
+                            (logger['name'], 'ERROR', ERROR),
+                            (logger['name'], 'INFO', INFO),
+                            (logger['name'], 'DEBUG', DEBUG),
+                        )
+                    else:
+                        capture.check(
+                            (logger['name'], 'WARNING', WARNING),
+                            (logger['name'], 'ERROR', ERROR),
+                            (logger['name'], 'INFO', INFO),
+                        )
 
-                if adapter_log_level == logging.DEBUG:
-                    capture.check(
-                        ('snowshu.adapters', 'WARNING', WARNING),
-                        ('snowshu.adapters', 'ERROR', ERROR),
-                        ('snowshu.adapters', 'INFO', INFO),
-                        ('snowshu.adapters', 'DEBUG', DEBUG),
-                    )
-                else:
-                    capture.check(
-                        ('snowshu.adapters', 'WARNING', WARNING),
-                        ('snowshu.adapters', 'ERROR', ERROR),
-                        ('snowshu.adapters', 'INFO', INFO),
-                    )
 
 def test_logger_debug_log_level(temp_log):
     log_engine = Logger()
     log_engine.initialize_logger(log_file_location=temp_log.strpath)
-    log_engine.set_log_level(logging.DEBUG)
+    log_engine.set_log_level(logging.DEBUG, logging.DEBUG)
     logger = log_engine.logger
     with LogCapture() as capture:
         ERROR = rand_string(10)
@@ -99,11 +93,11 @@ def test_logger_debug_log_level(temp_log):
 
 @pytest.mark.skip
 def test_logger_always_logs_debug_to_file(temp_log):
-    levels = ('WARNING', 'DEBUG', 'INFO', 'CRITICAL',)
+    levels = (logging.WARNING, logging.DEBUG, logging.INFO, logging.CRITICAL)
     log_engine = Logger()
     log_engine.initialize_logger(log_file_location=temp_log.strpath)
     for level in LOG_LEVELS:
-        log_engine.set_log_level(level)
+        log_engine.set_log_level(level, level)
         logger = log_engine.logger
         message = rand_string(10)
         logger.debug(message)

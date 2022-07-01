@@ -48,10 +48,7 @@ class Logger:
         self.logger.addHandler(warning_handler)
         self.logger.addHandler(self.file_handler)
 
-    def set_log_level(self, level: str) -> None:
-        core_level = level
-        adapter_level = level
-
+    def set_log_level(self, core_level: int, adapter_level: int) -> None:
         logging.getLogger('snowshu').setLevel(core_level)
         logging.getLogger('snowshu.adapters').setLevel(adapter_level)
 
