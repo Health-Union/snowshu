@@ -20,7 +20,8 @@ REPLICA_DEFAULT = os.path.join(os.getcwd(), 'replica.yml')
 
 
 @click.group()
-@click.option('-v', '--verbosity', count=True, help='Verbosity option: -v for debug in core , -vv for debug in core and adapters')
+@click.option('-v', '--verbosity', count=True, 
+              help='Verbosity option: -v for debug in core , -vv for debug in core and adapters')
 @click.option('--debug-core', is_flag=True, default=False, help='Set log level to debug only in core')
 @click.option('--debug-adapters', is_flag=True, default=False, help='Set log level to debug only in adapters')
 @click.option('--debug', '-d', is_flag=True, default=False, help='Set log level to debug everywhere')
