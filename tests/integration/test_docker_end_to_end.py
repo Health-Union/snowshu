@@ -10,7 +10,7 @@ from snowshu.logger import Logger
 from tests.common import rand_string
 from tests.integration.snowflake.test_end_to_end import DOCKER_SPIN_UP_TIMEOUT
 
-Logger().set_log_level(0)
+Logger().set_log_level(0, 0)
 
 TEST_NAME, TEST_TABLE = [rand_string(10) for _ in range(2)]
 
