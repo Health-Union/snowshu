@@ -158,3 +158,20 @@ def test_custom_retry_count_passed_correctly_through_execute(graph_to_result_lis
                                                       retry_count=5,
                                                       analyze=do_analyze,
                                                       barf=ANY)
+
+@patch('snowshu.core.main.ReplicaFactory')
+@patch('snowshu.core.main.Logger.set_log_level')
+def test_verbosity_cli_options(set_level, replica_factory): # noqa pylint: disable=unused-argument
+    runner = CliRunner()
+
+    runner.invoke(main.cli, ('create'))
+    set_level.assert_called_with(core_level=20, adapter_level=20)
+
+    runner.invoke(main.cli, ('-v create'))
+    set_level.assert_called_with(core_level=10, adapter_level=20)
+
+    runner.invoke(main.cli, ('-vv create'))
+    set_level.assert_called_with(core_level=10, adapter_level=10)
+
+    runner.invoke(main.cli, ('-d create'))
+    set_level.assert_called_with(core_level=10, adapter_level=10)

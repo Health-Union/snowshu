@@ -20,14 +20,36 @@ REPLICA_DEFAULT = os.path.join(os.getcwd(), 'replica.yml')
 
 
 @click.group()
-@click.option('--debug', '-d', is_flag=True, default=False,
-              help="run commands in debug mode")
-def cli(debug: bool):
+@click.option('-v', '--verbosity', count=True, 
+              help='Verbosity option: -v for debug in core , -vv for debug in core and adapters')
+@click.option('--debug-core', is_flag=True, default=False, help='Set log level to debug only in core')
+@click.option('--debug-adapters', is_flag=True, default=False, help='Set log level to debug only in adapters')
+@click.option('--debug', '-d', is_flag=True, default=False, help='Set log level to debug everywhere')
+def cli(debug: bool, debug_core: bool, debug_adapters: bool, verbosity: int):
     """SnowShu is a sampling engine designed to support testing in data development."""
-    log_level = logging.DEBUG if debug else logging.INFO
     log_engine = Logger()
     log_engine.initialize_logger()
-    log_engine.set_log_level(log_level)
+
+    core_log_level, adapter_log_level = logging.INFO, logging.INFO
+
+    if verbosity > 0:
+        if verbosity == 1:
+            core_log_level, adapter_log_level = logging.DEBUG, logging.INFO
+        elif verbosity >= 2:
+            core_log_level, adapter_log_level = logging.DEBUG, logging.DEBUG
+
+    if debug_core:
+        core_log_level = logging.DEBUG
+
+    if debug_adapters:
+        adapter_log_level = logging.DEBUG
+
+    if debug:
+        core_log_level, adapter_log_level = logging.DEBUG, logging.DEBUG
+
+    log_engine.set_log_level(core_level=core_log_level,
+                             adapter_level=adapter_log_level)
+
     logger = log_engine.logger
     if not which('docker') and not IS_IN_DOCKER:
         logger.warning(NO_DOCKER)
