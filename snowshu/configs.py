@@ -55,4 +55,4 @@ DOCKER_REPLICA_VOLUME = 'snowshu_container_share'
 
 # List of architectures to build. Could be a list of specific ones, like ['amd64', 'arm64'] or None.
 # First arch listed will be used to populate replica. If None, builds native only
-TARGET_ARCHITECTURE = None#['amd64', 'arm64']
+TARGET_ARCHITECTURE = None  # ['amd64', 'arm64']

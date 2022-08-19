@@ -83,6 +83,7 @@ class PostgresAdapter(BaseTargetAdapter):
                                      f'-U {self._credentials.user} '
                                      f'-d {self._credentials.database}')
         self.DOCKER_SHARE_REPLICA_DATA = f"cp -af $PGDATA/* {self.DOCKER_REPLICA_MOUNT_FOLDER}"  # noqa pylint: disable=invalid-name
+        self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE = f"cp -r -f {self.DOCKER_REPLICA_MOUNT_FOLDER}/* $PGDATA/"  # noqa pylint: disable=invalid-name
 
     @staticmethod
     def _create_snowshu_schema_statement() -> str:
@@ -313,6 +314,13 @@ class PostgresAdapter(BaseTargetAdapter):
 
     def copy_replica_data(self) -> Tuple[bool, str]:
         status = self.container.exec_run(f"/bin/bash -c '{self.DOCKER_SHARE_REPLICA_DATA}'", tty=True)
+        if self.passive_container:
+            self.container.stop()
+            self.passive_container.start()
+            logger.info('Copying replica data into passive container')
+            self.passive_container.exec_run(f"/bin/bash -c '{self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE}'", tty=True)
+            self.passive_container.stop()
+            self.container.start()
         return status
 
     @staticmethod

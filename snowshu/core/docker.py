@@ -31,24 +31,25 @@ class SnowShuDocker:
     def convert_container_to_replica(
             self,
             replica_name: str,
-            container: docker.models.containers.Container,
+            active_container: docker.models.containers.Container,
             passive_container: docker.models.containers.Container) -> None:
         """coerces a live container into a replica image and returns the image.
 
         replica_name: the name of the new replica
         """
         container_list = [
-            container, passive_container] if passive_container else [container]
+            active_container, passive_container] if passive_container else [active_container]
         for container in container_list:
             container.start()
-            new_replica_name = f"{self.sanitize_replica_name(replica_name)}_{container.name.replace('snowshu_target_', '')}"
+            new_replica_name = f"{self.sanitize_replica_name(replica_name)}_{container.name.replace('snowshu_target_', '')}"  # noqa pycodestyle: disable=line-too-long
             logger.info(
                 f'Creating new replica image with name {new_replica_name}...')
             try:
                 self.client.images.remove(new_replica_name, force=True)
             except docker.errors.ImageNotFound:
                 pass
-            replica = container.commit(repository=replica_name, tag=container.name.replace('snowshu_target_', ''))
+            replica = container.commit(
+                repository=replica_name, tag=container.name.replace('snowshu_target_', ''))
             logger.info(
                 f'Replica image {replica.tags[0]} created. Cleaning up...')
             self.remove_container(container.name)
@@ -74,7 +75,8 @@ class SnowShuDocker:
         logger.info('Creating an external volume...')
         replica_volume = self._create_snowshu_volume(DOCKER_REPLICA_VOLUME)
 
-        current_arch = 'amd64' if self.client.info()['Architecture'] == 'x86_64' else 'arm64'
+        current_arch = 'amd64' if self.client.info(
+        )['Architecture'] == 'x86_64' else 'arm64'
         if not TARGET_ARCHITECTURE:
             arch_list = [current_arch]
         else:
@@ -84,12 +86,14 @@ class SnowShuDocker:
         container_list = []
         for arch in arch_list:
             try:
-                new_image = self.client.images.pull(image, platform=f'linux/{arch}')
+                new_image = self.client.images.pull(
+                    image, platform=f'linux/{arch}')
                 new_image.tag(f'{image.split(":")[0]}:{arch}')
             except ConnectionError as error:
-                logger.error('Looks like docker is not started, please start docker daemon\nError: %s', error)
+                logger.error(
+                    'Looks like docker is not started, please start docker daemon\nError: %s', error)
                 raise
-            
+
             tagged_name = f'{name}_{arch}'
             logger.info(f"Creating stopped container {name}...")
             self.remove_container(tagged_name)
@@ -117,8 +121,6 @@ class SnowShuDocker:
             container_list.append(None)
 
         return container_list[0], container_list[1]
-        
-        
 
     def startup(self,  # noqa pylint: disable=too-many-arguments
                 image: str,
@@ -139,8 +141,9 @@ class SnowShuDocker:
                 snowshu_replica='true',
                 target_adapter=target_adapter.CLASSNAME,
                 source_adapter=source_adapter))
-        
-        container_list = [active_container, passive_container] if passive_container else [active_container]
+
+        container_list = [active_container, passive_container] if passive_container else [
+            active_container]
         # have to do the dance with start/stop due to both containers using same ports
         for container in container_list:
             logger.info(
@@ -156,7 +159,7 @@ class SnowShuDocker:
 
             if len(container_list) > 1:
                 container.stop()
-            
+
         if len(container_list) > 1:
             active_container.start()
         return active_container, passive_container

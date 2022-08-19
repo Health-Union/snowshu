@@ -185,7 +185,8 @@ AS
                 .get('Architecture', 'Unknown architecture')
 
             if image_architecture.lower() == LOCAL_ARCHITECTURE.lower():
-                logger.info(f'The architecture of the docker image[{self.DOCKER_IMAGE}] is {image_architecture.lower()}')
+                logger.info(
+                    f'The architecture of the docker image[{self.DOCKER_IMAGE}] is {image_architecture.lower()}')
             else:
                 logger.warning(f"""There is a mismatch between local and docker image architectures: '
                                     The local architecture is {LOCAL_ARCHITECTURE} 
