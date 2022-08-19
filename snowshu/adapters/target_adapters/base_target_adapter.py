@@ -3,6 +3,7 @@ from datetime import datetime
 from time import sleep
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 import logging
+import docker
 
 import pandas as pd
 
@@ -43,6 +44,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         self.target = DOCKER_TARGET_CONTAINER if IS_IN_DOCKER else 'localhost'
         self.credentials = self._generate_credentials(self.target)
         self.container: "Container" = None
+        self.passive_container: "Container" = None
         self.replica_meta = replica_metadata
 
     def enable_cross_database(self) -> None:
@@ -178,19 +180,21 @@ AS
     def _init_image(self,
                     source_adapter_name: str) -> None:
         shdocker = SnowShuDocker()
+        try:
+            image_architecture = shdocker.get_docker_image_attributes(self.DOCKER_IMAGE) \
+                .get('Architecture', 'Unknown architecture')
 
-        image_architecture = shdocker.get_docker_image_attributes(self.DOCKER_IMAGE) \
-            .get('Architecture', 'Unknown architecture')
-
-        if image_architecture.lower() == LOCAL_ARCHITECTURE.lower():
-            logger.info(f'The architecture of the docker image[{self.DOCKER_IMAGE}] is {image_architecture.lower()}')
-        else:
-            logger.warning(f"""There is a mismatch between local and docker image architectures: '
-                                   The local architecture is {LOCAL_ARCHITECTURE} 
-                                   The image architecture is [{self.DOCKER_IMAGE}]({image_architecture})""")
+            if image_architecture.lower() == LOCAL_ARCHITECTURE.lower():
+                logger.info(f'The architecture of the docker image[{self.DOCKER_IMAGE}] is {image_architecture.lower()}')
+            else:
+                logger.warning(f"""There is a mismatch between local and docker image architectures: '
+                                    The local architecture is {LOCAL_ARCHITECTURE} 
+                                    The image architecture is [{self.DOCKER_IMAGE}]({image_architecture})""")
+        except docker.errors.ImageNotFound:
+            logger.info('No existing target image found, creating')
 
         logger.info('Initializing target container...')
-        self.container = shdocker.startup(
+        self.container, self.passive_container = shdocker.startup(
             self.DOCKER_IMAGE,
             self.DOCKER_START_COMMAND,
             self.DOCKER_TARGET_PORT,
@@ -208,15 +212,15 @@ AS
         return self.container.exec_run(
             self.DOCKER_READY_COMMAND).exit_code == 0
 
-    def finalize_replica(self) -> str:
+    def finalize_replica(self) -> None:
         """returns the image name of the completed replica.
         """
         shdocker = SnowShuDocker()
         logger.info('Finalizing target container into replica...')
-        replica_image = shdocker.convert_container_to_replica(self.replica_meta['name'],
-                                                              self.container)
-        logger.info('Finalized replica image %s', self.replica_meta["name"])
-        return replica_image.tags[0]
+        shdocker.convert_container_to_replica(self.replica_meta['name'],
+                                              self.container,
+                                              self.passive_container)
+        logger.info(f'Finalized replica image {self.replica_meta["name"]}')
 
     def _generate_credentials(self, host) -> Credentials:
         return Credentials(host=host,

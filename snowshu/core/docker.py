@@ -7,7 +7,7 @@ import logging
 import docker
 
 from snowshu.configs import (DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER,
-                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME)
+                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, TARGET_ARCHITECTURE)
 
 if TYPE_CHECKING:
     from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
@@ -31,24 +31,27 @@ class SnowShuDocker:
     def convert_container_to_replica(
             self,
             replica_name: str,
-            container: docker.models.containers.Container) -> docker.models.images.Image:
+            container: docker.models.containers.Container,
+            passive_container: docker.models.containers.Container) -> None:
         """coerces a live container into a replica image and returns the image.
 
         replica_name: the name of the new replica
         """
-        replica_name = self.sanitize_replica_name(replica_name)
-        logger.info(f'Creating new replica image with name {replica_name}...')
-        try:
-            self.client.images.remove(replica_name, force=True)
-        except docker.errors.ImageNotFound:
-            pass
-        replica = container.commit(
-            repository=self.sanitize_replica_name(replica_name)
-        )
-        logger.info(f'Replica image {replica.tags[0]} created. Cleaning up...')
-        self.remove_container(container.name)
-
-        return replica
+        container_list = [
+            container, passive_container] if passive_container else [container]
+        for container in container_list:
+            container.start()
+            new_replica_name = f"{self.sanitize_replica_name(replica_name)}_{container.name.replace('snowshu_target_', '')}"
+            logger.info(
+                f'Creating new replica image with name {new_replica_name}...')
+            try:
+                self.client.images.remove(new_replica_name, force=True)
+            except docker.errors.ImageNotFound:
+                pass
+            replica = container.commit(repository=replica_name, tag=container.name.replace('snowshu_target_', ''))
+            logger.info(
+                f'Replica image {replica.tags[0]} created. Cleaning up...')
+            self.remove_container(container.name)
 
     # TODO: this is all holdover from storages, and can be greatly simplified.
     def get_stopped_container(  # noqa pylint: disable=too-many-arguments
@@ -59,23 +62,10 @@ class SnowShuDocker:
             port: int,
             name: Optional[str] = None,
             labels: dict = None,
-            protocol: str = "tcp") -> docker.models.containers.Container:
+            protocol: str = "tcp") -> tuple(docker.models.containers.Container):
         if not labels:
             labels = {}
         name = name if name else self.replica_image_name_to_common_name(image)
-        logger.info(f'Finding base image {image}...')
-        try:
-            self.client.images.get(image)
-        except docker.errors.ImageNotFound:
-            parsed_image = image.split(':')
-            if len(parsed_image) > 1:
-                self.client.images.pull(parsed_image[0], tag=parsed_image[1])
-            else:
-                self.client.images.pull(parsed_image[0])
-        except ConnectionError as error:
-            logger.error('Looks like docker is not started, please start docker daemon\nError: %s', error)
-            raise
-
         port_dict = {f"{str(port)}/{protocol}": port}
 
         self.remove_container(name)
@@ -84,24 +74,51 @@ class SnowShuDocker:
         logger.info('Creating an external volume...')
         replica_volume = self._create_snowshu_volume(DOCKER_REPLICA_VOLUME)
 
-        logger.info(f"Creating stopped container {name}...")
-        container = self.client.containers.create(image,
-                                                  start_command,
-                                                  network=network.name,
-                                                  name=name,
-                                                  hostname=name,
-                                                  ports=port_dict,
-                                                  environment=envars,
-                                                  labels=labels,
-                                                  detach=True,
-                                                  volumes={replica_volume.name: {
-                                                      'bind': f'{DOCKER_REPLICA_MOUNT_FOLDER}',
-                                                      'mode': 'rw'
-                                                  }},
-                                                  working_dir=DOCKER_WORKING_DIR
-                                                  )
-        logger.info(f"Created stopped container {container.name}.")
-        return container
+        current_arch = 'amd64' if self.client.info()['Architecture'] == 'x86_64' else 'arm64'
+        if not TARGET_ARCHITECTURE:
+            arch_list = [current_arch]
+        else:
+            arch_list = TARGET_ARCHITECTURE
+
+        logger.info(f'Finding base image {image}...')
+        container_list = []
+        for arch in arch_list:
+            try:
+                new_image = self.client.images.pull(image, platform=f'linux/{arch}')
+                new_image.tag(f'{image.split(":")[0]}:{arch}')
+            except ConnectionError as error:
+                logger.error('Looks like docker is not started, please start docker daemon\nError: %s', error)
+                raise
+            
+            tagged_name = f'{name}_{arch}'
+            logger.info(f"Creating stopped container {name}...")
+            self.remove_container(tagged_name)
+            container = self.client.containers.create(f'{image.split(":")[0]}:{arch}',
+                                                      start_command,
+                                                      network=network.name,
+                                                      name=tagged_name,
+                                                      hostname=name,
+                                                      ports=port_dict,
+                                                      environment=envars,
+                                                      labels=labels,
+                                                      detach=True,
+                                                      volumes={replica_volume.name: {
+                                                          'bind': f'{DOCKER_REPLICA_MOUNT_FOLDER}',
+                                                          # Make sure passive container does not mess up common volume
+                                                          'mode': 'rw' if arch == arch_list[0] else 'ro'
+                                                      }},
+                                                      working_dir=DOCKER_WORKING_DIR
+                                                      )
+            logger.info(f"Created stopped container {container.name}.")
+            container_list.append(container)
+
+        # downstream code expects 2 containers, active and passive / active and None (if running only one at a time)
+        if len(container_list) != 2:
+            container_list.append(None)
+
+        return container_list[0], container_list[1]
+        
+        
 
     def startup(self,  # noqa pylint: disable=too-many-arguments
                 image: str,
@@ -110,9 +127,9 @@ class SnowShuDocker:
                 target_adapter: Type['BaseTargetAdapter'],
                 source_adapter: str,
                 envars: list,
-                protocol: str = "tcp") -> docker.models.containers.Container:  # noqa pylint: disable=unused-argument
+                protocol: str = "tcp") -> tuple(docker.models.containers.Container):  # noqa pylint: disable=unused-argument
 
-        container = self.get_stopped_container(
+        active_container, passive_container = self.get_stopped_container(
             image,
             start_command,
             envars,
@@ -122,17 +139,27 @@ class SnowShuDocker:
                 snowshu_replica='true',
                 target_adapter=target_adapter.CLASSNAME,
                 source_adapter=source_adapter))
-        logger.info(
-            f'Connecting {DOCKER_TARGET_CONTAINER} to bridge network..')
-        self._connect_to_bridge_network(container)
-        logger.info(
-            f'Connected. Starting created container {DOCKER_TARGET_CONTAINER}...')
-        container.start()
-        logger.info(f'Container {DOCKER_TARGET_CONTAINER} started.')
-        logger.info(f'Running initial setup on {DOCKER_TARGET_CONTAINER}...')
-        self._run_container_setup(container, target_adapter)
-        logger.info(f'Container {DOCKER_TARGET_CONTAINER} fully initialized.')
-        return container
+        
+        container_list = [active_container, passive_container] if passive_container else [active_container]
+        # have to do the dance with start/stop due to both containers using same ports
+        for container in container_list:
+            logger.info(
+                f'Connecting {container.name} to bridge network..')
+            self._connect_to_bridge_network(container)
+            logger.info(
+                f'Connected. Starting created container {container.name}...')
+            container.start()
+            logger.info(f'Container {container.name} started.')
+            logger.info(f'Running initial setup on {container.name}...')
+            self._run_container_setup(container, target_adapter)
+            logger.info(f'Container {container.name} fully initialized.')
+
+            if len(container_list) > 1:
+                container.stop()
+            
+        if len(container_list) > 1:
+            active_container.start()
+        return active_container, passive_container
 
     def remove_container(self, container: str) -> None:
         logger.info(f'Removing existing target container {container}...')

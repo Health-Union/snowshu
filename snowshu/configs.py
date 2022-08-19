@@ -52,3 +52,7 @@ DOCKER_SHARED_FOLDER_NAME = 'snowshu_replica_data_shared'
 DOCKER_REPLICA_MOUNT_FOLDER = os.path.join(os.path.sep, DOCKER_WORKING_DIR, DOCKER_SHARED_FOLDER_NAME)
 
 DOCKER_REPLICA_VOLUME = 'snowshu_container_share'
+
+# List of architectures to build. Could be a list of specific ones, like ['amd64', 'arm64'] or None.
+# First arch listed will be used to populate replica. If None, builds native only
+TARGET_ARCHITECTURE = None#['amd64', 'arm64']
