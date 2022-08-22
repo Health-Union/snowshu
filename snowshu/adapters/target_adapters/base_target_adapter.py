@@ -180,20 +180,7 @@ AS
     def _init_image(self,
                     source_adapter_name: str) -> None:
         shdocker = SnowShuDocker()
-        try:
-            image_architecture = shdocker.get_docker_image_attributes(self.DOCKER_IMAGE) \
-                .get('Architecture', 'Unknown architecture')
-
-            if image_architecture.lower() == LOCAL_ARCHITECTURE.lower():
-                logger.info(
-                    f'The architecture of the docker image[{self.DOCKER_IMAGE}] is {image_architecture.lower()}')
-            else:
-                logger.warning(f"""There is a mismatch between local and docker image architectures: '
-                                    The local architecture is {LOCAL_ARCHITECTURE} 
-                                    The image architecture is [{self.DOCKER_IMAGE}]({image_architecture})""")
-        except docker.errors.ImageNotFound:
-            logger.info('No existing target image found, creating')
-
+        
         logger.info('Initializing target container...')
         self.container, self.passive_container = shdocker.startup(
             self.DOCKER_IMAGE,
