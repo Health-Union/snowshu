@@ -7,7 +7,7 @@ import logging
 import docker
 
 from snowshu.configs import (DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER,
-                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, TARGET_ARCHITECTURE)
+                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, LOCAL_ARCHITECTURE, TARGET_ARCHITECTURE)
 
 if TYPE_CHECKING:
     from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
@@ -75,10 +75,8 @@ class SnowShuDocker:
         logger.info('Creating an external volume...')
         replica_volume = self._create_snowshu_volume(DOCKER_REPLICA_VOLUME)
 
-        current_arch = 'amd64' if self.client.info(
-        )['Architecture'] == 'x86_64' else 'arm64'
         if not TARGET_ARCHITECTURE:
-            arch_list = [current_arch]
+            arch_list = [LOCAL_ARCHITECTURE]
         else:
             arch_list = TARGET_ARCHITECTURE
 

@@ -3,14 +3,13 @@ from datetime import datetime
 from time import sleep
 from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple
 import logging
-import docker
 
 import pandas as pd
 
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import (DEFAULT_INSERT_CHUNK_SIZE,
                              DOCKER_TARGET_CONTAINER, DOCKER_TARGET_PORT,
-                             IS_IN_DOCKER, LOCAL_ARCHITECTURE)
+                             IS_IN_DOCKER)
 from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models import Attribute, Credentials, Relation
 from snowshu.core.models import DataType, data_types as dt
@@ -180,7 +179,7 @@ AS
     def _init_image(self,
                     source_adapter_name: str) -> None:
         shdocker = SnowShuDocker()
-        
+
         logger.info('Initializing target container...')
         self.container, self.passive_container = shdocker.startup(
             self.DOCKER_IMAGE,

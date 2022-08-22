@@ -322,21 +322,21 @@ class PostgresAdapter(BaseTargetAdapter):
 
             # stop postgres
             logger.info('Stopping postgres')
-            self.passive_container.exec_run(f"/bin/bash -c 'systemctl stop postgresql'", tty=True) 
+            self.passive_container.exec_run("/bin/bash -c 'systemctl stop postgresql'", tty=True) 
             # wait till it is stopped
             logger.info('Waiting until it is stopped')
-            while 'Active: inactive (dead)' not in \
-                self.passive_container.exec_run(f"/bin/bash -c 'systemctl status postgresql'", tty=True).output.decode():
+            while 'Active: inactive (dead)' not in self.passive_container.exec_run(
+                  "/bin/bash -c 'systemctl status postgresql'", tty=True).output.decode():
                 time.sleep(0.5)
             # purge its dir
             logger.info("Purging passive container's pgdata dir")
-            self.passive_container.exec_run(f"/bin/bash -c 'rm -rf $PGDATA/*'", tty=True)
+            self.passive_container.exec_run("/bin/bash -c 'rm -rf $PGDATA/*'", tty=True)
             # copy over files from the shared volume
             logger.info('Copying over pgdata from shared volume')
             self.passive_container.exec_run(f"/bin/bash -c '{self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE}'", tty=True)
             # restart postgres
             logger.info('Restarting postgres')
-            self.passive_container.exec_run(f"/bin/bash -c 'systemctl start postgresql'", tty=True)
+            self.passive_container.exec_run("/bin/bash -c 'systemctl start postgresql'", tty=True)
 
             self.passive_container.stop()
             self.container.start()
