@@ -200,7 +200,7 @@ Relations in replica.yml
 ================================
 
 General Sampling Configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==============================
 
 With your overall source settings configured, you can set your *general* sampling configuration. The general sampling is the most broad (and least configurable) data sampling hierarchy. For example: 
 
@@ -231,7 +231,7 @@ in specific schemas, where the name does not end in "VIEW" (or "view", "vIew" et
 This nested pattern of relations follows all the specs outlined in the `Overall Source Settings`_.
 
 Specified Sampling Configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+================================
 
 The specified sampling configurations are the most... specific. If a relation appears in both the general
 sampling configuration and a specified sampling configuration, the specified sampling will win out.
@@ -333,7 +333,7 @@ They can then contain one or more of these options:
 The primary use of specified relations is to create relationships. This is accomplished through the ``relationships`` directive of a specified relation.
 
 A Relationships Primer
-""""""""""""""""""""""
+----------------------
 
 One of the more gnarly parts of generating sample data for testing is the issue of `referential integrity.
 <https://en.wikipedia.org/wiki/Referential_integrity>`__. Say you have a table,

@@ -89,5 +89,6 @@ Additional Resources
    user_documentation/user_documentation
    developer_documentation/developer_documentation
    code_documentation/code_documentation
+   about_snowshu/about_snowshu
 
 
