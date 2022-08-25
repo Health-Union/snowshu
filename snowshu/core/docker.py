@@ -40,7 +40,6 @@ class SnowShuDocker:
         container_list = [
             active_container, passive_container] if passive_container else [active_container]
         for container in container_list:
-            container.start()
             new_replica_name = f"{self.sanitize_replica_name(replica_name)}_{container.name.replace('snowshu_target_', '')}"  # noqa pycodestyle: disable=line-too-long
             logger.info(
                 f'Creating new replica image with name {new_replica_name}...')
@@ -48,6 +47,14 @@ class SnowShuDocker:
                 self.client.images.remove(new_replica_name, force=True)
             except docker.errors.ImageNotFound:
                 pass
+            # if arch matches local, commit as latest in addition
+            container_arch = container.attrs['Config']['Image'].split(':')[1]
+            if container_arch == LOCAL_ARCHITECTURE:
+                replica_local = container.commit(
+                    repository=replica_name, tag='latest')
+                logger.info(
+                    f'Replica image {replica_local.tags[0]} created. Cleaning up...')
+            # commit with arch tag
             replica = container.commit(
                 repository=replica_name, tag=container.name.replace('snowshu_target_', ''))
             logger.info(
@@ -57,7 +64,7 @@ class SnowShuDocker:
     # TODO: this is all holdover from storages, and can be greatly simplified.
     def get_stopped_container(  # noqa pylint: disable=too-many-arguments
             self,
-            image,
+            image_name,
             start_command: str,
             envars: list,
             port: int,
@@ -66,7 +73,7 @@ class SnowShuDocker:
             protocol: str = "tcp") -> tuple(docker.models.containers.Container):
         if not labels:
             labels = {}
-        name = name if name else self.replica_image_name_to_common_name(image)
+        name = name if name else self.replica_image_name_to_common_name(image_name)
         port_dict = {f"{str(port)}/{protocol}": port}
 
         self.remove_container(name)
@@ -80,25 +87,36 @@ class SnowShuDocker:
         else:
             arch_list = TARGET_ARCHITECTURE
 
-        logger.info(f'Finding base image {image}...')
+        logger.info(f'Finding base image {image_name}...')
         container_list = []
         for arch in arch_list:
             try:
-                new_image = self.client.images.pull(
-                    image, platform=f'linux/{arch}')
-                new_image.tag(f'{image.split(":")[0]}:{arch}')
+                try:
+                    image = self.client.images.get(f'{image_name.split(":")[0]}:{arch}')
+                except docker.errors.ImageNotFound:
+                    image = self.client.images.pull(
+                        image_name, platform=f'linux/{arch}')
+                    image.tag(f'{image_name.split(":")[0]}:{arch}')
+
+                # verify the image is tagged properly (image's arch matches its tag)
+                try:
+                    assert image.attrs['Architecture'] == arch
+                except AssertionError:
+                    logger.warning('Image tags do not match their actual architecture, '
+                                   'retag or delete postgres images manually to correct')
+
             except ConnectionError as error:
                 logger.error(
                     'Looks like docker is not started, please start docker daemon\nError: %s', error)
                 raise
 
-            tagged_name = f'{name}_{arch}'
-            logger.info(f"Creating stopped container {name}...")
-            self.remove_container(tagged_name)
-            container = self.client.containers.create(f'{image.split(":")[0]}:{arch}',
+            tagged_container_name = f'{name}_{arch}'
+            logger.info(f"Creating stopped container {tagged_container_name}...")
+            self.remove_container(tagged_container_name)
+            container = self.client.containers.create(f'{image_name.split(":")[0]}:{arch}',
                                                       start_command,
                                                       network=network.name,
-                                                      name=tagged_name,
+                                                      name=tagged_container_name,
                                                       hostname=name,
                                                       ports=port_dict,
                                                       environment=envars,
@@ -149,7 +167,15 @@ class SnowShuDocker:
             self._connect_to_bridge_network(container)
             logger.info(
                 f'Connected. Starting created container {container.name}...')
-            container.start()
+
+            try:
+                container.start()
+            except docker.errors.APIError as error:
+                if 'port is already allocated' in error.explanation:
+                    logger.exception('One of the ports used by snowshu_target is '
+                                     'already allocated, stop extra containers and rerun')
+                raise
+
             logger.info(f'Container {container.name} started.')
             logger.info(f'Running initial setup on {container.name}...')
             self._run_container_setup(container, target_adapter)
