@@ -1,4 +1,5 @@
 import time
+from unittest import mock
 
 import docker
 from sqlalchemy import create_engine
@@ -14,6 +15,7 @@ Logger().set_log_level(0, 0)
 
 TEST_NAME, TEST_TABLE = [rand_string(10) for _ in range(2)]
 
+@mock.patch('snowshu.core.docker.TARGET_ARCHITECTURE', None)
 def test_creates_replica(docker_flush):
     # build image
     # load it up with some data
@@ -24,7 +26,7 @@ def test_creates_replica(docker_flush):
 
     shdocker = SnowShuDocker()
     target_adapter = PostgresAdapter(replica_metadata={})
-    target_container = shdocker.startup(
+    target_container, passive_container = shdocker.startup(
         target_adapter.DOCKER_IMAGE,
         target_adapter.DOCKER_START_COMMAND,
         9999,
@@ -47,8 +49,10 @@ def test_creates_replica(docker_flush):
     checkpoint = engine.execute(f"SELECT * FROM {TEST_TABLE}").fetchall()
     assert ('a', 1) == checkpoint[0]
 
-    replica = shdocker.convert_container_to_replica(TEST_NAME,
-                                                    target_container)
+    replica_list = shdocker.convert_container_to_replica(TEST_NAME,
+                                                    target_container,
+                                                    None)
+    replica = replica_list[-1] # last one is native, tagged as 'latest'
     # get a new replica
     client = docker.from_env()
 

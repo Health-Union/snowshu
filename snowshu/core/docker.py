@@ -32,13 +32,18 @@ class SnowShuDocker:
             self,
             replica_name: str,
             active_container: docker.models.containers.Container,
-            passive_container: docker.models.containers.Container) -> None:
+            passive_container: docker.models.containers.Container) -> list[docker.models.images.Image]:
         """coerces a live container into a replica image and returns the image.
 
         replica_name: the name of the new replica
+
+        return: [replica_image_from_active, replica_image_from_passive(skipped if no passive), replica_image_from_local_arch]
         """
+        replica_list = []
+
         container_list = [
             active_container, passive_container] if passive_container else [active_container]
+
         for container in container_list:
             new_replica_name = f"{self.sanitize_replica_name(replica_name)}_{container.name.replace('snowshu_target_', '')}"  # noqa pycodestyle: disable=line-too-long
             logger.info(
@@ -57,9 +62,15 @@ class SnowShuDocker:
             # commit with arch tag
             replica = container.commit(
                 repository=replica_name, tag=container.name.replace('snowshu_target_', ''))
+
+            replica_list.append(replica)
+
             logger.info(
                 f'Replica image {replica.tags[0]} created. Cleaning up...')
             self.remove_container(container.name)
+        replica_list.append(replica_local)
+
+        return replica_list
 
     # TODO: this is all holdover from storages, and can be greatly simplified.
     def get_stopped_container(  # noqa pylint: disable=too-many-arguments
