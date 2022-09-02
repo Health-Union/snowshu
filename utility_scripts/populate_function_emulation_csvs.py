@@ -104,7 +104,7 @@ class PGScraper:
 
     @staticmethod
     def scrape(url):
-        return BeautifulSoup(requests.get(url).text)
+        return BeautifulSoup(requests.get(url).text)  # noqa: pylint: disable=missing-timeout
 
     @staticmethod
     def uppers(iterable):

@@ -37,7 +37,9 @@ class SnowShuDocker:
 
         replica_name: the name of the new replica
 
-        return: [replica_image_from_active, replica_image_from_passive(skipped if no passive), replica_image_from_local_arch]
+        return: [replica_image_from_active,
+                 replica_image_from_passive(skipped if no passive),
+                 replica_image_from_local_arch]
         """
         replica_list = []
 
