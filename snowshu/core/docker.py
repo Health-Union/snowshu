@@ -45,7 +45,7 @@ class SnowShuDocker:
             active_container, passive_container] if passive_container else [active_container]
 
         for container in container_list:
-            new_replica_name = f"{self.sanitize_replica_name(replica_name)}_{container.name.replace('snowshu_target_', '')}"  # noqa pycodestyle: disable=line-too-long
+            new_replica_name = self.sanitize_replica_name(replica_name)
             logger.info(
                 f'Creating new replica image with name {new_replica_name}...')
             try:
@@ -54,14 +54,16 @@ class SnowShuDocker:
                 pass
             # if arch matches local, commit as latest in addition
             container_arch = container.attrs['Config']['Image'].split(':')[1]
+
             if container_arch == LOCAL_ARCHITECTURE:
                 replica_local = container.commit(
-                    repository=replica_name, tag='latest')
+                    repository=new_replica_name, tag='latest')
                 logger.info(
                     f'Replica image {replica_local.tags[0]} created. Cleaning up...')
+
             # commit with arch tag
             replica = container.commit(
-                repository=replica_name, tag=container.name.replace('snowshu_target_', ''))
+                repository=new_replica_name, tag=container_arch)
 
             replica_list.append(replica)
 
