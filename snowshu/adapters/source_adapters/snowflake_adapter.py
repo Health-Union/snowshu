@@ -1,6 +1,7 @@
+import logging
 import time
 from typing import TYPE_CHECKING, Any, List, Optional, Union
-import logging
+from urllib.parse import quote
 
 import pandas as pd
 import sqlalchemy
@@ -295,11 +296,10 @@ LIMIT {max_number_of_outliers})
     @overrides
     def _build_conn_string(self, overrides: Optional[dict] = None) -> str:  # noqa pylint: disable=redefined-outer-name
         """overrides the base conn string."""
-        conn_parts = [f"snowflake://{self.credentials.user}:{self.credentials.password}"
-                      f"@{self.credentials.account}/{self.credentials.database}/"]
-        conn_parts.append(
-            self.credentials.schema if self.credentials.schema is not None else '')
-        get_args = list()
+        conn_parts = [f"snowflake://{self.credentials.user}:{quote(self.credentials.password)}"
+                      f"@{self.credentials.account}/{self.credentials.database}/",
+                      self.credentials.schema if self.credentials.schema is not None else '']
+        get_args = []
         for arg in ('warehouse', 'role',):
             if self.credentials.__dict__[arg] is not None:
                 get_args.append(f"{arg}={self.credentials.__dict__[arg]}")
@@ -415,14 +415,14 @@ LIMIT {max_number_of_outliers})
             schema_override: Optional[str] = None) -> sqlalchemy.engine.base.Engine:
         """Creates a connection engine without transactions.
 
-        By default uses the instance credentials unless database or
+        By default, uses the instance credentials unless database or
         schema override are provided.
         """
         if not self._credentials:
             raise KeyError(
                 'Adapter.get_connection called before setting Adapter.credentials')
 
-        logger.debug(f'Aquiring {self.CLASSNAME} connection...')
+        logger.debug(f'Acquiring {self.CLASSNAME} connection...')
         overrides = dict(       # noqa pylint: disable=redefined-outer-name 
             (k,
              v) for (
@@ -433,5 +433,5 @@ LIMIT {max_number_of_outliers})
 
         engine = sqlalchemy.create_engine(
             self._build_conn_string(overrides), poolclass=NullPool)
-        logger.debug(f'engine aquired. Conn string: {repr(engine.url)}')
+        logger.debug(f'Engine acquired. Conn string: {repr(engine.url)}')
         return engine
