@@ -41,40 +41,41 @@ class SnowShuDocker:
                  replica_image_from_passive(skipped if no passive),
                  replica_image_from_local_arch]
         """
+        new_replica_name = self.sanitize_replica_name(replica_name)
         replica_list = []
-
         container_list = [
             active_container, passive_container] if passive_container else [active_container]
 
+        logger.info(
+            f'Creating new replica image with name {new_replica_name}...')
+
         for container in container_list:
-            new_replica_name = self.sanitize_replica_name(replica_name)
-            logger.info(
-                f'Creating new replica image with name {new_replica_name}...')
             try:
                 self.client.images.remove(new_replica_name, force=True)
             except docker.errors.ImageNotFound:
                 pass
-            # if arch matches local, commit as latest in addition
-            container_arch = container.attrs['Config']['Image'].split(':')[1]
 
-            if container_arch == LOCAL_ARCHITECTURE:
-                replica_local = container.commit(
-                    repository=new_replica_name, tag='latest')
-                logger.info(
-                    f'Replica image {replica_local.tags[0]} created. Cleaning up...')
+            container_arch = container.attrs['Config']['Image'].split(':')[1]
 
             # commit with arch tag
             replica = container.commit(
                 repository=new_replica_name, tag=container_arch)
-
             replica_list.append(replica)
 
             logger.info(
                 f'Replica image {replica.tags[0]} created. Cleaning up...')
             self.remove_container(container.name)
-        replica_list.append(replica_local)
 
-        return replica_list
+        for replica in replica_list:
+            if replica.attrs.get('Architecture') == LOCAL_ARCHITECTURE:
+                local_arch_replica = replica
+                local_arch_replica.tag(
+                    repository=new_replica_name, tag='latest')
+
+        # this is done due to how recomitting existing image is not reflected in 'replica_list' var
+        actual_replica_list = self.client.images.list(new_replica_name)
+
+        return actual_replica_list
 
     # TODO: this is all holdover from storages, and can be greatly simplified.
     def get_stopped_container(  # noqa pylint: disable=too-many-arguments
@@ -201,6 +202,7 @@ class SnowShuDocker:
 
         if len(container_list) > 1:
             active_container.start()
+
         return active_container, passive_container
 
     def remove_container(self, container: str) -> None:
