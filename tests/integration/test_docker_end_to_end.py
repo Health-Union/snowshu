@@ -26,24 +26,24 @@ def test_creates_replica(docker_flush):
     client = docker.from_env()
 
     arch_input_options = {
-        #'default': {
-        #    'input_arch_list': None,
-        #    'result_images': ['latest', LOCAL_ARCHITECTURE],
-        #    'active_container_arch': LOCAL_ARCHITECTURE,
-        #    'passive_container_arch': None
-        #},
-        #'amd64': {
-        #    'input_arch_list': ['amd64'],
-        #    'result_images': ['latest', 'amd64'] if LOCAL_ARCHITECTURE == 'amd64' else ['amd64'],
-        #    'active_container_arch': 'amd64',
-        #    'passive_container_arch': None
-        #},
-        #'arm64': {
-        #    'input_arch_list': ['arm64'],
-        #    'result_images': ['latest', 'arm64'] if LOCAL_ARCHITECTURE == 'arm64' else ['arm64'],
-        #    'active_container_arch': 'arm64',
-        #    'passive_container_arch': None
-        #},
+        'default': {
+            'input_arch_list': None,
+            'result_images': ['latest', LOCAL_ARCHITECTURE],
+            'active_container_arch': LOCAL_ARCHITECTURE,
+            'passive_container_arch': None
+        },
+        'amd64': {
+            'input_arch_list': ['amd64'],
+            'result_images': ['latest', 'amd64'] if LOCAL_ARCHITECTURE == 'amd64' else ['amd64'],
+            'active_container_arch': 'amd64',
+            'passive_container_arch': None
+        },
+        'arm64': {
+            'input_arch_list': ['arm64'],
+            'result_images': ['latest', 'arm64'] if LOCAL_ARCHITECTURE == 'arm64' else ['arm64'],
+            'active_container_arch': 'arm64',
+            'passive_container_arch': None
+        },
         'all': {
             # this case is different per machine type it runs in to save time
             'input_arch_list': ['arm64', 'amd64'] if LOCAL_ARCHITECTURE == 'arm64' else ['amd64', 'arm64'],
@@ -52,10 +52,13 @@ def test_creates_replica(docker_flush):
             'passive_container_arch': 'amd64' if LOCAL_ARCHITECTURE == 'arm64' else 'arm64'
         }
     }
-    
+
     for case_name, case_vars in arch_input_options.items():
+        # docker_flush does not happen in between these loop cycles,
+        # so containers of the same name get mixed up
+        test_name_local = f'{TEST_NAME}-{case_name}'
         with mock.patch('snowshu.core.docker.TARGET_ARCHITECTURE', case_vars['input_arch_list']) as mock_target_arch:
-            
+
             shdocker = SnowShuDocker()
             target_adapter = PostgresAdapter(replica_metadata={})
             target_container, passive_container = shdocker.startup(
@@ -93,7 +96,7 @@ def test_creates_replica(docker_flush):
             # copy data to passive container if exists
             target_adapter.copy_replica_data()
 
-            replica_list = shdocker.convert_container_to_replica(TEST_NAME,
+            replica_list = shdocker.convert_container_to_replica(test_name_local,
                                                                  target_container,
                                                                  passive_container)
 
@@ -109,16 +112,16 @@ def test_creates_replica(docker_flush):
 
                 client.containers.run(replica.id,
                                     ports={'9999/tcp': 9999},
-                                    name=TEST_NAME,
+                                    name=test_name_local,
                                     network='snowshu',
                                     detach=True)
                 time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # give pg a moment to spin up all the way
                 engine = create_engine(
-                    f'postgresql://snowshu:snowshu@{TEST_NAME}:9999/snowshu')
+                    f'postgresql://snowshu:snowshu@{test_name_local}:9999/snowshu')
                 res = engine.execute(f'SELECT * FROM {TEST_TABLE}').fetchall()
                 assert ('a', 1,) in res
                 assert ('b', 2,) in res
                 assert ('c', 3,) in res
                 # verify that the extra OS packages are installed
                 res = engine.execute("create extension plpython3u;")
-                shdocker.remove_container(TEST_NAME)
+                shdocker.remove_container(test_name_local)
