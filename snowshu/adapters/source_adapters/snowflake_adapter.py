@@ -296,13 +296,13 @@ LIMIT {max_number_of_outliers})
     @overrides
     def _build_conn_string(self, overrides: Optional[dict] = None) -> str:  # noqa pylint: disable=redefined-outer-name
         """overrides the base conn string."""
-        conn_parts = [f"snowflake://{self.credentials.user}:{quote(self.credentials.password)}"
-                      f"@{self.credentials.account}/{self.credentials.database}/",
-                      self.credentials.schema if self.credentials.schema is not None else '']
+        conn_parts = [f"snowflake://{quote(self.credentials.user)}:{quote(self.credentials.password)}"
+                      f"@{quote(self.credentials.account)}/{quote(self.credentials.database)}/",
+                      quote(self.credentials.schema) if self.credentials.schema is not None else '']
         get_args = []
         for arg in ('warehouse', 'role',):
             if self.credentials.__dict__[arg] is not None:
-                get_args.append(f"{arg}={self.credentials.__dict__[arg]}")
+                get_args.append(f"{arg}={quote(self.credentials.__dict__[arg])}")
 
         get_string = "?" + "&".join(get_args)
         return (''.join(conn_parts)) + get_string

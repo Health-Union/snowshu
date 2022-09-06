@@ -1,3 +1,5 @@
+import random
+from urllib.parse import quote
 from unittest import mock
 import pytest
 from psycopg2 import OperationalError
@@ -44,6 +46,22 @@ def test_build_conn_string():
     conn_string = sf._build_conn_string()
 
     assert str(conn_string) == f'snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
+
+
+def test_build_conn_string_spacial_symbols():
+    special = random.choice(['@', ':', ';', '/', '\\', '?', '&'])
+    sf = SnowflakeAdapter()
+    USER, PASSWORD, ACCOUNT, DATABASE, ROLE = [rand_string(5) + special + rand_string(5) for _ in range(5)]
+
+    creds = Credentials(user=USER,
+                        password=PASSWORD,
+                        account=ACCOUNT,
+                        database=DATABASE,
+                        role=ROLE)
+    sf.credentials = creds
+    conn_string = sf._build_conn_string()
+    user, password, account, database, role = [quote(obj) for obj in (USER, PASSWORD, ACCOUNT, DATABASE, ROLE)]
+    assert str(conn_string) == f'snowflake://{user}:{password}@{account}/{database}/?role={role}'
 
 
 def test_sample_statement():
