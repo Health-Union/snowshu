@@ -1,8 +1,8 @@
 .. _replica.yml:
 
-========================
+====================
 The replica.yml File
-========================
+====================
 
 Building a SnowShu replica is essentially configured in a single file. 
 
@@ -12,7 +12,7 @@ Building a SnowShu replica is essentially configured in a single file.
  
 
 Sample replica.yml File
-=====================================
+=======================
 
 Your initial replica file will look something like `this
 <https://github.com/Health-Union/snowshu/blob/master/snowshu/templates/replica.yml>`_
@@ -90,8 +90,7 @@ Your initial replica file will look something like `this
          default:
            margin_of_error: 0.05
            confidence: 0.95
-           min_sample_size: 300
-           max_allowed_rows: 1500000
+          min_sample_size: 300
      - database: SNOWSHU_DEVELOPMENT
        schema: POLYMORPHIC_DATA
        relation: PARENT_TABLE
@@ -156,6 +155,10 @@ Let's disect each of the components:
 - **version** (*Required*) is the replica file version, and tells SnowShu how to consume this file. Currently it should always be set to ``1``.
 - **credpath** (*Required*) is the path to a valid ``credentials.yml`` file (where the source database secrets are kept). Can be relative or absolute.
 - **name** (*Required*) will translate to the final name of the replica to be generated. The name should be short and distinctive. 
+
+.. note::
+  The replica name defined in a ``replica.yml`` file can be overridden using the ``--name`` flag.
+ 
 - **short_description** (*Optional*) tells users a little bit about the replica you are creating.
 - **long_description** (*Optional*) provides users with a detailed explanation of the replica you are creating.
 - **threads** (*Optional*) tells SnowShu the max number of threads that can be used when multiprocessing. When not set SnowShu may run much slower :(. 
@@ -195,9 +198,9 @@ The components of the overall source settings, dissected:
 
 .. relations in _replica.yml:
 
-================================
+========================
 Relations in replica.yml
-================================
+========================
 
 General Sampling Configuration
 ==============================

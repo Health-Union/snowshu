@@ -6,10 +6,10 @@ Snowshu can be installed via pip
 
 >>> pip3 install snowshu
 
-or built `from source <'https://bitbucket.org/healthunion/snowshu/src/master/'>`__ via setup install. 
+or built `from source <https://bitbucket.org/healthunion/snowshu/src/master/>`__ via setup install. 
 
 Note that SnowShu uses Docker build replicas, so **if you don't already have Docker installed you will need to do that first**.
-You can download and install the latest version of Docker Desktop `here <'https://docs.docker.com/install/'>`__.
+You can download and install the latest version of Docker Desktop `here <https://docs.docker.com/install/>`__.
 
 Using SnowShu in Docker
 -----------------------
@@ -30,7 +30,7 @@ replica.yml
 credentials.yml
 ... # other files already in the folder
 
-Configure your `replica.yml <replica_dot_yaml_file.html>`__ and ``credentials.yml`` files. 
+Configure your `replica.yml <replica_dot_yaml_file.html>`__ and `credentials.yml <credentials_dot_yaml_file.html>`__ files. 
 
 .. warning:: If you are keeing the ``credentials.yml`` file in your project repository, don't forget to add it to your ``.gitignore`` file before you commit. Otherwise you could share passwords with the world by accident, which would be bad. 
 
@@ -107,6 +107,12 @@ SnowShu will report details of the created replica once completed.
 
 .. image:: /../assets/completed_replica.png 
 
+.. note::
+  Using the ``--retry-count`` or ``-r`` flag the value of DEFAULT_RETRY_COUNT parameter can be set during the build process. By default the number of times to retry failed query is set to ``1``.
+  For example:
+  
+  >>> snowshu create -r 3
+
 Creating An Incremental Replica
 -------------------------------
 
@@ -130,6 +136,25 @@ The ``latest`` tag is applied by default to reference an image, if no version is
 For example, in order to use ``1.0.0`` version of the image:
 
 >>> snowshu create -i snowshu_replica_hamburger-sandwich:1.0.0
+
+Using Special Flags For Verbosity Debug
+---------------------------------------
+
+There are special verbosity flags that can be used to determine a verbosity level of debugging.
+
+- ``-v`` or ``--verbosity`` flag set a debug level in core and info level in adapters
+- ``-vv`` flag set a debug level in core and adapters
+- ``--debug-core`` flag set log level to debug only in core
+- ``--debug-adapters`` flag set log level to debug only in adapters
+- ``-d`` or ``--debug`` flag set log level to debug everywhere
+
+For example:
+
+>>> snowshu -v create
+
+or:
+
+>>> snowshu -vv create
 
 Using Your Replica
 ------------------
