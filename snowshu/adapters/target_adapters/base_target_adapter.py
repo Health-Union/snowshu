@@ -200,7 +200,8 @@ AS
             self.DOCKER_READY_COMMAND).exit_code == 0
 
     def finalize_replica(self) -> None:
-        """returns the image name of the completed replica.
+        """ Converts all containers to respective replicas, 
+            creates 'latest' if any on the running containers are of local arch
         """
         shdocker = SnowShuDocker()
         logger.info('Finalizing target container into replica...')
