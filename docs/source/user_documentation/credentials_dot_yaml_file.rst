@@ -38,7 +38,7 @@ Let's disect each of the components:
 The components of the overall sources settings, dissected:
 
 - **name** (*Required*). It can be set to ``default``. 
-- **adapter** (*Required*) Currently it should always be set to ``snowflake``.
+- **adapter** (*Required*). It should always be set to ``snowflake``.
 - **account** (*Required*). It's an account identifier that uniquely identifies a Snowflake account within your organization. For example, the URL for an account uses the following format: ``<account_identifier>.snowflakecomputing.com``
 - **user** (*Required*) is a user login name used to connect or log into the Snowflake web interface. 
 - **password** (*Required*) is a user password used to connect or log into the Snowflake web interface.

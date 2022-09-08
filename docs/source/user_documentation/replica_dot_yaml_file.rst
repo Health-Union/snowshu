@@ -330,8 +330,11 @@ Each specified relation must have the following:
 .. note:: specified relations can represent one or many many relations, based on the pattern provided. 
 
 They can then contain one or more of these options:
+
 - **unsampled** (*Optional*) tells SnowShu to pull the entire relation. Good for tiny reference tables, very bad for big stores of data.
 - **sampling** (*Optional*) allows you to override the higher-level configuration and set specifics for that sampling.
+
+.. note:: Using unsampled huge stores of data for creating a replica will definitely cause memory usage skyrocketing. In case the set limit of memory resource in Docker is not enough for creating a replica, the process will be killed. You should change Docker Desktop settings and increase memory to solve the issue.
 
 The primary use of specified relations is to create relationships. This is accomplished through the ``relationships`` directive of a specified relation.
 
