@@ -9,7 +9,7 @@ import pandas as pd
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import (DEFAULT_INSERT_CHUNK_SIZE,
                              DOCKER_TARGET_CONTAINER, DOCKER_TARGET_PORT,
-                             IS_IN_DOCKER, LOCAL_ARCHITECTURE)
+                             IS_IN_DOCKER)
 from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models import Attribute, Credentials, Relation
 from snowshu.core.models import DataType, data_types as dt
@@ -43,6 +43,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         self.target = DOCKER_TARGET_CONTAINER if IS_IN_DOCKER else 'localhost'
         self.credentials = self._generate_credentials(self.target)
         self.container: "Container" = None
+        self.passive_container: "Container" = None
         self.replica_meta = replica_metadata
 
     def enable_cross_database(self) -> None:
@@ -179,18 +180,8 @@ AS
                     source_adapter_name: str) -> None:
         shdocker = SnowShuDocker()
 
-        image_architecture = shdocker.get_docker_image_attributes(self.DOCKER_IMAGE) \
-            .get('Architecture', 'Unknown architecture')
-
-        if image_architecture.lower() == LOCAL_ARCHITECTURE.lower():
-            logger.info(f'The architecture of the docker image[{self.DOCKER_IMAGE}] is {image_architecture.lower()}')
-        else:
-            logger.warning(f"""There is a mismatch between local and docker image architectures: '
-                                   The local architecture is {LOCAL_ARCHITECTURE} 
-                                   The image architecture is [{self.DOCKER_IMAGE}]({image_architecture})""")
-
         logger.info('Initializing target container...')
-        self.container = shdocker.startup(
+        self.container, self.passive_container = shdocker.startup(
             self.DOCKER_IMAGE,
             self.DOCKER_START_COMMAND,
             self.DOCKER_TARGET_PORT,
@@ -208,15 +199,16 @@ AS
         return self.container.exec_run(
             self.DOCKER_READY_COMMAND).exit_code == 0
 
-    def finalize_replica(self) -> str:
-        """returns the image name of the completed replica.
+    def finalize_replica(self) -> None:
+        """ Converts all containers to respective replicas, 
+            creates 'latest' if any on the running containers are of local arch
         """
         shdocker = SnowShuDocker()
         logger.info('Finalizing target container into replica...')
-        replica_image = shdocker.convert_container_to_replica(self.replica_meta['name'],
-                                                              self.container)
-        logger.info('Finalized replica image %s', self.replica_meta["name"])
-        return replica_image.tags[0]
+        shdocker.convert_container_to_replica(self.replica_meta['name'],
+                                              self.container,
+                                              self.passive_container)
+        logger.info(f'Finalized replica image {self.replica_meta["name"]}')
 
     def _generate_credentials(self, host) -> Credentials:
         return Credentials(host=host,

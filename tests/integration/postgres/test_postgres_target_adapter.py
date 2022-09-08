@@ -117,7 +117,7 @@ def test_load_data_into_relation(end_to_end):
 def test_restore_data_from_shared_replica(docker_flush):
     shdocker = SnowShuDocker()
     target_adapter = PostgresAdapter(replica_metadata={})
-    target_container = shdocker.startup(
+    target_container, _ = shdocker.startup(
         target_adapter.DOCKER_IMAGE,
         target_adapter.DOCKER_START_COMMAND,
         9999,
@@ -149,7 +149,7 @@ def test_restore_data_from_shared_replica(docker_flush):
     # check whether we can spin up a new replica from the shared volume
     # also, check where test data is available in the target db
     # repointing Postgres db to replica,  PGDATA
-    target_container = shdocker.startup(
+    target_container, _ = shdocker.startup(
         target_adapter.DOCKER_IMAGE,
         target_adapter.DOCKER_START_COMMAND,
         9999,
