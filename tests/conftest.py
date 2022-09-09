@@ -208,7 +208,8 @@ def sanitize_docker_environment():
         try_or_pass(container.remove,dict(force=True))
     
     for image in filter(is_snowshu_related_image,client.images.list()):
-        try_or_pass(client.images.remove, dict(image=image.tags[0],force=True))
+        for tag in image.tags:
+            try_or_pass(client.images.remove, dict(image=tag, force=True))
 
     for volume in filter(is_snowshu_related_replica_volume, client.volumes.list()):
         try_or_pass(volume.remove, dict(force=True))

@@ -17,6 +17,7 @@ from snowshu.configs import (DEFAULT_PRESERVE_CASE,
                              DOCKER_TARGET_CONTAINER,
                              PACKAGE_ROOT,
                              DOCKER_REPLICA_MOUNT_FOLDER,
+                             LOCAL_ARCHITECTURE
                              )
 from snowshu.core.main import cli
 from snowshu.core.models import Relation, Attribute, data_types
@@ -369,7 +370,7 @@ def test_using_different_image(end_to_end):
               'POSTGRES_PASSWORD=snowshu',
               'POSTGRES_DB=snowshu',
               f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
-    target_container = shdocker.get_stopped_container(
+    target_container, _ = shdocker.get_stopped_container(
         'snowshu_replica_integration-test',
         target_adapter.DOCKER_START_COMMAND,
         envars,
@@ -380,7 +381,8 @@ def test_using_different_image(end_to_end):
             target_adapter=target_adapter.CLASSNAME,
             source_adapter='SnowflakeAdapter'))
     assert target_container.status == 'created'
-    assert target_container.image.tags[0] == 'snowshu_replica_integration-test:latest'
+    assert target_container.image.tags[0] in [f'snowshu_replica_integration-test:{LOCAL_ARCHITECTURE}',
+                                               'snowshu_replica_integration-test:latest']
     target_container.start()
     target_container.reload()
     assert target_container.status == 'running'
