@@ -5,7 +5,7 @@ The credentials.yml File
 
 The ``credentials.yml`` file should be configured and moved to a safe place (like a `~/.snowshu` directory).
 
-With your ``credentials.yml`` file relocated you can `configure your replica <replica_dot_yaml_file.html#configure-your-replica>`__.
+The ``credentials.yml`` file location should be set in the ``replica.yml`` file in the ``credpath`` key. You can `configure your replica <replica_dot_yaml_file.html#configure-your-replica>`__.
 
 Sample credentials.yml File
 ---------------------------

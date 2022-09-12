@@ -17,8 +17,7 @@ a second one on 9998, and a third on 9997, all logging in with ``snowshu`` as th
 
 My Tests Pass In SnowShu But Fail In CI, Does SnowShu Not Work? 
 ===============================================================
-This is covered in `it_only_takes_one <it_only_takes_one.html>`__, but TLDR; SnowShu is not intended to be the end-all testing for your data development. 
-Check out our suggested_data_workflows_ for direction on how you can make the most of SnowShu in your data devops.  
+This is covered in `it_only_takes_one <it_only_takes_one.html>`__, but TLDR; SnowShu is not intended to be the end-all testing for your data development.
 
 Why Did You Name It SnowShu?
 ============================

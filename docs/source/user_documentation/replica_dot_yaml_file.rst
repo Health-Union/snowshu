@@ -91,6 +91,7 @@ Your initial replica file will look something like `this
            margin_of_error: 0.05
            confidence: 0.95
           min_sample_size: 300
+          max_allowed_rows: 1500000
      - database: SNOWSHU_DEVELOPMENT
        schema: POLYMORPHIC_DATA
        relation: PARENT_TABLE
@@ -118,7 +119,8 @@ Your initial replica file will look something like `this
              relation: '(?i)^CHILD_TYPE_[0-9]_ITEMS$'
              remote_attribute: PARENT_2_ID
 
-This file tells SnowShu all kinds of things, including: 
+This file tells SnowShu all kinds of things, including:
+
 - which relations (tables, views etc) to sample
 - where relationships exist between relations
 - what type of target replica to use
@@ -171,6 +173,7 @@ Source
 ------
 
 The source section of the ``replica.yml`` file is "where the magic happens". This section is comprised of 3 parts:
+
 - the overall source settings
 - the general sampling configuration
 - the specified sampling configurations
