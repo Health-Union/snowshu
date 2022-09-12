@@ -115,17 +115,31 @@ def init(path: click.Path) -> None:
     help="Overrides default retry count (default is 1)",
     default=DEFAULT_RETRY_COUNT
 )
-def create(replica_file: click.Path,
+@click.option(
+    '--architecture', '-arch',
+    help="",
+    default=None,
+    multiple=True
+)
+def create(replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
            name: str,
            barf: bool,
            incremental: str,
-           retry_count: int):
+           retry_count: int,
+           architecture):
     """Generate a new replica from a replica.yml file.
     """
     replica = ReplicaFactory()
     replica.load_config(replica_file)
     replica.incremental = incremental
-    click.echo(replica.create(name=name, barf=barf, retry_count=retry_count))
+
+    if architecture:
+        # actually neccessary, list() does not work properly
+        target_arch = [x for x in architecture] # noqa pylint: unnecessary-comprehension
+    else:
+        target_arch = None
+
+    click.echo(replica.create(name=name, barf=barf, retry_count=retry_count, target_arch=target_arch))
 
 
 @cli.command()

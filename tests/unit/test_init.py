@@ -99,13 +99,13 @@ def test_custom_retry_count_cli_input(analyze, create, load, temporary_replica):
     # test if CLI input is passed to replica.create
     runner = CliRunner()
     runner.invoke(main.cli, ('create'))
-    create.assert_called_with(name=ANY, barf=ANY, retry_count=1)
+    create.assert_called_with(name=ANY, barf=ANY, retry_count=1, target_arch=ANY)
 
     runner.invoke(main.cli, ('create --retry-count 5'))
-    create.assert_called_with(name=ANY, barf=ANY, retry_count=5)
+    create.assert_called_with(name=ANY, barf=ANY, retry_count=5, target_arch=ANY)
 
     runner.invoke(main.cli, ('create -r 50'))
-    create.assert_called_with(name=ANY, barf=ANY, retry_count=50)
+    create.assert_called_with(name=ANY, barf=ANY, retry_count=50, target_arch=ANY)
 
     runner.invoke(main.cli, ('analyze'))
     analyze.assert_called_with(barf=ANY, retry_count=1)
