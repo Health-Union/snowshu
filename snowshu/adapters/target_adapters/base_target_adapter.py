@@ -10,7 +10,6 @@ from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import (DEFAULT_INSERT_CHUNK_SIZE,
                              DOCKER_TARGET_CONTAINER, DOCKER_TARGET_PORT,
                              IS_IN_DOCKER)
-from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models import Attribute, Credentials, Relation
 from snowshu.core.models import DataType, data_types as dt
 from snowshu.core.models import materializations as mz
@@ -44,6 +43,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         self.credentials = self._generate_credentials(self.target)
         self.container: "Container" = None
         self.passive_container: "Container" = None
+        self.shdocker = None
         self.replica_meta = replica_metadata
 
     def enable_cross_database(self) -> None:
@@ -148,7 +148,6 @@ AS
 
     def initialize_replica(self,
                            source_adapter_name: str,
-                           target_arch: list,
                            override_image: str = None) -> None:  # noqa pylint:disable=too-many-branches
         """shimming but will want to move _init_image public with this
         interface.
@@ -160,8 +159,7 @@ AS
         """
         if override_image:
             try:
-                shdocker = SnowShuDocker(target_arch)
-                images = shdocker.client.images.list(name=override_image)
+                images = self.shdocker.client.images.list(name=override_image)
                 logger.debug(f"List of images found with name {override_image}: {images}")
                 image_commands = []
                 for item in images[0].history():
@@ -175,15 +173,13 @@ AS
             except Exception as error:
                 logger.error("Looks like provided DOCKER_IMAGE does not exists, error:\n%s", error)
                 raise error
-        self._init_image(source_adapter_name, target_arch)
+        self._init_image(source_adapter_name)
 
     def _init_image(self,
-                    source_adapter_name: str,
-                    target_arch: list) -> None:
-        shdocker = SnowShuDocker(target_arch)
+                    source_adapter_name: str) -> None:
 
         logger.info('Initializing target container...')
-        self.container, self.passive_container = shdocker.startup(
+        self.container, self.passive_container = self.shdocker.startup(
             self.DOCKER_IMAGE,
             self.DOCKER_START_COMMAND,
             self.DOCKER_TARGET_PORT,
@@ -201,15 +197,14 @@ AS
         return self.container.exec_run(
             self.DOCKER_READY_COMMAND).exit_code == 0
 
-    def finalize_replica(self, target_arch: list) -> None:
+    def finalize_replica(self) -> None:
         """ Converts all containers to respective replicas, 
             creates 'latest' if any on the running containers are of local arch
         """
-        shdocker = SnowShuDocker(target_arch)
         logger.info('Finalizing target container into replica...')
-        shdocker.convert_container_to_replica(self.replica_meta['name'],
-                                              self.container,
-                                              self.passive_container)
+        self.shdocker.convert_container_to_replica(self.replica_meta['name'],
+                                                   self.container,
+                                                   self.passive_container)
         logger.info(f'Finalized replica image {self.replica_meta["name"]}')
 
     def _generate_credentials(self, host) -> Credentials:

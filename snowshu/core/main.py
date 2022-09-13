@@ -129,9 +129,6 @@ def create(replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
            architecture):
     """Generate a new replica from a replica.yml file.
     """
-    replica = ReplicaFactory()
-    replica.load_config(replica_file)
-    replica.incremental = incremental
 
     if architecture:
         # actually neccessary, list() does not work properly
@@ -139,7 +136,11 @@ def create(replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
     else:
         target_arch = None
 
-    click.echo(replica.create(name=name, barf=barf, retry_count=retry_count, target_arch=target_arch))
+    replica = ReplicaFactory()
+    replica.load_config(replica_file, target_arch=target_arch)
+    replica.incremental = incremental
+
+    click.echo(replica.create(name=name, barf=barf, retry_count=retry_count))
 
 
 @cli.command()

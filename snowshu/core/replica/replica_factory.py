@@ -8,6 +8,7 @@ import logging
 from snowshu.core.configuration_parser import (Configuration,
                                                ConfigurationParser)
 from snowshu.core.graph import SnowShuGraph
+from snowshu.core.docker import SnowShuDocker
 from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.printable_result import (graph_to_result_list,
                                            printable_result)
@@ -27,15 +28,12 @@ class ReplicaFactory:
         self.run_analyze: Optional[bool] = None
         self.incremental: Optional[str] = None
         self.retry_count: Optional[int] = DEFAULT_RETRY_COUNT
-        self.target_arch: Optional[list] = None
 
     def create(self,
                name: Optional[str],
                barf: bool,
-               retry_count: Optional[int] = DEFAULT_RETRY_COUNT,
-               target_arch: Optional[list] = None) -> Optional[str]:
+               retry_count: Optional[int] = DEFAULT_RETRY_COUNT) -> Optional[str]:
         self.run_analyze = False
-        self.target_arch = target_arch
         if retry_count:
             self.retry_count = retry_count
         return self._execute(name=name, barf=barf)
@@ -82,8 +80,7 @@ class ReplicaFactory:
         if not self.config.target_profile.adapter.container:
             # TODO replica container should not be started for analyze commands
             self.config.target_profile.adapter.initialize_replica(
-                self.config.source_profile.name,
-                self.target_arch)
+                self.config.source_profile.name)
 
         runner = GraphSetRunner()
         runner.execute_graph_set(graphs,
@@ -116,16 +113,19 @@ class ReplicaFactory:
                 logger.error(message)
                 raise UnableToExecuteCopyReplicaCommand(message)
 
-            self.config.target_profile.adapter.finalize_replica(self.target_arch)
+            self.config.target_profile.adapter.finalize_replica()
 
         return printable_result(
             graph_to_result_list(graphs),
             self.run_analyze)
 
-    def load_config(self, config: Union[Path, str, TextIO]):
+    def load_config(self,
+                    config: Union[Path, str, TextIO],
+                    target_arch=None):
         """does all the initial work to make the resulting ReplicaFactory
         object usable."""
         logger.info('Loading configuration...')
         start_timer = time.time()
         self.config = ConfigurationParser().from_file_or_path(config)
+        self.config.target_profile.adapter.shdocker = SnowShuDocker(target_arch)
         logger.info('Configuration loaded in %s.', duration(start_timer))
