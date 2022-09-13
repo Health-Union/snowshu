@@ -133,6 +133,9 @@ def create(replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
     if architecture:
         # actually neccessary, list() does not work properly
         target_arch = [x for x in architecture] # noqa pylint: unnecessary-comprehension
+        for arch in target_arch:
+            if arch not in ['amd64', 'arm64']:
+                raise ValueError(f'Incorrect arch requested, use "arm64" or "amd64" only, you used "{arch}"')
     else:
         target_arch = None
 

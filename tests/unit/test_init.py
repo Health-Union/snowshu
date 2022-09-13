@@ -94,10 +94,10 @@ def test_analyze_does_all_but_run(replica, create_relation):
 
 @patch('snowshu.core.main.ReplicaFactory.load_config')
 @patch('snowshu.core.main.ReplicaFactory.create')
-@patch('snowshu.core.main.ReplicaFactory.analyze')
-def test_custom_retry_count_cli_input(analyze, create, load, temporary_replica):  # noqa pylint: disable=unused-argument
-    # test if CLI input is passed to replica.create
+def test_custom_cli_input_create(create, load, temporary_replica):  # noqa pylint: disable=unused-argument
+    # test if CLI input is passed to correct calls
     runner = CliRunner()
+    # test create
     runner.invoke(main.cli, ('create'))
     create.assert_called_with(name=ANY, barf=ANY, retry_count=1)
 
@@ -107,6 +107,14 @@ def test_custom_retry_count_cli_input(analyze, create, load, temporary_replica):
     runner.invoke(main.cli, ('create -r 50'))
     create.assert_called_with(name=ANY, barf=ANY, retry_count=50)
 
+
+@patch('snowshu.core.main.ReplicaFactory.load_config')
+@patch('snowshu.core.main.ReplicaFactory.analyze')
+def test_custom_cli_input_analyze(analyze, load, temporary_replica):  # noqa pylint: disable=unused-argument
+    # test if CLI input is passed to correct calls
+    runner = CliRunner()
+
+    # test analyze
     runner.invoke(main.cli, ('analyze'))
     analyze.assert_called_with(barf=ANY, retry_count=1)
 
@@ -115,6 +123,29 @@ def test_custom_retry_count_cli_input(analyze, create, load, temporary_replica):
 
     runner.invoke(main.cli, ('analyze -r 50'))
     analyze.assert_called_with(barf=ANY, retry_count=50)
+
+
+
+@patch('snowshu.core.main.ReplicaFactory.load_config')
+def test_custom_cli_input_load(load, temporary_replica):  # noqa pylint: disable=unused-argument
+    # test if CLI input is passed to correct calls
+    runner = CliRunner()
+    
+    # test load_config
+    runner.invoke(main.cli, ('create'))
+    load.assert_called_with(ANY, target_arch=None)
+
+    runner.invoke(main.cli, ('create -arch amd64'))
+    load.assert_called_with(ANY, target_arch=['amd64'])
+
+    runner.invoke(main.cli, ('create -arch arm64'))
+    load.assert_called_with(ANY, target_arch=['arm64'])
+
+    runner.invoke(main.cli, ('create -arch amd64 -arch arm64'))
+    load.assert_called_with(ANY, target_arch=['amd64', 'arm64'])
+
+    with pytest.raises(ValueError):
+        runner.invoke(main.cli, ('create -arch incorrect-arch'), catch_exceptions=False)
 
 
 def test_custom_retry_count_passed_correctly_through_create():
