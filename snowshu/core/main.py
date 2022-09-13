@@ -117,7 +117,7 @@ def init(path: click.Path) -> None:
 )
 @click.option(
     '--architecture', '-arch',
-    help="",
+    help="Select arch for replicas, use as 'snowshu create -arch arm64 -arch amd64'",
     default=None,
     multiple=True
 )
