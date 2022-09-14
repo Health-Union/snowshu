@@ -7,7 +7,7 @@ import logging
 import docker
 
 from snowshu.configs import (DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER,
-                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, LOCAL_ARCHITECTURE, TARGET_ARCHITECTURE)
+                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, LOCAL_ARCHITECTURE)
 
 if TYPE_CHECKING:
     from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
@@ -17,8 +17,9 @@ logger = logging.getLogger(__name__)
 
 class SnowShuDocker:
 
-    def __init__(self):
+    def __init__(self, target_arch: list = None):
         self.client = docker.from_env()
+        self.target_arch = target_arch
 
     def _create_snowshu_volume(self, volume_name: str) -> docker.models.volumes.Volume:
         """ Creating a docker volume if not exists"""
@@ -98,10 +99,10 @@ class SnowShuDocker:
         logger.info('Creating an external volume...')
         replica_volume = self._create_snowshu_volume(DOCKER_REPLICA_VOLUME)
 
-        if not TARGET_ARCHITECTURE:
+        if not self.target_arch:
             arch_list = [LOCAL_ARCHITECTURE]
         else:
-            arch_list = TARGET_ARCHITECTURE
+            arch_list = self.target_arch
 
         logger.info(f'Finding base image {image_name}...')
         container_list = []
