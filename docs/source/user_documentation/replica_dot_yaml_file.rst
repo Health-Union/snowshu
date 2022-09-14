@@ -1,8 +1,8 @@
 .. _replica.yml:
 
-========================
+====================
 The replica.yml File
-========================
+====================
 
 Building a SnowShu replica is essentially configured in a single file. 
 
@@ -12,7 +12,7 @@ Building a SnowShu replica is essentially configured in a single file.
  
 
 Sample replica.yml File
-=====================================
+=======================
 
 Your initial replica file will look something like `this
 <https://github.com/Health-Union/snowshu/blob/master/snowshu/templates/replica.yml>`_
@@ -90,8 +90,8 @@ Your initial replica file will look something like `this
          default:
            margin_of_error: 0.05
            confidence: 0.95
-           min_sample_size: 300
-           max_allowed_rows: 1500000
+          min_sample_size: 300
+          max_allowed_rows: 1500000
      - database: SNOWSHU_DEVELOPMENT
        schema: POLYMORPHIC_DATA
        relation: PARENT_TABLE
@@ -119,7 +119,8 @@ Your initial replica file will look something like `this
              relation: '(?i)^CHILD_TYPE_[0-9]_ITEMS$'
              remote_attribute: PARENT_2_ID
 
-This file tells SnowShu all kinds of things, including: 
+This file tells SnowShu all kinds of things, including:
+
 - which relations (tables, views etc) to sample
 - where relationships exist between relations
 - what type of target replica to use
@@ -156,6 +157,10 @@ Let's disect each of the components:
 - **version** (*Required*) is the replica file version, and tells SnowShu how to consume this file. Currently it should always be set to ``1``.
 - **credpath** (*Required*) is the path to a valid ``credentials.yml`` file (where the source database secrets are kept). Can be relative or absolute.
 - **name** (*Required*) will translate to the final name of the replica to be generated. The name should be short and distinctive. 
+
+.. note::
+  The replica name defined in a ``replica.yml`` file can be overridden using the ``--name`` flag.
+ 
 - **short_description** (*Optional*) tells users a little bit about the replica you are creating.
 - **long_description** (*Optional*) provides users with a detailed explanation of the replica you are creating.
 - **threads** (*Optional*) tells SnowShu the max number of threads that can be used when multiprocessing. When not set SnowShu may run much slower :(. 
@@ -168,6 +173,7 @@ Source
 ------
 
 The source section of the ``replica.yml`` file is "where the magic happens". This section is comprised of 3 parts:
+
 - the overall source settings
 - the general sampling configuration
 - the specified sampling configurations
@@ -195,12 +201,12 @@ The components of the overall source settings, dissected:
 
 .. relations in _replica.yml:
 
-================================
+========================
 Relations in replica.yml
-================================
+========================
 
 General Sampling Configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+==============================
 
 With your overall source settings configured, you can set your *general* sampling configuration. The general sampling is the most broad (and least configurable) data sampling hierarchy. For example: 
 
@@ -231,7 +237,7 @@ in specific schemas, where the name does not end in "VIEW" (or "view", "vIew" et
 This nested pattern of relations follows all the specs outlined in the `Overall Source Settings`_.
 
 Specified Sampling Configuration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+================================
 
 The specified sampling configurations are the most... specific. If a relation appears in both the general
 sampling configuration and a specified sampling configuration, the specified sampling will win out.
@@ -327,13 +333,16 @@ Each specified relation must have the following:
 .. note:: specified relations can represent one or many many relations, based on the pattern provided. 
 
 They can then contain one or more of these options:
+
 - **unsampled** (*Optional*) tells SnowShu to pull the entire relation. Good for tiny reference tables, very bad for big stores of data.
 - **sampling** (*Optional*) allows you to override the higher-level configuration and set specifics for that sampling.
+
+.. note:: Using unsampled huge stores of data for creating a replica will definitely cause memory usage skyrocketing. In case the set limit of memory resource in Docker is not enough for creating a replica, the process will be killed. You should change Docker Desktop settings and increase memory to solve the issue.
 
 The primary use of specified relations is to create relationships. This is accomplished through the ``relationships`` directive of a specified relation.
 
 A Relationships Primer
-""""""""""""""""""""""
+----------------------
 
 One of the more gnarly parts of generating sample data for testing is the issue of `referential integrity.
 <https://en.wikipedia.org/wiki/Referential_integrity>`__. Say you have a table,

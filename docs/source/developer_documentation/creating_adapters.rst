@@ -8,7 +8,7 @@ SnowShu is designed to be easy to extend via creation of new adapters. Adapter m
 *A note on naming*: your adapter name will be the snake-case representation of the model and class you create. for example: 
 
   Class ``SnowflakeAdapter`` will have an adapter name in ``replica.yml`` of ``snowflake``.
-  Class ``SqlServerAdapter`` will have an adapter name in ``replica.yml of`` ``sql_server``.
+  Class ``SqlServerAdapter`` will have an adapter name in ``replica.yml`` of ``sql_server``.
 
 
 
