@@ -84,6 +84,10 @@ class Relation:
 
         self._data = val
 
+    @data.deleter
+    def data(self) -> None:
+        del self._data
+
     @property
     def dot_notation(self) -> str:
         return f"{self.database}.{self.schema}.{self.name}"
