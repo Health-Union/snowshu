@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 from shutil import which
 import platform
+from typing import List
 
 PACKAGE_ROOT = Path().parent.absolute()
 MAX_ALLOWED_DATABASES = 2000
@@ -46,7 +47,14 @@ def _get_architecture() -> str:
     return arch
 
 
+def _multiarch_list(local_arch) -> List[str]:
+    if local_arch == 'amd64':
+        return ['amd64', 'arm64']
+    else:
+        return ['arm64', 'amd64']
+
 LOCAL_ARCHITECTURE = _get_architecture()
+MULTIARCH_LIST = _multiarch_list(LOCAL_ARCHITECTURE)
 IS_IN_DOCKER = _is_in_docker()
 DOCKER_SHARED_FOLDER_NAME = 'snowshu_replica_data_shared'
 DOCKER_REPLICA_MOUNT_FOLDER = os.path.join(os.path.sep, DOCKER_WORKING_DIR, DOCKER_SHARED_FOLDER_NAME)
