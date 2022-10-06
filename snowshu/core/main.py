@@ -5,10 +5,8 @@ from shutil import copyfile, which
 
 import click
 
-from snowshu.configs import IS_IN_DOCKER, \
-                            DEFAULT_RETRY_COUNT,\
-                            LOCAL_ARCHITECTURE,\
-                            MULTIARCH_LIST
+from snowshu.configs import IS_IN_DOCKER, DEFAULT_RETRY_COUNT, LOCAL_ARCHITECTURE
+from snowshu.core.utils import get_multiarch_list
 from snowshu.core.replica.replica_factory import ReplicaFactory
 from snowshu.core.replica.replica_manager import ReplicaManager
 from snowshu.logger import Logger
@@ -132,7 +130,7 @@ def create(replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
     """Generate a new replica from a replica.yml file.
     """
     if multiarch:
-        target_arch = MULTIARCH_LIST
+        target_arch = get_multiarch_list(LOCAL_ARCHITECTURE)
     else:
         target_arch = [LOCAL_ARCHITECTURE]
 

@@ -131,21 +131,15 @@ def test_custom_cli_input_load(load, temporary_replica):  # noqa pylint: disable
     # test if CLI input is passed to correct calls
     runner = CliRunner()
     
-    # test load_config
-    runner.invoke(main.cli, ('create'))
-    load.assert_called_with(ANY, target_arch=None)
+    for local_arch in ['arm64', 'amd64']:
+        with patch('snowshu.core.main.LOCAL_ARCHITECTURE', new=local_arch) as _:
+            # test load_config
+            runner.invoke(main.cli, ('create'))
+            load.assert_called_with(ANY, target_arch=[local_arch])
 
-    runner.invoke(main.cli, ('create -arch amd64'))
-    load.assert_called_with(ANY, target_arch=['amd64'])
-
-    runner.invoke(main.cli, ('create -arch arm64'))
-    load.assert_called_with(ANY, target_arch=['arm64'])
-
-    runner.invoke(main.cli, ('create -arch amd64 -arch arm64'))
-    load.assert_called_with(ANY, target_arch=['amd64', 'arm64'])
-
-    with pytest.raises(ValueError):
-        runner.invoke(main.cli, ('create -arch incorrect-arch'), catch_exceptions=False)
+            runner.invoke(main.cli, ('create -m'))
+            multiarch_list = ['arm64', 'amd64'] if local_arch == 'arm64' else ['amd64', 'arm64']
+            load.assert_called_with(ANY, target_arch=multiarch_list)
 
 
 def test_custom_retry_count_passed_correctly_through_create():
