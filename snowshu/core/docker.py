@@ -107,7 +107,6 @@ class SnowShuDocker:
         else:
             arch_list = self.target_arch
 
-
         for arch in arch_list:
             try:
                 try:
