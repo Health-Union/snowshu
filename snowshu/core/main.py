@@ -118,7 +118,7 @@ def init(path: click.Path) -> None:
 )
 @click.option(
     '--multiarch', '-m',
-    help="Tells SnowShu to build replicas of all architectures",
+    help="Tells SnowShu to build replicas of both arm and amd architectures",
     is_flag=True
 )
 def create(replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
