@@ -101,7 +101,14 @@ class SnowShuDocker:
 
         logger.info(f'Finding base image {image_name}...')
         container_list = []
-        for arch in self.target_arch:
+
+        if not self.target_arch:
+            arch_list = [LOCAL_ARCHITECTURE]
+        else:
+            arch_list = self.target_arch
+
+
+        for arch in arch_list:
             try:
                 try:
                     image = self.client.images.get(f'{image_name.split(":")[0]}:{arch}')
@@ -137,7 +144,7 @@ class SnowShuDocker:
                                                       volumes={replica_volume.name: {
                                                           'bind': f'{DOCKER_REPLICA_MOUNT_FOLDER}',
                                                           # Make sure passive container does not mess up common volume
-                                                          'mode': 'rw' if arch == self.target_arch[0] else 'ro'
+                                                          'mode': 'rw' if arch == arch_list[0] else 'ro'
                                                       }},
                                                       working_dir=DOCKER_WORKING_DIR
                                                       )
