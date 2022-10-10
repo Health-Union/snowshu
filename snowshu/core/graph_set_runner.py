@@ -207,11 +207,13 @@ class GraphSetRunner:
                 if self.barf:
                     with open(os.path.join(self.barf_output, f'{relation.dot_notation}.sql'), 'w') as barf_file:  # noqa pylint: disable=unspecified-encoding
                         barf_file.write(relation.compiled_query)
-            try:
-                for relation in executable.graph.nodes:
+
+            for relation in executable.graph.nodes:
+                try:
                     del relation.data
-            except AttributeError:
-                pass
+                except AttributeError:
+                    logger.warning("Failed to purge data of the %s relation", relation)
+
             gc.collect()
         except Exception as exc:
             logger.error(f'failed with error of type {type(exc)}: {str(exc)}')
