@@ -5,7 +5,8 @@ from shutil import copyfile, which
 
 import click
 
-from snowshu.configs import IS_IN_DOCKER, DEFAULT_RETRY_COUNT
+from snowshu.configs import IS_IN_DOCKER, DEFAULT_RETRY_COUNT, LOCAL_ARCHITECTURE
+from snowshu.core.utils import get_multiarch_list
 from snowshu.core.replica.replica_factory import ReplicaFactory
 from snowshu.core.replica.replica_manager import ReplicaManager
 from snowshu.logger import Logger
@@ -20,7 +21,7 @@ REPLICA_DEFAULT = os.path.join(os.getcwd(), 'replica.yml')
 
 
 @click.group()
-@click.option('-v', '--verbosity', count=True, 
+@click.option('-v', '--verbosity', count=True,
               help='Verbosity option: -v for debug in core , -vv for debug in core and adapters')
 @click.option('--debug-core', is_flag=True, default=False, help='Set log level to debug only in core')
 @click.option('--debug-adapters', is_flag=True, default=False, help='Set log level to debug only in adapters')
@@ -116,28 +117,22 @@ def init(path: click.Path) -> None:
     default=DEFAULT_RETRY_COUNT
 )
 @click.option(
-    '--architecture', '-arch',
-    help="Select arch for replicas, use as 'snowshu create -arch arm64 -arch amd64'",
-    default=None,
-    multiple=True
+    '--multiarch', '-m',
+    help="Tells SnowShu to build replicas of both arm and amd architectures",
+    is_flag=True
 )
 def create(replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
            name: str,
            barf: bool,
            incremental: str,
            retry_count: int,
-           architecture):
+           multiarch):
     """Generate a new replica from a replica.yml file.
     """
-
-    if architecture:
-        # actually neccessary, list() does not work properly
-        target_arch = [x for x in architecture] # noqa pylint: unnecessary-comprehension
-        for arch in target_arch:
-            if arch not in ['amd64', 'arm64']:
-                raise ValueError(f'Incorrect arch requested, use "arm64" or "amd64" only, you used "{arch}"')
+    if multiarch:
+        target_arch = get_multiarch_list(LOCAL_ARCHITECTURE)
     else:
-        target_arch = None
+        target_arch = [LOCAL_ARCHITECTURE]
 
     replica = ReplicaFactory()
     replica.load_config(replica_file, target_arch=target_arch)

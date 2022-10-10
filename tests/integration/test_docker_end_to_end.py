@@ -26,12 +26,6 @@ def test_creates_replica(docker_flush):
     client = docker.from_env()
 
     arch_input_options = {
-        'default': {
-            'input_arch_list': None,
-            'result_images': ['latest', LOCAL_ARCHITECTURE],
-            'active_container_arch': LOCAL_ARCHITECTURE,
-            'passive_container_arch': None
-        },
         'amd64': {
             'input_arch_list': ['amd64'],
             'result_images': ['latest', 'amd64'] if LOCAL_ARCHITECTURE == 'amd64' else ['amd64'],

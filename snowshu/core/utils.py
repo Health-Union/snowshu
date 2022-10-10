@@ -2,7 +2,7 @@ import os
 import re
 from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, TextIO, Type, Union
+from typing import TYPE_CHECKING, Any, Optional, TextIO, Type, Union, List
 
 import logging
 import yaml
@@ -100,3 +100,12 @@ def fetch_adapter(name: str,
     except AttributeError as err:
         logger.critical('No %s adapter found by the name of %s', section, name)
         raise err
+
+
+def get_multiarch_list(local_arch: str) -> List[str]:
+    if local_arch == 'amd64':
+        return_list = ['amd64', 'arm64']
+    else:
+        return_list = ['arm64', 'amd64']
+
+    return return_list

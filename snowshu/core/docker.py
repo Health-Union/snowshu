@@ -99,13 +99,14 @@ class SnowShuDocker:
         logger.info('Creating an external volume...')
         replica_volume = self._create_snowshu_volume(DOCKER_REPLICA_VOLUME)
 
+        logger.info(f'Finding base image {image_name}...')
+        container_list = []
+
         if not self.target_arch:
             arch_list = [LOCAL_ARCHITECTURE]
         else:
             arch_list = self.target_arch
 
-        logger.info(f'Finding base image {image_name}...')
-        container_list = []
         for arch in arch_list:
             try:
                 try:
