@@ -7,7 +7,7 @@ import logging
 import docker
 
 from snowshu.configs import (DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER,
-                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, LOCAL_ARCHITECTURE)
+                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, LOCAL_ARCHITECTURE, POSTGRES_IMAGE)
 
 if TYPE_CHECKING:
     from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
@@ -82,6 +82,7 @@ class SnowShuDocker:
     def get_stopped_container(  # noqa pylint: disable=too-many-arguments
             self,
             image_name,
+            is_incremental: bool,
             start_command: str,
             envars: list,
             port: int,
@@ -107,14 +108,63 @@ class SnowShuDocker:
         else:
             arch_list = self.target_arch
 
+        # In case non-native replica is supplied as a base for incremental build,
+        # we need to override most optimal build order, so that there is logical continuity for the user
+        if is_incremental:
+            try:
+                supplied_image_arch = self.client.images.get(image_name).attrs['Architecture']
+                if arch_list[0] != supplied_image_arch and len(arch_list) == 1:
+                    # In the case of building just a single arch, replace native (default) with supplied
+                    arch_list[0] = supplied_image_arch
+                elif arch_list[0] != supplied_image_arch and len(arch_list) == 2:
+                    # In the case of multiarch build, reverse the list
+                    arch_list.reverse()
+                else:
+                    # Keep the list untouched if supplied base replica is of a native arch
+                    pass
+            except docker.errors.ImageNotFound:
+                logger.exception(
+                    f'Supplied incremental base image {image_name} not found locally, aborting build')
+                raise
+
         for arch in arch_list:
             try:
-                try:
-                    image = self.client.images.get(f'{image_name.split(":")[0]}:{arch}')
-                except docker.errors.ImageNotFound:
-                    image = self.client.images.pull(
-                        image_name, platform=f'linux/{arch}')
-                    image.tag(f'{image_name.split(":")[0]}:{arch}')
+                if is_incremental:
+                    # Try to retreive supplied image
+                    try:
+                        image_candidate = self.client.images.get(image_name)
+                    except docker.errors.ImageNotFound:
+                        logger.exception(
+                            f'Supplied incremental base image {image_name} not found locally, aborting build')
+                        raise
+
+                    # Check supplied image's arch, if local, pass it further
+                    if image_candidate.attrs['Architecture'] == arch:
+                        logger.info(
+                            f'Base image is of target arch {arch}, using it...')
+                        image = image_candidate
+                    else:
+                        # If supplied image is not of current arch, pull postgres instead
+                        logger.info(
+                            f'Base image is NOT of target arch {arch}, using postgres instead...')
+
+                        try:
+                            image = self.client.images.get(
+                                f'{POSTGRES_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                        except docker.errors.ImageNotFound:
+                            image = self.client.images.pull(
+                                POSTGRES_IMAGE, platform=f'linux/{arch}')
+                            image.tag(f'{POSTGRES_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+
+                else:
+                    # This pulls raw postgres for regular full build
+                    try:
+                        image = self.client.images.get(
+                            f'{POSTGRES_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                    except docker.errors.ImageNotFound:
+                        image = self.client.images.pull(
+                            POSTGRES_IMAGE, platform=f'linux/{arch}')
+                        image.tag(f'{POSTGRES_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
 
                 # verify the image is tagged properly (image's arch matches its tag)
                 try:
@@ -158,6 +208,7 @@ class SnowShuDocker:
 
     def startup(self,  # noqa pylint: disable=too-many-arguments
                 image: str,
+                is_incremental: bool,
                 start_command: str,
                 port: int,
                 target_adapter: Type['BaseTargetAdapter'],
@@ -167,6 +218,7 @@ class SnowShuDocker:
 
         active_container, passive_container = self.get_stopped_container(
             image,
+            is_incremental,
             start_command,
             envars,
             port,

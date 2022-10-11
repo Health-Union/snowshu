@@ -16,8 +16,8 @@ from snowshu.configs import (DEFAULT_PRESERVE_CASE,
                              DOCKER_REMOUNT_DIRECTORY,
                              DOCKER_TARGET_CONTAINER,
                              PACKAGE_ROOT,
-                             DOCKER_REPLICA_MOUNT_FOLDER,
-                             LOCAL_ARCHITECTURE
+                             LOCAL_ARCHITECTURE,
+                             POSTGRES_IMAGE
                              )
 from snowshu.core.main import cli
 from snowshu.core.models import Relation, Attribute, data_types
@@ -77,7 +77,7 @@ def test_snowshu_explain(end_to_end):
         cli, ('explain', 'integration-test', '--json')))
 
     assert response['name'] == 'integration-test'
-    assert response['image'] == 'postgres:12'
+    assert response['image'] == POSTGRES_IMAGE
     assert response['target_adapter'] == 'postgres'
     assert response['source_adapter'] == 'snowflake'
     assert datetime(response['created_at']) < datetime.now()

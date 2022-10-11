@@ -7,7 +7,7 @@ from overrides import overrides
 
 import snowshu.core.models.data_types as dtypes
 from snowshu.adapters.target_adapters import BaseTargetAdapter
-from snowshu.configs import DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER
+from snowshu.configs import DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER, POSTGRES_IMAGE
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class PostgresAdapter(BaseTargetAdapter):
     name = 'postgres'
     dialect = 'postgresql'
-    DOCKER_IMAGE = 'postgres:12'
+    DOCKER_IMAGE = POSTGRES_IMAGE
     PRELOADED_PACKAGES = ['postgresql-plpython3-12', 'systemctl']
     MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
