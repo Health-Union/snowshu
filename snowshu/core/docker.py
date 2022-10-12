@@ -86,6 +86,7 @@ class SnowShuDocker:
             start_command: str,
             envars: list,
             port: int,
+            target_adapter: Type['BaseTargetAdapter'],
             name: Optional[str] = None,
             labels: dict = None,
             protocol: str = "tcp") -> tuple(docker.models.containers.Container):
@@ -126,7 +127,7 @@ class SnowShuDocker:
                 logger.exception(
                     f'Supplied incremental base image {image_name} not found locally, aborting build')
                 raise
-
+        
         for arch in arch_list:
             try:
                 if is_incremental:
@@ -150,21 +151,21 @@ class SnowShuDocker:
 
                         try:
                             image = self.client.images.get(
-                                f'{POSTGRES_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                                f'{target_adapter.DOCKER_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
                         except docker.errors.ImageNotFound:
                             image = self.client.images.pull(
-                                POSTGRES_IMAGE, platform=f'linux/{arch}')
-                            image.tag(f'{POSTGRES_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                                target_adapter.DOCKER_IMAGE, platform=f'linux/{arch}')
+                            image.tag(f'{target_adapter.DOCKER_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
 
                 else:
                     # This pulls raw postgres for regular full build
                     try:
                         image = self.client.images.get(
-                            f'{POSTGRES_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                            f'{target_adapter.DOCKER_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
                     except docker.errors.ImageNotFound:
                         image = self.client.images.pull(
-                            POSTGRES_IMAGE, platform=f'linux/{arch}')
-                        image.tag(f'{POSTGRES_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                            target_adapter.DOCKER_IMAGE, platform=f'linux/{arch}')
+                        image.tag(f'{target_adapter.DOCKER_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
 
                 # verify the image is tagged properly (image's arch matches its tag)
                 try:
@@ -217,12 +218,13 @@ class SnowShuDocker:
                 protocol: str = "tcp") -> tuple(docker.models.containers.Container):  # noqa pylint: disable=unused-argument
 
         active_container, passive_container = self.get_stopped_container(
-            image,
-            is_incremental,
-            start_command,
-            envars,
-            port,
+            image_name=image,
+            is_incremental=is_incremental,
+            start_command=start_command,
+            envars=envars,
+            port=port,
             name=DOCKER_TARGET_CONTAINER,
+            target_adapter=target_adapter,
             labels=dict(
                 snowshu_replica='true',
                 target_adapter=target_adapter.CLASSNAME,
