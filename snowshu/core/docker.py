@@ -127,7 +127,7 @@ class SnowShuDocker:
                 logger.exception(
                     f'Supplied incremental base image {image_name} not found locally, aborting build')
                 raise
-        
+
         for arch in arch_list:
             try:
                 if is_incremental:
