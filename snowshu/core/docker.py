@@ -7,7 +7,7 @@ import logging
 import docker
 
 from snowshu.configs import (DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER,
-                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, LOCAL_ARCHITECTURE, POSTGRES_IMAGE)
+                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, LOCAL_ARCHITECTURE)
 
 if TYPE_CHECKING:
     from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
