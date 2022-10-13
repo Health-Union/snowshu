@@ -119,6 +119,7 @@ def test_restore_data_from_shared_replica(docker_flush):
     target_adapter = PostgresAdapter(replica_metadata={})
     target_container, _ = shdocker.startup(
         target_adapter.DOCKER_IMAGE,
+        False,
         target_adapter.DOCKER_START_COMMAND,
         9999,
         target_adapter,
@@ -151,6 +152,7 @@ def test_restore_data_from_shared_replica(docker_flush):
     # repointing Postgres db to replica,  PGDATA
     target_container, _ = shdocker.startup(
         target_adapter.DOCKER_IMAGE,
+        False,
         target_adapter.DOCKER_START_COMMAND,
         9999,
         target_adapter,
@@ -164,6 +166,6 @@ def test_restore_data_from_shared_replica(docker_flush):
     target_container.start()
 
     engine = create_engine(
-        f'postgresql://snowshu:snowshu@snowshu_target:9999/snowshu')
+        'postgresql://snowshu:snowshu@snowshu_target:9999/snowshu')
     checkpoint = engine.execute(f"SELECT * FROM {TEST_TABLE}").fetchall()
     assert ('a', 1) == checkpoint[0]

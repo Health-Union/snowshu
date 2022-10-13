@@ -115,7 +115,7 @@ SnowShu will report details of the created replica once completed.
 
 
 Creating An Multiple-Architecture Replica
--------------------------------
+-----------------------------------------
 
 There's a simple way of creating replicas for both main architectures (amd64 and arm64) at the same time.
 Just add a flag ``-m`` or ``--multiarch`` to your create command like this:

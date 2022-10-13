@@ -56,6 +56,7 @@ def test_creates_replica(docker_flush):
         target_adapter = PostgresAdapter(replica_metadata={})
         target_container, passive_container = shdocker.startup(
             target_adapter.DOCKER_IMAGE,
+            False,
             target_adapter.DOCKER_START_COMMAND,
             9999,
             target_adapter,
@@ -104,10 +105,10 @@ def test_creates_replica(docker_flush):
             client = docker.from_env()
 
             client.containers.run(replica.id,
-                                ports={'9999/tcp': 9999},
-                                name=test_name_local,
-                                network='snowshu',
-                                detach=True)
+                                  ports={'9999/tcp': 9999},
+                                  name=test_name_local,
+                                  network='snowshu',
+                                  detach=True)
             time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # give pg a moment to spin up all the way
             engine = create_engine(
                 f'postgresql://snowshu:snowshu@{test_name_local}:9999/snowshu')

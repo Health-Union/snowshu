@@ -146,19 +146,19 @@ def test_bidirectional(end_to_end):
     print('test_bidirectional')
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
-SELECT 
-    COUNT(*) 
-FROM 
-    SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.USER_COOKIES uc
-FULL OUTER JOIN
-     SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.USERS u
-ON 
-    uc.user_id=u.id
-WHERE 
-    uc.user_id IS NULL
-OR
-    u.id IS NULL
-"""
+        SELECT 
+            COUNT(*) 
+        FROM 
+            SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.USER_COOKIES uc
+        FULL OUTER JOIN
+             SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.USERS u
+        ON 
+            uc.user_id=u.id
+        WHERE 
+            uc.user_id IS NULL
+        OR
+            u.id IS NULL
+        """
     q = conn.execute(query)
     count = q.fetchall()[0][0]
     assert count == 0
@@ -168,23 +168,23 @@ def test_directional(end_to_end):
     print('test_directional')
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
-WITH
-joined_roots AS (
-SELECT 
-    oi.id AS oi_id
-    ,oi.order_id AS oi_order_id
-    ,o.id AS o_id
-FROM 
-    SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS oi
-FULL OUTER JOIN
-     SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDERS o
-ON 
-    oi.order_id = o.id
-)
-SELECT 
-    (SELECT COUNT(*) FROM joined_roots WHERE oi_id is null) AS upstream_missing
-    ,(SELECT COUNT(*) FROM joined_roots WHERE o_id is null) AS downstream_missing
-"""
+        WITH
+        joined_roots AS (
+        SELECT 
+            oi.id AS oi_id
+            ,oi.order_id AS oi_order_id
+            ,o.id AS o_id
+        FROM 
+            SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS oi
+        FULL OUTER JOIN
+             SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDERS o
+        ON 
+            oi.order_id = o.id
+        )
+        SELECT 
+            (SELECT COUNT(*) FROM joined_roots WHERE oi_id is null) AS upstream_missing
+            ,(SELECT COUNT(*) FROM joined_roots WHERE o_id is null) AS downstream_missing
+        """
     q = conn.execute(query)
     upstream_missing, downstream_missing = q.fetchall()[0]
     assert upstream_missing > 0
@@ -195,10 +195,10 @@ SELECT
 def test_view(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
-SELECT 
-    (SELECT COUNT(*) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS_VIEW) /
-    (SELECT COUNT(*) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS) AS delta
-"""
+        SELECT 
+            (SELECT COUNT(*) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS_VIEW) /
+            (SELECT COUNT(*) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS) AS delta
+        """
     q = conn.execute(query)
     assert len(set(q.fetchall()[0])) == 1
 
@@ -234,15 +234,16 @@ def test_applies_pg_extensions(end_to_end):
 def test_data_types(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
-SELECT 
-    COLUMN_NAME,
-    DATA_TYPE
-FROM 
-    SNOWSHU_DEVELOPMENT.information_schema.columns 
-WHERE 
-    TABLE_SCHEMA = 'tests_data' 
-AND 
-    TABLE_NAME='data_types'"""
+        SELECT 
+            COLUMN_NAME,
+            DATA_TYPE
+        FROM 
+            SNOWSHU_DEVELOPMENT.information_schema.columns 
+        WHERE 
+            TABLE_SCHEMA = 'tests_data' 
+        AND 
+            TABLE_NAME='data_types'
+        """
 
     q = conn.execute(query)
     type_mappings = q.fetchall()
@@ -294,7 +295,7 @@ def test_casing(end_to_end):
             TABLE_SCHEMA = 'tests_data' 
         AND 
             TABLE_NAME='case_testing'
-    """
+        """
 
     q = conn.execute(query)
     type_mappings = q.fetchall()
@@ -371,10 +372,12 @@ def test_using_different_image(end_to_end):
               'POSTGRES_DB=snowshu',
               f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
     target_container, _ = shdocker.get_stopped_container(
-        'snowshu_replica_integration-test',
-        target_adapter.DOCKER_START_COMMAND,
-        envars,
-        9900,
+        image_name='snowshu_replica_integration-test',
+        is_incremental=False,
+        start_command=target_adapter.DOCKER_START_COMMAND,
+        envars=envars,
+        port=9900,
+        target_adapter=target_adapter,
         name=DOCKER_TARGET_CONTAINER,
         labels=dict(
             snowshu_replica='true',

@@ -16,6 +16,7 @@ from snowshu.logger import duration
 from snowshu.configs import DEFAULT_RETRY_COUNT
 from snowshu.core.models.relation import alter_relation_case
 from snowshu.exceptions import UnableToExecuteCopyReplicaCommand
+from snowshu.core.utils import remove_dangling_replica_containers
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,7 @@ class ReplicaFactory:
         if len(graphs) < 1:
             args = (' new ', ' incremental ', '; image up-to-date') if self.incremental else (' ', ' ', '')
             message = "No{}relations found per provided{}replica configuration{}, exiting.".format(*args)  # noqa pylint: consider-using-f-string
+            remove_dangling_replica_containers()
             return message
 
         if not self.config.target_profile.adapter.container:
