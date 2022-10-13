@@ -29,7 +29,7 @@ def base_for_incremental(docker_flush_module):
 
 def test_incremental_build(base_for_incremental):
     ''' Creates incremental builds of normal and multiarch variants, checks if they contain specified tables
-        WARNING: As of now, replica (config file, hostname, image and container name) for BASE is called INCREMENTAL, and visa versa.
+        WARNING: As of now, replica (config file, hostname, image and container name) for BASE is called INCREMENTAL, and vice versa.
     '''
     runner = CliRunner()
     client = docker.from_env()
