@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Optional, TextIO, Type, Union, List
 
 import logging
 import yaml
+import docker
 
 if TYPE_CHECKING:
     from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
@@ -103,9 +104,21 @@ def fetch_adapter(name: str,
 
 
 def get_multiarch_list(local_arch: str) -> List[str]:
+    """ Finds an opposite arch to the one passed here and returns both as a list,
+        ordered in a way that passed arch is first
+    """
     if local_arch == 'amd64':
         return_list = ['amd64', 'arm64']
     else:
         return_list = ['arm64', 'amd64']
 
     return return_list
+
+
+def remove_dangling_replica_containers() -> None:
+    """ Cleans up existing containers in situation of a failed build
+    """
+    client = docker.from_env()
+    for container in client.containers.list(all=True):
+        if 'snowshu_target_' in container.name:
+            container.remove(force=True)

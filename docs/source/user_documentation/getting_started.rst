@@ -113,6 +113,21 @@ SnowShu will report details of the created replica once completed.
   
   >>> snowshu create -r 3
 
+
+Creating An Multiple-Architecture Replica
+-----------------------------------------
+
+There's a simple way of creating replicas for both main architectures (amd64 and arm64) at the same time.
+Just add a flag ``-m`` or ``--multiarch`` to your create command like this:
+
+>>> snowshu create -m
+
+or
+
+>>> snowshu create --multiarch --replica-file path/to/replica.yml
+
+Once completed you'll get a set of 3 replicas with same data but different tags: ``latest``, which is always your native architecture, ``amd64`` and ``arm64``, which are self descriptive.
+
 Creating An Incremental Replica
 -------------------------------
 
@@ -136,6 +151,12 @@ The ``latest`` tag is applied by default to reference an image, if no version is
 For example, in order to use ``1.0.0`` version of the image:
 
 >>> snowshu create -i snowshu_replica_hamburger-sandwich:1.0.0
+
+Incremental replicas now also support ``-m`` flag. By default if you pass a base replica without tag, SnowShu will use the one tagged as ``latest``, but you can force it to use your non-native architecture by supplying specific tag, like so:
+
+>>> snowshu create -i snowshu_replica_hamburger-sandwich:arm64 --multiarch
+
+SnowShu will pull fresh target image of opposite architecture, and clone replica data to it, producing a set of 3 images like in case of standard multiarch build.
 
 Using Special Flags For Verbosity Debug
 ---------------------------------------
