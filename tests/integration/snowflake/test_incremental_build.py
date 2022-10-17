@@ -11,7 +11,7 @@ from snowshu.configs import PACKAGE_ROOT
 from snowshu.core.main import cli
 
 
-DOCKER_SPIN_UP_TIMEOUT = 4
+DOCKER_SPIN_UP_TIMEOUT = 10
 # This one is actually a base
 INCREMENTAL_CONFIGURATION_PATH = os.path.join(
     PACKAGE_ROOT, 'tests', 'assets', 'replica_test_incremental_config.yml')
