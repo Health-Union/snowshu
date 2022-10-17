@@ -56,7 +56,7 @@ class SnowShuDocker:
             except docker.errors.ImageNotFound:
                 pass
 
-            container_arch = container.attrs['Config']['Image'].split(':')[1]
+            container_arch = container.name.split('_')[-1]
 
             # commit with arch tag
             replica = container.commit(
@@ -147,15 +147,15 @@ class SnowShuDocker:
                     else:
                         # If supplied image is not of current arch, pull postgres instead
                         logger.info(
-                            f'Base image is NOT of target arch {arch}, using postgres instead...')
+                            f'Base image is NOT of target arch {arch}, using base db image instead...')
 
                         try:
                             image = self.client.images.get(
-                                f'{target_adapter.DOCKER_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                                f'{target_adapter.BASE_DB_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
                         except docker.errors.ImageNotFound:
                             image = self.client.images.pull(
-                                target_adapter.DOCKER_IMAGE, platform=f'linux/{arch}')
-                            image.tag(f'{target_adapter.DOCKER_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                                target_adapter.BASE_DB_IMAGE, platform=f'linux/{arch}')
+                            image.tag(f'{target_adapter.BASE_DB_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
 
                 else:
                     # This pulls raw postgres for regular full build
@@ -182,7 +182,8 @@ class SnowShuDocker:
             tagged_container_name = f'{name}_{arch}'
             logger.info(f"Creating stopped container {tagged_container_name}...")
             self.remove_container(tagged_container_name)
-            container = self.client.containers.create(f'{image_name.split(":")[0]}:{arch}',
+
+            container = self.client.containers.create(image.tags[0],
                                                       start_command,
                                                       network=network.name,
                                                       name=tagged_container_name,

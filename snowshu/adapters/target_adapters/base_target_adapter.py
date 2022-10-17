@@ -185,7 +185,7 @@ AS
                         f"The override image is not a Postgres image: {incremental_image}")
             except Exception as error:
                 logger.error(
-                    "Looks like provided DOCKER_IMAGE does not exists, error:\n%s", error)
+                    "Looks like provided DOCKER_IMAGE does not exist, error:\n%s", error)
                 raise error
         self._init_image(source_adapter_name)
 
