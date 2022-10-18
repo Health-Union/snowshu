@@ -219,7 +219,7 @@ class SnowShuDocker:
                                      envars: dict
                                  ) -> docker.models.containers.Container:
         """ Method used during self.startup() execution, creates, starts and setups container
-            
+
             input: some stuff needed to define a container launch
             return: container object instance, in a running state and already set up
         """
