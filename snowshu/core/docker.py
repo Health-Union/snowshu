@@ -116,11 +116,15 @@ class SnowShuDocker:
                         logger.info(
                             f'Base image is of target arch {arch}, using it...')
                         image = image_candidate
+                    elif len(arch_list) == 1:
+                        # If the build is not multiarch, we should still go through with it
+                        logger.warning(
+                            f'Base image is NOT of target arch {arch}, but only one arch was requested, continuing...')
+                        image = image_candidate
                     else:
                         # If supplied image is not of current arch, pull postgres instead
                         logger.info(
                             f'Base image is NOT of target arch {arch}, using base db image instead...')
-
                         try:
                             image = self.client.images.get(
                                 f'{target_adapter.BASE_DB_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
