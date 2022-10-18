@@ -362,31 +362,32 @@ def test_x_db_incremental_import(end_to_end):
 
     assert successfully_enabled_without_errors(adapter)
 
-
-def test_using_different_image(end_to_end):
-    shdocker = SnowShuDocker()
-    target_adapter = PostgresAdapter(replica_metadata={})
-
-    envars = ['POSTGRES_USER=snowshu',
-              'POSTGRES_PASSWORD=snowshu',
-              'POSTGRES_DB=snowshu',
-              f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
-    target_container, _ = shdocker.get_stopped_container(
-        image_name='snowshu_replica_integration-test',
-        is_incremental=False,
-        start_command=target_adapter.DOCKER_START_COMMAND,
-        envars=envars,
-        port=9900,
-        target_adapter=target_adapter,
-        name=DOCKER_TARGET_CONTAINER,
-        labels=dict(
-            snowshu_replica='true',
-            target_adapter=target_adapter.CLASSNAME,
-            source_adapter='SnowflakeAdapter'))
-    assert target_container.status == 'created'
-    assert target_container.image.tags[0] in [f'snowshu_replica_integration-test:{LOCAL_ARCHITECTURE}',
-                                               'snowshu_replica_integration-test:latest']
-    target_container.start()
-    target_container.reload()
-    assert target_container.status == 'running'
-    target_container.remove(force=True)
+# NOTE: This was commented out because shdocker.get_stopped_container() was removed during docker.py refactoring
+#       and the functionality of moving pgdata between replicas is tested in test_docker_end_to_end.py
+# 
+# def test_using_different_image(end_to_end):
+#     shdocker = SnowShuDocker()
+#     target_adapter = PostgresAdapter(replica_metadata={})
+#     envars = ['POSTGRES_USER=snowshu',
+#               'POSTGRES_PASSWORD=snowshu',
+#               'POSTGRES_DB=snowshu',
+#               f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
+#     target_container, _ = shdocker.get_stopped_container(
+#         image_name='snowshu_replica_integration-test',
+#         is_incremental=False,
+#         start_command=target_adapter.DOCKER_START_COMMAND,
+#         envars=envars,
+#         port=9900,
+#         target_adapter=target_adapter,
+#         name=DOCKER_TARGET_CONTAINER,
+#         labels=dict(
+#             snowshu_replica='true',
+#             target_adapter=target_adapter.CLASSNAME,
+#             source_adapter='SnowflakeAdapter'))
+#     assert target_container.status == 'created'
+#     assert target_container.image.tags[0] in [f'snowshu_replica_integration-test:{LOCAL_ARCHITECTURE}',
+#                                                'snowshu_replica_integration-test:latest']
+#     target_container.start()
+#     target_container.reload()
+#     assert target_container.status == 'running'
+#     target_container.remove(force=True)

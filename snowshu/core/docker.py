@@ -144,7 +144,7 @@ class SnowShuDocker:
                     target_adapter.DOCKER_START_COMMAND,
                     network=network.name,
                     name=tagged_container_name,
-                    hostname=name,
+                    hostname=target_adapter._credentials.host,
                     ports=port_dict,
                     environment=envars,
                     labels=dict(
@@ -217,7 +217,7 @@ class SnowShuDocker:
                     target_adapter.DOCKER_START_COMMAND,
                     network=network.name,
                     name=tagged_container_name,
-                    hostname=DOCKER_TARGET_CONTAINER,
+                    hostname=target_adapter._credentials.host,
                     ports=port_dict,
                     environment=envars,
                     labels=dict(
