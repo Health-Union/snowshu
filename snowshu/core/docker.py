@@ -86,10 +86,8 @@ class SnowShuDocker:
 
         # Unpack target adapter's data
         image_name = target_adapter.DOCKER_IMAGE
-        port = target_adapter.DOCKER_TARGET_PORT
         is_incremental = target_adapter.is_incremental
-        protocol = 'tcp'
-        port_dict = {f"{str(port)}/{protocol}": port}
+        hostname = target_adapter.credentials.host
 
         network = self._get_or_create_network(DOCKER_NETWORK)
 
@@ -143,46 +141,15 @@ class SnowShuDocker:
                     f"Creating stopped container {tagged_container_name}...")
                 self.remove_container(tagged_container_name)
 
-                container = self.client.containers.create(
-                    image.tags[0],
-                    target_adapter.DOCKER_START_COMMAND,
-                    network=network.name,
-                    name=tagged_container_name,
-                    hostname=target_adapter._credentials.host,  # noqa pylint: disable=protected-access
-                    ports=port_dict,
-                    environment=envars,
-                    labels=dict(
-                        snowshu_replica='true',
-                        target_adapter=target_adapter.CLASSNAME,
-                        source_adapter=source_adapter),
-                    detach=True,
-                    volumes={replica_volume.name: {
-                        'bind': f'{DOCKER_REPLICA_MOUNT_FOLDER}',
-                        # Make sure passive container does not mess up common volume
-                        'mode': 'rw' if arch == arch_list[0] else 'ro'
-                    }},
-                    working_dir=DOCKER_WORKING_DIR
+                container = container = self.create_and_init_container(
+                    image=image,
+                    container_name=tagged_container_name,
+                    target_adapter=target_adapter,
+                    source_adapter=source_adapter,
+                    network=network,
+                    replica_volume=replica_volume,
+                    envars=envars
                 )
-                logger.info(f"Created stopped container {container.name}.")
-
-                logger.info(
-                    f'Connecting {container.name} to bridge network..')
-                self._connect_to_bridge_network(container)
-                logger.info(
-                    f'Connected. Starting created container {container.name}...')
-
-                try:
-                    container.start()
-                except docker.errors.APIError as error:
-                    if 'port is already allocated' in error.explanation:
-                        logger.exception('One of the ports used by snowshu_target is '
-                                         'already allocated, stop extra containers and rerun')
-                    raise
-
-                logger.info(
-                    f'Container {container.name} started, running initial setup...')
-                self._run_container_setup(container, target_adapter)
-                logger.info(f'Container {container.name} fully initialized.')
 
                 if len(arch_list) > 1:
                     container.stop()
@@ -211,51 +178,20 @@ class SnowShuDocker:
                         'Looks like docker is not started, please start docker daemon\nError: %s', error)
                     raise
 
-                tagged_container_name = f'snowshu_target_{arch}'
+                tagged_container_name = f'{hostname}_{arch}'
                 logger.info(
                     f"Creating stopped container {tagged_container_name}...")
                 self.remove_container(tagged_container_name)
 
-                container = self.client.containers.create(
-                    image.tags[0],
-                    target_adapter.DOCKER_START_COMMAND,
-                    network=network.name,
-                    name=tagged_container_name,
-                    hostname=target_adapter._credentials.host,  # noqa pylint: disable=protected-access
-                    ports=port_dict,
-                    environment=envars,
-                    labels=dict(
-                        snowshu_replica='true',
-                        target_adapter=target_adapter.CLASSNAME,
-                        source_adapter=source_adapter),
-                    detach=True,
-                    volumes={replica_volume.name: {
-                        'bind': f'{DOCKER_REPLICA_MOUNT_FOLDER}',
-                        # Make sure passive container does not mess up common volume
-                        'mode': 'rw' if arch == arch_list[0] else 'ro'
-                    }},
-                    working_dir=DOCKER_WORKING_DIR
+                container = self.create_and_init_container(
+                    image=image,
+                    container_name=tagged_container_name,
+                    target_adapter=target_adapter,
+                    source_adapter=source_adapter,
+                    network=network,
+                    replica_volume=replica_volume,
+                    envars=envars
                 )
-                logger.info(f"Created stopped container {container.name}.")
-
-                logger.info(
-                    f'Connecting {container.name} to bridge network..')
-                self._connect_to_bridge_network(container)
-                logger.info(
-                    f'Connected. Starting created container {container.name}...')
-
-                try:
-                    container.start()
-                except docker.errors.APIError as error:
-                    if 'port is already allocated' in error.explanation:
-                        logger.exception('One of the ports used by snowshu_target is '
-                                         'already allocated, stop extra containers and rerun')
-                    raise
-
-                logger.info(
-                    f'Container {container.name} started, running initial setup...')
-                self._run_container_setup(container, target_adapter)
-                logger.info(f'Container {container.name} fully initialized.')
 
                 if len(arch_list) > 1:
                     container.stop()
@@ -271,6 +207,69 @@ class SnowShuDocker:
             active_container.start()
 
         return active_container, passive_container
+
+    def create_and_init_container(  # noqa pylint: disable=too-many-arguments
+                                     self,
+                                     image: docker.models.images.Image,
+                                     container_name: str,
+                                     target_adapter: Type['BaseTargetAdapter'],
+                                     source_adapter: str,
+                                     network: docker.models.networks.Network,
+                                     replica_volume: docker.models.volumes.Volume,
+                                     envars: dict
+                                 ) -> docker.models.containers.Container:
+        """ Method used during self.startup() execution, creates, starts and setups container
+            
+            input: some stuff needed to define a container launch
+            return: container object instance, in a running state and already set up
+        """
+
+        logger.info(
+            f"Creating stopped container {container_name}...")
+
+        port = target_adapter.DOCKER_TARGET_PORT
+        hostname = target_adapter.credentials.host
+        protocol = 'tcp'
+        port_dict = {f"{str(port)}/{protocol}": port}
+
+        self.remove_container(container_name)
+
+        container = self.client.containers.create(
+            image.tags[0],
+            target_adapter.DOCKER_START_COMMAND,
+            network=network.name,
+            name=container_name,
+            hostname=hostname,
+            ports=port_dict,
+            environment=envars,
+            labels=dict(
+                snowshu_replica='true',
+                target_adapter=target_adapter.CLASSNAME,
+                source_adapter=source_adapter),
+            detach=True,
+            volumes={replica_volume.name: {
+                'bind': f'{DOCKER_REPLICA_MOUNT_FOLDER}'
+            }},
+            working_dir=DOCKER_WORKING_DIR
+        )
+        logger.info(
+            f"Created stopped container {container.name}, connecting it to bridge network...")
+        self._connect_to_bridge_network(container)
+        logger.info(
+            f'Connected. Starting created container {container.name}...')
+        try:
+            container.start()
+        except docker.errors.APIError as error:
+            if 'port is already allocated' in error.explanation:
+                logger.exception('One of the ports used by snowshu_target is '
+                                 'already allocated, stop extra containers and rerun')
+            raise
+        logger.info(
+            f'Container {container.name} started, running initial setup...')
+        self._run_container_setup(container, target_adapter)
+        logger.info(f'Container {container.name} fully initialized.')
+
+        return container
 
     def remove_container(self, container: str) -> None:
         logger.info(f'Removing existing target container {container}...')
