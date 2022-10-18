@@ -79,10 +79,10 @@ class SnowShuDocker:
         return actual_replica_list
 
     def startup(self,  # noqa pylint: disable=too-many-arguments
-                              target_adapter: Type['BaseTargetAdapter'],
-                              source_adapter: str,
-                              arch_list: list[str],
-                              envars: list) -> tuple(docker.models.containers.Container):
+                target_adapter: Type['BaseTargetAdapter'],
+                source_adapter: str,
+                arch_list: list[str],
+                envars: list) -> tuple(docker.models.containers.Container):
 
         # Unpack target adapter's data
         image_name = target_adapter.DOCKER_IMAGE
@@ -209,14 +209,14 @@ class SnowShuDocker:
         return active_container, passive_container
 
     def create_and_init_container(  # noqa pylint: disable=too-many-arguments
-                                     self,
-                                     image: docker.models.images.Image,
-                                     container_name: str,
-                                     target_adapter: Type['BaseTargetAdapter'],
-                                     source_adapter: str,
-                                     network: docker.models.networks.Network,
-                                     replica_volume: docker.models.volumes.Volume,
-                                     envars: dict
+                                    self,
+                                    image: docker.models.images.Image,
+                                    container_name: str,
+                                    target_adapter: Type['BaseTargetAdapter'],
+                                    source_adapter: str,
+                                    network: docker.models.networks.Network,
+                                    replica_volume: docker.models.volumes.Volume,
+                                    envars: dict
                                  ) -> docker.models.containers.Container:
         """ Method used during self.startup() execution, creates, starts and setups container
 
