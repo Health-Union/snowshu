@@ -6,7 +6,7 @@ import logging
 
 import docker
 
-from snowshu.configs import (DOCKER_NETWORK, DOCKER_TARGET_CONTAINER, DOCKER_REPLICA_MOUNT_FOLDER,
+from snowshu.configs import (DOCKER_NETWORK, DOCKER_REPLICA_MOUNT_FOLDER,
                              DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, LOCAL_ARCHITECTURE)
 
 if TYPE_CHECKING:
@@ -144,7 +144,7 @@ class SnowShuDocker:
                     target_adapter.DOCKER_START_COMMAND,
                     network=network.name,
                     name=tagged_container_name,
-                    hostname=target_adapter._credentials.host,
+                    hostname=target_adapter._credentials.host,  # noqa pylint: disable=protected-access
                     ports=port_dict,
                     environment=envars,
                     labels=dict(
@@ -217,7 +217,7 @@ class SnowShuDocker:
                     target_adapter.DOCKER_START_COMMAND,
                     network=network.name,
                     name=tagged_container_name,
-                    hostname=target_adapter._credentials.host,
+                    hostname=target_adapter._credentials.host,  # noqa pylint: disable=protected-access
                     ports=port_dict,
                     environment=envars,
                     labels=dict(
