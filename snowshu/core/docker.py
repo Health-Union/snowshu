@@ -141,7 +141,7 @@ class SnowShuDocker:
                     f"Creating stopped container {tagged_container_name}...")
                 self.remove_container(tagged_container_name)
 
-                container = container = self.create_and_init_container(
+                container = self.create_and_init_container(
                     image=image,
                     container_name=tagged_container_name,
                     target_adapter=target_adapter,
