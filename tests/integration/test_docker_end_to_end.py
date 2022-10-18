@@ -51,20 +51,17 @@ def test_creates_replica(docker_flush):
         # docker_flush does not happen in between these loop cycles,
         # so containers of the same name get mixed up
         test_name_local = f'{TEST_NAME}-{case_name}'
+        shdocker = SnowShuDocker()
 
-        shdocker = SnowShuDocker(case_vars['input_arch_list'])
         target_adapter = PostgresAdapter(replica_metadata={})
         target_container, passive_container = shdocker.startup(
-            target_adapter.DOCKER_IMAGE,
-            False,
-            target_adapter.DOCKER_START_COMMAND,
-            9999,
             target_adapter,
             'SnowflakeAdapter',
-            ['POSTGRES_USER=snowshu',
-            'POSTGRES_PASSWORD=snowshu',
-            'POSTGRES_DB=snowshu',
-            f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}'])
+            case_vars['input_arch_list'],
+            envars=['POSTGRES_USER=snowshu',
+                    'POSTGRES_PASSWORD=snowshu',
+                    'POSTGRES_DB=snowshu',
+                    f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}'])
 
         # add containers to adapter so that later target_adapter.copy_replica_data() works
         target_adapter.container = target_container
@@ -72,8 +69,8 @@ def test_creates_replica(docker_flush):
 
         # assert if container architectures are as expected
         if passive_container:
-            assert passive_container.attrs['Config']['Image'].split(':')[1] == case_vars['passive_container_arch']
-        assert target_container.attrs['Config']['Image'].split(':')[1] == case_vars['active_container_arch']
+            assert passive_container.name.split('_')[-1] == case_vars['passive_container_arch']
+        assert target_container.name.split('_')[-1] == case_vars['active_container_arch']
 
         # load test data
         time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # give pg a moment to spin up all the way

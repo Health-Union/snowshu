@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 
 from snowshu.adapters.target_adapters import BaseTargetAdapter
 from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
-from snowshu.configs import (DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER)
+from snowshu.configs import (DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER, LOCAL_ARCHITECTURE)
 from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models import Relation, Attribute, data_types
 from snowshu.core.models.materializations import TABLE
@@ -118,16 +118,13 @@ def test_restore_data_from_shared_replica(docker_flush):
     shdocker = SnowShuDocker()
     target_adapter = PostgresAdapter(replica_metadata={})
     target_container, _ = shdocker.startup(
-        target_adapter.DOCKER_IMAGE,
-        False,
-        target_adapter.DOCKER_START_COMMAND,
-        9999,
         target_adapter,
         'SnowflakeAdapter',
-        ['POSTGRES_USER=snowshu',
-         'POSTGRES_PASSWORD=snowshu',
-         'POSTGRES_DB=snowshu',
-         f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}'])
+        [LOCAL_ARCHITECTURE],
+        envars=['POSTGRES_USER=snowshu',
+                'POSTGRES_PASSWORD=snowshu',
+                'POSTGRES_DB=snowshu',
+                f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}'])
 
     # load test data
     time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # give pg a moment to spin up all the way
@@ -151,16 +148,13 @@ def test_restore_data_from_shared_replica(docker_flush):
     # also, check where test data is available in the target db
     # repointing Postgres db to replica,  PGDATA
     target_container, _ = shdocker.startup(
-        target_adapter.DOCKER_IMAGE,
-        False,
-        target_adapter.DOCKER_START_COMMAND,
-        9999,
         target_adapter,
         'SnowflakeAdapter',
-        ['POSTGRES_USER=snowshu',
-         'POSTGRES_PASSWORD=snowshu',
-         'POSTGRES_DB=snowshu',
-         f'PGDATA={DOCKER_REPLICA_MOUNT_FOLDER}'])
+        [LOCAL_ARCHITECTURE],
+        envars=['POSTGRES_USER=snowshu',
+                'POSTGRES_PASSWORD=snowshu',
+                'POSTGRES_DB=snowshu',
+                f'PGDATA={DOCKER_REPLICA_MOUNT_FOLDER}'])
 
     # starting our new container
     target_container.start()
