@@ -6,6 +6,7 @@ from datetime import datetime
 import pytest
 import sqlalchemy
 import yaml
+import docker
 from click.testing import CliRunner
 from sqlalchemy import create_engine
 
@@ -15,6 +16,8 @@ from snowshu.configs import (DEFAULT_PRESERVE_CASE,
                              DEFAULT_MAX_NUMBER_OF_OUTLIERS,
                              DOCKER_REMOUNT_DIRECTORY,
                              DOCKER_TARGET_CONTAINER,
+                             DOCKER_REPLICA_VOLUME,
+                             DOCKER_NETWORK,
                              PACKAGE_ROOT,
                              LOCAL_ARCHITECTURE,
                              POSTGRES_IMAGE
@@ -364,25 +367,28 @@ def test_x_db_incremental_import(end_to_end):
 
 
 def test_using_different_image(end_to_end):
+    client = docker.from_env()
     shdocker = SnowShuDocker()
     target_adapter = PostgresAdapter(replica_metadata={})
 
+    replica_volume = shdocker._create_snowshu_volume(DOCKER_REPLICA_VOLUME)
+    network = shdocker._get_or_create_network(DOCKER_NETWORK)
+
+    target_adapter.DOCKER_TARGET_PORT = 9990
     envars = ['POSTGRES_USER=snowshu',
               'POSTGRES_PASSWORD=snowshu',
               'POSTGRES_DB=snowshu',
               f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
-    target_container, _ = shdocker.get_stopped_container(
-        image_name='snowshu_replica_integration-test',
-        is_incremental=False,
-        start_command=target_adapter.DOCKER_START_COMMAND,
-        envars=envars,
-        port=9900,
+
+    target_container = shdocker.create_and_init_container(
+        image=client.images.get('snowshu_replica_integration-test'),
         target_adapter=target_adapter,
-        name=DOCKER_TARGET_CONTAINER,
-        labels=dict(
-            snowshu_replica='true',
-            target_adapter=target_adapter.CLASSNAME,
-            source_adapter='SnowflakeAdapter'))
+        source_adapter='SnowflakeAdapter',
+        container_name=DOCKER_TARGET_CONTAINER,
+        network=network,
+        replica_volume=replica_volume,
+        envars=envars
+        )
     assert target_container.status == 'created'
     assert target_container.image.tags[0] in [f'snowshu_replica_integration-test:{LOCAL_ARCHITECTURE}',
                                                'snowshu_replica_integration-test:latest']

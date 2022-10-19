@@ -162,7 +162,7 @@ def analyze(replica_file: click.Path,
     """Perform a "dry run" of the replica creation without actually executing, and return the expected results.
     """
     replica = ReplicaFactory()
-    replica.load_config(replica_file)
+    replica.load_config(replica_file, [LOCAL_ARCHITECTURE])
     click.echo(replica.analyze(barf=barf, retry_count=retry_count))
 
 

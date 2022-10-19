@@ -10,6 +10,7 @@ from snowshu.adapters import BaseSQLAdapter
 from snowshu.configs import (DEFAULT_INSERT_CHUNK_SIZE,
                              DOCKER_TARGET_CONTAINER, DOCKER_TARGET_PORT,
                              IS_IN_DOCKER)
+from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models import Attribute, Credentials, Relation
 from snowshu.core.models import DataType, data_types as dt
 from snowshu.core.models import materializations as mz
@@ -23,7 +24,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class BaseTargetAdapter(BaseSQLAdapter):
+class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instance-attributes
     """All target adapters inherit from this one."""
     REQUIRED_CREDENTIALS = [USER, PASSWORD, HOST, PORT, DATABASE]
     ALLOWED_CREDENTIALS = []
@@ -41,9 +42,10 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
         self.target = DOCKER_TARGET_CONTAINER if IS_IN_DOCKER else 'localhost'
         self.credentials = self._generate_credentials(self.target)
+        self.shdocker = SnowShuDocker()
         self.container: "Container" = None
         self.passive_container: "Container" = None
-        self.shdocker = None
+        self.target_arch = None
         self.replica_meta = replica_metadata
         self.is_incremental = False
 
@@ -185,7 +187,7 @@ AS
                         f"The override image is not a Postgres image: {incremental_image}")
             except Exception as error:
                 logger.error(
-                    "Looks like provided DOCKER_IMAGE does not exists, error:\n%s", error)
+                    "Looks like provided DOCKER_IMAGE does not exist, error:\n%s", error)
                 raise error
         self._init_image(source_adapter_name)
 
@@ -194,14 +196,12 @@ AS
 
         logger.info('Initializing target container...')
         self.container, self.passive_container = self.shdocker.startup(
-            self.DOCKER_IMAGE,
-            self.is_incremental,
-            self.DOCKER_START_COMMAND,
-            self.DOCKER_TARGET_PORT,
             self,
             source_adapter_name,
+            self.target_arch,
             self._build_snowshu_envars(
                 self.DOCKER_SNOWSHU_ENVARS))
+
         logger.info('Container initialized.')
         while not self.target_database_is_ready():
             sleep(.5)

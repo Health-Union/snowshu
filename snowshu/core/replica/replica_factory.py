@@ -8,7 +8,6 @@ import logging
 from snowshu.core.configuration_parser import (Configuration,
                                                ConfigurationParser)
 from snowshu.core.graph import SnowShuGraph
-from snowshu.core.docker import SnowShuDocker
 from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.printable_result import (graph_to_result_list,
                                            printable_result)
@@ -129,5 +128,5 @@ class ReplicaFactory:
         logger.info('Loading configuration...')
         start_timer = time.time()
         self.config = ConfigurationParser().from_file_or_path(config)
-        self.config.target_profile.adapter.shdocker = SnowShuDocker(target_arch)
+        self.config.target_profile.adapter.target_arch = target_arch
         logger.info('Configuration loaded in %s.', duration(start_timer))

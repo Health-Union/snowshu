@@ -20,6 +20,8 @@ class PostgresAdapter(BaseTargetAdapter):
     name = 'postgres'
     dialect = 'postgresql'
     DOCKER_IMAGE = POSTGRES_IMAGE
+    # One below has to be separate since incremental build logic overwrites DOCKER_IMAGE
+    BASE_DB_IMAGE = POSTGRES_IMAGE
     PRELOADED_PACKAGES = ['postgresql-plpython3-12', 'systemctl']
     MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
