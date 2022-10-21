@@ -9,11 +9,11 @@ from contextlib import nullcontext as does_not_raise
 
 from snowshu.core.configuration_parser import ConfigurationParser
 from snowshu.core.graph import SnowShuGraph
-from snowshu.core.models import Relation
+from snowshu.core.models import Relation, data_types as dt, Attribute
 from snowshu.core.models import materializations as mz
 from snowshu.exceptions import InvalidRelationshipException
 from snowshu.samplings.samplings import BruteForceSampling, DefaultSampling
-from tests.conftest import CONFIGURATION, BASIC_CONFIGURATION, rand_string
+from tests.conftest import CONFIGURATION, BASIC_CONFIGURATION, rand_string, RelationTestHelper
 
 
 def test_graph_builds_dags_correctly(stub_graph_set):
@@ -780,3 +780,57 @@ def test_graph_difference_more_both_isolated_non_isolated_relations_source(stub_
         expected_nodes = source_catalog[1:]
         actual = SnowShuGraph.catalog_difference(shgraph, target_catalog)
         assert list(actual.nodes) == expected_nodes
+
+
+def test_graph_diff_with_existing_relationships():
+    """ Test graph difference for combination of directional and bidirectional edges that were missed 
+    
+        Reproducible case is when the graph has an existing (directional) edge between two nodes
+        and the upstream node needs to have an added (bidirectional) edge to a new relation node,
+        which came with another missing node with a (bidirectional) edge between the new relations
+    """
+
+    helper = RelationTestHelper()
+    downstream_relation = Relation(name='DOWNSTREAM_RELATION', **helper.rand_relation_helper())
+    upstream_relation = Relation(name='UPSTREAM_RELATION', **helper.rand_relation_helper())
+    birelation_one = Relation(name='BIRELATION_ONE', **helper.rand_relation_helper())
+    birelation_two = Relation(name='BIRELATION_TWO', **helper.rand_relation_helper())
+
+    bidirectional_pair_key = rand_string(10).upper()
+    birelation_two_bi_key = rand_string(15).upper()
+    upstream_bi_key = rand_string(15).upper()
+    directional_key = rand_string(20).upper()
+
+    for n in (downstream_relation, upstream_relation,):
+        n.attributes = [Attribute(directional_key, dt.INTEGER)]
+
+    upstream_relation.attributes.append(Attribute(upstream_bi_key, dt.INTEGER))
+    birelation_one.attributes = [Attribute(bidirectional_pair_key, dt.VARCHAR)]
+    birelation_two.attributes = [Attribute(bidirectional_pair_key, dt.VARCHAR), Attribute(birelation_two_bi_key, dt.INTEGER)]
+
+    for r in (downstream_relation, upstream_relation, birelation_one, birelation_two):
+        r.compiled_query = ''
+
+    dag = nx.DiGraph()
+    dag.add_edge(birelation_one, birelation_two, direction='bidirectional',
+                 local_attribute=bidirectional_pair_key, remote_attribute=bidirectional_pair_key)
+    dag.add_edge(upstream_relation, birelation_two, direction='bidirectional',
+                 local_attribute=upstream_bi_key, remote_attribute=birelation_two_bi_key)
+    dag.add_edge(upstream_relation, downstream_relation, direction='directional',
+                 local_attribute=directional_key, remote_attribute=directional_key)
+
+    shgraph = SnowShuGraph()
+    shgraph.graph = dag
+
+    # all relations found in source catalog
+    source_catalog = [downstream_relation,
+                      upstream_relation,
+                      birelation_one,
+                      birelation_two]
+    # all relations in source catalog are in a single (weakly) connected component
+    expected_nodes = set(source_catalog)
+    # relations exisitng in target catalog
+    target_catalog = {upstream_relation, downstream_relation}
+
+    result_graph = SnowShuGraph.catalog_difference(shgraph, target_catalog)
+    assert set(result_graph.nodes) == expected_nodes
