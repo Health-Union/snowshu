@@ -1,6 +1,5 @@
 import os.path
 from datetime import datetime
-from itertools import chain
 from typing import List, Set, Tuple, Optional, Union
 import logging
 
@@ -49,26 +48,17 @@ class SnowShuGraph:
         if isinstance(source_graph, SnowShuGraph):
             source_graph = source_graph.graph
 
-        non_isolated_relations = {}
-        for relation, relation_base in source_graph.edges:
-            if non_isolated_relations.get(relation_base):
-                non_isolated_relations[relation_base].append(relation)
-            else:
-                non_isolated_relations[relation_base] = [relation]
+        source_nodes = set(source_graph.nodes)
+        # relations not found in target catalog
+        missing_relations = source_nodes.difference(target_catalog)
+        # generate actual list since source_graph will be modified
+        weakly_connected_subgraphs = [comp for comp in networkx.weakly_connected_components(source_graph)]  # noqa pylint: disable=unnecessary-comprehension
 
-        non_isolated_relations = [(relation_base, *relations)
-                                  for relation_base, relations in non_isolated_relations.items()]
-        isolated_relations = list(networkx.isolates(source_graph))
+        # if a component has no missing relations, remove those nodes from the graph
+        for component in weakly_connected_subgraphs:
+            if not missing_relations.intersection(component):
+                source_graph.remove_nodes_from(component)
 
-        non_isolated_relations_difference = chain.from_iterable([entries for entries in non_isolated_relations
-                                                                 if not all(entry in target_catalog
-                                                                            for entry in entries)])
-
-        isolated_relations_difference = set(isolated_relations).difference(target_catalog)
-
-        difference_catalog = isolated_relations_difference.union(non_isolated_relations_difference)
-        nodes_to_delete = [node for node in source_graph if node not in difference_catalog]
-        source_graph.remove_nodes_from(nodes_to_delete)
         return source_graph
 
     @staticmethod
