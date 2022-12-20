@@ -152,44 +152,16 @@ AS
     def initialize_replica(self,
                            source_adapter_name: str,
                            incremental_image: str = None) -> None:  # noqa pylint:disable=too-many-branches
-        """shimming but will want to move _init_image public with this
-        interface.
+        """ Launches a container and initializes the replica.
+            Should be defined in specific target adapters due to different setup of different dbs
 
         Args:
             source_adapter_name: the classname of the source adapter
             incremental_image: the name of incremental image to initialize,
                 if specified will override default image
         """
-        if incremental_image:
-            try:
-                # If image tag not specified, explicilty set to "latest"
-                if ':' not in incremental_image:
-                    incremental_image = f'{incremental_image}:latest'
 
-                images = self.shdocker.client.images.list(
-                    name=incremental_image)
-
-                logger.debug(
-                    f"List of images found with name {incremental_image}: {images}")
-                image_commands = []
-                for item in images[0].history():
-                    if ("postgres" in item["CreatedBy"]) or ("PGDATA" in item["CreatedBy"]):
-                        image_commands.append(item["CreatedBy"])
-
-                if len(image_commands) > 0:
-                    self.__class__.DOCKER_IMAGE = incremental_image
-                    self.is_incremental = True
-
-                else:
-                    logger.error(
-                        f"The override image is not a Postgres image: {incremental_image}")
-                    raise Exception(
-                        f"The override image is not a Postgres image: {incremental_image}")
-            except Exception as error:
-                logger.error(
-                    "Looks like provided DOCKER_IMAGE does not exist, error:\n%s", error)
-                raise error
-        self._init_image(source_adapter_name)
+        raise NotImplementedError()
 
     def _init_image(self,
                     source_adapter_name: str) -> None:
