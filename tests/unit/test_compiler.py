@@ -21,7 +21,7 @@ def stub_out_sampling(rel:Relation)->Relation:
 def test_analyze_unsampled(stub_relation_set):
     upstream = stub_relation_set.upstream_relation
     upstream.unsampled = True
-    dag = nx.DiGraph()
+    dag = nx.MultiDiGraph()
     dag.add_edges_from([(upstream, stub_relation_set.downstream_relation,)])
     adapter = SnowflakeAdapter()
     upstream = RuntimeSourceCompiler.compile_queries_for_relation(upstream, dag, adapter, True)
@@ -61,7 +61,7 @@ def test_analyze_unsampled(stub_relation_set):
 def test_run_unsampled(stub_relation_set):
     upstream = stub_relation_set.upstream_relation
     upstream.unsampled = True
-    dag = nx.DiGraph()
+    dag = nx.MultiDiGraph()
     dag.add_edges_from([(upstream, stub_relation_set.downstream_relation,)])
     adapter = SnowflakeAdapter()
     upstream = RuntimeSourceCompiler.compile_queries_for_relation(upstream, dag, adapter, False)
@@ -75,7 +75,7 @@ def test_run_unsampled(stub_relation_set):
 def test_analyze_iso(stub_relation_set):
     iso = stub_relation_set.iso_relation
     iso = stub_out_sampling(iso)
-    dag = nx.DiGraph()
+    dag = nx.MultiDiGraph()
     dag.add_nodes_from([iso])
     adapter = SnowflakeAdapter()
     iso = RuntimeSourceCompiler.compile_queries_for_relation(iso, dag, adapter, True)
@@ -116,7 +116,7 @@ def test_analyze_iso(stub_relation_set):
 def test_run_iso(stub_relation_set):
     iso = stub_relation_set.iso_relation
     iso = stub_out_sampling(iso)
-    dag = nx.DiGraph()
+    dag = nx.MultiDiGraph()
     dag.add_nodes_from([iso])
     adapter = SnowflakeAdapter()
     iso = RuntimeSourceCompiler.compile_queries_for_relation(iso, dag, adapter, False)
@@ -144,7 +144,7 @@ def test_run_deps_polymorphic_idtype(stub_relation_set):
     child1.data=pd.DataFrame([{childid: "1"},{childid: "2"}])
     child2.data=pd.DataFrame([{childid: "1"},{childid: "3"}])
     child3.data=pd.DataFrame([{childid: "1"},{childid: "4"}])
-    dag=nx.DiGraph()
+    dag=nx.MultiDiGraph()
     dag.add_edge(child1,parent,direction="polymorphic",remote_attribute=childid,local_attribute=childid,
         local_type_attribute=childtype,local_type_overrides=local_overrides)
     dag.add_edge(child2,parent,direction="polymorphic",remote_attribute=childid,local_attribute=childid,
@@ -178,7 +178,7 @@ def test_run_deps_polymorphic_parentid(stub_relation_set):
     child1.data=pd.DataFrame([{parentid: "1"},{parentid: "10"}])
     child2.data=pd.DataFrame([{parentid: "2"},{parentid: "20"}])
     child3.data=pd.DataFrame([{parentid: "3"},{parentid: "30"}])
-    dag=nx.DiGraph()
+    dag=nx.MultiDiGraph()
     dag.add_edge(child1,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid)
     dag.add_edge(child2,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid)
     dag.add_edge(child3,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid)
@@ -205,7 +205,7 @@ def test_run_deps_directional(stub_relation_set):
         relation.attributes=[Attribute('id',dt.INTEGER)]
         relation=stub_out_sampling(relation)
     upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
-    dag=nx.DiGraph()
+    dag=nx.MultiDiGraph()
     dag.add_edge(upstream,downstream,direction="directional",remote_attribute='id',local_attribute='id')
     adapter=SnowflakeAdapter()
     upstream = RuntimeSourceCompiler.compile_queries_for_relation(upstream,dag,adapter,False)
@@ -242,7 +242,7 @@ def test_run_deps_bidirectional_include_outliers(stub_relation_set):
         relation=stub_out_sampling(relation)
     upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
 
-    dag=nx.DiGraph()
+    dag=nx.MultiDiGraph()
     dag.add_edge(upstream,downstream,direction="bidirectional",remote_attribute='id',local_attribute='id')
     adapter=SnowflakeAdapter()
     RuntimeSourceCompiler.compile_queries_for_relation(upstream,dag,adapter,False)
@@ -301,7 +301,7 @@ def test_run_deps_bidirectional_exclude_outliers(stub_relation_set):
         relation=stub_out_sampling(relation)
     upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
 
-    dag=nx.DiGraph()
+    dag=nx.MultiDiGraph()
     dag.add_edge(upstream,downstream,direction="bidirectional",remote_attribute='id',local_attribute='id')
     adapter=SnowflakeAdapter()
     RuntimeSourceCompiler.compile_queries_for_relation(upstream,dag,adapter,False)
@@ -360,7 +360,7 @@ def test_run_deps_directional_line_graph():
     for relation in (relation_a, relation_b, relation_c,):
         relation=stub_out_sampling(relation)
 
-    dag=nx.DiGraph()
+    dag=nx.MultiDiGraph()
     dag.add_edge(relation_a, relation_b, direction="directional", remote_attribute="col_a", local_attribute="col_b_a")
     dag.add_edge(relation_b, relation_c, direction="directional", remote_attribute="col_b_c", local_attribute="col_c")
     adapter=SnowflakeAdapter()
@@ -438,7 +438,7 @@ def test_run_deps_bidirectional_line_graph():
     for relation in (relation_a, relation_b, relation_c,):
         relation=stub_out_sampling(relation)
 
-    dag=nx.DiGraph()
+    dag=nx.MultiDiGraph()
     dag.add_edge(relation_a, relation_b, direction="bidirectional", remote_attribute="col_a", local_attribute="col_b_a")
     dag.add_edge(relation_b, relation_c, direction="bidirectional", remote_attribute="col_b_c", local_attribute="col_c")
     adapter=SnowflakeAdapter()
@@ -507,7 +507,7 @@ def test_run_deps_directional_multi_deps():
     for relation in (relation_a, relation_b, relation_c,):
         relation=stub_out_sampling(relation)
 
-    dag=nx.DiGraph()
+    dag=nx.MultiDiGraph()
     dag.add_edge(relation_a, relation_c, direction="directional", remote_attribute="col_a", local_attribute="col_c_a")
     dag.add_edge(relation_b, relation_c, direction="directional", remote_attribute="col_b", local_attribute="col_c_b")
     adapter=SnowflakeAdapter()
@@ -572,7 +572,7 @@ def test_run_deps_bidirectional_multi_deps():
     for relation in (relation_a, relation_b, relation_c,):
         relation=stub_out_sampling(relation)
 
-    dag=nx.DiGraph()
+    dag=nx.MultiDiGraph()
     dag.add_edge(relation_a, relation_c, direction="bidirectional", remote_attribute="col_a", local_attribute="col_c_a")
     dag.add_edge(relation_b, relation_c, direction="bidirectional", remote_attribute="col_b", local_attribute="col_c_b")
     adapter=SnowflakeAdapter()
@@ -678,7 +678,7 @@ def test_run_deps_mixed_multi_deps():
     for relation in (relation_a, relation_b, relation_c, relation_d, relation_e,):
         relation=stub_out_sampling(relation)
 
-    dag=nx.DiGraph()
+    dag=nx.MultiDiGraph()
     dag.add_edge(relation_a, relation_c, direction="bidirectional", remote_attribute="col_a_c", local_attribute="col_c_ae")
     dag.add_edge(relation_a, relation_d, direction="directional", remote_attribute="col_a_d", local_attribute="col_d_a")
     dag.add_edge(relation_b, relation_c, direction="directional", remote_attribute="col_b_c", local_attribute="col_c_bd")

@@ -166,12 +166,12 @@ def stub_graph_set() -> tuple:
     """provides a collection of stubbed graphs with relations, and the raw values"""
     vals = RelationTestHelper()
 
-    iso_graph = nx.DiGraph()
+    iso_graph = nx.MultiDiGraph()
     iso_graph.add_node(vals.iso_relation)
-    view_graph = nx.DiGraph()
+    view_graph = nx.MultiDiGraph()
     view_graph.add_node(vals.view_relation)
 
-    dag = nx.DiGraph()
+    dag = nx.MultiDiGraph()
     dag.add_edge(vals.birelation_left, vals.birelation_right, direction='bidirectional',
                  local_attribute=vals.bidirectional_key_right, remote_attribute=vals.bidirectional_key_left)
     dag.add_edge(vals.upstream_relation, vals.downstream_relation, direction='directional',

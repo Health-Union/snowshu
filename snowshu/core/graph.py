@@ -135,7 +135,7 @@ class SnowShuGraph:
             self._set_overriding_params_for_node(relation, configs)
 
         # build graph and add edges
-        graph = networkx.DiGraph()
+        graph = networkx.MultiDiGraph()
         graph.add_nodes_from(catalog)
         self.graph = self._apply_specifications(configs, graph, catalog)
 
@@ -190,7 +190,7 @@ class SnowShuGraph:
     @staticmethod  # noqa mccabe: disable=MC0001
     def _apply_specifications(  # noqa pylint: disable=too-many-locals
             configs: Configuration,
-            graph: networkx.DiGraph,
+            graph: networkx.MultiDiGraph,
             available_nodes: Set[Relation]) -> networkx.DiGraph:
         """ Takes a configuration file, a graph and a collection of available
             nodes, applies configs as edges and returns the graph.
@@ -312,7 +312,7 @@ class SnowShuGraph:
     def _process_downstream_relation_set(
             relationship: dict,
             downstream_set: Set[Relation],
-            graph: networkx.DiGraph,
+            graph: networkx.MultiDiGraph,
             full_relation_set: Set[Relation]) -> networkx.Graph:
         """ Adds the appropriate edges to the graph for the given relationship """
         # pylint: disable-msg=too-many-locals

@@ -151,6 +151,29 @@ CONFIGURATION = {
                     ],
                 }
             },
+            {
+                "database": "SNOWSHU_DEVELOPMENT",
+                "schema": "POLYMORPHIC_DATA",
+                "relation": "PARENT_TABLE",
+                "relationships": {
+                    "bidirectional": [
+                        {
+                            "local_attribute": "ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "POLYMORPHIC_DATA",
+                            "relation": "PARENT_TABLE_2",
+                            "remote_attribute": "ID"
+                        },
+                        {
+                            "local_attribute": "ID",
+                            "database": "SNOWSHU_DEVELOPMENT",
+                            "schema": "POLYMORPHIC_DATA",
+                            "relation": "PARENT_TABLE_2",
+                            "remote_attribute": "PARENT_ID"
+                        }
+                    ]
+                }
+            },
         ]
     },
     "target": {
