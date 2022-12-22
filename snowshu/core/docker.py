@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class SnowShuDocker:
 
     def __init__(self):
-        self.client = docker.from_env()
+        self.client = docker.from_env(timeout=600)
 
     def _create_snowshu_volume(self, volume_name: str) -> docker.models.volumes.Volume:
         """ Creating a docker volume if not exists"""
