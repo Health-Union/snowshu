@@ -23,7 +23,8 @@ class PostgresAdapter(BaseTargetAdapter):
     # One below has to be separate since incremental build logic overwrites DOCKER_IMAGE
     BASE_DB_IMAGE = POSTGRES_IMAGE
     PRELOADED_PACKAGES = ['postgresql-plpython3-12', 'systemctl']
-    MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
+    MATERIALIZATION_MAPPINGS = dict(
+        TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
     DOCKER_REPLICA_MOUNT_FOLDER = DOCKER_REPLICA_MOUNT_FOLDER
     DEFAULT_CASE = 'lower'
@@ -122,7 +123,8 @@ class PostgresAdapter(BaseTargetAdapter):
                 try:
                     db_conn.execute(statement)
                 except sqlalchemy.exc.IntegrityError as error:
-                    logger.error('Duplicate extension creation of %s caused an error:\n%s', ext, error)
+                    logger.error(
+                        'Duplicate extension creation of %s caused an error:\n%s', ext, error)
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
         database = self.quoted(self._correct_case(database))
@@ -134,7 +136,8 @@ class PostgresAdapter(BaseTargetAdapter):
         except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as sql_errs:
             if (f'Key (nspname)=({schema}) already exists' in str(sql_errs)) or (
                     'duplicate key value violates unique constraint ' in str(sql_errs)):
-                logger.debug('Schema %s.%s already exists, skipping.', database, schema)
+                logger.debug(
+                    'Schema %s.%s already exists, skipping.', database, schema)
             else:
                 raise sql_errs
 
@@ -168,14 +171,17 @@ class PostgresAdapter(BaseTargetAdapter):
             result = engine.execute(query)
             schemas = result.fetchall()
         except Exception as exc:
-            logger.info("Failed to get schemas for database %s: %s", database, exc)
+            logger.info(
+                "Failed to get schemas for database %s: %s", database, exc)
             raise exc
-        logger.debug(f'Done. Found {len(schemas)} schemas in {database} database.')
+        logger.debug(
+            f'Done. Found {len(schemas)} schemas in {database} database.')
         return [s[0] for s in schemas] if len(schemas) > 0 else schemas
 
     @overrides
     def _get_relations_from_database(self, schema_obj: BaseTargetAdapter._DatabaseObject) -> List[Relation]:
-        quoted_database = self.quoted(schema_obj.full_relation.database)  # quoted db name
+        quoted_database = self.quoted(
+            schema_obj.full_relation.database)  # quoted db name
         relation_database = schema_obj.full_relation.database  # case corrected db name
         case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schame name
         relations_sql = f"""
@@ -203,13 +209,15 @@ class PostgresAdapter(BaseTargetAdapter):
         logger.debug(
             f'Collecting detailed relations from database {quoted_database}...')
         relations_frame = self._safe_query(relations_sql, quoted_database)
-        unique_relations = (relations_frame['schema'] + '.' + relations_frame['relation']).unique().tolist()
+        unique_relations = (
+            relations_frame['schema'] + '.' + relations_frame['relation']).unique().tolist()
         logger.debug(
             f'Done collecting relations. Found a total of {len(unique_relations)} '
             f'unique relations in database {quoted_database}')
         relations = list()
         for relation in unique_relations:
-            logger.debug(f'Building relation {quoted_database + "." + relation}...')
+            logger.debug(
+                f'Building relation {quoted_database + "." + relation}...')
             attributes = list()
 
             for attribute in relations_frame.loc[(relations_frame['schema'] + '.'
@@ -223,9 +231,9 @@ class PostgresAdapter(BaseTargetAdapter):
                     ))
 
                 relation = Relation(relation_database,
-                                    self._correct_case(attribute.schema), # noqa pylint: disable=undefined-loop-variable
-                                    self._correct_case(attribute.relation), # noqa pylint: disable=undefined-loop-variable
-                                    self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")], # noqa pylint: disable=undefined-loop-variable
+                                    self._correct_case(attribute.schema),  # noqa pylint: disable=undefined-loop-variable
+                                    self._correct_case(attribute.relation),  # noqa pylint: disable=undefined-loop-variable
+                                    self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")],  # noqa pylint: disable=undefined-loop-variable
                                     attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')
             relations.append(relation)
@@ -257,7 +265,8 @@ class PostgresAdapter(BaseTargetAdapter):
                 if any(matched_nul_char):
                     logger.warning("Invalid 0x00 char found in column %s. Replacing with '%s' "
                                    "(excluding bounding single quotes)", col, self.x00_replacement)
-                    relation.data[col] = relation.data[col].str.replace('\x00', self.x00_replacement)
+                    relation.data[col] = relation.data[col].str.replace(
+                        '\x00', self.x00_replacement)
         return relation
 
     @staticmethod
@@ -274,7 +283,8 @@ class PostgresAdapter(BaseTargetAdapter):
 
     def image_initialize_bash_commands(self) -> List[str]:
         # install extra postgres extension packages here
-        commands = [f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}']
+        commands = [
+            f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}']
         return commands
 
     def initialize_replica(self,
@@ -319,6 +329,33 @@ class PostgresAdapter(BaseTargetAdapter):
                 raise error
         self._init_image(source_adapter_name)
 
+    def create_or_replace_view(self, relation) -> None:
+        """Creates a view of the specified relation in the target adapter.
+
+        Relation must have a valid ``view_ddl`` value that can be executed as a SELECT statement.
+
+        Args:
+            relation: the :class:`Relation <snowshu.core.models.relation.Relation>` object to be created as a view.
+
+        """
+        database = self.quoted(self._correct_case(relation.database))
+        schema = self.quoted(self._correct_case(relation.schema))
+        ddl_statement = f"""CREATE OR REPLACE VIEW
+{self.quoted_dot_notation(relation)}
+AS
+{relation.view_ddl}
+"""
+        engine = self.get_connection(database_override=database,
+                                     schema_override=schema)
+        try:
+            engine.execute(ddl_statement)
+        except Exception as exc:
+            logger.info("Failed to create %s %s:%s", relation.materialization.name,
+                        self.quoted_dot_notation(relation),
+                        exc)
+            raise exc
+        logger.info('Created relation %s', self.quoted_dot_notation(relation))
+
     def enable_cross_database(self) -> None:
         unique_databases = {correct_case(d, self.DEFAULT_CASE == 'upper') for d in self._get_all_databases()}
         unique_databases.remove('postgres')
@@ -351,21 +388,25 @@ class PostgresAdapter(BaseTargetAdapter):
 
             for schema_database, schema in unique_schemas:
                 if schema_database != u_db and not self.is_fdw_schema(schema, unique_databases):
-                    statement_runner(f'DROP SCHEMA IF EXISTS {schema_database}__{schema} CASCADE')
-                    statement_runner(f'CREATE SCHEMA {schema_database}__{schema}')
+                    statement_runner(
+                        f'DROP SCHEMA IF EXISTS {schema_database}__{schema} CASCADE')
+                    statement_runner(
+                        f'CREATE SCHEMA {schema_database}__{schema}')
 
                     statement_runner(f'IMPORT FOREIGN SCHEMA {schema} FROM SERVER '
                                      f'{schema_database} INTO {schema_database}__{schema}')
 
     def copy_replica_data(self) -> Tuple[bool, str]:
-        status = self.container.exec_run(f"/bin/bash -c '{self.DOCKER_SHARE_REPLICA_DATA}'", tty=True)
+        status = self.container.exec_run(
+            f"/bin/bash -c '{self.DOCKER_SHARE_REPLICA_DATA}'", tty=True)
         if self.passive_container:
             self.container.stop()
             self.passive_container.start()
             logger.info('Copying replica data into passive container')
 
             logger.info('Stopping postgres')
-            self.passive_container.exec_run("/bin/bash -c 'systemctl stop postgresql'", tty=True) 
+            self.passive_container.exec_run(
+                "/bin/bash -c 'systemctl stop postgresql'", tty=True)
 
             logger.info('Waiting until it is stopped')
             while 'Active: inactive (dead)' not in self.passive_container.exec_run(
@@ -373,11 +414,13 @@ class PostgresAdapter(BaseTargetAdapter):
                 time.sleep(0.5)
 
             logger.info("Purging passive container's pgdata dir")
-            self.passive_container.exec_run("/bin/bash -c 'rm -rf $PGDATA/*'", tty=True)
+            self.passive_container.exec_run(
+                "/bin/bash -c 'rm -rf $PGDATA/*'", tty=True)
 
             # copy over files from the shared volume
             logger.info('Copying over pgdata from shared volume')
-            self.passive_container.exec_run(f"/bin/bash -c '{self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE}'", tty=True)
+            self.passive_container.exec_run(
+                f"/bin/bash -c '{self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE}'", tty=True)
             # Postgres is not started here intentionally, replica still behaves as expected
 
         return status

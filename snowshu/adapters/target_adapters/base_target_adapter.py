@@ -95,29 +95,13 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
     def create_or_replace_view(self, relation) -> None:
         """Creates a view of the specified relation in the target adapter.
 
-        Relation must have a valid ``view_ddl`` value that can be executed as a SELECT statement.
+        Must be defined in downstream adapter due to possibility of having different create syntax in various dbs
 
         Args:
             relation: the :class:`Relation <snowshu.core.models.relation.Relation>` object to be created as a view.
 
         """
-        database = self.quoted(self._correct_case(relation.database))
-        schema = self.quoted(self._correct_case(relation.schema))
-        ddl_statement = f"""CREATE OR REPLACE VIEW
-{self.quoted_dot_notation(relation)}
-AS
-{relation.view_ddl}
-"""
-        engine = self.get_connection(database_override=database,
-                                     schema_override=schema)
-        try:
-            engine.execute(ddl_statement)
-        except Exception as exc:
-            logger.info("Failed to create %s %s:%s", relation.materialization.name,
-                        self.quoted_dot_notation(relation),
-                        exc)
-            raise exc
-        logger.info('Created relation %s', self.quoted_dot_notation(relation))
+        raise NotImplementedError()
 
     def load_data_into_relation(self, relation: Relation) -> None:
         database = self.quoted(self._correct_case(relation.database))
