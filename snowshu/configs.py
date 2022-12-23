@@ -17,6 +17,7 @@ DOCKER_TARGET_CONTAINER = 'snowshu_target'
 DOCKER_REMOUNT_DIRECTORY = 'snowshu_replica_data'
 DOCKER_TARGET_PORT = 9999
 DOCKER_WORKING_DIR = Path('/app').as_posix()
+DOCKER_API_TIMEOUT = 600  # in seconds, default is 60 which causes issues
 POSTGRES_IMAGE = 'postgres:12'
 
 
