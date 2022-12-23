@@ -27,13 +27,13 @@ def test_graph_builds_dags_correctly(stub_graph_set):
                     vals.birelation_left,
                     vals.birelation_right]
 
-    graph = nx.Graph()
+    graph = nx.MultiGraph()
     graph.add_nodes_from(full_catalog)
     graph = graph.to_directed()
     shgraph.graph = graph
 
     for sub in shgraph.get_connected_subgraphs():
-        assert isinstance(sub, nx.DiGraph)
+        assert isinstance(sub, nx.MultiDiGraph)
 
 
 def test_graph_allows_upstream_wildcards(stub_graph_set):
@@ -69,7 +69,7 @@ def test_graph_allows_upstream_wildcards(stub_graph_set):
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
     modified_graph = shgraph._apply_specifications(
-        config, nx.DiGraph(), full_catalog)
+        config, nx.MultiDiGraph(), full_catalog)
     assert (vals.upstream_relation, vals.downstream_relation,
             ) in modified_graph.edges
 
@@ -96,8 +96,8 @@ def test_unsampled(stub_graph_set):
     assert vals.iso_relation.unsampled is False
 
     shgraph._apply_specifications(
-        config, nx.DiGraph(), full_catalog)
-    shgraph._apply_specifications(config, nx.DiGraph(), full_catalog)
+        config, nx.MultiDiGraph(), full_catalog)
+    shgraph._apply_specifications(config, nx.MultiDiGraph(), full_catalog)
 
     assert vals.iso_relation.unsampled is True
 
@@ -811,7 +811,7 @@ def test_graph_diff_with_existing_relationships():
     for r in (downstream_relation, upstream_relation, birelation_one, birelation_two):
         r.compiled_query = ''
 
-    dag = nx.DiGraph()
+    dag = nx.MultiDiGraph()
     dag.add_edge(birelation_one, birelation_two, direction='bidirectional',
                  local_attribute=bidirectional_pair_key, remote_attribute=bidirectional_pair_key)
     dag.add_edge(upstream_relation, birelation_two, direction='bidirectional',

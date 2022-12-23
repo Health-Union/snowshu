@@ -74,7 +74,7 @@ class SnowShuGraph:
                 the `filename` corresponds to the name of .png and .graphml files where cycles image is saved.
         """
 
-        cycle_graph = networkx.DiGraph()
+        cycle_graph = networkx.MultiDiGraph()
         message = ""
         nodes = []
 
@@ -191,7 +191,7 @@ class SnowShuGraph:
     def _apply_specifications(  # noqa pylint: disable=too-many-locals
             configs: Configuration,
             graph: networkx.MultiDiGraph,
-            available_nodes: Set[Relation]) -> networkx.DiGraph:
+            available_nodes: Set[Relation]) -> networkx.MultiDiGraph:
         """ Takes a configuration file, a graph and a collection of available
             nodes, applies configs as edges and returns the graph.
 
@@ -200,12 +200,12 @@ class SnowShuGraph:
             are included in the edge data.
 
             Args:
-                configs: Configuration to translate into a digraph
+                configs: Configuration to translate into a multidigraph
                 graph: The graph object to apply edges to. Assumed to have most nodes included already
                 available_nodes: The set of nodes that are available to be in the graph
 
             Returns:
-                - The final digraph with edges that represents the given configuration
+                - The final multidigraph with edges that represents the given configuration
         """
         for relation in configs.specified_relations:
             # create dict for pattern matching of specified relation pattern
