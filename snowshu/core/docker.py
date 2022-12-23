@@ -7,7 +7,7 @@ import logging
 import docker
 
 from snowshu.configs import (DOCKER_NETWORK, DOCKER_REPLICA_MOUNT_FOLDER,
-                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, LOCAL_ARCHITECTURE)
+                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, DOCKER_API_TIMEOUT, LOCAL_ARCHITECTURE)
 
 if TYPE_CHECKING:
     from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class SnowShuDocker:
 
     def __init__(self):
-        self.client = docker.from_env()
+        self.client = docker.from_env(timeout=DOCKER_API_TIMEOUT)
 
     def _create_snowshu_volume(self, volume_name: str) -> docker.models.volumes.Volume:
         """ Creating a docker volume if not exists"""
