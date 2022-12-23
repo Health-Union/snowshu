@@ -1,8 +1,10 @@
 import time
 from unittest import mock
+import pytest
 
 from pandas.core.frame import DataFrame
 from sqlalchemy import create_engine
+import docker
 
 from snowshu.adapters.target_adapters import BaseTargetAdapter
 from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
@@ -163,3 +165,23 @@ def test_restore_data_from_shared_replica(docker_flush):
         'postgresql://snowshu:snowshu@snowshu_target:9999/snowshu')
     checkpoint = engine.execute(f"SELECT * FROM {TEST_TABLE}").fetchall()
     assert ('a', 1) == checkpoint[0]
+
+
+def test_initialize_replica(docker_flush):
+    with mock.patch('snowshu.adapters.target_adapters.postgres_adapter.PostgresAdapter._initialize_snowshu_meta_database', return_value=None):
+        with mock.patch('snowshu.adapters.target_adapters.postgres_adapter.PostgresAdapter.target_database_is_ready', return_value=True):
+
+            pg_adapter = PostgresAdapter(replica_metadata={})
+            pg_adapter._credentials.host = 'snowshu_replica-integration-test'
+            pg_adapter.target_arch = [LOCAL_ARCHITECTURE]
+
+            pg_adapter.initialize_replica(source_adapter_name='SnowflakeAdapter')
+
+            # check if container with name snowshu_replica-integration-test exists
+            client = docker.from_env()
+            assert client.containers.get(f'snowshu_replica-integration-test_{LOCAL_ARCHITECTURE}')
+
+            # check if it has dependencies installed
+            container = client.containers.get(f'snowshu_replica-integration-test_{LOCAL_ARCHITECTURE}')
+            assert container.exec_run('psql --version').exit_code == 0
+            assert container.exec_run('systemctl --version').exit_code == 0
