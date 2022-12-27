@@ -74,7 +74,7 @@ class SnowShuGraph:
                 the `filename` corresponds to the name of .png and .graphml files where cycles image is saved.
         """
 
-        cycle_graph = networkx.DiGraph()
+        cycle_graph = networkx.MultiDiGraph()
         message = ""
         nodes = []
 
@@ -135,7 +135,7 @@ class SnowShuGraph:
             self._set_overriding_params_for_node(relation, configs)
 
         # build graph and add edges
-        graph = networkx.DiGraph()
+        graph = networkx.MultiDiGraph()
         graph.add_nodes_from(catalog)
         self.graph = self._apply_specifications(configs, graph, catalog)
 
@@ -190,8 +190,8 @@ class SnowShuGraph:
     @staticmethod  # noqa mccabe: disable=MC0001
     def _apply_specifications(  # noqa pylint: disable=too-many-locals
             configs: Configuration,
-            graph: networkx.DiGraph,
-            available_nodes: Set[Relation]) -> networkx.DiGraph:
+            graph: networkx.MultiDiGraph,
+            available_nodes: Set[Relation]) -> networkx.MultiDiGraph:
         """ Takes a configuration file, a graph and a collection of available
             nodes, applies configs as edges and returns the graph.
 
@@ -200,12 +200,12 @@ class SnowShuGraph:
             are included in the edge data.
 
             Args:
-                configs: Configuration to translate into a digraph
+                configs: Configuration to translate into a multidigraph
                 graph: The graph object to apply edges to. Assumed to have most nodes included already
                 available_nodes: The set of nodes that are available to be in the graph
 
             Returns:
-                - The final digraph with edges that represents the given configuration
+                - The final multidigraph with edges that represents the given configuration
         """
         for relation in configs.specified_relations:
             # create dict for pattern matching of specified relation pattern
@@ -312,7 +312,7 @@ class SnowShuGraph:
     def _process_downstream_relation_set(
             relationship: dict,
             downstream_set: Set[Relation],
-            graph: networkx.DiGraph,
+            graph: networkx.MultiDiGraph,
             full_relation_set: Set[Relation]) -> networkx.Graph:
         """ Adds the appropriate edges to the graph for the given relationship """
         # pylint: disable-msg=too-many-locals
