@@ -57,6 +57,10 @@
         "include_outliers": {
           "type": "boolean"
         },
+        "copy_views_as_tables":{
+          "type": "boolean",
+          "default": "True"
+        },
         "max_number_of_outliers": {
           "type": "integer",
           "default": 100

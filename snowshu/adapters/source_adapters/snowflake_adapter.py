@@ -78,6 +78,8 @@ class SnowflakeAdapter(BaseSourceAdapter):
         "varchar": dtypes.VARCHAR,
         "variant": dtypes.JSON}
 
+    # Is overwritten by config parser
+    # Not set to None for cases when adapter is initialized outside normal operation flow
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.TABLE}
 

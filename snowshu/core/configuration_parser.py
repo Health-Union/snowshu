@@ -12,7 +12,7 @@ from jsonschema.exceptions import ValidationError
 
 from snowshu.configs import (DEFAULT_MAX_NUMBER_OF_OUTLIERS,
                              DEFAULT_PRESERVE_CASE, DEFAULT_THREAD_COUNT)
-from snowshu.core.models import Credentials
+from snowshu.core.models import Credentials, materializations
 from snowshu.core.samplings.utils import get_sampling_from_partial
 from snowshu.core.utils import correct_case, fetch_adapter
 
@@ -180,6 +180,20 @@ class ConfigurationParser:
         source_adapter_profile = self._build_adapter_profile('source', loaded)
         self.default_case = source_adapter_profile.adapter.DEFAULT_CASE
 
+        # Pass materialization mapping to source adapter
+        self._set_default(loaded['source'], 'copy_views_as_tables', True)
+        if loaded['source']['copy_views_as_tables']:
+            materialization_mappings = {
+                "BASE TABLE": materializations.TABLE,
+                "VIEW": materializations.TABLE
+            }
+        else:
+            materialization_mappings = {
+                "BASE TABLE": materializations.TABLE,
+                "VIEW": materializations.VIEW
+            }
+        source_adapter_profile.adapter.MATERIALIZATION_MAPPINGS = materialization_mappings
+
         def case(val: str) -> str:
             return self.case(val)
 
@@ -192,8 +206,14 @@ class ConfigurationParser:
         # set defaults
         for attr in ('short_description', 'long_description',):
             self._set_default(loaded, attr)
-        self._set_default(loaded, 'threads', DEFAULT_THREAD_COUNT)
-        self._set_default(loaded['source'], 'include_outliers', False)
+        self._set_default(
+            loaded,
+            'threads',
+            DEFAULT_THREAD_COUNT)
+        self._set_default(
+            loaded['source'],
+            'include_outliers',
+            False)
         self._set_default(
             loaded['source'],
             'max_number_of_outliers',
