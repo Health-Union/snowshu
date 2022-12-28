@@ -1,10 +1,15 @@
 import random
-from urllib.parse import quote
+from contextlib import nullcontext as does_not_raise
 from unittest import mock
+from urllib.parse import quote
+
 import pytest
+from pandas.core.frame import DataFrame
 from psycopg2 import OperationalError
 
 from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
+from snowshu.core.models import data_types
+from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.credentials import Credentials
 from snowshu.core.models.materializations import TABLE
 from snowshu.core.models.relation import Relation
@@ -75,7 +80,7 @@ def test_sample_statement():
                         name=TABLE,
                         materialization=TABLE,
                         attributes=[])
-    sample = sf.sample_statement_from_relation(relation, BernoulliSampleMethod(10,units="probability"))
+    sample = sf.sample_statement_from_relation(relation, BernoulliSampleMethod(10, units="probability"))
     assert query_equalize(sample) == query_equalize(f"""
 SELECT
     *
@@ -157,11 +162,11 @@ LIMIT 1
 
 def test_directionally_wrap_statement_directional():
     sf = SnowflakeAdapter()
-    sampling = BernoulliSampleMethod(50,units='probability')
+    sampling = BernoulliSampleMethod(50, units='probability')
     query = "SELECT * FROM highly_conditional_query"
-    relmock=mock.MagicMock()
-    relmock.scoped_cte=lambda x : x
-    assert query_equalize(sf.directionally_wrap_statement(query,relmock, sampling)) == query_equalize(f"""
+    relmock = mock.MagicMock()
+    relmock.scoped_cte = lambda x: x
+    assert query_equalize(sf.directionally_wrap_statement(query, relmock, sampling)) == query_equalize(f"""
 WITH
     {relmock.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
 {query}
@@ -180,6 +185,67 @@ FROM
 """)
 
 
+def test_predicate_constraint_statement_null_values():
+    # GIVEN: a dataframe containing NULL entries in the REMOTE_KEY column
+    # APPLY: predicate_constraint_statement function
+    # EXPECTATION: null values  in the REMOTE_KEY are filtered out
+    sf = SnowflakeAdapter()
+    DATABASE, SCHEMA, TABLE_NAME = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
+    LOCAL_KEY, REMOTE_KEY = "ID", "CHILD_ID"
+
+    relation = Relation(database=DATABASE,
+                        schema=SCHEMA,
+                        name=TABLE_NAME,
+                        materialization=TABLE,
+                        attributes=[
+                            Attribute(REMOTE_KEY, data_types.NUMERIC)
+                        ])
+    CHILD_IDS = [1.0, 2.0, None]
+    EXPECTED_IDS = list(map(str, (filter(lambda x: x, CHILD_IDS))))
+    relation.data = DataFrame({"CHILD_ID": CHILD_IDS}, )
+
+    expected_statement = f"{LOCAL_KEY} IN ({','.join(EXPECTED_IDS)})"
+    statement = sf.predicate_constraint_statement(relation, False, LOCAL_KEY, REMOTE_KEY)
+
+    assert query_equalize(statement) == query_equalize(expected_statement)
+
+
+predicate_constraint_statement_outputs_to_check = [
+    ('No exceptions & no NaN values', [1.0, 2.0], does_not_raise()),
+    ('No exceptions & several NaN values', [1.0, None, 2.0, None], does_not_raise()),
+    ('ValueError exceptions & several NaN values', [None, None], pytest.raises(ValueError))
+]
+
+
+@pytest.mark.parametrize('test_name, child_ids, expectation',
+                         predicate_constraint_statement_outputs_to_check,
+                         ids=[i[0] for i in predicate_constraint_statement_outputs_to_check])
+def test_predicate_constraint_statement_null_values_exception(test_name, child_ids, expectation):
+    # GIVEN: a dataframe containing NULL entries in the REMOTE_KEY column
+    # APPLY: predicate_constraint_statement function
+    # EXPECTATION: null values  in the REMOTE_KEY are filtered out
+    sf = SnowflakeAdapter()
+    DATABASE, SCHEMA, TABLE_NAME = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
+    LOCAL_KEY, REMOTE_KEY = "ID", "CHILD_ID"
+
+    relation = Relation(database=DATABASE,
+                        schema=SCHEMA,
+                        name=TABLE_NAME,
+                        materialization=TABLE,
+                        attributes=[
+                            Attribute(REMOTE_KEY, data_types.NUMERIC)
+                        ])
+
+    EXPECTED_IDS = list(map(str, (filter(lambda x: x, child_ids))))
+    relation.data = DataFrame({"CHILD_ID": child_ids}, )
+
+    expected_statement = f"{LOCAL_KEY} IN ({','.join(EXPECTED_IDS)})"
+
+    with expectation:
+        statement = sf.predicate_constraint_statement(relation, False, LOCAL_KEY, REMOTE_KEY)
+        assert query_equalize(statement) == query_equalize(expected_statement)
+
+
 def test_retry_count_query():
     """ Verifies that the retry decorator works as expected """
     error_list = [OperationalError, OperationalError, OperationalError, SystemError, RuntimeError]
@@ -187,7 +253,7 @@ def test_retry_count_query():
         sf = SnowflakeAdapter()
         with pytest.raises(SystemError) as exc:
             sf.check_count_and_query("select * from unknown_table", 10, False)
-        
+
         # assert that the 4th error was raised
         assert exc.errisinstance(SystemError)
         assert sf.check_count_and_query.retry.statistics["attempt_number"] == 4
@@ -196,14 +262,14 @@ def test_retry_count_query():
 def test_quoted():
     sf = SnowflakeAdapter()
     val = rand_string(10)
-    
+
     assert val == sf.quoted(val)
 
 
 def test_quoted_for_spaced_string():
     sf = SnowflakeAdapter()
     val = rand_string(5) + ' ' + rand_string(6)
-    
+
     assert f'"{val}"' == sf.quoted(val)
 
 
