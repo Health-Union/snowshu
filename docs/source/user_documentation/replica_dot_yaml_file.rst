@@ -35,6 +35,7 @@ Your initial replica file will look something like `this
      profile: default
      sampling: default
      include_outliers: True
+     copy_views_as_tables: True # default is True, setting to False may cause incopatibilities if snowflake view can not be defined in postgres
      general_relations:
        databases:
        - pattern: SNOWSHU_DEVELOPMENT
@@ -190,11 +191,14 @@ In our example, this portion of the source directive would be the overall source
      profile: default
      sampling: default
      include_outliers: True
+     copy_views_as_tables: True
+
 
 The components of the overall source settings, dissected:
 
 - **profile** (*Required*) is the name of the profile found in ``credentials.yml`` to execute with. In this example we are using a profile named "default".
 - **sampling** (*Required*) is the name of the sampling method to be used. Samplings combine both the number of records sampled and the way in which they are selected. Current sampling options are ``default`` (uses Bernoulli sampling and Cochran's sizing), or ``brute_force`` (Uses a fixed % and Bernoulli).
+- **copy_views_as_tables** (*Optional*) specifies if snowflake views should be recreated as views (Flase option) or loaded as tables (True option). False is option is more performant, but may not be compatible if snowflake view can not be ported to postgres
 - **include_outliers** (*Optional*) determines if SnowShu should look for records that do not respect specified relationships, and ensure they are included in the sample. Defaults to False. 
 - **max_number_of_outliers** (*Optional*) specifies the maximum number of outliers to include when they are found. This helps keep a bad relationship (such as an incorrect assumption on a trillion row table) from exploding the replica. Default is 100. 
 
