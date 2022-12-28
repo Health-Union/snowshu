@@ -251,12 +251,20 @@ LIMIT {max_number_of_outliers})
                     remote_key).data_type.requires_quotes else str(val)
             try:
                 constraint_set = [
-                    quoted(val) for val in relation.data[remote_key].unique()]
+                    quoted(val) for val in relation.data[remote_key].dropna().unique()]
                 constraint_sql = ','.join(constraint_set)
+                if len(constraint_set) == 0:
+                    raise ValueError(f"The [{constraint_set}] constraint set is empty.")
             except KeyError as err:
                 logger.critical(
                     f'failed to build predicates for {relation.dot_notation}: '
                     f'remote key {remote_key} not in dataframe columns ({relation.data.columns})')
+                raise err
+            except ValueError as err:
+                logger.critical(
+                    f'failed to build predicates for {relation.dot_notation}: '
+                    f'the constraint set is empty, please validate the relation.'
+                )
                 raise err
 
         return f"{local_key} IN ({constraint_sql}) "

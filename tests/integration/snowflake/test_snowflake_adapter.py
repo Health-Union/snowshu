@@ -3,6 +3,8 @@ from random import randrange
 import pytest
 import yaml
 
+
+
 import snowshu.core.models.materializations as mz
 from snowshu.adapters.source_adapters import BaseSourceAdapter
 from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
@@ -314,7 +316,6 @@ def test_predicate_constraint_statement(sf_adapter):
             SAMPLE BERNOULLI (10)
         ))
         """)
-
 
 def test_check_count_and_query(sf_adapter):
     query = 'SELECT CHILD_ID from "SNOWSHU_DEVELOPMENT"."POLYMORPHIC_DATA"."PARENT_TABLE"'
