@@ -138,36 +138,37 @@ def test_schema_verification(tmpdir, stub_creds, stub_configs):
     assert isinstance(cred_config, dict)
 
 
-def test_materialization_mappings(stub_configs):
-    cases = {
-        'true': {
-            'value': True,
-            'result': {
-                "BASE TABLE": materializations.TABLE,
-                "VIEW": materializations.TABLE
-            }
-        },
-        'false': {
-            'value': False,
-            'result': {
-                "BASE TABLE": materializations.TABLE,
-                "VIEW": materializations.VIEW
-            }
-        },
-        'undefined': {
-            'value': None,
-            'result': {
-                "BASE TABLE": materializations.TABLE,
-                "VIEW": materializations.TABLE
-            }
+materialization_mappings_test_cases = [
+    (   
+        True,  # set to True
+        {
+            "BASE TABLE": materializations.TABLE,
+            "VIEW": materializations.TABLE
         }
-    }
+    ),
+    (
+        False,  # set to False
+        {
+            "BASE TABLE": materializations.TABLE,
+            "VIEW": materializations.VIEW
+        }
+    ),
+    (
+        None,  # Not set
+        {
+            "BASE TABLE": materializations.TABLE,
+            "VIEW": materializations.TABLE
+        }
+    ),
+]
 
-    for case in cases.values():
-        local_stub_configs = stub_configs()
-        if case['value'] != None:
-            local_stub_configs['source']['copy_views_as_tables'] = case['value']
-        mock_config_file = StringIO(yaml.dump(local_stub_configs))
-        parsed = ConfigurationParser().from_file_or_path(mock_config_file)
 
-        assert parsed.source_profile.adapter.MATERIALIZATION_MAPPINGS == case['result']
+@pytest.mark.parametrize('condition,expected', materialization_mappings_test_cases)
+def test_materialization_mappings(condition, expected, stub_configs):
+    local_stub_configs = stub_configs()
+    if condition != None:
+        local_stub_configs['source']['copy_views_as_tables'] = condition
+    mock_config_file = StringIO(yaml.dump(local_stub_configs))
+    parsed = ConfigurationParser().from_file_or_path(mock_config_file)
+
+    assert parsed.source_profile.adapter.MATERIALIZATION_MAPPINGS == expected
