@@ -13,6 +13,7 @@ source:
   profile: default
   sampling: default
   include_outliers: True
+  copy_views_as_tables: True # default is True, setting to False may cause incopatibilities if snowflake view can not be defined in postgres
   general_relations:
     databases:
     - pattern: SNOWSHU_DEVELOPMENT # matches our test database
