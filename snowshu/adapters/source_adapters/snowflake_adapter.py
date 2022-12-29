@@ -44,6 +44,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
     ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
     # snowflake in-db is UPPER, but connector is actually lower :(
     DEFAULT_CASE = 'upper'
+    SNOWFLAKE_MAX_NUMBER_EXPR = 16384
 
     DATA_TYPE_MAPPINGS = {
         "array": dtypes.JSON,
@@ -78,8 +79,6 @@ class SnowflakeAdapter(BaseSourceAdapter):
         "varchar": dtypes.VARCHAR,
         "variant": dtypes.JSON}
 
-    # Is overwritten by config parser
-    # Not set to None for cases when adapter is initialized outside normal operation flow
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.TABLE}
 
@@ -253,7 +252,8 @@ LIMIT {max_number_of_outliers})
                     remote_key).data_type.requires_quotes else str(val)
             try:
                 constraint_set = [
-                    quoted(val) for val in relation.data[remote_key].dropna().unique()]
+                    quoted(val) for val in relation.data[remote_key].dropna().unique()
+                ][:SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR]
                 constraint_sql = ','.join(constraint_set)
                 if len(constraint_set) == 0:
                     raise ValueError(f"The [{constraint_set}] constraint set is empty.")
