@@ -1,3 +1,29 @@
+.. raw:: html
+
+   <style type="text/css">
+     table {
+       table-layout: fixed;
+       width: 100%
+     }
+     html.writer-html5 .rst-content table.docutils th>p {
+       text-align: center;
+     }
+     html.writer-html5 .rst-content table.docutils td>p {
+       font-size: 10px;
+       text-align: left;
+     }
+     .rst-content table.docutils td {
+       padding-left:8px;
+     }
+     .rst-content blockquote, blockquote ~p {
+       margin-left: 0;
+       margin-bottom: 5px;
+       line-height: 0;
+       font-size: 10px;
+       white-space: pre-line;
+     }
+   </style>
+
 ===================
 Function Emulations
 ===================
@@ -11,5 +37,5 @@ Snowflake DSL Emulation
 
 .. csv-table:: Snowflake DSL Emulation   
    :file: ./snowflake_function_map.csv
-   :widths: 5,5,5,5
+   :widths: 20, 11, 10, 10
    :header-rows: 1
