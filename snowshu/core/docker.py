@@ -8,6 +8,7 @@ import docker
 
 from snowshu.configs import (DOCKER_NETWORK, DOCKER_REPLICA_MOUNT_FOLDER,
                              DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, DOCKER_API_TIMEOUT, LOCAL_ARCHITECTURE)
+from snowshu.core.utils import get_multiarch_list
 
 if TYPE_CHECKING:
     from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
@@ -87,7 +88,6 @@ class SnowShuDocker:
         # Unpack target adapter's data
         image_name = target_adapter.DOCKER_IMAGE
         is_incremental = target_adapter.is_incremental
-        hostname = target_adapter.credentials.host
 
         network = self._get_or_create_network(DOCKER_NETWORK)
 
@@ -99,7 +99,16 @@ class SnowShuDocker:
 
         if is_incremental:
             name = self.replica_image_name_to_common_name(image_name)
-            for arch in arch_list:
+            # get arch of the supplied image
+            base_image_arch = self.get_docker_image_attributes(image_name)['Architecture']
+            # set arch list to always set supplied image as active container, regardless of if it is native
+            arch_list_i = get_multiarch_list(base_image_arch) if len(arch_list)==2 else [base_image_arch]
+
+            # warn user if non-native architecture base was supplied
+            if base_image_arch != LOCAL_ARCHITECTURE:
+                logger.warning('Supplied base image is of a non-native architecture, please try to use native for better performance')
+
+            for arch in arch_list_i:
                 try:
                     # Try to retreive supplied image
                     try:
@@ -109,20 +118,14 @@ class SnowShuDocker:
                             f'Supplied incremental base image {image_name} not found locally, aborting build')
                         raise
 
-                    # Check supplied image's arch, if local, pass it further
                     if image_candidate.attrs['Architecture'] == arch:
                         logger.info(
-                            f'Base image is of target arch {arch}, using it...')
-                        image = image_candidate
-                    elif len(arch_list) == 1:
-                        # If the build is not multiarch, we should still go through with it
-                        logger.warning(
-                            f'Base image is NOT of target arch {arch}, but only one arch was requested, continuing...')
+                            f'Found base image...')
                         image = image_candidate
                     else:
                         # If supplied image is not of current arch, pull postgres instead
                         logger.info(
-                            f'Base image is NOT of target arch {arch}, using base db image instead...')
+                            f'Getting target database image of arch {arch}...')
                         try:
                             image = self.client.images.get(
                                 f'{target_adapter.BASE_DB_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
@@ -178,7 +181,7 @@ class SnowShuDocker:
                         'Looks like docker is not started, please start docker daemon\nError: %s', error)
                     raise
 
-                tagged_container_name = f'{hostname}_{arch}'
+                tagged_container_name = f'snowshu_target_{arch}'
                 logger.info(
                     f"Creating stopped container {tagged_container_name}...")
                 self.remove_container(tagged_container_name)
