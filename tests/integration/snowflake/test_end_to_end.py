@@ -96,6 +96,7 @@ def test_replica_meta(end_to_end):
     # default for preserve case and max_outliers are set after parsing
     expected_config["preserve_case"] = DEFAULT_PRESERVE_CASE
     expected_config["source"]["max_number_of_outliers"] = DEFAULT_MAX_NUMBER_OF_OUTLIERS
+    expected_config["source"]["copy_views_as_tables"] = True
 
     query = conn.execute(query_string)
     results = query.fetchall()
