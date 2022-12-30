@@ -88,6 +88,7 @@ class SnowShuDocker:
         # Unpack target adapter's data
         image_name = target_adapter.DOCKER_IMAGE
         is_incremental = target_adapter.is_incremental
+        hostname = target_adapter.credentials.host
 
         network = self._get_or_create_network(DOCKER_NETWORK)
 
@@ -184,8 +185,9 @@ class SnowShuDocker:
                     logger.error(
                         'Looks like docker is not started, please start docker daemon\nError: %s', error)
                     raise
-
-                tagged_container_name = f'snowshu_target_{arch}'
+                
+                breakpoint()
+                tagged_container_name = f'{hostname}_{arch}'
                 logger.info(
                     f"Creating stopped container {tagged_container_name}...")
                 self.remove_container(tagged_container_name)
