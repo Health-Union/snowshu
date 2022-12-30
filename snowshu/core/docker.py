@@ -185,8 +185,7 @@ class SnowShuDocker:
                     logger.error(
                         'Looks like docker is not started, please start docker daemon\nError: %s', error)
                     raise
-                
-                breakpoint()
+
                 tagged_container_name = f'{hostname}_{arch}'
                 logger.info(
                     f"Creating stopped container {tagged_container_name}...")
