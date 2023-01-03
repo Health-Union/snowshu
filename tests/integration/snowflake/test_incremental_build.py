@@ -148,33 +148,45 @@ def test_multi_arch_incremental(base_for_incremental):
     runner = CliRunner()
     client = docker.from_env()
 
-    for fake_local_arch in ['amd64', 'arm64']:
-        with patch('snowshu.core.main.LOCAL_ARCHITECTURE', fake_local_arch) as _:
-            runner.invoke(cli, ('create',
-                                '-i',
-                                f'snowshu_replica_integration-test-incremental:{fake_local_arch}',
-                                '--replica-file',
-                                CONFIGURATION_PATH,
-                                '-m'),
-                          catch_exceptions=False)
+    for fake_local_arch in ['arm64', 'arm64']:
+        for image_arch in ['amd64', 'arm64']:
+            with patch('snowshu.core.main.LOCAL_ARCHITECTURE', fake_local_arch) as _, \
+                 patch('snowshu.core.docker.LOCAL_ARCHITECTURE', fake_local_arch) as _:
 
-            new_replicas_list = client.images.list(
-                'snowshu_replica_integration-test')
-            assert len(new_replicas_list) == 2
+                result = runner.invoke(cli, ('create',
+                                            '-i',
+                                            f'snowshu_replica_integration-test-incremental:{image_arch}',
+                                            '--replica-file',
+                                            CONFIGURATION_PATH,
+                                            '-m'),
+                                    catch_exceptions=False)
+                output = result.output
+                # Check if warning is printed
+                if fake_local_arch != image_arch:
+                    assert 'Supplied base image is of a non-native architecture, please try to use native for better performance' in output
+                else:
+                    assert 'Supplied base image is of a non-native architecture, please try to use native for better performance' not in output
 
-            # Check if all new replicas have correct set of tables
-            for replica in new_replicas_list:
-                container = client.containers.run(replica,
-                                                  ports={'9999/tcp': 9999},
-                                                  name='integration-test',
-                                                  network='snowshu',
-                                                  detach=True)
-                time.sleep(DOCKER_SPIN_UP_TIMEOUT)
+                # Check if existing records are picked up
+                assert f'Found a total of {len(EXPECTED_BASE_TABLE_LIST)} relations from the database' in output
 
-                assert get_tables(
-                    'integration-test') == EXPECTED_INREMENTED_TABLE_LIST
-                container.remove(force=True)
+                new_replicas_list = client.images.list(
+                    'snowshu_replica_integration-test')
+                assert len(new_replicas_list) == 2
 
-            for image in client.images.list('snowshu_replica_integration-test'):
-                for tag in image.tags:
-                    client.images.remove(tag)
+                # Check if all new replicas have correct set of tables
+                for replica in new_replicas_list:
+                    container = client.containers.run(replica,
+                                                    ports={'9999/tcp': 9999},
+                                                    name='integration-test',
+                                                    network='snowshu',
+                                                    detach=True)
+                    time.sleep(DOCKER_SPIN_UP_TIMEOUT)
+
+                    assert get_tables(
+                        'integration-test') == EXPECTED_INREMENTED_TABLE_LIST
+                    container.remove(force=True)
+
+                for image in client.images.list('snowshu_replica_integration-test'):
+                    for tag in image.tags:
+                        client.images.remove(tag)
