@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 class RuntimeSourceCompiler:
 
     # TODO breakout edge logic into edgetype/direction handling functions
-    @staticmethod   # noqa mccabe: disable=MC0001
-    def compile_queries_for_relation(relation: Relation,  # noqa pylint: disable=too-many-branches
+    @staticmethod
+    def compile_queries_for_relation(relation: Relation,  # pylint: disable=too-many-locals, too-many-branches
                                      dag: networkx.Graph,
                                      source_adapter: Type[BaseSourceAdapter],
                                      analyze: bool) -> Relation:

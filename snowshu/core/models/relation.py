@@ -183,7 +183,7 @@ def single_full_pattern_match(rel: Relation,
         pass
     if not all([pattern[attribute] for attribute in attributes]):  # noqa pylint: disable=use-a-generator
         return False
-    return all([re.fullmatch(pattern[attr], rel.__dict__[attr], flags) # noqa pylint: disable=use-a-generator
+    return all([re.fullmatch(pattern[attr], rel.__dict__[attr], flags)  # noqa pylint: disable=use-a-generator
                 for attr in attributes])
 
 
@@ -191,7 +191,7 @@ def at_least_one_full_pattern_match(rel: Relation, patterns: iter, flags: re.Reg
     """determines if a relation matches any of a collection of pattern
     dictionaries (database,schema,name)."""
     patterns = list(filter(lambda p: all(
-        p[attr] for attr in ('database', 'schema', 'name',)), patterns))  # noqa pylint: disable=use-a-generator
+        p[attr] for attr in ('database', 'schema', 'name',)), patterns))
     return any([single_full_pattern_match(rel, pattern, flags) for pattern in patterns])   # noqa pylint: disable=use-a-generator
 
 

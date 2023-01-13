@@ -135,7 +135,7 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
 
     def initialize_replica(self,
                            source_adapter_name: str,
-                           incremental_image: str = None) -> None:  # noqa pylint:disable=too-many-branches
+                           incremental_image: str = None) -> None:
         """ Launches a container and initializes the replica.
             Should be defined in specific target adapters due to different setup of different dbs
 
@@ -258,7 +258,7 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
                 os.path.dirname(__file__),
                 self.name + '_adapter',
                 'functions'))
-            with open(os.path.join(functions_path, f'{function}.sql'), 'r') as function_file: # noqa pylint: disable=unspecified-encoding
+            with open(os.path.join(functions_path, f'{function}.sql'), 'r') as function_file:  # noqa pylint: disable=unspecified-encoding
                 function_sql = function_file.read()
 
             unique_schemas = {(rel.database, rel.schema,) for rel in relations}

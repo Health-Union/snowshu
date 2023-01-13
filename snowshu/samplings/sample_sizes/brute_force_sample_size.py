@@ -28,7 +28,7 @@ class BruteForceSampleSize(BaseSampleSize):
 
     # TODO: BaseSampleSize should have this as method not property
     # https://github.com/Health-Union/snowshu/pull/57#discussion_r596988285
-    def size(self, population: int) -> int: # noqa pylint: invalid-overridden-method, arguments-differ
+    def size(self, population: int) -> int:  # noqa pylint: disable=invalid-overridden-method, disable=arguments-differ
         """Calculates the sample size for a given population size.
 
         Args:

@@ -109,8 +109,7 @@ class GraphSetRunner:
             retries -= 1
             executables = re_executables.copy()
 
-
-    def _traverse_and_execute(self, executable: GraphExecutable) -> None:   # noqa mccabe: disable=MC0001
+    def _traverse_and_execute(self, executable: GraphExecutable) -> None:  # noqa: pylint: disable=too-many-statements
         """ Processes a single graph and loads the data into the replica if required
 
             To save memory after processing, the loaded dataframes are deleted, and
@@ -122,7 +121,10 @@ class GraphSetRunner:
         """
         start_time = time.time()
         if self.barf:
-            with open(os.path.join(self.barf_output, f'{[n for n in executable.graph.nodes][0].dot_notation}.component'), 'wb') as cmp_file:  # noqa pylint: disable=unnecessary-comprehension
+            with open(os.path.join(self.barf_output,
+                                   f'{[n for n in executable.graph.nodes][0].dot_notation}.component'),  # noqa: pylint: disable=unnecessary-comprehension
+                                   'wb'
+                                ) as cmp_file:
                 nx.write_multiline_adjlist(executable.graph, cmp_file)
         try:
             logger.debug(

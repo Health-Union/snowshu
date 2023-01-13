@@ -75,8 +75,8 @@ def init(path: click.Path) -> None:
     def source(filename):
         return os.path.join(templates, filename)
 
-    CREDENTIALS = 'credentials.yml'     # noqa pep8: disable=N806
-    REPLICA = 'replica.yml'     # noqa pep8: disable=N806
+    CREDENTIALS = 'credentials.yml'  # noqa: pylint: disable=invalid-name
+    REPLICA = 'replica.yml'  # noqa: pylint: disable=invalid-name
 
     if os.path.isfile(destination(CREDENTIALS)) or os.path.isfile(
             destination(REPLICA)):
