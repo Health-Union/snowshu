@@ -196,7 +196,7 @@ def sanitize_docker_environment():
     def is_snowshu_related_image(image)->bool:
         if len(image.tags) < 1:
             return False
-        return any([re.search(val, image.tags[0]) for val in ('^snowshu_replica_\w+',
+        return any([re.search(val, image.tags[0]) for val in (r'^snowshu_replica_\w+',
             'integration-test',
             'snowshu_target',)])
 
