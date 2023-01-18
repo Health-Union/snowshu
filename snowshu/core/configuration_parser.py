@@ -67,9 +67,9 @@ class SpecifiedMatchPattern():
 
     @dataclass
     class Relationships:
-        bidirectional: List['RelationshipPattern']  # noqa pyflakes: disable=F821
-        directional: List['RelationshipPattern']    # noqa pyflakes: disable=F821
-        polymorphic: List['PolymorphicRelationshipPattern']    # noqa pyflakes: disable=F821
+        bidirectional: List['RelationshipPattern']
+        directional: List['RelationshipPattern']
+        polymorphic: List['PolymorphicRelationshipPattern']
 
     database_pattern: str
     schema_pattern: str

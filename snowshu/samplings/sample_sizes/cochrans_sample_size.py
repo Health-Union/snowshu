@@ -45,7 +45,7 @@ class CochransSampleSize(BaseSampleSize):
         else:
             raise ValueError(f"Confidence must be between 0.01 and 0.99, is {val}")
 
-    def size(self, population: int) -> int: # noqa pylint: invalid-overridden-method, arguments-differ
+    def size(self, population: int) -> int:  # noqa pylint: disable=invalid-overridden-method, disable=arguments-differ
         """Calculates the sample size for a given population size.
 
         Uses Cochran's theorum to return minimum viable sample size (rounded up to the nearest integer).

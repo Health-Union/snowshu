@@ -63,7 +63,7 @@ def graph_to_result_list(graphs: nx.Graph) -> list:
         except Exception as exc:
             message = f"failure in building row for relation {relation.dot_notation} : {exc}"
             logger.critical(message)
-            raise ValueError(message)  # noqa pylint: raise-missing-from
+            raise ValueError(message)  # noqa: pylint: disable=raise-missing-from
     return report
 
 

@@ -79,7 +79,7 @@ class SnowShuDocker:
 
         return actual_replica_list
 
-    def startup(self,  # noqa pylint: disable=too-many-arguments
+    def startup(self,  # noqa pylint: disable=too-many-locals, too-many-branches, too-many-statements
                 target_adapter: Type['BaseTargetAdapter'],
                 source_adapter: str,
                 arch_list: list[str],
@@ -133,11 +133,11 @@ class SnowShuDocker:
                             f'Getting target database image of arch {arch}...')
                         try:
                             image = self.client.images.get(
-                                f'{target_adapter.BASE_DB_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                                f'{target_adapter.BASE_DB_IMAGE.split(":")[0]}:{arch}')
                         except docker.errors.ImageNotFound:
                             image = self.client.images.pull(
                                 target_adapter.BASE_DB_IMAGE, platform=f'linux/{arch}')
-                            image.tag(f'{target_adapter.BASE_DB_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                            image.tag(f'{target_adapter.BASE_DB_IMAGE.split(":")[0]}:{arch}')
 
                 except ConnectionError as error:
                     logger.error(
@@ -168,11 +168,11 @@ class SnowShuDocker:
                     # This pulls raw postgres for regular full build
                     try:
                         image = self.client.images.get(
-                            f'{target_adapter.DOCKER_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                            f'{target_adapter.DOCKER_IMAGE.split(":")[0]}:{arch}')
                     except docker.errors.ImageNotFound:
                         image = self.client.images.pull(
                             target_adapter.DOCKER_IMAGE, platform=f'linux/{arch}')
-                        image.tag(f'{target_adapter.DOCKER_IMAGE.split(":")[0]}:{arch}')  # noqa pylint: disable=use-maxsplit-arg
+                        image.tag(f'{target_adapter.DOCKER_IMAGE.split(":")[0]}:{arch}')
 
                     # verify the image is tagged properly (image's arch matches its tag)
                     try:

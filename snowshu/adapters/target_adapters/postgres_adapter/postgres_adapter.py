@@ -231,9 +231,9 @@ class PostgresAdapter(BaseTargetAdapter):
                     ))
 
                 relation = Relation(relation_database,
-                                    self._correct_case(attribute.schema),  # noqa pylint: disable=undefined-loop-variable
-                                    self._correct_case(attribute.relation),  # noqa pylint: disable=undefined-loop-variable
-                                    self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")],  # noqa pylint: disable=undefined-loop-variable
+                                    self._correct_case(attribute.schema),
+                                    self._correct_case(attribute.relation),
+                                    self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")],
                                     attributes)
             logger.debug(f'Added relation {relation.dot_notation} to pool.')
             relations.append(relation)
@@ -258,7 +258,7 @@ class PostgresAdapter(BaseTargetAdapter):
             raise exc
 
     def replace_x00_values(self, relation: "Relation") -> "Relation":
-        for col, col_type in relation.data.dtypes.iteritems():
+        for col, col_type in relation.data.dtypes.items():
             # str types are put into object type columns
             if col_type == 'object' and isinstance(relation.data[col][0], str):
                 matched_nul_char = (relation.data[col].str.find('\x00') > -1)
@@ -289,7 +289,7 @@ class PostgresAdapter(BaseTargetAdapter):
 
     def initialize_replica(self,
                            source_adapter_name: str,
-                           incremental_image: str = None) -> None:  # noqa pylint:disable=too-many-branches
+                           incremental_image: str = None) -> None:
         """shimming but will want to move _init_image public with this
         interface.
 

@@ -5,7 +5,7 @@ from urllib.parse import quote_plus
 ACCOUNT = 'account'
 DATABASE = 'database'
 HOST = 'host'
-PASSWORD = 'password'   # noqa dodgy: disable=password
+PASSWORD = 'password'  # dodgy: disable=password
 PORT = 'port'
 ROLE = 'role'
 SCHEMA = 'schema'
@@ -15,8 +15,8 @@ WAREHOUSE = 'warehouse'
 
 @dataclass
 class Credentials:  # noqa pylint: disable=too-many-instance-attributes
-    """Represents every accepted type of credential, attempting to bring some
-    sanity to how configs are defined for disparate adapters."""
+    """ Represents every accepted type of credential, attempting to bring some
+        sanity to how configs are defined for disparate adapters."""
     account: Optional[str] = None
     database: Optional[str] = None
     host: Optional[str] = None
@@ -28,7 +28,7 @@ class Credentials:  # noqa pylint: disable=too-many-instance-attributes
     warehouse: Optional[str] = None
 
     def urlencode(self) -> None:
-        """quote-plus encoding of all attributes good for sql urls."""
+        """ quote-plus encoding of all attributes good for sql urls."""
         for key in vars(self).keys():
             if isinstance(self.__dict__[key], str):
                 self.__dict__[key] = quote_plus(self.__dict__[key])

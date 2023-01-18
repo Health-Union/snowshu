@@ -5,7 +5,8 @@ autodetect: true
 member-warnings: false
 
 ignore-patterns:
-  - (^|/)__init__.py$
+  - .*__init__.py$
+  - snowshu/core/models/credentials.py  # raises "dodgy: password" which can not be silenced with noqa at prospector version 1.8.3
 
 pylint:
   options:
@@ -15,6 +16,16 @@ pylint:
     - use-list-literal
     - logging-fstring-interpolation
     - cyclic-import # https://github.com/PyCQA/pylint/issues/3525
+
+mccabe:
+  disable:
+    - MC0001  # at prospector version 1.8.3 noqa comments for mccabe errors are not respected
+              # need to refactor those methods later
+
+pyflakes:
+  disable:
+    - F821  # at prospector version 1.8.3 noqa comments for pyflakes errors are not respected
+            # need to refactor those methods later
 
 pycodestyle:
   options:

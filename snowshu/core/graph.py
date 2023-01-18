@@ -263,7 +263,7 @@ class SnowShuGraph:
             # determine downstream relations from relation patterns
             downstream_relations = set(
                 filter(
-                    lambda x: single_full_pattern_match(x, relation_pattern_dict), # noqa  pylint: disable=cell-var-from-loop
+                    lambda x: single_full_pattern_match(x, relation_pattern_dict),  # noqa pylint: disable=cell-var-from-loop
                     available_nodes
                 )
             )
@@ -319,7 +319,7 @@ class SnowShuGraph:
         # find any of the upstream relations
         upstream_relations = set(
             filter(
-                lambda x: single_full_pattern_match(x, relationship),  # noqa pylint: disable=cell-var-from-loop
+                lambda x: single_full_pattern_match(x, relationship),
                 full_relation_set
             )
         )
@@ -440,11 +440,10 @@ class SnowShuGraph:
                 schema=lower_level.schema_pattern if lower_level.schema_pattern else upper_level.schema_pattern,
                 name=lower_level.relation_pattern
             ) for upper_level in config.specified_relations
-            for lower_level in
-            upper_level.relationships.bidirectional + upper_level.relationships.directional + upper_level.relationships.polymorphic # noqa pep8: E501
+            for lower_level in upper_level.relationships.bidirectional + upper_level.relationships.directional + upper_level.relationships.polymorphic  # noqa: pylint: disable=line-too-long
         ]
 
-        all_patterns = approved_default_patterns + approved_specified_patterns + approved_second_level_specified_patterns  # noqa pep8: E501
+        all_patterns = approved_default_patterns + approved_specified_patterns + approved_second_level_specified_patterns  # noqa: pylint: disable=line-too-long
 
         logger.debug(f'All config primary patterns: {all_patterns}')
         return all_patterns
