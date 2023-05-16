@@ -93,13 +93,11 @@ def test_copy_replica_command():
     pg_adapter.stop_postgres = MagicMock()
     # Skip copy if only one container
     pg_adapter.container = MagicMock()
-    pg_adapter.container.exec_run = MagicMock()
     pg_adapter.copy_replica_data()
     pg_adapter.container.exec_run.assert_not_called()
 
     # Do copy if there are 2
     pg_adapter.passive_container = MagicMock()
-    pg_adapter.passive_container.exec_run = MagicMock()
     pg_adapter.copy_replica_data()
     pg_adapter.container.exec_run.assert_called_with(
         f"/bin/bash -c 'cp -af $PGDATA/* {DOCKER_REPLICA_MOUNT_FOLDER}'",
