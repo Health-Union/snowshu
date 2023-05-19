@@ -4,6 +4,7 @@ import time
 
 import sqlalchemy
 from overrides import overrides
+from docker.models.containers import Container
 
 import snowshu.core.models.data_types as dtypes
 from snowshu.adapters.target_adapters import BaseTargetAdapter
@@ -397,33 +398,42 @@ AS
                                      f'{schema_database} INTO {schema_database}__{schema}')
 
     def copy_replica_data(self) -> Tuple[bool, str]:
-        status = self.container.exec_run(
-            f"/bin/bash -c '{self.DOCKER_SHARE_REPLICA_DATA}'", tty=True)
         if self.passive_container:
+            # Copy from active to shared volume
+            logger.info('Stopping postgres in the active container...')
+            self.stop_postgres(self.container)
+            # copy the data over to a shared volume
+            status = self.container.exec_run(
+                f"/bin/bash -c '{self.DOCKER_SHARE_REPLICA_DATA}'", tty=True)
+
+            # Copy from shared volume to passive
             self.container.stop()
             self.passive_container.start()
             logger.info('Copying replica data into passive container')
-
-            logger.info('Stopping postgres')
-            self.passive_container.exec_run(
-                "/bin/bash -c 'systemctl stop postgresql'", tty=True)
-
-            logger.info('Waiting until it is stopped')
-            while 'Active: inactive (dead)' not in self.passive_container.exec_run(
-                  "/bin/bash -c 'systemctl status postgresql'", tty=True).output.decode():
-                time.sleep(0.5)
+            logger.info('Stopping postgres in passive container')
+            self.stop_postgres(self.passive_container)
 
             logger.info("Purging passive container's pgdata dir")
-            self.passive_container.exec_run(
-                "/bin/bash -c 'rm -rf $PGDATA/*'", tty=True)
+            self.passive_container.exec_run("/bin/bash -c 'rm -rf $PGDATA/*'", tty=True)
 
             # copy over files from the shared volume
             logger.info('Copying over pgdata from shared volume')
             self.passive_container.exec_run(
                 f"/bin/bash -c '{self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE}'", tty=True)
             # Postgres is not started here intentionally, replica still behaves as expected
+            return status
 
-        return status
+        logger.info('Build is single arch, skipping copy...')
+        return [0]
+
+    @staticmethod
+    def stop_postgres(container: Container):
+        container.exec_run(
+            "/bin/bash -c 'systemctl stop postgresql'", tty=True)
+
+        while 'Active: inactive (dead)' not in container.exec_run(
+                "/bin/bash -c 'systemctl status postgresql'", tty=True).output.decode():
+            time.sleep(0.5)
 
     @staticmethod
     def is_fdw_schema(schema, unique_databases) -> bool:
