@@ -4,7 +4,6 @@ import time
 
 import sqlalchemy
 from overrides import overrides
-from docker.models.containers import Container
 
 import snowshu.core.models.data_types as dtypes
 from snowshu.adapters.target_adapters import BaseTargetAdapter
@@ -23,7 +22,7 @@ class PostgresAdapter(BaseTargetAdapter):
     DOCKER_IMAGE = POSTGRES_IMAGE
     # One below has to be separate since incremental build logic overwrites DOCKER_IMAGE
     BASE_DB_IMAGE = POSTGRES_IMAGE
-    PRELOADED_PACKAGES = ['postgresql-plpython3-12', 'systemctl']
+    PRELOADED_PACKAGES = ['postgresql-plpython3-12']
     MATERIALIZATION_MAPPINGS = dict(
         TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
@@ -87,8 +86,10 @@ class PostgresAdapter(BaseTargetAdapter):
                                      f'-h {self._credentials.host} '
                                      f'-U {self._credentials.user} '
                                      f'-d {self._credentials.database}')
-        self.DOCKER_SHARE_REPLICA_DATA = f"cp -af $PGDATA/* {self.DOCKER_REPLICA_MOUNT_FOLDER}"  # noqa pylint: disable=invalid-name
-        self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE = f"cp -R -f {self.DOCKER_REPLICA_MOUNT_FOLDER}/* $PGDATA/"  # noqa pylint: disable=invalid-name
+        self.DOCKER_SHARE_REPLICA_DATA = f"pg_dumpall -c -U {self._credentials.user} -p 9999 > " \
+                                         f"{self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.sql"  # noqa pylint: disable=invalid-name
+        self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE = f"cat {self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.sql | " \
+                                                     f"psql -p {self._credentials.port} -U {self._credentials.user}"  # noqa pylint: disable=invalid-name
 
     @staticmethod
     def _create_snowshu_schema_statement() -> str:
@@ -399,41 +400,27 @@ AS
 
     def copy_replica_data(self) -> Tuple[bool, str]:
         if self.passive_container:
-            # Copy from active to shared volume
-            logger.info('Stopping postgres in the active container...')
-            self.stop_postgres(self.container)
-            # copy the data over to a shared volume
+            # Dump from active to shared volume
             status = self.container.exec_run(
                 f"/bin/bash -c '{self.DOCKER_SHARE_REPLICA_DATA}'", tty=True)
 
-            # Copy from shared volume to passive
+            # Load dump from shared volume to passive
             self.container.stop()
             self.passive_container.start()
             logger.info('Copying replica data into passive container')
-            logger.info('Stopping postgres in passive container')
-            self.stop_postgres(self.passive_container)
 
-            logger.info("Purging passive container's pgdata dir")
-            self.passive_container.exec_run("/bin/bash -c 'rm -rf $PGDATA/*'", tty=True)
+            # Wait for db init
+            while True:
+                if self.passive_container.exec_run(self.DOCKER_READY_COMMAND).exit_code == 0:
+                    break
+                time.sleep(.5)
 
-            # copy over files from the shared volume
-            logger.info('Copying over pgdata from shared volume')
             self.passive_container.exec_run(
                 f"/bin/bash -c '{self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE}'", tty=True)
-            # Postgres is not started here intentionally, replica still behaves as expected
             return status
 
         logger.info('Build is single arch, skipping copy...')
         return [0]
-
-    @staticmethod
-    def stop_postgres(container: Container):
-        container.exec_run(
-            "/bin/bash -c 'systemctl stop postgresql'", tty=True)
-
-        while 'Active: inactive (dead)' not in container.exec_run(
-                "/bin/bash -c 'systemctl status postgresql'", tty=True).output.decode():
-            time.sleep(0.5)
 
     @staticmethod
     def is_fdw_schema(schema, unique_databases) -> bool:

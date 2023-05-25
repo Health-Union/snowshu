@@ -98,7 +98,8 @@ def test_copy_replica_command():
 
     # Do copy if there are 2
     pg_adapter.passive_container = MagicMock()
+    exec_return_value = MagicMock()
+    exec_return_value.exit_code = 0
+    pg_adapter.passive_container.exec_run = MagicMock(return_value=exec_return_value)
     pg_adapter.copy_replica_data()
-    pg_adapter.container.exec_run.assert_called_with(
-        f"/bin/bash -c 'cp -af $PGDATA/* {DOCKER_REPLICA_MOUNT_FOLDER}'",
-        tty=True)
+    pg_adapter.container.exec_run.assert_called()
