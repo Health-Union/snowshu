@@ -159,7 +159,7 @@ def test_restore_data_from_shared_replica(docker_flush):
         envars=['POSTGRES_USER=snowshu',
                 'POSTGRES_PASSWORD=snowshu',
                 'POSTGRES_DB=snowshu',
-                f'PGDATA=pgdata'])
+                f'PGDATA=/pgdata'])
 
     # starting our new container
     target_container.start()
