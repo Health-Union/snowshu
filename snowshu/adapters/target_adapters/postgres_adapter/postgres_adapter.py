@@ -86,10 +86,11 @@ class PostgresAdapter(BaseTargetAdapter):
                                      f'-h {self._credentials.host} '
                                      f'-U {self._credentials.user} '
                                      f'-d {self._credentials.database}')
-        self.DOCKER_SHARE_REPLICA_DATA = f"pg_dumpall -c -U {self._credentials.user} -p 9999 > " \
-                                         f"{self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.sql"  # noqa pylint: disable=invalid-name
-        self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE = f"cat {self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.sql | " \
-                                                     f"psql -p {self._credentials.port} -U {self._credentials.user}"  # noqa pylint: disable=invalid-name
+        self.DOCKER_SHARE_REPLICA_DATA = f"pg_dumpall -c -U {self._credentials.user} -p 9999 | " \
+                                         f"gzip > {self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.gz"  # noqa pylint: disable=invalid-name
+        self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE = f"gunzip -c {self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.gz | " \
+                                                     f"psql -p {self._credentials.port}" \
+                                                     f" -U {self._credentials.user}"  # noqa pylint: disable=invalid-name
 
     @staticmethod
     def _create_snowshu_schema_statement() -> str:
@@ -410,10 +411,13 @@ AS
             logger.info('Copying replica data into passive container')
 
             # Wait for db init
-            while True:
+            for _ in range(1200):  # for 10 minutes
                 if self.passive_container.exec_run(self.DOCKER_READY_COMMAND).exit_code == 0:
                     break
                 time.sleep(.5)
+            else:
+                raise Exception(
+                    'Unable to verify that postgres has started, aborting due to timeout')
 
             self.passive_container.exec_run(
                 f"/bin/bash -c '{self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE}'", tty=True)
