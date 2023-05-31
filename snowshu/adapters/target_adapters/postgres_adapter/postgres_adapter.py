@@ -12,6 +12,7 @@ from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
 from snowshu.core.utils import correct_case
+from snowshu.exceptions import UnableToStartPostgres
 
 logger = logging.getLogger(__name__)
 
@@ -416,7 +417,7 @@ AS
                     break
                 time.sleep(.5)
             else:
-                raise Exception(
+                raise UnableToStartPostgres(
                     'Unable to verify that postgres has started, aborting due to timeout')
 
             self.passive_container.exec_run(
