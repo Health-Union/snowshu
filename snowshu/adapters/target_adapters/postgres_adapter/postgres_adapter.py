@@ -88,9 +88,9 @@ class PostgresAdapter(BaseTargetAdapter):
                                      f'-d {self._credentials.database}')
         self.DOCKER_SHARE_REPLICA_DATA = f"pg_dumpall -c -U {self._credentials.user} -p 9999 | " \
                                          f"gzip > {self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.gz"  # noqa pylint: disable=invalid-name
-        self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE = f"gunzip -c {self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.gz | " \
-                                                     f"psql -p {self._credentials.port}" \
-                                                     f" -U {self._credentials.user}"  # noqa pylint: disable=invalid-name
+        self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE = (  # noqa pylint: disable=invalid-name
+            f"gunzip -c {self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.gz"
+            f" | psql -p {self._credentials.port} -U {self._credentials.user}")
 
     @staticmethod
     def _create_snowshu_schema_statement() -> str:
