@@ -12,3 +12,7 @@ class TooManyRecords(Exception):
 
 class UnableToExecuteCopyReplicaCommand(Exception):
     pass
+
+
+class UnableToStartPostgres(Exception):
+    pass

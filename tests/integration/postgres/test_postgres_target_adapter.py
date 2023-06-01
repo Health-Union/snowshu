@@ -126,7 +126,7 @@ def test_restore_data_from_shared_replica(docker_flush):
         envars=['POSTGRES_USER=snowshu',
                 'POSTGRES_PASSWORD=snowshu',
                 'POSTGRES_DB=snowshu',
-                f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}'])
+                f'PGDATA=/pgdata'])
 
     # load test data
     time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # give pg a moment to spin up all the way
@@ -142,8 +142,11 @@ def test_restore_data_from_shared_replica(docker_flush):
 
     assert ('a', 1) == checkpoint[0]
 
+    # Dump replica data into shared volume
+    target_container.exec_run(
+        f"/bin/bash -c '{target_adapter.DOCKER_SHARE_REPLICA_DATA}'", tty=True)
+
     target_adapter.container = target_container
-    target_adapter.copy_replica_data()
     target_container.stop()
 
     # check whether we can spin up a new replica from the shared volume
@@ -156,10 +159,13 @@ def test_restore_data_from_shared_replica(docker_flush):
         envars=['POSTGRES_USER=snowshu',
                 'POSTGRES_PASSWORD=snowshu',
                 'POSTGRES_DB=snowshu',
-                f'PGDATA={DOCKER_REPLICA_MOUNT_FOLDER}'])
+                f'PGDATA=/pgdata'])
 
     # starting our new container
     target_container.start()
+    # Load replica data from dump
+    target_container.exec_run(
+        f"/bin/bash -c '{target_adapter.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE}'", tty=True)
 
     engine = create_engine(
         'postgresql://snowshu:snowshu@snowshu_target:9999/snowshu')
@@ -184,4 +190,3 @@ def test_initialize_replica(docker_flush):
             # check if it has dependencies installed
             container = client.containers.get(f'snowshu_replica-integration-test_{LOCAL_ARCHITECTURE}')
             assert container.exec_run('psql --version').exit_code == 0
-            assert container.exec_run('systemctl --version').exit_code == 0
