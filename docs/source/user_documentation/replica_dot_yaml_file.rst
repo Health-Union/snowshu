@@ -91,8 +91,8 @@ Your initial replica file will look something like `this
          default:
            margin_of_error: 0.05
            confidence: 0.95
-          min_sample_size: 300
-          max_allowed_rows: 1500000
+           min_sample_size: 300
+           max_allowed_rows: 1500000
      - database: SNOWSHU_DEVELOPMENT
        schema: POLYMORPHIC_DATA
        relation: PARENT_TABLE
@@ -191,16 +191,31 @@ In our example, this portion of the source directive would be the overall source
      profile: default
      sampling: default
      include_outliers: True
-     copy_views_as_tables: True
+    copy_views_as_tables: True
 
 
 The components of the overall source settings, dissected:
 
 - **profile** (*Required*) is the name of the profile found in ``credentials.yml`` to execute with. In this example we are using a profile named "default".
-- **sampling** (*Required*) is the name of the sampling method to be used. Samplings combine both the number of records sampled and the way in which they are selected. Current sampling options are ``default`` (uses Bernoulli sampling and Cochran's sizing), or ``brute_force`` (Uses a fixed % and Bernoulli).
+- **sampling** (*Required*) is the name of the sampling method to be used. Samplings combine both
+the number of records sampled and the way in which they are selected. Current sampling options are ``default``
+(uses Bernoulli sampling and Cochran's sizing), or ``brute_force`` (Uses a fixed % and Bernoulli).
+
 - **copy_views_as_tables** (*Optional*) specifies if snowflake views should be recreated as views (Flase option) or loaded as tables (True option). False is option is more performant, but may not be compatible if snowflake view can not be ported to postgres
 - **include_outliers** (*Optional*) determines if SnowShu should look for records that do not respect specified relationships, and ensure they are included in the sample. Defaults to False. 
 - **max_number_of_outliers** (*Optional*) specifies the maximum number of outliers to include when they are found. This helps keep a bad relationship (such as an incorrect assumption on a trillion row table) from exploding the replica. Default is 100. 
+
+.. tip:: In the context of the ``brute_force`` sampling method, it is feasible to regulate the quantity of rows to be retrieved using the `max_allowed_rows` option.
+
+.. code-block:: yaml
+
+   ...
+   - database: SNOWSHU_DEVELOPMENT
+     schema: SOURCE_SYSTEM
+     relation:  'TABLE_(.*)'
+     sampling:
+      brute_force:
+        max_allowed_rows: 10
 
 
 .. relations in _replica.yml:
@@ -266,6 +281,12 @@ Specified relations look like this:
        schema: TESTS_DATA
        relation: DATA_TYPES
        unsampled: True
+     - database: SNOWSHU_DEVELOPMENT
+       schema: SOURCE_SYSTEM
+       relation:  'TABLE_(.*)'
+       sampling:
+        brute_force:
+          max_allowed_rows: 10
         
      - database: SNOWSHU_DEVELOPMENT
        schema: SOURCE_SYSTEM
@@ -300,7 +321,7 @@ Specified relations look like this:
          default:
            margin_of_error: 0.05
            confidence: 0.95
-          min_sample_size: 300
+           min_sample_size: 300
      - database: SNOWSHU_DEVELOPMENT
        schema: POLYMORPHIC_DATA
        relation: PARENT_TABLE
