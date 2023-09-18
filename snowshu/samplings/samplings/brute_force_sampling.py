@@ -18,7 +18,7 @@ class BruteForceSampling(BaseSampling):
     Args:
         probability: The % sample size desired in decimal format from 0.01 to 0.99. Default 10%.
         min_sample_size: The minimum number of records to retrieve from the population. Default 1000.
-    """ 
+    """
     size: int
 
     def __init__(self,
@@ -43,7 +43,9 @@ class BruteForceSampling(BaseSampling):
                 <snowshu.adapters.source_adapters.base_source_adapter.BaseSourceAdapter>` instance to
                 use for executing prepare queries.
         """
-        self.size = max(self.sample_size_method.size(relation.population_size),
-                        self.min_sample_size)
+        self.size = min(max(self.sample_size_method.size(
+            relation.population_size),
+            self.min_sample_size), self.max_allowed_rows)
+
         self.sample_method = BernoulliSampleMethod(self.size,
                                                    units='rows')
