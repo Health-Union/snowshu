@@ -129,8 +129,10 @@ class SnowflakeAdapter(BaseSourceAdapter):
                     {corrected_database}.{corrected_name}'''
             result = self._safe_query(query)
             logger.info("Schema creation result: %s", result['status'][0])
-        except Exception as err:
-            logger.error("An error occurred while creating the schema: %s", err)
+        except ValueError as err:
+            error_message = f"An error occurred while creating the schema {corrected_name} in database {corrected_database}: {err}"
+            logger.error(error_message)
+            return error_message
 
     def drop_schema(self, name: str, database: str = 'SNOWSHU') -> str:
         """Droop a schema and all of its contained objects (tables, views,
@@ -151,8 +153,10 @@ class SnowflakeAdapter(BaseSourceAdapter):
                     CASCADE'''
             result = self._safe_query(query)
             logger.info("Schema drop result: %s", result["status"][0])
-        except Exception as err:
-            logger.error("An error occurred while dropping the schema: %s", err)
+        except ValueError as err:
+            error_message = f"An error occurred while dropping the schema {corrected_name} in database {corrected_database}: {err}"
+            logger.error(error_message)
+            return error_message
 
     def create_table(self, query: str, name: str, schema: str, database: str = 'SNOWSHU'):
         corrected_name, corrected_schema, corrected_database = (
@@ -166,8 +170,10 @@ class SnowflakeAdapter(BaseSourceAdapter):
                          corrected_name, corrected_schema, corrected_database)
             result = self._safe_query(full_query)
             logger.info("Table creation result: %s", result['status'][0])
-        except Exception as err:
-            logger.error("An error occurred while creating the table: %s", err)
+        except ValueError as err:
+            error_message = f"An error occurred while creating the table {corrected_name} in database {corrected_database}: {err}"
+            logger.error(error_message)
+            return error_message
 
     def drop_table(self, name: str, schema: str, database: str = 'SNOWSHU'):
         corrected_name, corrected_schema, corrected_database = (
@@ -180,8 +186,10 @@ class SnowflakeAdapter(BaseSourceAdapter):
                          corrected_name, corrected_schema, corrected_database)
             result = self._safe_query(query)
             logger.info("Table drop result: %s", result["status"][0])
-        except Exception as err:
-            logger.error("An error occurred while dropping the table: %s", err)
+        except ValueError as err:
+            error_message = f"An error occurred while dropping the table {corrected_name} in database {corrected_database}: {err}"
+            logger.error(error_message)
+            return error_message
 
     @staticmethod
     def population_count_statement(relation: Relation) -> str:
