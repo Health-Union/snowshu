@@ -130,7 +130,10 @@ class SnowflakeAdapter(BaseSourceAdapter):
             result = self._safe_query(query)
             logger.info("Schema creation result: %s", result['status'][0])
         except ValueError as err:
-            error_message = f"An error occurred while creating the schema {corrected_name} in database {corrected_database}: {err}"
+            error_message = (
+                f"An error occurred while creating the schema {corrected_name} "
+                f"in database {corrected_database}: {err}"
+            )
             logger.error(error_message)
             return error_message
 
@@ -154,7 +157,10 @@ class SnowflakeAdapter(BaseSourceAdapter):
             result = self._safe_query(query)
             logger.info("Schema drop result: %s", result["status"][0])
         except ValueError as err:
-            error_message = f"An error occurred while dropping the schema {corrected_name} in database {corrected_database}: {err}"
+            error_message = (
+                f"An error occurred while dropping the schema {corrected_name} "
+                f"in database {corrected_database}: {err}"
+            )
             logger.error(error_message)
             return error_message
 
@@ -171,7 +177,9 @@ class SnowflakeAdapter(BaseSourceAdapter):
             result = self._safe_query(full_query)
             logger.info("Table creation result: %s", result['status'][0])
         except ValueError as err:
-            error_message = f"An error occurred while creating the table {corrected_name} in database {corrected_database}: {err}"
+            error_message = (
+                f"An error occurred while creating the table {corrected_name} "
+                f"in database {corrected_database}: {err}")
             logger.error(error_message)
             return error_message
 
@@ -187,7 +195,9 @@ class SnowflakeAdapter(BaseSourceAdapter):
             result = self._safe_query(query)
             logger.info("Table drop result: %s", result["status"][0])
         except ValueError as err:
-            error_message = f"An error occurred while dropping the table {corrected_name} in database {corrected_database}: {err}"
+            error_message = (
+                f"An error occurred while dropping the table {corrected_name} "
+                f"in database {corrected_database}: {err}")
             logger.error(error_message)
             return error_message
 
