@@ -112,7 +112,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
         logger.debug(f'Done. Found {len(tables)} tables in {schema} schema of {database} database.')
         return tables
 
-    def generate_schema(self, name: str, database: str = 'SNOWSHU') -> str:
+    def generate_schema(self, name: str, database: str = 'SNOWSHU'):
         """Create a schema in the specified database.
 
             Args:
@@ -135,9 +135,8 @@ class SnowflakeAdapter(BaseSourceAdapter):
                 f"in database {corrected_database}: {err}"
             )
             logger.error(error_message)
-            return error_message
 
-    def drop_schema(self, name: str, database: str = 'SNOWSHU') -> str:
+    def drop_schema(self, name: str, database: str = 'SNOWSHU'):
         """Droop a schema and all of its contained objects (tables, views,
         stored procedures)
 
@@ -162,7 +161,6 @@ class SnowflakeAdapter(BaseSourceAdapter):
                 f"in database {corrected_database}: {err}"
             )
             logger.error(error_message)
-            return error_message
 
     def create_table(self, query: str, name: str, schema: str, database: str = 'SNOWSHU'):
         corrected_name, corrected_schema, corrected_database = (
@@ -181,7 +179,6 @@ class SnowflakeAdapter(BaseSourceAdapter):
                 f"An error occurred while creating the table {corrected_name} "
                 f"in database {corrected_database}: {err}")
             logger.error(error_message)
-            return error_message
 
     def drop_table(self, name: str, schema: str, database: str = 'SNOWSHU'):
         corrected_name, corrected_schema, corrected_database = (
@@ -199,7 +196,6 @@ class SnowflakeAdapter(BaseSourceAdapter):
                 f"An error occurred while dropping the table {corrected_name} "
                 f"in database {corrected_database}: {err}")
             logger.error(error_message)
-            return error_message
 
     @staticmethod
     def population_count_statement(relation: Relation) -> str:
