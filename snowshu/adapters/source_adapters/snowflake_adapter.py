@@ -112,13 +112,13 @@ class SnowflakeAdapter(BaseSourceAdapter):
         logger.debug(f'Done. Found {len(tables)} tables in {schema} schema of {database} database.')
         return tables
 
-    def generate_schema(self, name: str, database: str = 'SNOWSHU_DEVELOPMENT') -> str:
+    def generate_schema(self, name: str, database: str = 'SNOWSHU') -> str:
         """Create a schema in the specified database.
 
             Args:
                 name: The name of the schema to create.
                 database: The database where the schema will be created.
-                          Defaults to 'SNOWSHU_DEVELOPMENT'.
+                          Defaults to 'SNOWSHU'.
         """
         corrected_database, corrected_name = (
             self._correct_case(x) for x in (database, name))
@@ -129,17 +129,17 @@ class SnowflakeAdapter(BaseSourceAdapter):
                     {corrected_database}.{corrected_name}'''
             result = self._safe_query(query)
             logger.info("Schema creation result: %s", result['status'][0])
-        except Exception as e:
-            logger.error("An error occurred while creating the schema: %s", e)
+        except Exception as err:
+            logger.error("An error occurred while creating the schema: %s", err)
 
-    def drop_schema(self, name: str, database: str = 'SNOWSHU_DEVELOPMENT') -> str:
+    def drop_schema(self, name: str, database: str = 'SNOWSHU') -> str:
         """Droop a schema and all of its contained objects (tables, views,
         stored procedures)
 
             Args:
                 name: The name of the schema to drop
                 database: The database name where the schema is located.
-                            Defaults to SNOWSHU_DEVELOPMENT.
+                            Defaults to SNOWSHU.
         """
         corrected_database, corrected_name = (
             self._correct_case(x) for x in (database, name))
@@ -151,10 +151,10 @@ class SnowflakeAdapter(BaseSourceAdapter):
                     CASCADE'''
             result = self._safe_query(query)
             logger.info("Schema drop result: %s", result["status"][0])
-        except Exception as e:
-            logger.error("An error occurred while dropping the schema: %s", e)
+        except Exception as err:
+            logger.error("An error occurred while dropping the schema: %s", err)
 
-    def create_table(self, query: str, name: str, schema: str, database: str = 'SNOWSHU_DEVELOPMENT'):
+    def create_table(self, query: str, name: str, schema: str, database: str = 'SNOWSHU'):
         corrected_name, corrected_schema, corrected_database = (
             self._correct_case(x) for x in (name, schema, database)
         )
@@ -166,10 +166,10 @@ class SnowflakeAdapter(BaseSourceAdapter):
                          corrected_name, corrected_schema, corrected_database)
             result = self._safe_query(full_query)
             logger.info("Table creation result: %s", result['status'][0])
-        except Exception as e:
-            logger.error("An error occurred while creating the table: %s", e)
+        except Exception as err:
+            logger.error("An error occurred while creating the table: %s", err)
 
-    def drop_table(self, name: str, schema: str, database: str = 'SNOWSHU_DEVELOPMENT'):
+    def drop_table(self, name: str, schema: str, database: str = 'SNOWSHU'):
         corrected_name, corrected_schema, corrected_database = (
             self._correct_case(x) for x in (name, schema, database)
         )
@@ -180,8 +180,8 @@ class SnowflakeAdapter(BaseSourceAdapter):
                          corrected_name, corrected_schema, corrected_database)
             result = self._safe_query(query)
             logger.info("Table drop result: %s", result["status"][0])
-        except Exception as e:
-            logger.error("An error occurred while dropping the table: %s", e)
+        except Exception as err:
+            logger.error("An error occurred while dropping the table: %s", err)
 
     @staticmethod
     def population_count_statement(relation: Relation) -> str:
