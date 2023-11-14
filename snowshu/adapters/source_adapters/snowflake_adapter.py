@@ -1,5 +1,4 @@
 import logging
-from threading import local
 import time
 from typing import TYPE_CHECKING, Any, List, Optional, Union
 from urllib.parse import quote
