@@ -1,4 +1,5 @@
 import logging
+from threading import local
 import time
 from typing import TYPE_CHECKING, Any, List, Optional, Union
 from urllib.parse import quote
@@ -120,6 +121,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
                 database: The database where the schema will be created.
                           Defaults to 'SNOWSHU'.
         """
+
         corrected_database, corrected_name = (
             self._correct_case(x) for x in (database, name))
         try:
@@ -135,9 +137,10 @@ class SnowflakeAdapter(BaseSourceAdapter):
                 f"in database {corrected_database}: {err}"
             )
             logger.error(error_message)
+            raise
 
     def drop_schema(self, name: str, database: str = 'SNOWSHU'):
-        """Droop a schema and all of its contained objects (tables, views,
+        """Drop a schema and all of its contained objects (tables, views,
         stored procedures)
 
             Args:
@@ -161,6 +164,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
                 f"in database {corrected_database}: {err}"
             )
             logger.error(error_message)
+            raise
 
     def create_table(self, query: str, name: str, schema: str, database: str = 'SNOWSHU'):
         corrected_name, corrected_schema, corrected_database = (
@@ -179,6 +183,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
                 f"An error occurred while creating the table {corrected_name} "
                 f"in database {corrected_database}: {err}")
             logger.error(error_message)
+            raise
 
     def drop_table(self, name: str, schema: str, database: str = 'SNOWSHU'):
         corrected_name, corrected_schema, corrected_database = (
@@ -196,6 +201,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
                 f"An error occurred while dropping the table {corrected_name} "
                 f"in database {corrected_database}: {err}")
             logger.error(error_message)
+            raise
 
     @staticmethod
     def population_count_statement(relation: Relation) -> str:

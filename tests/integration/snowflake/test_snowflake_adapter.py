@@ -327,6 +327,8 @@ def test_check_count_and_query(sf_adapter):
 
 
 def test_generate_schema(sf_adapter):
+    """Testing whether schema phisically appears in snowflake warehouse
+    after using snowflake_adapter.generate_schema()"""
     DATABASE, SCHEMA = "SNOWSHU_DEVELOPMENT", "GENERATE_SCHEMA_TEST"
     try:
         # Clean up before test
@@ -342,12 +344,14 @@ def test_generate_schema(sf_adapter):
 
 
 def test_drop_schema(sf_adapter):
+    """Test whether snowflake_adapter.drop_schema() successfully
+    drop schema (with cascade) from snowflake warehouse."""
     DATABASE, SCHEMA = "SNOWSHU_DEVELOPMENT", "DROP_SCHEMA_TEST"
     try:
         # Setup: Ensure the schema exists before attempting to drop it
         if SCHEMA not in sf_adapter._get_all_schemas(DATABASE):
             sf_adapter.generate_schema(database=DATABASE, name=SCHEMA)
-
+            assert SCHEMA in sf_adapter._get_all_schemas(DATABASE)
         # Test schema dropping
         sf_adapter.drop_schema(database=DATABASE, name=SCHEMA)
         assert SCHEMA not in sf_adapter._get_all_schemas(DATABASE)
@@ -358,6 +362,8 @@ def test_drop_schema(sf_adapter):
 
 
 def test_create_table(sf_adapter):
+    """Test whether snowflake_adapter.create_table() successfully creates
+    a table in snowflake warehouse."""
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "CREATE_TABLE_TEST", "TEST_TABLE"
     query = "SELECT 1 AS test_col"
     try:
@@ -375,6 +381,8 @@ def test_create_table(sf_adapter):
         sf_adapter.drop_schema(name=SCHEMA, database=DATABASE)
 
 def test_drop_table(sf_adapter):
+    """Test whether snowflake_adapter.drop_table() successfully
+    drop specific table from snowflake warehouse."""
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "DROP_TABLE_TEST", "TEST_TABLE"
     query = "SELECT 1 AS test_col"
     try:
@@ -388,8 +396,6 @@ def test_drop_table(sf_adapter):
         sf_adapter.drop_table(name=TABLE, schema=SCHEMA, database=DATABASE)
         assert TABLE not in sf_adapter._get_all_tables(DATABASE, SCHEMA)
     finally:
-        # Clean up: Drop table and schema if they still exist
-        if TABLE in sf_adapter._get_all_tables(DATABASE, SCHEMA):
-            sf_adapter.drop_table(name=TABLE, schema=SCHEMA, database=DATABASE)
+        # Clean up: Drop schema cascade if it still exist
         if SCHEMA in sf_adapter._get_all_schemas(DATABASE):
             sf_adapter.drop_schema(name=SCHEMA, database=DATABASE)
