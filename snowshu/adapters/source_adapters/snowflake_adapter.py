@@ -126,7 +126,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
         try:
             logger.debug("Creating a schema %s in %s database...",
                          corrected_name, corrected_database)
-            query = f'''CREATE SCHEMA IF NOT EXISTS
+            query = f'''CREATE TRANSIENT SCHEMA IF NOT EXISTS
                     {corrected_database}.{corrected_name}'''
             result = self._safe_query(query)
             logger.info("Schema creation result: %s", result['status'][0])
@@ -169,7 +169,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
         corrected_name, corrected_schema, corrected_database = (
             self._correct_case(x) for x in (name, schema, database)
         )
-        full_query = f'''CREATE TABLE IF NOT EXISTS
+        full_query = f'''CREATE TRANSIENT TABLE IF NOT EXISTS
             {corrected_database}.{corrected_schema}.{corrected_name}
             AS {query}'''
         try:
