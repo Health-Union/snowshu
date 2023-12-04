@@ -103,6 +103,105 @@ class SnowflakeAdapter(BaseSourceAdapter):
             f'Done. Found {len(schemas)} schemas in {database} database.')
         return schemas
 
+    def _get_all_tables(self, database: str, schema: str) -> List[str]:
+        database = self.quoted(database)
+        schema = self.quoted(schema)
+        logger.debug(f'Collecting tables from {schema} schema in {database} database in snowflake...')
+        show_result = self._safe_query(f'SHOW TERSE TABLES IN SCHEMA {database}.{schema}')['name'].tolist()
+        tables = list(set(show_result))
+        logger.debug(f'Done. Found {len(tables)} tables in {schema} schema of {database} database.')
+        return tables
+
+    def generate_schema(self, name: str, database: str = 'SNOWSHU'):
+        """Create a schema in the specified database.
+
+            Args:
+                name: The name of the schema to create.
+                database: The database where the schema will be created.
+                          Defaults to 'SNOWSHU'.
+        """
+
+        corrected_database, corrected_name = (
+            self._correct_case(x) for x in (database, name))
+        try:
+            logger.debug("Creating a schema %s in %s database...",
+                         corrected_name, corrected_database)
+            query = f'''CREATE TRANSIENT SCHEMA IF NOT EXISTS
+                    {corrected_database}.{corrected_name}'''
+            result = self._safe_query(query)
+            logger.info("Schema creation result: %s", result['status'][0])
+        except ValueError as err:
+            error_message = (
+                f"An error occurred while creating the schema {corrected_name} "
+                f"in database {corrected_database}: {err}"
+            )
+            logger.error(error_message)
+            raise
+
+    def drop_schema(self, name: str, database: str = 'SNOWSHU'):
+        """Drop a schema and all of its contained objects (tables, views,
+        stored procedures)
+
+            Args:
+                name: The name of the schema to drop
+                database: The database name where the schema is located.
+                            Defaults to SNOWSHU.
+        """
+        corrected_database, corrected_name = (
+            self._correct_case(x) for x in (database, name))
+        try:
+            logger.debug("Creating a schema %s in %s database...",
+                         corrected_name, corrected_database)
+            query = f'''DROP SCHEMA IF EXISTS
+                    {corrected_database}.{corrected_name}
+                    CASCADE'''
+            result = self._safe_query(query)
+            logger.info("Schema drop result: %s", result["status"][0])
+        except ValueError as err:
+            error_message = (
+                f"An error occurred while dropping the schema {corrected_name} "
+                f"in database {corrected_database}: {err}"
+            )
+            logger.error(error_message)
+            raise
+
+    def create_table(self, query: str, name: str, schema: str, database: str = 'SNOWSHU'):
+        corrected_name, corrected_schema, corrected_database = (
+            self._correct_case(x) for x in (name, schema, database)
+        )
+        full_query = f'''CREATE TRANSIENT TABLE IF NOT EXISTS
+            {corrected_database}.{corrected_schema}.{corrected_name}
+            AS {query}'''
+        try:
+            logger.debug("Creating table %s in %s.%s...",
+                         corrected_name, corrected_schema, corrected_database)
+            result = self._safe_query(full_query)
+            logger.info("Table creation result: %s", result['status'][0])
+        except ValueError as err:
+            error_message = (
+                f"An error occurred while creating the table {corrected_name} "
+                f"in database {corrected_database}: {err}")
+            logger.error(error_message)
+            raise
+
+    def drop_table(self, name: str, schema: str, database: str = 'SNOWSHU'):
+        corrected_name, corrected_schema, corrected_database = (
+            self._correct_case(x) for x in (name, schema, database)
+        )
+        query = f'''DROP TABLE IF EXISTS
+            {corrected_database}.{corrected_schema}.{corrected_name}'''
+        try:
+            logger.debug("Dropping table %s in %s.%s...",
+                         corrected_name, corrected_schema, corrected_database)
+            result = self._safe_query(query)
+            logger.info("Table drop result: %s", result["status"][0])
+        except ValueError as err:
+            error_message = (
+                f"An error occurred while dropping the table {corrected_name} "
+                f"in database {corrected_database}: {err}")
+            logger.error(error_message)
+            raise
+
     @staticmethod
     def population_count_statement(relation: Relation) -> str:
         """creates the count * statement for a relation
@@ -433,7 +532,7 @@ LIMIT {max_number_of_outliers})
                 'Adapter.get_connection called before setting Adapter.credentials')
 
         logger.debug(f'Acquiring {self.CLASSNAME} connection...')
-        overrides = dict(       # noqa pylint: disable=redefined-outer-name 
+        overrides = dict(       # noqa pylint: disable=redefined-outer-name
             (k,
              v) for (
                 k,
