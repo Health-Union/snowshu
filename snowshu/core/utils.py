@@ -1,5 +1,6 @@
 import os
 import re
+import uuid
 from importlib import import_module
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, TextIO, Type, Union, List
@@ -122,3 +123,9 @@ def remove_dangling_replica_containers() -> None:
     for container in client.containers.list(all=True):
         if 'snowshu_target_' in container.name:
             container.remove(force=True)
+
+
+def generate_unique_uuid_name(name: str) -> str:
+    """Generates a unique name based on name and randomly generated uuid."""
+    _uuid = str(uuid.uuid4()).rsplit('-', maxsplit=1)[-1]
+    return "_".join([name, _uuid])

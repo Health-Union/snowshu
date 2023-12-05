@@ -6,6 +6,7 @@ import yaml
 
 
 import snowshu.core.models.materializations as mz
+from snowshu.core.utils import generate_unique_uuid_name
 from snowshu.adapters.source_adapters import BaseSourceAdapter
 from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
 from snowshu.core.models.credentials import Credentials
@@ -329,7 +330,10 @@ def test_check_count_and_query(sf_adapter):
 def test_generate_schema(sf_adapter):
     """Testing whether schema phisically appears in snowflake warehouse
     after using snowflake_adapter.generate_schema()"""
-    DATABASE, SCHEMA = "SNOWSHU_DEVELOPMENT", "GENERATE_SCHEMA_TEST"
+    DATABASE, SCHEMA = (
+        "SNOWSHU_DEVELOPMENT",
+        generate_unique_uuid_name("GENERATE_TEST_SCHEMA").upper()
+    )
     try:
         # Clean up before test
         if SCHEMA in sf_adapter._get_all_schemas(DATABASE):
@@ -346,7 +350,10 @@ def test_generate_schema(sf_adapter):
 def test_drop_schema(sf_adapter):
     """Test whether snowflake_adapter.drop_schema() successfully
     drop schema (with cascade) from snowflake warehouse."""
-    DATABASE, SCHEMA = "SNOWSHU_DEVELOPMENT", "DROP_SCHEMA_TEST"
+    DATABASE, SCHEMA = (
+        "SNOWSHU_DEVELOPMENT",
+        generate_unique_uuid_name("DROP_SCHEMA_TEST").upper()
+    )
     try:
         # Setup: Ensure the schema exists before attempting to drop it
         if SCHEMA not in sf_adapter._get_all_schemas(DATABASE):
@@ -364,7 +371,11 @@ def test_drop_schema(sf_adapter):
 def test_create_table(sf_adapter):
     """Test whether snowflake_adapter.create_table() successfully creates
     a table in snowflake warehouse."""
-    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "CREATE_TABLE_TEST", "TEST_TABLE"
+    DATABASE, SCHEMA, TABLE = (
+        "SNOWSHU_DEVELOPMENT",
+        generate_unique_uuid_name("CREATE_TABLE_TEST").upper(),
+        "TEST_TABLE"
+    )
     query = "SELECT 1 AS test_col"
     try:
         # Setup: Create schema and ensure table does not exist
@@ -380,10 +391,15 @@ def test_create_table(sf_adapter):
         sf_adapter.drop_table(name=TABLE, schema=SCHEMA, database=DATABASE)
         sf_adapter.drop_schema(name=SCHEMA, database=DATABASE)
 
+
 def test_drop_table(sf_adapter):
     """Test whether snowflake_adapter.drop_table() successfully
     drop specific table from snowflake warehouse."""
-    DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "DROP_TABLE_TEST", "TEST_TABLE"
+    DATABASE, SCHEMA, TABLE = (
+        "SNOWSHU_DEVELOPMENT",
+        generate_unique_uuid_name("DROP_TABLE_TEST").upper(),
+        "TEST_TABLE"
+    )
     query = "SELECT 1 AS test_col"
     try:
         # Setup: Create schema and table
