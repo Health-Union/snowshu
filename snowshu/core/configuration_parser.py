@@ -111,7 +111,7 @@ class ConfigurationParser:
     def _get_dict_from_anything(self,
                                 dict_like_object: Union[str, 'StringIO', dict],
                                 schema_path: Path) -> dict:
-        """Returns dict from path, io object or dict.  
+        """Returns dict from path, io object or dict.
 
         Returns:
             a formatted dict.
@@ -197,11 +197,10 @@ class ConfigurationParser:
         def case(val: str) -> str:
             return self.case(val)
 
-        # make sure no empty sections
-        try:
-            [loaded[section].keys() for section in ('source', 'target',)]
-        except TypeError as err:
-            raise KeyError(f'missing config section or section is none: {err}.') from err
+        # make sure no empty sections and section is not 'None'
+        for section in ('source', 'target',):
+            if section not in loaded or not isinstance(loaded[section], dict):
+                raise KeyError(f"Missing or invalid config section: '{section}'.")
 
         # set defaults
         for attr in ('short_description', 'long_description',):
@@ -238,7 +237,7 @@ class ConfigurationParser:
                 [MatchPattern.DatabasePattern(case(database['pattern']),
                  [MatchPattern.SchemaPattern(case(schema['pattern']),
                   [MatchPattern.RelationPattern(case(relation)) for relation in schema['relations']])
-                    for schema in database['schemas']]) 
+                    for schema in database['schemas']])
                     for database in loaded['source']['general_relations']['databases']])
 
             specified_relations = self._build_specified_relations(loaded['source'])
