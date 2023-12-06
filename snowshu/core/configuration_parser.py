@@ -233,26 +233,7 @@ class ConfigurationParser:
                                 loaded['source']['sampling']),
                             loaded['source']['max_number_of_outliers'])
 
-            pattern_list = []
-            for database in loaded["source"]["general_relations"]["databases"]:
-                database_pattern = case(database["pattern"])
-
-                schema_patterns = []
-                for schema in database["schemas"]:
-                    schema_pattern = case(schema["pattern"])
-                    relation_patterns = [
-                        MatchPattern.RelationPattern(case(relation))
-                        for relation in schema["relations"]
-                    ]
-                    schema_patterns.append(
-                        MatchPattern.SchemaPattern(schema_pattern, relation_patterns)
-                    )
-
-                pattern_list.append(
-                    MatchPattern.DatabasePattern(database_pattern, schema_patterns)
-                )
-
-            general_relations = MatchPattern(pattern_list)
+            general_relations = self._build_general_relations(loaded)
             specified_relations = self._build_specified_relations(loaded['source'])
 
             return Configuration(*replica_base,
@@ -308,6 +289,28 @@ class ConfigurationParser:
             [build_relationship(rel) for rel in directional],
             [build_polymorphic_relationship(rel) for rel in polymorphic]
         )
+
+    def _build_general_relations(self, loaded: dict) -> MatchPattern:
+        pattern_list = []
+        for database in loaded["source"]["general_relations"]["databases"]:
+            database_pattern = self.case(database["pattern"])
+
+            schema_patterns = []
+            for schema in database["schemas"]:
+                schema_pattern = self.case(schema["pattern"])
+                relation_patterns = [
+                    MatchPattern.RelationPattern(self.case(relation))
+                    for relation in schema["relations"]
+                ]
+                schema_patterns.append(
+                    MatchPattern.SchemaPattern(schema_pattern, relation_patterns)
+                )
+
+            pattern_list.append(
+                MatchPattern.DatabasePattern(database_pattern, schema_patterns)
+            )
+
+        return MatchPattern(pattern_list)
 
     def _build_specified_relations(
             self, source_config: dict) -> SpecifiedMatchPattern:
