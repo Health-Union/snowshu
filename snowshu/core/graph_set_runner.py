@@ -2,6 +2,7 @@ import gc
 import os
 import shutil
 import time
+from threading import Lock
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Tuple
@@ -9,6 +10,7 @@ import logging
 
 import networkx as nx
 
+from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
 from snowshu.adapters.source_adapters.base_source_adapter import \
     BaseSourceAdapter
 from snowshu.adapters.target_adapters.base_target_adapter import \
@@ -17,7 +19,6 @@ from snowshu.core.compile import RuntimeSourceCompiler
 from snowshu.logger import duration
 
 logger = logging.getLogger(__name__)
-
 
 @dataclass
 class GraphExecutable:
@@ -30,6 +31,8 @@ class GraphExecutable:
 class GraphSetRunner:
 
     barf_output = 'snowshu_barf_output'
+    schemas_lock: threading.Lock = Lock()
+    schemas: Set[str] = set()
 
     def __init__(self):
         self.barf = None
@@ -53,7 +56,6 @@ class GraphSetRunner:
                 analyze (bool): whether to run analyze or actually transfer the sampled data
                 barf (bool): whether to dump diagnostic files to disk
         """
-
         self.barf = barf
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
@@ -61,6 +63,8 @@ class GraphSetRunner:
 
         view_graph_set = [graph for graph in graph_set if graph.contains_views]
         table_graph_set = list(set(graph_set) - set(view_graph_set))
+
+        self.schemas = source_adapter.get_all_schemas(source_adapter.DATABASE)
 
         # Tables need to come first to prevent deps deadlocks with views
         for graphs in [table_graph_set, view_graph_set]:
@@ -109,6 +113,24 @@ class GraphSetRunner:
             retries -= 1
             executables = re_executables.copy()
 
+    def _generate_schemas_if_necessary(self, adapter: BaseSQLAdapter, name: str, database: str) -> None:
+        """
+        Helper function needed due to multi threading. We need to generate
+        schemas in database only if they don't already exists there. Due to
+        multi-threading we need to set up a lock on self.schema variable
+        so we don't create the same table in two separate threads.
+
+        Args:
+            name (str): Schema name to check if exists and generate if not
+            database (str): Database name where to check schema presence
+            adapter (BaseSQLAdapter): object that contains method necessary
+                to generate schema
+        """
+        with self.schemas_lock:
+            if name not in self.schemas:
+                adapter.generate_schema(name, database)
+                self.schemas.add(name)
+
     def _traverse_and_execute(self, executable: GraphExecutable) -> None:  # noqa: pylint: disable=too-many-statements
         """ Processes a single graph and loads the data into the replica if required
 
@@ -126,11 +148,17 @@ class GraphSetRunner:
                                    'wb'
                                 ) as cmp_file:
                 nx.write_multiline_adjlist(executable.graph, cmp_file)
+
         try:
             logger.debug(
                 f"Executing graph with {len(executable.graph)} relations in it...")
             for i, relation in enumerate(
-                    nx.algorithms.dag.topological_sort(executable.graph)):
+                nx.algorithms.dag.topological_sort(executable.graph)):
+
+                self._generate_schemas_if_necessary(
+                    executable.source_adapter, relation.schema, 'SANDBOX')
+
+
                 relation.population_size = executable.source_adapter.scalar_query(
                     executable.source_adapter.population_count_statement(relation))
                 logger.info(f'Executing source query for relation {relation.dot_notation} '
@@ -172,12 +200,13 @@ class GraphSetRunner:
                         except Exception as exc:
                             raise SystemError(
                                 f'Failed to extract DDL statement: {relation.compiled_query}') from exc
-                        logger.info('Successfully extracted DDL statement for view ' 
+                        logger.info('Successfully extracted DDL statement for view '
                                     f'{executable.target_adapter.quoted_dot_notation(relation)}')
                     else:
                         logger.info(
                             f'Retrieving records from source {relation.dot_notation}...')
                         try:
+                            executable.source_adapter.create_table()
                             relation.data = executable.source_adapter.check_count_and_query(
                                 relation.compiled_query, relation.sampling.max_allowed_rows, relation.unsampled)
                         except Exception as exc:
@@ -189,18 +218,18 @@ class GraphSetRunner:
                         logger.info(
                             f'{relation.sample_size} records retrieved for relation {relation.dot_notation}.')
 
-                    logger.info(f'Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}' 
+                    logger.info(f'Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}'
                                 ' into target...')
                     try:
                         executable.target_adapter.create_and_load_relation(
                             relation)
                     except Exception as exc:
                         raise SystemError('Failed to load relation '
-                                          f'{executable.target_adapter.quoted_dot_notation(relation)} ' 
+                                          f'{executable.target_adapter.quoted_dot_notation(relation)} '
                                           f' into target: {exc}') from exc
 
-                    logger.info('Done replication of relation ' 
-                                f'{executable.target_adapter.quoted_dot_notation(relation)} ' 
+                    logger.info('Done replication of relation '
+                                f'{executable.target_adapter.quoted_dot_notation(relation)} '
                                 f' in {duration(start_time)}.')
                     relation.target_loaded = True
                 relation.source_extracted = True

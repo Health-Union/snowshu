@@ -38,7 +38,7 @@ def test_create_schema_if_not_exists(end_to_end):
     DATABASE, SCHEMA = [rand_string(10) for _ in range(2)]
     pg_adapter.create_database_if_not_exists(DATABASE)
     pg_adapter.create_schema_if_not_exists(DATABASE, SCHEMA)
-    list = pg_adapter._get_all_schemas(DATABASE)
+    list = pg_adapter.get_all_schemas(DATABASE)
 
     assert SCHEMA in list
 
@@ -54,12 +54,12 @@ def test_get_all_databases(end_to_end):
     assert set(databases).issubset(db_list)
 
 
-def test_get_all_schemas(end_to_end):
+def testget_all_schemas(end_to_end):
     pg_adapter = PostgresAdapter(replica_metadata={})
     if pg_adapter.target != "localhost":
         pg_adapter._credentials.host = 'integration-test'
 
-    schemas_list = pg_adapter._get_all_schemas('snowshu_development')
+    schemas_list = pg_adapter.get_all_schemas('snowshu_development')
     schemas_set = {'polymorphic_data', 'external_data', 'tests_data', 'source_system'}
 
     assert schemas_set.issubset(schemas_list)

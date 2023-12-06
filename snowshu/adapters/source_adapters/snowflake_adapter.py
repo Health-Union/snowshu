@@ -81,6 +81,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
 
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.TABLE}
+    DATABASE = 'SNOWSHU'
 
     @overrides
     def _get_all_databases(self) -> List[str]:
@@ -93,7 +94,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
         return databases
 
     @overrides
-    def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
+    def get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         database = self.quoted(database)
         logger.debug(f'Collecting schemas from {database} in snowflake...')
         show_result = self._safe_query(f'SHOW TERSE SCHEMAS IN DATABASE {database}')[

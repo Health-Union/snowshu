@@ -157,7 +157,7 @@ class BaseSQLAdapter:
         )
 
     def build_catalog(self, patterns: Iterable[dict], thread_workers: int, flags: re.RegexFlag = 0) -> Set[Relation]:
-        """ This function is expected to return all of the relations that satisfy the filters 
+        """ This function is expected to return all of the relations that satisfy the filters
 
             Args:
                 patterns (Iterable[dict]): Filter dictionaries to apply to the databases
@@ -194,7 +194,7 @@ class BaseSQLAdapter:
     def _get_all_databases(self) -> List[str]:
         raise NotImplementedError()
 
-    def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
+    def get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         """ Returns the raw names of the schemas in the given database (raw case) """
         raise NotImplementedError()
 
@@ -222,7 +222,7 @@ class BaseSQLAdapter:
         # get all schemas in all databases
         filtered_schemas = []
         for db_rel in filtered_databases:
-            schemas = self._get_all_schemas(database=db_rel.database)
+            schemas = self.get_all_schemas(database=db_rel.database)
             schema_objs = [
                 BaseSQLAdapter._DatabaseObject(
                     schema,

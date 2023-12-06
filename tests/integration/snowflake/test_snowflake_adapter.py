@@ -99,11 +99,11 @@ def test_get_all_databases(sf_adapter):
     assert set(databases_list).issubset(set(sf_adapter._get_all_databases()))
 
 
-def test_get_all_schemas(sf_adapter):
+def testget_all_schemas(sf_adapter):
     DATABASE = "SNOWSHU_DEVELOPMENT"
     schemas_set = {"INFORMATION_SCHEMA", "POLYMORPHIC_DATA", "EXTERNAL_DATA", "TESTS_DATA"}
 
-    assert schemas_set.issubset(sf_adapter._get_all_schemas(database=DATABASE))
+    assert schemas_set.issubset(sf_adapter.get_all_schemas(database=DATABASE))
 
 
 def test_view_creation_statement(sf_adapter):
@@ -336,12 +336,12 @@ def test_generate_schema(sf_adapter):
     )
     try:
         # Clean up before test
-        if SCHEMA in sf_adapter._get_all_schemas(DATABASE):
+        if SCHEMA in sf_adapter.get_all_schemas(DATABASE):
             sf_adapter.drop_schema(database=DATABASE, name=SCHEMA)
 
         # Test schema creation
         sf_adapter.generate_schema(database=DATABASE, name=SCHEMA)
-        assert SCHEMA in sf_adapter._get_all_schemas(database=DATABASE)
+        assert SCHEMA in sf_adapter.get_all_schemas(database=DATABASE)
     finally:
         # Clean up after test
         sf_adapter.drop_schema(database=DATABASE, name=SCHEMA)
@@ -356,15 +356,15 @@ def test_drop_schema(sf_adapter):
     )
     try:
         # Setup: Ensure the schema exists before attempting to drop it
-        if SCHEMA not in sf_adapter._get_all_schemas(DATABASE):
+        if SCHEMA not in sf_adapter.get_all_schemas(DATABASE):
             sf_adapter.generate_schema(database=DATABASE, name=SCHEMA)
-            assert SCHEMA in sf_adapter._get_all_schemas(DATABASE)
+            assert SCHEMA in sf_adapter.get_all_schemas(DATABASE)
         # Test schema dropping
         sf_adapter.drop_schema(database=DATABASE, name=SCHEMA)
-        assert SCHEMA not in sf_adapter._get_all_schemas(DATABASE)
+        assert SCHEMA not in sf_adapter.get_all_schemas(DATABASE)
     finally:
         # Additional cleanup, in case the test fails
-        if SCHEMA in sf_adapter._get_all_schemas(DATABASE):
+        if SCHEMA in sf_adapter.get_all_schemas(DATABASE):
             sf_adapter.drop_schema(database=DATABASE, name=SCHEMA)
 
 
@@ -413,5 +413,5 @@ def test_drop_table(sf_adapter):
         assert TABLE not in sf_adapter._get_all_tables(DATABASE, SCHEMA)
     finally:
         # Clean up: Drop schema cascade if it still exist
-        if SCHEMA in sf_adapter._get_all_schemas(DATABASE):
+        if SCHEMA in sf_adapter.get_all_schemas(DATABASE):
             sf_adapter.drop_schema(name=SCHEMA, database=DATABASE)

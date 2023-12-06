@@ -161,7 +161,7 @@ class PostgresAdapter(BaseTargetAdapter):
         return [d[0] for d in databases] if len(databases) > 0 else databases
 
     @overrides
-    def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
+    def get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         database = self.quoted(database)
         logger.debug(f'Collecting schemas from {database} in postgres...')
         query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND \
@@ -368,7 +368,7 @@ AS
             schemas += [(correct_case(database,
                                       self.DEFAULT_CASE == 'upper'),
                          correct_case(schema,
-                                      self.DEFAULT_CASE == 'upper')) for schema in self._get_all_schemas(database,
+                                      self.DEFAULT_CASE == 'upper')) for schema in self.get_all_schemas(database,
                                                                                                          True)]
 
         unique_schemas = set(schemas)

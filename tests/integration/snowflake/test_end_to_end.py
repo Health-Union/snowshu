@@ -150,15 +150,15 @@ def test_bidirectional(end_to_end):
     print('test_bidirectional')
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
-        SELECT 
-            COUNT(*) 
-        FROM 
+        SELECT
+            COUNT(*)
+        FROM
             SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.USER_COOKIES uc
         FULL OUTER JOIN
              SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.USERS u
-        ON 
+        ON
             uc.user_id=u.id
-        WHERE 
+        WHERE
             uc.user_id IS NULL
         OR
             u.id IS NULL
@@ -174,18 +174,18 @@ def test_directional(end_to_end):
     query = """
         WITH
         joined_roots AS (
-        SELECT 
+        SELECT
             oi.id AS oi_id
             ,oi.order_id AS oi_order_id
             ,o.id AS o_id
-        FROM 
+        FROM
             SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS oi
         FULL OUTER JOIN
              SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDERS o
-        ON 
+        ON
             oi.order_id = o.id
         )
-        SELECT 
+        SELECT
             (SELECT COUNT(*) FROM joined_roots WHERE oi_id is null) AS upstream_missing
             ,(SELECT COUNT(*) FROM joined_roots WHERE o_id is null) AS downstream_missing
         """
@@ -199,7 +199,7 @@ def test_directional(end_to_end):
 def test_view(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
-        SELECT 
+        SELECT
             (SELECT COUNT(*) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS_VIEW) /
             (SELECT COUNT(*) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS) AS delta
         """
@@ -238,14 +238,14 @@ def test_applies_pg_extensions(end_to_end):
 def test_data_types(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
-        SELECT 
+        SELECT
             COLUMN_NAME,
             DATA_TYPE
-        FROM 
-            SNOWSHU_DEVELOPMENT.information_schema.columns 
-        WHERE 
-            TABLE_SCHEMA = 'tests_data' 
-        AND 
+        FROM
+            SNOWSHU_DEVELOPMENT.information_schema.columns
+        WHERE
+            TABLE_SCHEMA = 'tests_data'
+        AND
             TABLE_NAME='data_types'
         """
 
@@ -290,14 +290,14 @@ def test_data_types(end_to_end):
 def test_casing(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
-        SELECT 
+        SELECT
             COLUMN_NAME,
             DATA_TYPE
-        FROM 
-            SNOWSHU_DEVELOPMENT.information_schema.columns 
-        WHERE 
-            TABLE_SCHEMA = 'tests_data' 
-        AND 
+        FROM
+            SNOWSHU_DEVELOPMENT.information_schema.columns
+        WHERE
+            TABLE_SCHEMA = 'tests_data'
+        AND
             TABLE_NAME='case_testing'
         """
 
@@ -357,7 +357,7 @@ def test_x_db_incremental_import(end_to_end):
             unique_databases.remove('postgres')
             schemas_len = []
             for database in unique_databases:
-                for schema in adapter._get_all_schemas(database, True):
+                for schema in adapter.get_all_schemas(database, True):
                     schemas_len.append(len(schema.split('__')))
             assert all(x <= 2 for x in schemas_len)
             return True
