@@ -138,7 +138,7 @@ def create(replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
     replica.load_config(replica_file, target_arch=target_arch)
     replica.incremental = incremental
 
-    # click.echo(replica.create(name=name, barf=barf, retry_count=retry_count))
+    click.echo(replica.create(name=name, barf=barf, retry_count=retry_count))
 
 
 @cli.command()
