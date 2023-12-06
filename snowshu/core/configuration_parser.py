@@ -194,9 +194,6 @@ class ConfigurationParser:
             }
         source_adapter_profile.adapter.MATERIALIZATION_MAPPINGS = materialization_mappings
 
-        def case(val: str) -> str:
-            return self.case(val)
-
         # make sure no empty sections and section is not None
         for section in ('source', 'target',):
             if section not in loaded or not isinstance(loaded[section], dict):
