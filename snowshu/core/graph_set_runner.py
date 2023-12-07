@@ -2,10 +2,11 @@ import gc
 import os
 import shutil
 import time
+import threading
 from threading import Lock
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Tuple, Set
 import logging
 
 import networkx as nx
@@ -19,6 +20,7 @@ from snowshu.core.compile import RuntimeSourceCompiler
 from snowshu.logger import duration
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class GraphExecutable:
@@ -64,7 +66,7 @@ class GraphSetRunner:
         view_graph_set = [graph for graph in graph_set if graph.contains_views]
         table_graph_set = list(set(graph_set) - set(view_graph_set))
 
-        self.schemas = source_adapter.get_all_schemas(source_adapter.DATABASE)
+        self.schemas = source_adapter.get_all_schemas(source_adapter.ADAPTER_DATABASE)
 
         # Tables need to come first to prevent deps deadlocks with views
         for graphs in [table_graph_set, view_graph_set]:
@@ -158,7 +160,6 @@ class GraphSetRunner:
                 self._generate_schemas_if_necessary(
                     executable.source_adapter, relation.schema, 'SANDBOX')
 
-
                 relation.population_size = executable.source_adapter.scalar_query(
                     executable.source_adapter.population_count_statement(relation))
                 logger.info(f'Executing source query for relation {relation.dot_notation} '
@@ -206,7 +207,11 @@ class GraphSetRunner:
                         logger.info(
                             f'Retrieving records from source {relation.dot_notation}...')
                         try:
-                            executable.source_adapter.create_table()
+                            executable.source_adapter.create_table(
+                                query=relation.compiled_query,
+                                name=relation.name,
+                                schema=relation.schema,
+                                database="SANDBOX")
                             relation.data = executable.source_adapter.check_count_and_query(
                                 relation.compiled_query, relation.sampling.max_allowed_rows, relation.unsampled)
                         except Exception as exc:
@@ -241,11 +246,16 @@ class GraphSetRunner:
 
             for relation in executable.graph.nodes:
                 try:
-                    del relation.data
+                    executable.source_adapter.drop_table(
+                        name=relation.name,
+                        schema=relation.schema,
+                        database="SANDBOX"
+                    )
+                    # del relation.data
                 except AttributeError:
                     logger.warning("Failed to purge data of the %s relation", relation)
 
-            gc.collect()
+            # gc.collect()
         except Exception as exc:
             logger.error(f'failed with error of type {type(exc)}: {str(exc)}')
             raise exc

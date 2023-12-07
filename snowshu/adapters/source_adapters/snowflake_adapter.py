@@ -81,7 +81,6 @@ class SnowflakeAdapter(BaseSourceAdapter):
 
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.TABLE}
-    DATABASE = 'SNOWSHU'
 
     @overrides
     def _get_all_databases(self) -> List[str]:
