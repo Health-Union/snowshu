@@ -12,6 +12,7 @@ import logging
 
 import networkx as nx
 
+from snowshu.configs import DEFAULT_TEMPORARY_DATABASE
 from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
 from snowshu.adapters.source_adapters.base_source_adapter import \
     BaseSourceAdapter
@@ -67,7 +68,7 @@ class GraphSetRunner:
         view_graph_set = [graph for graph in graph_set if graph.contains_views]
         table_graph_set = list(set(graph_set) - set(view_graph_set))
 
-        self.schemas = source_adapter.get_all_schemas("SANDBOX")
+        self.schemas = source_adapter.get_all_schemas(DEFAULT_TEMPORARY_DATABASE)
 
         # Tables need to come first to prevent deps deadlocks with views
         for graphs in [table_graph_set, view_graph_set]:
