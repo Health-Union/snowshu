@@ -99,7 +99,7 @@ def test_get_all_databases(sf_adapter):
     assert set(databases_list).issubset(set(sf_adapter._get_all_databases()))
 
 
-def testget_all_schemas(sf_adapter):
+def test_get_all_schemas(sf_adapter):
     DATABASE = "SNOWSHU_DEVELOPMENT"
     schemas_set = {"INFORMATION_SCHEMA", "POLYMORPHIC_DATA", "EXTERNAL_DATA", "TESTS_DATA"}
 

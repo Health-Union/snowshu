@@ -54,7 +54,7 @@ def test_get_all_databases(end_to_end):
     assert set(databases).issubset(db_list)
 
 
-def testget_all_schemas(end_to_end):
+def test_get_all_schemas(end_to_end):
     pg_adapter = PostgresAdapter(replica_metadata={})
     if pg_adapter.target != "localhost":
         pg_adapter._credentials.host = 'integration-test'
