@@ -361,15 +361,19 @@ AS
         logger.info('Created relation %s', self.quoted_dot_notation(relation))
 
     def enable_cross_database(self) -> None:
-        unique_databases = {correct_case(d, self.DEFAULT_CASE == 'upper') for d in self._get_all_databases()}
+        unique_databases = {
+            correct_case(d, self.DEFAULT_CASE == 'upper') for d in self._get_all_databases()
+        }
         unique_databases.remove('postgres')
         schemas = []
         for database in unique_databases:
-            schemas += [(correct_case(database,
-                                      self.DEFAULT_CASE == 'upper'),
-                         correct_case(schema,
-                                      self.DEFAULT_CASE == 'upper')) for schema in self.get_all_schemas(database,
-                                                                                                         True)]
+            schemas += [
+                (
+                    correct_case(database, self.DEFAULT_CASE == 'upper'),
+                    correct_case(schema, self.DEFAULT_CASE == 'upper'),
+                )
+                for schema in self.get_all_schemas(database, True)
+            ]
 
         unique_schemas = set(schemas)
         unique_databases.add('snowshu')
