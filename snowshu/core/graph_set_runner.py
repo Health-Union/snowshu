@@ -83,8 +83,8 @@ class GraphSetRunner:
                                              retry_count)
 
     def process_executables(self,
-                        executables: List[GraphExecutable],
-                        executor: ThreadPoolExecutor,
+                            executables: List[GraphExecutable],
+                            executor: ThreadPoolExecutor,
                         retries: int) -> None:
         """
         Executes a list of GraphExecutable tasks concurrently using a ThreadPoolExecutor.
@@ -121,7 +121,7 @@ class GraphSetRunner:
                     re_executables.add(executable)
 
             if not re_executables:
-                return # Success
+                return  # Success
 
             logging.error("Failed because '%i' executables can't be finished successfully:\n%s",
                           len(re_executables), str(re_executables))
