@@ -532,7 +532,7 @@ LIMIT {max_number_of_outliers})
                 'Adapter.get_connection called before setting Adapter.credentials')
 
         logger.debug(f'Acquiring {self.CLASSNAME} connection...')
-        overrides = { # noqa pylint: disable=redefined-outer-name
+        overrides = {  # noqa pylint: disable=redefined-outer-name
             'database': database_override,
             'schema': schema_override
         }
