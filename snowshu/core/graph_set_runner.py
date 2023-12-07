@@ -153,17 +153,25 @@ class GraphSetRunner:
 
         try:
             logger.debug(
-                f"Executing graph with {len(executable.graph)} relations in it...")
+                "Executing graph with %s relations in it...", len(executable.graph)
+            )
             for i, relation in enumerate(
-                nx.algorithms.dag.topological_sort(executable.graph)):
+                nx.algorithms.dag.topological_sort(executable.graph), start=1
+            ):
 
                 self._generate_schemas_if_necessary(
-                    executable.source_adapter, relation.schema, 'SANDBOX')
+                    executable.source_adapter, relation.schema, "SANDBOX"
+                )
 
                 relation.population_size = executable.source_adapter.scalar_query(
-                    executable.source_adapter.population_count_statement(relation))
-                logger.info(f'Executing source query for relation {relation.dot_notation} '
-                            f'({i+1} of {len(executable.graph)} in graph)...')
+                    executable.source_adapter.population_count_statement(relation)
+                )
+                logger.info(
+                    "Executing source query for relation %s (%s of %s in graph)...",
+                    relation.dot_notation,
+                    i,
+                    len(executable.graph),
+                )
 
                 relation.sampling.prepare(relation,
                                           executable.source_adapter)
