@@ -5,7 +5,7 @@ import re
 from sqlalchemy.types import JSON
 import pandas as pd
 
-from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS
+from snowshu.configs import DEFAULT_MAX_NUMBER_OF_OUTLIERS, DEFAULT_TEMPORARY_DATABASE
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.utils import correct_case
@@ -29,19 +29,18 @@ class Relation:
     unsampled: bool = False
     include_outliers: bool = False
     max_number_of_outliers: int = DEFAULT_MAX_NUMBER_OF_OUTLIERS
+    temp_database: str = DEFAULT_TEMPORARY_DATABASE
 
     def __init__(self,  # noqa pylint: disable=too-many-arguments
                  database: str,
                  schema: str,
                  name: str,
                  materialization: Optional[mz.Materialization],
-                 attributes: Optional[List[Attribute]],
-                 temp_database: str = "SANDBOX"):
+                 attributes: Optional[List[Attribute]],):
 
         self.database = database
         self.schema = schema
         self.name = name
-        self.temp_database = temp_database
         self.materialization = materialization
         self.attributes = attributes
 
