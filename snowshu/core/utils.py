@@ -125,7 +125,6 @@ def remove_dangling_replica_containers() -> None:
             container.remove(force=True)
 
 
-def generate_unique_uuid_name(name: str) -> str:
+def generate_unique_uuid() -> str:
     """Generates a unique name based on name and randomly generated uuid."""
-    _uuid = str(uuid.uuid4()).rsplit('-', maxsplit=1)[-1]
-    return "_".join([name, _uuid])
+    return str(uuid.uuid4()).rsplit('-', maxsplit=1)[-1]

@@ -12,12 +12,12 @@ import logging
 
 import networkx as nx
 
-from snowshu.configs import DEFAULT_TEMPORARY_DATABASE
 from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
 from snowshu.adapters.source_adapters.base_source_adapter import \
     BaseSourceAdapter
 from snowshu.adapters.target_adapters.base_target_adapter import \
     BaseTargetAdapter
+from snowshu.core import utils
 from snowshu.core.compile import RuntimeSourceCompiler
 from snowshu.logger import duration
 
@@ -37,6 +37,7 @@ class GraphSetRunner:
     barf_output = 'snowshu_barf_output'
     schemas_lock: threading.Lock = Lock()
     schemas: Set[str] = set()
+    uuid: str = utils.generate_unique_uuid()
 
     def __init__(self):
         self.barf = None
@@ -67,8 +68,6 @@ class GraphSetRunner:
 
         view_graph_set = [graph for graph in graph_set if graph.contains_views]
         table_graph_set = list(set(graph_set) - set(view_graph_set))
-
-        self.schemas = source_adapter.get_all_schemas(DEFAULT_TEMPORARY_DATABASE)
 
         # Tables need to come first to prevent deps deadlocks with views
         for graphs in [table_graph_set, view_graph_set]:
@@ -109,7 +108,7 @@ class GraphSetRunner:
                 for executable in executables
             }
             completed, _ = concurrent.futures.wait(
-                futures.keys(), return_when=concurrent.futures.FIRST_EXCEPTION
+                futures.keys(), timeout=60, return_when=concurrent.futures.FIRST_EXCEPTION
             )
             re_executables = []
 
@@ -173,9 +172,9 @@ class GraphSetRunner:
             for i, relation in enumerate(
                 nx.algorithms.dag.topological_sort(executable.graph), start=1
             ):
-
+                unique_schema_name = "_".join([relation.schema, self.uuid])
                 self._generate_schemas_if_necessary(
-                    executable.source_adapter, relation.schema, relation.temp_database
+                    executable.source_adapter, unique_schema_name, relation.temp_database
                 )
 
                 relation.population_size = executable.source_adapter.scalar_query(
@@ -233,10 +232,10 @@ class GraphSetRunner:
                             executable.source_adapter.create_table(
                                 query=relation.compiled_query,
                                 name=relation.name,
-                                schema=relation.schema,
+                                schema=unique_schema_name,
                                 database=relation.temp_database,
                             )
-                            fetch_query = f"SELECT * FROM {relation.temp_database}.{relation.schema}.{relation.name}"
+                            fetch_query = f"SELECT * FROM {relation.temp_database}.{unique_schema_name}.{relation.name}"
                             relation.data = executable.source_adapter.check_count_and_query(
                                 fetch_query, relation.sampling.max_allowed_rows, relation.unsampled)
                         except Exception as exc:
@@ -269,13 +268,13 @@ class GraphSetRunner:
                     with open(os.path.join(self.barf_output, f'{relation.dot_notation}.sql'), 'w') as barf_file:  # noqa pylint: disable=unspecified-encoding
                         barf_file.write(relation.compiled_query)
 
+            drop_schemas = set()
             for relation in executable.graph.nodes:
                 try:
-                    executable.source_adapter.drop_table(
-                        name=relation.name,
-                        schema=relation.schema,
-                        database=relation.temp_database
-                    )
+                    if unique_schema_name not in drop_schemas:
+                        executable.source_adapter.drop_schema(
+                            unique_schema_name, relation.temp_database)
+                        drop_schemas.add(unique_schema_name)
                     del relation.data
                 except AttributeError:
                     logger.warning("Failed to purge data of the %s relation", relation)
