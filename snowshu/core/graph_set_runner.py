@@ -255,7 +255,7 @@ class GraphSetRunner:
                 except AttributeError:
                     logger.warning("Failed to purge data of the %s relation", relation)
 
-            # gc.collect()
+            gc.collect()
         except Exception as exc:
             logger.error(f'failed with error of type {type(exc)}: {str(exc)}')
             raise exc
