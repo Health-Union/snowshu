@@ -83,9 +83,25 @@ class GraphSetRunner:
                                              retry_count)
 
     def process_executables(self,
-                            executables: List[GraphExecutable],
-                            executor: ThreadPoolExecutor,
-                            retries: int) -> None:
+                        executables: List[GraphExecutable],
+                        executor: ThreadPoolExecutor,
+                        retries: int) -> None:
+        """
+        Executes a list of GraphExecutable tasks concurrently using a ThreadPoolExecutor.
+        If any task fails due to an exception, it is retried a specified number of times.
+
+        Args:
+            executables (List[GraphExecutable]): The list of tasks to be executed.
+            executor (ThreadPoolExecutor): The executor to run the tasks.
+            retries (int): The number of times to retry failed tasks.
+
+        Returns:
+            None
+
+        Raises:
+            Exception: If a task fails after the specified number of retries,
+                    an exception is logged and the function returns None.
+        """
         while retries >= 0:
             futures = {
                 executor.submit(self._traverse_and_execute, executable): executable
