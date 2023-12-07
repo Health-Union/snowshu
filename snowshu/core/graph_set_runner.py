@@ -4,9 +4,10 @@ import shutil
 import time
 import threading
 from threading import Lock
+import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Tuple, Set
+from typing import List, Tuple, Set
 import logging
 
 import networkx as nx
@@ -66,7 +67,7 @@ class GraphSetRunner:
         view_graph_set = [graph for graph in graph_set if graph.contains_views]
         table_graph_set = list(set(graph_set) - set(view_graph_set))
 
-        self.schemas = source_adapter.get_all_schemas(source_adapter.ADAPTER_DATABASE)
+        self.schemas = source_adapter.get_all_schemas("SANDBOX")
 
         # Tables need to come first to prevent deps deadlocks with views
         for graphs in [table_graph_set, view_graph_set]:
@@ -82,38 +83,35 @@ class GraphSetRunner:
                                              retry_count)
 
     def process_executables(self,
-                            executables,
-                            executor,
-                            retries,
-                            wait_time=30):
-        re_executables = []
+                            executables: List[GraphExecutable],
+                            executor: ThreadPoolExecutor,
+                            retries: int) -> None:
+        while retries >= 0:
+            futures = {
+                executor.submit(self._traverse_and_execute, executable): executable
+                for executable in executables
+            }
+            completed, _ = concurrent.futures.wait(
+                futures.keys(), return_when=concurrent.futures.FIRST_EXCEPTION
+            )
+            re_executables = set()
 
-        def execute_with_retry(executables):
-            error = None
-            re_executables.clear()
-            futures = [executor.submit(self._traverse_and_execute, executable)
-                       for executable in executables]
-            while futures:
-                time.sleep(wait_time)
-                for future, executable in zip(futures.copy(), executables.copy()):
-                    if future.done():
-                        futures.remove(future)
-                        executables.remove(executable)
-                        if exception := future.exception():
-                            error = future.result
-                            logger.warning("Concurrent thread finished work with exception:\n%s: %s",
-                                           str(exception.__class__),
-                                           str(exception))
-                            re_executables.append(executable)
-            return error
+            for future in completed:
+                executable = futures[future]
+                if exception := future.exception():
+                    logger.warning("Concurrent thread finished work with exception:\n%s: %s",
+                                   str(exception.__class__),
+                                   str(exception))
+                    re_executables.add(executable)
 
-        while error := execute_with_retry(executables):
-            if retries < 1:
-                logger.error("Failed because '%i' executables can't be finished successfully:\n%s",
-                             len(re_executables), str(re_executables))
-                error()
+            if not re_executables:
+                return # Success
+
+            logging.error("Failed because '%i' executables can't be finished successfully:\n%s",
+                          len(re_executables), str(re_executables))
+            executables = re_executables
             retries -= 1
-            executables = re_executables.copy()
+        logging.error("Max retries reached. Some executables failed.")
 
     def _generate_schemas_if_necessary(self, adapter: BaseSQLAdapter, name: str, database: str) -> None:
         """
