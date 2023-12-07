@@ -35,11 +35,13 @@ class Relation:
                  schema: str,
                  name: str,
                  materialization: Optional[mz.Materialization],
-                 attributes: Optional[List[Attribute]]):
+                 attributes: Optional[List[Attribute]],
+                 temp_database: str = "SANDBOX"):
 
         self.database = database
         self.schema = schema
         self.name = name
+        self.temp_database = temp_database
         self.materialization = materialization
         self.attributes = attributes
 
