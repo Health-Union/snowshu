@@ -110,7 +110,7 @@ class GraphSetRunner:
             completed, _ = concurrent.futures.wait(
                 futures.keys(), return_when=concurrent.futures.FIRST_EXCEPTION
             )
-            re_executables = set()
+            re_executables = []
 
             for future in completed:
                 executable = futures[future]
@@ -118,7 +118,7 @@ class GraphSetRunner:
                     logger.warning("Concurrent thread finished work with exception:\n%s: %s",
                                    str(exception.__class__),
                                    str(exception))
-                    re_executables.add(executable)
+                    re_executables.append(executable)
 
             if not re_executables:
                 return  # Success
@@ -174,7 +174,7 @@ class GraphSetRunner:
             ):
 
                 self._generate_schemas_if_necessary(
-                    executable.source_adapter, relation.schema, "SANDBOX"
+                    executable.source_adapter, relation.schema, relation.temp_database
                 )
 
                 relation.population_size = executable.source_adapter.scalar_query(
@@ -233,9 +233,11 @@ class GraphSetRunner:
                                 query=relation.compiled_query,
                                 name=relation.name,
                                 schema=relation.schema,
-                                database="SANDBOX")
+                                database=relation.temp_database,
+                            )
+                            fetch_query = f"SELECT * FROM {relation.temp_database}.{relation.schema}.{relation.name}"
                             relation.data = executable.source_adapter.check_count_and_query(
-                                relation.compiled_query, relation.sampling.max_allowed_rows, relation.unsampled)
+                                fetch_query, relation.sampling.max_allowed_rows, relation.unsampled)
                         except Exception as exc:
                             raise SystemError(
                                 f'Failed execution of extraction sql statement: {relation.compiled_query} {exc}') \
@@ -271,9 +273,9 @@ class GraphSetRunner:
                     executable.source_adapter.drop_table(
                         name=relation.name,
                         schema=relation.schema,
-                        database="SANDBOX"
+                        database=relation.temp_database
                     )
-                    # del relation.data
+                    del relation.data
                 except AttributeError:
                     logger.warning("Failed to purge data of the %s relation", relation)
 
