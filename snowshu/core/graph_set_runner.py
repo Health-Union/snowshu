@@ -4,7 +4,7 @@ import shutil
 import time
 import threading
 import concurrent.futures
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Tuple, Set, List
 import logging
