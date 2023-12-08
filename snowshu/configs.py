@@ -19,6 +19,7 @@ DOCKER_TARGET_PORT = 9999
 DOCKER_WORKING_DIR = Path('/app').as_posix()
 DOCKER_API_TIMEOUT = 600  # in seconds, default is 60 which causes issues
 POSTGRES_IMAGE = 'postgres:12'
+DEFAULT_TEMPORARY_DATABASE = 'SANDBOX'
 
 
 def _is_in_docker() -> bool:
