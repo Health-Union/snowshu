@@ -10,7 +10,7 @@ import logging
 
 import networkx as nx
 
-from snowshu.adapters.source_adapters.base_sql_adapter import BaseSQLAdapter
+from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
 from snowshu.adapters.source_adapters.base_source_adapter import \
     BaseSourceAdapter
 from snowshu.adapters.target_adapters.base_target_adapter import \
@@ -216,7 +216,7 @@ class GraphSetRunner:
                         except Exception as exc:
                             raise SystemError(
                                 f'Failed to extract DDL statement: {relation.compiled_query}') from exc
-                        logger.info('Successfully extracted DDL statement for view ' 
+                        logger.info('Successfully extracted DDL statement for view '
                                     f'{executable.target_adapter.quoted_dot_notation(relation)}')
                     else:
                         source = f"{relation.temp_database}.{relation.schema}.{relation.name}"
@@ -241,18 +241,18 @@ class GraphSetRunner:
                         logger.info(
                             f'{relation.sample_size} records retrieved for relation {relation.dot_notation}.')
 
-                    logger.info(f'Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}' 
+                    logger.info(f'Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}'
                                 ' into target...')
                     try:
                         executable.target_adapter.create_and_load_relation(
                             relation)
                     except Exception as exc:
                         raise SystemError('Failed to load relation '
-                                          f'{executable.target_adapter.quoted_dot_notation(relation)} ' 
+                                          f'{executable.target_adapter.quoted_dot_notation(relation)} '
                                           f' into target: {exc}') from exc
 
-                    logger.info('Done replication of relation ' 
-                                f'{executable.target_adapter.quoted_dot_notation(relation)} ' 
+                    logger.info('Done replication of relation '
+                                f'{executable.target_adapter.quoted_dot_notation(relation)} '
                                 f' in {duration(start_time)}.')
                     relation.target_loaded = True
                 relation.source_extracted = True
