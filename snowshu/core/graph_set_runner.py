@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 import threading
+import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Tuple, Set, List
@@ -108,13 +109,17 @@ class GraphSetRunner:
                 executor.submit(self._traverse_and_execute, executable): executable
                 for executable in executables
             }
-
+            completed, _ = concurrent.futures.wait(
+                futures.keys(), return_when=concurrent.futures.ALL_COMPLETED
+            )
             re_executables = []
-            for future in as_completed(futures):
+
+            for future in completed:
                 executable = futures[future]
                 if exception := future.exception():
                     logger.warning("Concurrent thread finished work with exception:\n%s: %s",
-                                   str(exception.__class__), str(exception))
+                                   str(exception.__class__),
+                                   str(exception))
                     re_executables.append(executable)
 
             if not re_executables:
@@ -124,7 +129,6 @@ class GraphSetRunner:
                           len(re_executables), str(re_executables))
             executables = re_executables
             retries -= 1
-
         logging.error("Max retries reached. Some executables failed.")
 
     def _generate_schemas_if_necessary(self,
