@@ -2,17 +2,20 @@ import gc
 import os
 import shutil
 import time
-from concurrent.futures import ThreadPoolExecutor
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Tuple, Set, List
 import logging
 
 import networkx as nx
 
+from snowshu.adapters.source_adapters.base_sql_adapter import BaseSQLAdapter
 from snowshu.adapters.source_adapters.base_source_adapter import \
     BaseSourceAdapter
 from snowshu.adapters.target_adapters.base_target_adapter import \
     BaseTargetAdapter
+from snowshu.core import utils
 from snowshu.core.compile import RuntimeSourceCompiler
 from snowshu.logger import duration
 
@@ -30,6 +33,9 @@ class GraphExecutable:
 class GraphSetRunner:
 
     barf_output = 'snowshu_barf_output'
+    schemas_lock: threading.Lock = threading.Lock()
+    schemas: Set[str] = set()
+    uuid: str = utils.generate_unique_uuid()
 
     def __init__(self):
         self.barf = None
@@ -75,39 +81,71 @@ class GraphSetRunner:
                                              executor,
                                              retry_count)
 
+        # Drop schemas after all threads completed work
+        for schema in self.schemas:
+            source_adapter.drop_schema(schema)
+        self.schemas.clear()
+
     def process_executables(self,
-                            executables,
-                            executor,
-                            retries,
-                            wait_time=30):
-        re_executables = []
+                            executables: List[GraphExecutable],
+                            executor: ThreadPoolExecutor,
+                            retries: int) -> None:
+        """
+        Executes a list of GraphExecutable tasks concurrently using a ThreadPoolExecutor.
+        If any task fails due to an exception, it is retried a specified number of times.
+        Args:
+            executables (List[GraphExecutable]): The list of tasks to be executed.
+            executor (ThreadPoolExecutor): The executor to run the tasks.
+            retries (int): The number of times to retry failed tasks.
+        Returns:
+            None
+        Raises:
+            Exception: If a task fails after the specified number of retries,
+                    an exception is logged and the function returns None.
+        """
+        while retries >= 0:
+            futures = {
+                executor.submit(self._traverse_and_execute, executable): executable
+                for executable in executables
+            }
 
-        def execute_with_retry(executables):
-            error = None
-            re_executables.clear()
-            futures = [executor.submit(self._traverse_and_execute, executable)
-                       for executable in executables]
-            while futures:
-                time.sleep(wait_time)
-                for future, executable in zip(futures.copy(), executables.copy()):
-                    if future.done():
-                        futures.remove(future)
-                        executables.remove(executable)
-                        if exception := future.exception():
-                            error = future.result
-                            logger.warning("Concurrent thread finished work with exception:\n%s: %s",
-                                           str(exception.__class__),
-                                           str(exception))
-                            re_executables.append(executable)
-            return error
+            re_executables = []
+            for future in as_completed(futures):
+                executable = futures[future]
+                if exception := future.exception():
+                    logger.warning("Concurrent thread finished work with exception:\n%s: %s",
+                                   str(exception.__class__), str(exception))
+                    re_executables.append(executable)
 
-        while error := execute_with_retry(executables):
-            if retries < 1:
-                logger.error("Failed because '%i' executables can't be finished successfully:\n%s",
-                             len(re_executables), str(re_executables))
-                error()
+            if not re_executables:
+                return  # Success
+
+            logging.error("Failed because '%i' executables can't be finished successfully:\n%s",
+                          len(re_executables), str(re_executables))
+            executables = re_executables
             retries -= 1
-            executables = re_executables.copy()
+
+        logging.error("Max retries reached. Some executables failed.")
+
+    def _generate_schemas_if_necessary(self,
+                                       adapter: BaseSQLAdapter,
+                                       name: str,
+                                       database: str) -> None:
+        """
+        Helper function needed due to multi threading. We need to generate
+        schemas in database only if they don't already exists there. Due to
+        multi-threading we need to set up a lock on self.schema variable
+        so we don't create the same table in two separate threads.
+        Args:
+            name (str): Schema name to check if exists and generate if not
+            database (str): Database name where to check schema presence
+            adapter (BaseSQLAdapter): object that contains method necessary
+                to generate schema
+        """
+        with self.schemas_lock:
+            if name not in self.schemas:
+                adapter.generate_schema(name, database)
+                self.schemas.add(name)
 
     def _traverse_and_execute(self, executable: GraphExecutable) -> None:  # noqa: pylint: disable=too-many-statements
         """ Processes a single graph and loads the data into the replica if required
@@ -131,6 +169,12 @@ class GraphSetRunner:
                 f"Executing graph with {len(executable.graph)} relations in it...")
             for i, relation in enumerate(
                     nx.algorithms.dag.topological_sort(executable.graph)):
+
+                unique_schema_name = "_".join([relation.schema, self.uuid])
+                self._generate_schemas_if_necessary(
+                    executable.source_adapter, unique_schema_name, relation.temp_database
+                )
+
                 relation.population_size = executable.source_adapter.scalar_query(
                     executable.source_adapter.population_count_statement(relation))
                 logger.info(f'Executing source query for relation {relation.dot_notation} '
@@ -175,11 +219,19 @@ class GraphSetRunner:
                         logger.info('Successfully extracted DDL statement for view ' 
                                     f'{executable.target_adapter.quoted_dot_notation(relation)}')
                     else:
+                        source = f"{relation.temp_database}.{relation.schema}.{relation.name}"
                         logger.info(
-                            f'Retrieving records from source {relation.dot_notation}...')
+                            f'Retrieving records from source {source}...')
                         try:
+                            executable.source_adapter.create_table(
+                                query=relation.compiled_query,
+                                name=relation.name,
+                                schema=unique_schema_name,
+                                database=relation.temp_database,
+                            )
+                            fetch_query = f"SELECT * FROM {relation.temp_database}.{unique_schema_name}.{relation.name}"
                             relation.data = executable.source_adapter.check_count_and_query(
-                                relation.compiled_query, relation.sampling.max_allowed_rows, relation.unsampled)
+                                fetch_query, relation.sampling.max_allowed_rows, relation.unsampled)
                         except Exception as exc:
                             raise SystemError(
                                 f'Failed execution of extraction sql statement: {relation.compiled_query} {exc}') \
