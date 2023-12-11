@@ -171,8 +171,8 @@ class GraphSetRunner:
         try:
             logger.debug(
                 f"Executing graph with {len(executable.graph)} relations in it...")
-            for i, relation in enumerate(
-                    nx.algorithms.dag.topological_sort(executable.graph)):
+            sorted_graphs = nx.algorithms.dag.topological_sort(executable.graph)
+            for i, relation in enumerate(sorted_graphs, start=1):
 
                 unique_schema_name = "_".join([relation.schema, self.uuid])
                 self._generate_schemas_if_necessary(
@@ -182,7 +182,7 @@ class GraphSetRunner:
                 relation.population_size = executable.source_adapter.scalar_query(
                     executable.source_adapter.population_count_statement(relation))
                 logger.info(f'Executing source query for relation {relation.dot_notation} '
-                            f'({i+1} of {len(executable.graph)} in graph)...')
+                            f'({i} of {len(executable.graph)} in graph)...')
 
                 relation.sampling.prepare(relation,
                                           executable.source_adapter)
