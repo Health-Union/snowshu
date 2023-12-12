@@ -532,13 +532,11 @@ LIMIT {max_number_of_outliers})
                 'Adapter.get_connection called before setting Adapter.credentials')
 
         logger.debug(f'Acquiring {self.CLASSNAME} connection...')
-        overrides = dict(       # noqa pylint: disable=redefined-outer-name
-            (k,
-             v) for (
-                k,
-                v) in dict(
-                database=database_override,
-                schema=schema_override).items() if v is not None)
+        overrides = {  # noqa pylint: disable=redefined-outer-name
+            'database': database_override,
+            'schema': schema_override
+        }
+        overrides = {k: v for k, v in overrides.items() if v is not None}
 
         engine = sqlalchemy.create_engine(
             self._build_conn_string(overrides), poolclass=NullPool)

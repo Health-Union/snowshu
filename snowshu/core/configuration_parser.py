@@ -165,6 +165,28 @@ class ConfigurationParser:
 
         return correct_case(val, self.default_case == 'upper')
 
+    def _build_general_relations(self, loaded: dict) -> MatchPattern:
+        pattern_list = []
+        for database in loaded["source"]["general_relations"]["databases"]:
+            database_pattern = self.case(database["pattern"])
+
+            schema_patterns = []
+            for schema in database["schemas"]:
+                schema_pattern = self.case(schema["pattern"])
+                relation_patterns = [
+                    MatchPattern.RelationPattern(self.case(relation))
+                    for relation in schema["relations"]
+                ]
+                schema_patterns.append(
+                    MatchPattern.SchemaPattern(schema_pattern, relation_patterns)
+                )
+
+            pattern_list.append(
+                MatchPattern.DatabasePattern(database_pattern, schema_patterns)
+            )
+
+        return MatchPattern(pattern_list)
+
     # TODO: now that there's an instance dependency on preserve_case and correct_case,
     # this should be migrated to an init
     def from_file_or_path(
@@ -194,14 +216,10 @@ class ConfigurationParser:
             }
         source_adapter_profile.adapter.MATERIALIZATION_MAPPINGS = materialization_mappings
 
-        def case(val: str) -> str:
-            return self.case(val)
-
-        # make sure no empty sections
-        try:
-            [loaded[section].keys() for section in ('source', 'target',)]
-        except TypeError as err:
-            raise KeyError(f'missing config section or section is none: {err}.') from err
+        # make sure no empty sections and section is not None
+        for section in ('source', 'target',):
+            if section not in loaded or not isinstance(loaded[section], dict):
+                raise KeyError(f"Missing or invalid config section: '{section}'.")
 
         # set defaults
         for attr in ('short_description', 'long_description',):
@@ -234,13 +252,7 @@ class ConfigurationParser:
                                 loaded['source']['sampling']),
                             loaded['source']['max_number_of_outliers'])
 
-            general_relations = MatchPattern(
-                [MatchPattern.DatabasePattern(case(database['pattern']),
-                 [MatchPattern.SchemaPattern(case(schema['pattern']),
-                  [MatchPattern.RelationPattern(case(relation)) for relation in schema['relations']])
-                    for schema in database['schemas']]) 
-                    for database in loaded['source']['general_relations']['databases']])
-
+            general_relations = self._build_general_relations(loaded)
             specified_relations = self._build_specified_relations(loaded['source'])
 
             return Configuration(*replica_base,
