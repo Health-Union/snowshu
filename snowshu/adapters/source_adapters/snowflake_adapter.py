@@ -335,38 +335,49 @@ LIMIT {max_number_of_outliers})
         return f" {local_key} in (SELECT {remote_key} FROM \
                 {adapter.quoted_dot_notation(relation)})"
 
-    @staticmethod
-    def predicate_constraint_statement(relation: Relation,
-                                       analyze: bool,
-                                       local_key: str,
-                                       remote_key: str) -> str:
+    def predicate_constraint_statement(
+        self, relation: Relation, analyze: bool, local_key: str, remote_key: str
+    ) -> str:
         """builds 'where' strings"""
         constraint_sql = str()
         if analyze:
-            constraint_sql = f" SELECT {remote_key} AS {local_key} FROM ({relation.core_query})"
+            constraint_sql = (
+                f" SELECT {remote_key} AS {local_key} FROM ({relation.core_query})"
+            )
         else:
-
-            def quoted(val: Any) -> str:
-                return f"'{val}'" if relation.lookup_attribute(
-                    remote_key).data_type.requires_quotes else str(val)
             try:
-                constraint_set = [
-                    quoted(val) for val in relation.data[remote_key].dropna().unique()
-                ][:SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR]
-                constraint_sql = ','.join(constraint_set)
-                if len(constraint_set) == 0:
-                    raise ValueError(f"The [{constraint_set}] constraint set is empty.")
+                constraint_query = (
+                    f"SELECT DISTINCT({remote_key}) FROM {relation.temp_dot_notation}"
+                )
+                constraint_set = (
+                    self._safe_query(constraint_query)
+                )
+                if constraint_set.empty:
+                    raise ValueError(
+                        f"The constraint set for remote key {remote_key} "
+                        f"in {relation.temp_dot_notation} is empty."
+                    )
+                constraint_set = constraint_set.iloc[:, 0].tolist()[
+                    : SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR
+                ]
+                constraint_sql = ",".join(f"'{item}'" for item in constraint_set)
             except KeyError as err:
                 logger.critical(
-                    f'failed to build predicates for {relation.dot_notation}: '
-                    f'remote key {remote_key} not in dataframe columns ({relation.data.columns})')
-                raise err
+                    "Failed to build predicates for %s: remote key %s not in %s table.",
+                    relation.dot_notation,
+                    remote_key,
+                    relation.temp_dot_notation,
+                )
+                raise KeyError(
+                    f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
+                ) from err
             except ValueError as err:
                 logger.critical(
-                    f'failed to build predicates for {relation.dot_notation}: '
-                    f'the constraint set is empty, please validate the relation.'
+                    "Failed to build predicates for %s: the constraint set "
+                    "is empty, please validate the relation.",
+                    relation.dot_notation,
                 )
-                raise err
+                raise ValueError(f"Failed to build predicates: {str(err)}") from err
 
         return f"{local_key} IN ({constraint_sql}) "
 
