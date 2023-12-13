@@ -188,27 +188,40 @@ def test_run_deps_polymorphic_parentid(stub_relation_set):
     parentid = stub_relation_set.parentid_key
     for relation in (child1, child2, child3, parent,):
         relation = stub_out_sampling(relation)
+        relation.temp_schema = 'mock_schema'
 
-    child1.data=pd.DataFrame([{parentid: "1"},{parentid: "10"}])
-    child2.data=pd.DataFrame([{parentid: "2"},{parentid: "20"}])
-    child3.data=pd.DataFrame([{parentid: "3"},{parentid: "30"}])
     dag=nx.MultiDiGraph()
     dag.add_edge(child1,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid)
     dag.add_edge(child2,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid)
     dag.add_edge(child3,parent,direction="polymorphic",remote_attribute=parentid,local_attribute=parentid)
     adapter=SnowflakeAdapter()
+
+    mock_predicate_constraint_statements = [
+        f"({parentid} IN ('1','10'))",
+        f"({parentid} IN ('2','20'))",
+        f"({parentid} IN ('3','30'))"
+    ]
+
+    mock = Mock()
+    mock.mock_predicate_constraint_statements.side_effect = mock_predicate_constraint_statements
+
     child1 = RuntimeSourceCompiler.compile_queries_for_relation(child1,dag,adapter,False)
     child2 = RuntimeSourceCompiler.compile_queries_for_relation(child2,dag,adapter,False)
     child3 = RuntimeSourceCompiler.compile_queries_for_relation(child3,dag,adapter,False)
-    parent = RuntimeSourceCompiler.compile_queries_for_relation(parent,dag,adapter,False)
+
+    with patch.object(adapter, 'predicate_constraint_statement', new=mock.mock_predicate_constraint_statements):
+        parent = RuntimeSourceCompiler.compile_queries_for_relation(parent,dag,adapter,False)
 
     expected_query = f"""
         SELECT
             *
         FROM
         {adapter.quoted_dot_notation(parent)}
-        WHERE ( {parentid} IN ('1','10') OR {parentid} IN ('2','20') OR {parentid} IN ('3','30') )
+        WHERE ( {mock_predicate_constraint_statements[0]}
+        OR {mock_predicate_constraint_statements[1]}
+        OR {mock_predicate_constraint_statements[2]} )
     """
+
     assert query_equalize(parent.compiled_query)==query_equalize(expected_query)
 
 
