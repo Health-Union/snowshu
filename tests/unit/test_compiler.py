@@ -231,12 +231,20 @@ def test_run_deps_directional(stub_relation_set):
     for relation in (downstream,upstream,):
         relation.attributes=[Attribute('id',dt.INTEGER)]
         relation=stub_out_sampling(relation)
-    upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
+        relation.temp_schema = 'mock_schema'
+
     dag=nx.MultiDiGraph()
     dag.add_edge(upstream,downstream,direction="directional",remote_attribute='id',local_attribute='id')
     adapter=SnowflakeAdapter()
-    upstream = RuntimeSourceCompiler.compile_queries_for_relation(upstream,dag,adapter,False)
-    downstream = RuntimeSourceCompiler.compile_queries_for_relation(downstream,dag,adapter,False)
+
+    mock_predicate_constraint_statements = ['id IN (1,2,3)']
+    mock = Mock()
+    mock.mock_predicate_constraint_statements.side_effect = mock_predicate_constraint_statements
+
+    with patch.object(adapter, 'predicate_constraint_statement', new=mock.mock_predicate_constraint_statements):
+        upstream = RuntimeSourceCompiler.compile_queries_for_relation(upstream,dag,adapter,False)
+        downstream = RuntimeSourceCompiler.compile_queries_for_relation(downstream,dag,adapter,False)
+
     assert query_equalize(downstream.compiled_query)==query_equalize(f"""
         WITH
         {downstream.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
