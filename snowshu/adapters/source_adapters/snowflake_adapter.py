@@ -381,8 +381,9 @@ LIMIT {max_number_of_outliers})
 
         return f"{local_key} IN ({constraint_sql}) "
 
+    # pylint: disable=too-many-arguments
     def polymorphic_constraint_statement(self,
-                                         relation: Relation,  # noqa pylint: disable=too-many-arguments
+                                         relation: Relation,
                                          analyze: bool,
                                          local_key: str,
                                          remote_key: str,
