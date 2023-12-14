@@ -163,10 +163,10 @@ def test_run_deps_polymorphic_idtype(stub_relation_set):
         f"({childid} IN ('1','4') AND LOWER({childtype}) = LOWER('CHILD_TYPE_3_RECORD'))"
     ]
 
-    mock = Mock()
-    mock.polymorphic_constraint_statement.side_effect = mock_polymorphic_constraint_statements
+    _mock = Mock()
+    _mock.polymorphic_constraint_statement.side_effect = mock_polymorphic_constraint_statements
 
-    with patch.object(adapter, 'polymorphic_constraint_statement', new=mock.polymorphic_constraint_statement):
+    with patch.object(adapter, 'polymorphic_constraint_statement', new=_mock.polymorphic_constraint_statement):
         parent = RuntimeSourceCompiler.compile_queries_for_relation(parent,dag,adapter,False)
 
     expected_query = f"""
@@ -203,14 +203,14 @@ def test_run_deps_polymorphic_parentid(stub_relation_set):
         f"({parentid} IN ('3','30'))"
     ]
 
-    mock = Mock()
-    mock.mock_predicate_constraint_statements.side_effect = mock_predicate_constraint_statements
+    _mock = Mock()
+    _mock.mock_predicate_constraint_statements.side_effect = mock_predicate_constraint_statements
 
     child1 = RuntimeSourceCompiler.compile_queries_for_relation(child1,dag,adapter,False)
     child2 = RuntimeSourceCompiler.compile_queries_for_relation(child2,dag,adapter,False)
     child3 = RuntimeSourceCompiler.compile_queries_for_relation(child3,dag,adapter,False)
 
-    with patch.object(adapter, 'predicate_constraint_statement', new=mock.mock_predicate_constraint_statements):
+    with patch.object(adapter, 'predicate_constraint_statement', new=_mock.mock_predicate_constraint_statements):
         parent = RuntimeSourceCompiler.compile_queries_for_relation(parent,dag,adapter,False)
 
     expected_query = f"""
@@ -239,10 +239,10 @@ def test_run_deps_directional(stub_relation_set):
     adapter=SnowflakeAdapter()
 
     mock_predicate_constraint_statements = ['id IN (1,2,3)']
-    mock = Mock()
-    mock.mock_predicate_constraint_statements.side_effect = mock_predicate_constraint_statements
+    _mock = Mock()
+    _mock.mock_predicate_constraint_statements.side_effect = mock_predicate_constraint_statements
 
-    with patch.object(adapter, 'predicate_constraint_statement', new=mock.mock_predicate_constraint_statements):
+    with patch.object(adapter, 'predicate_constraint_statement', new=_mock.mock_predicate_constraint_statements):
         upstream = RuntimeSourceCompiler.compile_queries_for_relation(upstream,dag,adapter,False)
         downstream = RuntimeSourceCompiler.compile_queries_for_relation(downstream,dag,adapter,False)
 
@@ -285,9 +285,9 @@ def test_run_deps_bidirectional_include_outliers(stub_relation_set):
     RuntimeSourceCompiler.compile_queries_for_relation(upstream,dag,adapter,False)
 
     mock_predicate_constraint_statements = ['id IN (1,2,3)']
-    mock = Mock()
-    mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
-    with patch.object(adapter, 'predicate_constraint_statement', new=mock.predicate_constraint_statement):
+    _mock = Mock()
+    _mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
+    with patch.object(adapter, 'predicate_constraint_statement', new=_mock.predicate_constraint_statement):
         RuntimeSourceCompiler.compile_queries_for_relation(downstream, dag, adapter, False)
 
     assert query_equalize(downstream.compiled_query)==query_equalize(f"""
@@ -351,9 +351,9 @@ def test_run_deps_bidirectional_exclude_outliers(stub_relation_set):
     RuntimeSourceCompiler.compile_queries_for_relation(upstream,dag,adapter,False)
 
     mock_predicate_constraint_statements = ['id IN (1,2,3)']
-    mock = Mock()
-    mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
-    with patch.object(adapter, 'predicate_constraint_statement', new=mock.predicate_constraint_statement):
+    _mock = Mock()
+    _mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
+    with patch.object(adapter, 'predicate_constraint_statement', new=_mock.predicate_constraint_statement):
         RuntimeSourceCompiler.compile_queries_for_relation(downstream,dag,adapter,False)
 
     assert query_equalize(downstream.compiled_query)==query_equalize(f"""
@@ -435,10 +435,10 @@ def test_run_deps_directional_line_graph():
         'col_b_a IN (1,2,3,4,5)',
         'col_c IN (\'val1\',\'val3\',\'val4\')'
     ]
-    mock = Mock()
-    mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
-    for relation in relations.values():
-        with patch.object(adapter, 'predicate_constraint_statement', new=mock.predicate_constraint_statement):
+    _mock = Mock()
+    _mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
+    with patch.object(adapter, 'predicate_constraint_statement', new=_mock.predicate_constraint_statement):
+        for relation in relations.values():
             RuntimeSourceCompiler.compile_queries_for_relation(relation, dag, adapter, False)
 
     assert (
@@ -554,10 +554,10 @@ def test_run_deps_bidirectional_line_graph():
         'col_b_a IN (1,2,3,4,5)',
         'col_c IN (\'val1\',\'val3\',\'val4\')'
     ]
-    mock = Mock()
-    mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
-    for relation in relations.values():
-        with patch.object(adapter, 'predicate_constraint_statement', new=mock.predicate_constraint_statement):
+    _mock = Mock()
+    _mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
+    with patch.object(adapter, 'predicate_constraint_statement', new=_mock.predicate_constraint_statement):
+        for relation in relations.values():
             RuntimeSourceCompiler.compile_queries_for_relation(relation, dag, adapter, False)
 
     assert (
@@ -667,10 +667,10 @@ def test_run_deps_directional_multi_deps():
         'col_c_a IN (1,2,3,4,5)',
         'col_c_b IN (\'val1\',\'val2\',\'val3\',\'val4\',\'val5\')'
     ]
-    mock = Mock()
-    mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
-    for relation in relations.values():
-        with patch.object(adapter, 'predicate_constraint_statement', new=mock.predicate_constraint_statement):
+    _mock = Mock()
+    _mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
+    with patch.object(adapter, 'predicate_constraint_statement', new=_mock.predicate_constraint_statement):
+        for relation in relations.values():
             RuntimeSourceCompiler.compile_queries_for_relation(relation, dag, adapter, False)
 
     assert (
@@ -734,84 +734,127 @@ def test_run_deps_bidirectional_multi_deps():
         a --bidir--> c <--bidir-- b
     """
     relation_helper = RelationTestHelper()
-    relation_a = Relation(name='rel_a', **relation_helper.rand_relation_helper())
-    relation_a.attributes = [Attribute('col_a',dt.INTEGER)]
-    relation_a.data = pd.DataFrame({"col_a": [1, 2, 3, 4, 5,]})
+    relations_data = {
+        "rel_a": {
+            "attributes": [Attribute("col_a", dt.INTEGER)],
+        },
+        "rel_b": {
+            "attributes": [Attribute("col_b", dt.VARCHAR)],
+        },
+        "rel_c": {
+            "attributes": [Attribute("col_c_a", dt.INTEGER), Attribute("col_c_b", dt.VARCHAR)],
+        },
+    }
 
-    relation_b = Relation(name='rel_b', **relation_helper.rand_relation_helper())
-    relation_b.attributes = [Attribute('col_b',dt.VARCHAR)]
-    relation_b.data = pd.DataFrame({"col_b": ["val1", "val2", "val3", "val4", "val5",],})
+    relations = {}
+    for name, data in relations_data.items():
+        relation = Relation(name=name, **relation_helper.rand_relation_helper())
+        relation.attributes = data["attributes"]
+        relation.mock_schema = "mock_schema"
+        relation = stub_out_sampling(relation)
+        relations[name] = relation
 
-    relation_c = Relation(name='rel_c', **relation_helper.rand_relation_helper())
-    relation_c.attributes = [Attribute('col_c_a',dt.INTEGER), Attribute('col_c_b', dt.VARCHAR)]
+    dag = nx.MultiDiGraph()
+    dag.add_edge(
+        relations["rel_a"],
+        relations["rel_c"],
+        direction="bidirectional",
+        remote_attribute="col_a",
+        local_attribute="col_c_a",
+    )
+    dag.add_edge(
+        relations["rel_b"],
+        relations["rel_c"],
+        direction="bidirectional",
+        remote_attribute="col_b",
+        local_attribute="col_c_b",
+    )
+    adapter = SnowflakeAdapter()
 
-    for relation in (relation_a, relation_b, relation_c,):
-        relation=stub_out_sampling(relation)
+    mock_predicate_constraint_statements = [
+        'col_c_a IN (1,2,3,4,5)',
+        'col_c_b IN (\'val1\',\'val2\',\'val3\',\'val4\',\'val5\')'
+    ]
+    _mock = Mock()
+    _mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
+    with patch.object(adapter, 'predicate_constraint_statement', new=_mock.predicate_constraint_statement):
+        for relation in relations.values():
+            RuntimeSourceCompiler.compile_queries_for_relation(relation, dag, adapter, False)
 
-    dag=nx.MultiDiGraph()
-    dag.add_edge(relation_a, relation_c, direction="bidirectional", remote_attribute="col_a", local_attribute="col_c_a")
-    dag.add_edge(relation_b, relation_c, direction="bidirectional", remote_attribute="col_b", local_attribute="col_c_b")
-    adapter=SnowflakeAdapter()
-    RuntimeSourceCompiler.compile_queries_for_relation(relation_a, dag, adapter, False)
-    RuntimeSourceCompiler.compile_queries_for_relation(relation_b, dag, adapter, False)
-    RuntimeSourceCompiler.compile_queries_for_relation(relation_c, dag, adapter, False)
-    assert query_equalize(relation_a.compiled_query) == query_equalize(f"""
-        WITH {relation_a.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
+    assert (
+        query_equalize(relations["rel_a"].compiled_query)
+        == query_equalize(
+            f"""
+        WITH {relations['rel_a'].scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
         SELECT
             *
         FROM
-            {adapter.quoted_dot_notation(relation_a)}
+            {adapter.quoted_dot_notation(relations['rel_a'])}
         WHERE
             col_a
         in (SELECT
                 col_c_a
             FROM
-                {adapter.quoted_dot_notation(relation_c)}) )
-        ,{relation_a.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS (
+                {adapter.quoted_dot_notation(relations['rel_c'])}) )
+        ,{relations['rel_a'].scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS (
             SELECT
                 *
             FROM
-                {relation_a.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (1500 ROWS)
+                {relations['rel_a'].scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (1500 ROWS)
         )
         SELECT
             *
         FROM
-        {relation_a.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
-    """)
-    assert query_equalize(relation_b.compiled_query) == query_equalize(f"""
+        {relations['rel_a'].scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
+    """
+        )
+    )
+
+    assert (
+        query_equalize(relations["rel_b"].compiled_query)
+        == query_equalize(
+            f"""
         WITH
-        {relation_b.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
+        {relations['rel_b'].scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
         SELECT
             *
         FROM
-        {adapter.quoted_dot_notation(relation_b)}
+        {adapter.quoted_dot_notation(relations['rel_b'])}
         WHERE
             col_b
         in (SELECT
                 col_c_b
             FROM
-                {adapter.quoted_dot_notation(relation_c)})
+                {adapter.quoted_dot_notation(relations['rel_c'])})
         )
-        ,{relation_b.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS (
+        ,{relations['rel_b'].scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS (
         SELECT
             *
         FROM
-        {relation_b.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (1500 ROWS)
+        {relations['rel_b'].scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (1500 ROWS)
         )
         SELECT
             *
         FROM
-        {relation_b.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
-    """)
-    assert query_equalize(relation_c.compiled_query) == query_equalize(f"""
+        {relations['rel_b'].scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
+    """
+        )
+    )
+
+    assert (
+        query_equalize(relations["rel_c"].compiled_query)
+        == query_equalize(
+            f"""
             SELECT
                 *
-            FROM {adapter.quoted_dot_notation(relation_c)}
+            FROM {adapter.quoted_dot_notation(relations['rel_c'])}
             WHERE
                 col_c_a IN (1,2,3,4,5)
             AND
                 col_c_b IN ('val1','val2','val3','val4','val5')
-    """)
+    """
+        )
+    )
 
 
 def test_run_deps_mixed_multi_deps():
@@ -824,122 +867,145 @@ def test_run_deps_mixed_multi_deps():
              dir-> d   e
     """
     relation_helper = RelationTestHelper()
-    relation_a = Relation(name='rel_a', **relation_helper.rand_relation_helper())
-    relation_a.attributes = [Attribute('col_a_c',dt.INTEGER), Attribute('col_a_d',dt.VARCHAR)]
-    relation_a.data = pd.DataFrame(
-        {
-            "col_a_c": [1, 2, 3, 4, 5,],
-            "col_a_d": ["var_a_1", "var_a_2", "var_a_3", "var_a_1", "var_a_2"],
+    relations_data = {
+        "rel_a": {
+            "attributes": [
+                Attribute("col_a_c", dt.INTEGER),
+                Attribute("col_a_d", dt.VARCHAR)
+            ]
+        },
+        "rel_b": {
+            "attributes": [
+                Attribute("col_b_c", dt.VARCHAR)
+            ]
+        },
+        "rel_c": {
+            "attributes": [
+                Attribute("col_c_ae", dt.INTEGER),
+                Attribute("col_c_bd", dt.VARCHAR)
+            ]
+        },
+        "rel_d": {
+            "attributes": [
+                Attribute("col_d_a", dt.INTEGER),
+                Attribute("col_d_c", dt.INTEGER)
+            ]
+        },
+        "rel_e": {
+            "attributes": [
+                Attribute("col_e_c", dt.INTEGER)
+            ]
         }
-    )
-    relation_b = Relation(name='rel_b', **relation_helper.rand_relation_helper())
-    relation_b.attributes = [Attribute('col_b_c',dt.VARCHAR)]
-    relation_b.data = pd.DataFrame({"col_b_c": ["val1", "val2", "val3", "val4", "val5",],})
+    }
+    # Rest of the code...
 
-    relation_c = Relation(name='rel_c', **relation_helper.rand_relation_helper())
-    relation_c.attributes = [Attribute('col_c_ae',dt.INTEGER), Attribute('col_c_bd', dt.VARCHAR)]
-    relation_c.data = pd.DataFrame(
-        {
-            "col_c_ae": [1, 1, 2, 2, 5, 5, 5,],
-            "col_c_bd": ["val1", "val1", "val2", "val2", "val5", "val5", "val5",]
-        }
-    )
+    relations = {}
+    for name, data in relations_data.items():
+        relation = Relation(name=name, **relation_helper.rand_relation_helper())
+        relation.attributes = data["attributes"]
+        relation.mock_schema = "mock_schema"
+        relation = stub_out_sampling(relation)
+        relations[name] = relation
 
-    relation_d = Relation(name='rel_d', **relation_helper.rand_relation_helper())
-    relation_d.attributes = [Attribute('col_d_a',dt.INTEGER), Attribute('col_d_c',dt.INTEGER)]
+    dag = nx.MultiDiGraph()
+    dag.add_edge(relations["rel_a"], relations["rel_c"], direction="bidirectional", remote_attribute="col_a_c", local_attribute="col_c_ae")
+    dag.add_edge(relations["rel_a"], relations["rel_d"], direction="directional", remote_attribute="col_a_d", local_attribute="col_d_a")
+    dag.add_edge(relations["rel_b"], relations["rel_c"], direction="directional", remote_attribute="col_b_c", local_attribute="col_c_bd")
+    dag.add_edge(relations["rel_c"], relations["rel_d"], direction="bidirectional", remote_attribute="col_c_bd", local_attribute="col_d_c")
+    dag.add_edge(relations["rel_c"], relations["rel_e"], direction="directional", remote_attribute="col_c_ae", local_attribute="col_e_c")
 
-    relation_e = Relation(name='rel_e', **relation_helper.rand_relation_helper())
-    relation_e.attributes = [Attribute('col_e_c',dt.INTEGER)]
+    adapter = SnowflakeAdapter()
+    mock_predicate_constraint_statements = [
+        'col_c_ae IN (1,2,3,4,5)',
+        'col_c_bd IN (\'val1\',\'val2\',\'val3\',\'val4\',\'val5\')',
+        'col_d_a IN (\'var_a_1\',\'var_a_2\',\'var_a_3\')',
+        'col_d_c IN (\'val1\',\'val2\',\'val5\')',
+        'col_e_c IN (1,2,5)'
+    ]
+    _mock = Mock()
+    _mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
+    with patch.object(adapter, 'predicate_constraint_statement', new=_mock.predicate_constraint_statement):
+        for relation in relations.values():
+            RuntimeSourceCompiler.compile_queries_for_relation(relation, dag, adapter, False)
 
-    for relation in (relation_a, relation_b, relation_c, relation_d, relation_e,):
-        relation=stub_out_sampling(relation)
-
-    dag=nx.MultiDiGraph()
-    dag.add_edge(relation_a, relation_c, direction="bidirectional", remote_attribute="col_a_c", local_attribute="col_c_ae")
-    dag.add_edge(relation_a, relation_d, direction="directional", remote_attribute="col_a_d", local_attribute="col_d_a")
-    dag.add_edge(relation_b, relation_c, direction="directional", remote_attribute="col_b_c", local_attribute="col_c_bd")
-    dag.add_edge(relation_c, relation_d, direction="bidirectional", remote_attribute="col_c_bd", local_attribute="col_d_c")
-    dag.add_edge(relation_c, relation_e, direction="directional", remote_attribute="col_c_ae", local_attribute="col_e_c")
-    adapter=SnowflakeAdapter()
-    RuntimeSourceCompiler.compile_queries_for_relation(relation_a, dag, adapter, False)
-    RuntimeSourceCompiler.compile_queries_for_relation(relation_b, dag, adapter, False)
-    RuntimeSourceCompiler.compile_queries_for_relation(relation_c, dag, adapter, False)
-    RuntimeSourceCompiler.compile_queries_for_relation(relation_d, dag, adapter, False)
-    RuntimeSourceCompiler.compile_queries_for_relation(relation_e, dag, adapter, False)
-    assert query_equalize(relation_a.compiled_query) == query_equalize(f"""
-        WITH {relation_a.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
+    assert query_equalize(relations['rel_a'].compiled_query) == query_equalize(f"""
+        WITH {relations['rel_a'].scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
         SELECT
             *
         FROM
-            {adapter.quoted_dot_notation(relation_a)}
+            {adapter.quoted_dot_notation(relations['rel_a'])}
         WHERE
             col_a_c
         in (SELECT
                 col_c_ae
             FROM
-                {adapter.quoted_dot_notation(relation_c)}) )
-        ,{relation_a.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS (
+                {adapter.quoted_dot_notation(relations['rel_c'])}) )
+        ,{relations['rel_a'].scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS (
             SELECT
                 *
             FROM
-                {relation_a.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (1500 ROWS)
+                {relations['rel_a'].scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (1500 ROWS)
         )
         SELECT
             *
         FROM
-        {relation_a.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
+        {relations['rel_a'].scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
     """)
-    assert query_equalize(relation_b.compiled_query) == query_equalize(f"""
+
+    assert query_equalize(relations['rel_b'].compiled_query) == query_equalize(f"""
         SELECT
             *
         FROM
-            {adapter.quoted_dot_notation(relation_b)}
+            {adapter.quoted_dot_notation(relations['rel_b'])}
         SAMPLE BERNOULLI (1500 ROWS)
     """)
-    assert query_equalize(relation_c.compiled_query) == query_equalize(f"""
+
+    assert query_equalize(relations['rel_c'].compiled_query) == query_equalize(f"""
         SELECT
             *
         FROM
-            {adapter.quoted_dot_notation(relation_c)}
+            {adapter.quoted_dot_notation(relations['rel_c'])}
         WHERE
             col_c_bd
         in (SELECT
                 col_d_c
             FROM
-                {adapter.quoted_dot_notation(relation_d)})
+                {adapter.quoted_dot_notation(relations['rel_d'])})
         AND
             col_c_ae IN (1,2,3,4,5)
         AND
             col_c_bd IN ('val1','val2','val3','val4','val5')
     """)
-    assert query_equalize(relation_d.compiled_query) == query_equalize(f"""
+
+    assert query_equalize(relations['rel_d'].compiled_query) == query_equalize(f"""
         SELECT
             *
         FROM
-            {adapter.quoted_dot_notation(relation_d)}
+            {adapter.quoted_dot_notation(relations['rel_d'])}
         WHERE
             col_d_a IN ('var_a_1','var_a_2','var_a_3')
         AND
             col_d_c IN ('val1','val2','val5')
     """)
-    assert query_equalize(relation_e.compiled_query) == query_equalize(f"""
+
+    assert query_equalize(relations['rel_e'].compiled_query) == query_equalize(f"""
         WITH
-        {relation_e.scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
+        {relations['rel_e'].scoped_cte('SNOWSHU_FINAL_SAMPLE')} AS (
         SELECT
             *
         FROM
-        {adapter.quoted_dot_notation(relation_e)}
+        {adapter.quoted_dot_notation(relations['rel_e'])}
         WHERE
             col_e_c IN (1,2,5)
         )
-        ,{relation_e.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS (
+        ,{relations['rel_e'].scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')} AS (
         SELECT
             *
         FROM
-        {relation_e.scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (1500 ROWS)
+        {relations['rel_e'].scoped_cte('SNOWSHU_FINAL_SAMPLE')} SAMPLE BERNOULLI (1500 ROWS)
         )
         SELECT
             *
         FROM
-        {relation_e.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
+        {relations['rel_e'].scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
     """)
