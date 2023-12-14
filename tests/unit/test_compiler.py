@@ -275,13 +275,22 @@ def test_run_deps_bidirectional_include_outliers(stub_relation_set):
         relation.include_outliers=True
         relation.max_number_of_outliers=100
         relation=stub_out_sampling(relation)
+        relation.temp_schema = 'mock_schema'
+
     upstream.data=pd.DataFrame([dict(id=1),dict(id=2),dict(id=3)])
 
     dag=nx.MultiDiGraph()
     dag.add_edge(upstream,downstream,direction="bidirectional",remote_attribute='id',local_attribute='id')
     adapter=SnowflakeAdapter()
+
     RuntimeSourceCompiler.compile_queries_for_relation(upstream,dag,adapter,False)
-    RuntimeSourceCompiler.compile_queries_for_relation(downstream,dag,adapter,False)
+
+    mock_predicate_constraint_statements = ['id IN (1,2,3)']
+    mock = Mock()
+    mock.predicate_constraint_statement.side_effect = mock_predicate_constraint_statements
+    with patch.object(adapter, 'predicate_constraint_statement', new=mock.predicate_constraint_statement):
+        RuntimeSourceCompiler.compile_queries_for_relation(downstream, dag, adapter, False)
+
     assert query_equalize(downstream.compiled_query)==query_equalize(f"""
         SELECT
                 *
