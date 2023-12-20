@@ -341,40 +341,39 @@ LIMIT {max_number_of_outliers})
         """builds 'where' strings"""
         if analyze:
             return f"{local_key} IN (SELECT {remote_key} AS {local_key} FROM ({relation.core_query}))"
-        else:
-            try:
-                constraint_query = (
-                    f"SELECT LISTAGG('''' || {remote_key}::VARCHAR || '''', ',') "
-                    f"FROM ("
-                    f"    SELECT DISTINCT {remote_key} "
-                    f"    FROM {relation.temp_dot_notation} "
-                    f"    LIMIT {SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR}"
-                    f") AS subquery"
+        try:
+            constraint_query = (
+                f"SELECT LISTAGG('''' || {remote_key}::VARCHAR || '''', ',') "
+                f"FROM ("
+                f"    SELECT DISTINCT {remote_key} "
+                f"    FROM {relation.temp_dot_notation} "
+                f"    LIMIT {SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR}"
+                f") AS subquery"
+            )
+            constraint_sql = self._safe_query(constraint_query).iloc[0, 0]
+            if not constraint_sql:
+                raise ValueError(
+                    f"The constraint set for remote key {remote_key} "
+                    f"in {relation.temp_dot_notation} is empty."
                 )
-                constraint_sql = self._safe_query(constraint_query).iloc[0, 0]
-                if not constraint_sql:
-                    raise ValueError(
-                        f"The constraint set for remote key {remote_key} "
-                        f"in {relation.temp_dot_notation} is empty."
-                    )
-                return f"{local_key} IN ({constraint_sql})"
-            except KeyError as err:
-                logger.critical(
-                    "Failed to build predicates for %s: remote key %s not in %s table.",
-                    relation.dot_notation,
-                    remote_key,
-                    relation.temp_dot_notation,
-                )
-                raise KeyError(
-                    f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
-                ) from err
-            except ValueError as err:
-                logger.critical(
-                    "Failed to build predicates for %s: the constraint set "
-                    "is empty, please validate the relation.",
-                    relation.dot_notation,
-                )
-                raise ValueError(f"Failed to build predicates: {str(err)}") from err
+            return f"{local_key} IN ({constraint_sql})"
+        except KeyError as err:
+            logger.critical(
+                "Failed to build predicates for %s: remote key %s not in %s table.",
+                relation.dot_notation,
+                remote_key,
+                relation.temp_dot_notation,
+            )
+            raise KeyError(
+                f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
+            ) from err
+        except ValueError as err:
+            logger.critical(
+                "Failed to build predicates for %s: the constraint set "
+                "is empty, please validate the relation.",
+                relation.dot_notation,
+            )
+            raise ValueError(f"Failed to build predicates: {str(err)}") from err
 
     # pylint: disable=too-many-arguments
     def polymorphic_constraint_statement(self,
