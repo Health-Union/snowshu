@@ -84,7 +84,7 @@ def test_sample_statement():
     assert query_equalize(sample) == query_equalize(f"""
 SELECT
     *
-FROM 
+FROM
     {DATABASE}.{SCHEMA}.{TABLE}
     SAMPLE BERNOULLI (10)
 """)
@@ -102,21 +102,21 @@ def test_directional_statement():
     relation.core_query = f"""
 SELECT
     *
-FROM 
+FROM
     {DATABASE}.{SCHEMA}.{TABLE}
     SAMPLE BERNOULLI (10)
 """
     statement = sf.predicate_constraint_statement(
         relation, True, LOCAL_KEY, REMOTE_KEY)
     assert query_equalize(statement) == query_equalize(f"""
-{LOCAL_KEY} IN 
-    ( SELECT  
+{LOCAL_KEY} IN
+    ( SELECT
         {REMOTE_KEY}
       AS {LOCAL_KEY}
     FROM (
 SELECT
     *
-FROM 
+FROM
     {DATABASE}.{SCHEMA}.{TABLE}
     SAMPLE BERNOULLI (10)
 ))
@@ -178,72 +178,46 @@ FROM
     {relmock.scoped_cte('SNOWSHU_FINAL_SAMPLE')}
 SAMPLE BERNOULLI (50)
 )
-SELECT 
+SELECT
     *
-FROM 
+FROM
     {relmock.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
 """)
 
 
-def test_predicate_constraint_statement_null_values():
-    # GIVEN: a dataframe containing NULL entries in the REMOTE_KEY column
-    # APPLY: predicate_constraint_statement function
-    # EXPECTATION: null values  in the REMOTE_KEY are filtered out
+@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
+@mock.patch('snowshu.core.models.relation.Relation')
+def test_predicate_constraint_statement_analyze_false_non_empty_constraint_set(mock_relation, mock_query):
+    """ Given non empty constraint set and analyze=False we expect a predicate constraint statement """
     sf = SnowflakeAdapter()
-    DATABASE, SCHEMA, TABLE_NAME = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
-    LOCAL_KEY, REMOTE_KEY = "ID", "CHILD_ID"
-
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE_NAME,
-                        materialization=TABLE,
-                        attributes=[
-                            Attribute(REMOTE_KEY, data_types.NUMERIC)
-                        ])
-    CHILD_IDS = [1.0, 2.0, None]
-    EXPECTED_IDS = list(map(str, (filter(lambda x: x, CHILD_IDS))))
-    relation.data = DataFrame({"CHILD_ID": CHILD_IDS}, )
-
-    expected_statement = f"{LOCAL_KEY} IN ({','.join(EXPECTED_IDS)})"
-    statement = sf.predicate_constraint_statement(relation, False, LOCAL_KEY, REMOTE_KEY)
-
-    assert query_equalize(statement) == query_equalize(expected_statement)
+    mock_relation.temp_dot_notation = 'mock_dot_notation'
+    mock_query.return_value = DataFrame(['1, 2, 3'])
+    result = sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
+    assert query_equalize(result) == query_equalize("local_key IN (1, 2, 3) ")
 
 
-predicate_constraint_statement_outputs_to_check = [
-    ('No exceptions & no NaN values', [1.0, 2.0], does_not_raise()),
-    ('No exceptions & several NaN values', [1.0, None, 2.0, None], does_not_raise()),
-    ('ValueError exceptions & several NaN values', [None, None], pytest.raises(ValueError))
-]
-
-
-@pytest.mark.parametrize('test_name, child_ids, expectation',
-                         predicate_constraint_statement_outputs_to_check,
-                         ids=[i[0] for i in predicate_constraint_statement_outputs_to_check])
-def test_predicate_constraint_statement_null_values_exception(test_name, child_ids, expectation):
-    # GIVEN: a dataframe containing NULL entries in the REMOTE_KEY column
-    # APPLY: predicate_constraint_statement function
-    # EXPECTATION: null values  in the REMOTE_KEY are filtered out
+@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
+@mock.patch('snowshu.core.models.relation.Relation')
+def test_predicate_constraint_statement_analyze_false_empty_constraint_set(mock_relation, mock_query):
+    """
+    Given empty constraint set and analyze=False we expect a predicate constraint statement
+    with a IndexError raised
+    """
     sf = SnowflakeAdapter()
-    DATABASE, SCHEMA, TABLE_NAME = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
-    LOCAL_KEY, REMOTE_KEY = "ID", "CHILD_ID"
+    mock_relation.temp_dot_notation = 'mock_dot_notation'
+    mock_query.return_value = DataFrame([])
+    with pytest.raises(IndexError, match=f"Failed to build predicates: index 0 is out of bounds for axis 0 with size 0"):
+        sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
 
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE_NAME,
-                        materialization=TABLE,
-                        attributes=[
-                            Attribute(REMOTE_KEY, data_types.NUMERIC)
-                        ])
 
-    EXPECTED_IDS = list(map(str, (filter(lambda x: x, child_ids))))
-    relation.data = DataFrame({"CHILD_ID": child_ids}, )
-
-    expected_statement = f"{LOCAL_KEY} IN ({','.join(EXPECTED_IDS)})"
-
-    with expectation:
-        statement = sf.predicate_constraint_statement(relation, False, LOCAL_KEY, REMOTE_KEY)
-        assert query_equalize(statement) == query_equalize(expected_statement)
+@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
+@mock.patch('snowshu.core.models.relation.Relation')
+def test_predicate_constraint_statement_analyze_false_key_error(mock_relation, mock_safe_query):
+    sf = SnowflakeAdapter()
+    mock_relation.temp_dot_notation = 'mock_dot_notation'
+    mock_safe_query.side_effect = KeyError()
+    with pytest.raises(KeyError, match=r"Remote key remote_key not found in mock_dot_notation table."):
+        sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
 
 
 def test_retry_count_query():

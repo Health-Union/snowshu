@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 from urllib.parse import quote
 
 import pandas as pd
@@ -335,49 +335,63 @@ LIMIT {max_number_of_outliers})
         return f" {local_key} in (SELECT {remote_key} FROM \
                 {adapter.quoted_dot_notation(relation)})"
 
-    @staticmethod
-    def predicate_constraint_statement(relation: Relation,
-                                       analyze: bool,
-                                       local_key: str,
-                                       remote_key: str) -> str:
+    def predicate_constraint_statement(
+        self, relation: Relation, analyze: bool, local_key: str, remote_key: str
+    ) -> str:
         """builds 'where' strings"""
-        constraint_sql = str()
-        if analyze:
-            constraint_sql = f" SELECT {remote_key} AS {local_key} FROM ({relation.core_query})"
-        else:
+        try:
+            if analyze:
+                return f"{local_key} IN ( SELECT {remote_key} AS {local_key} FROM ({relation.core_query}))"
 
-            def quoted(val: Any) -> str:
-                return f"'{val}'" if relation.lookup_attribute(
-                    remote_key).data_type.requires_quotes else str(val)
-            try:
-                constraint_set = [
-                    quoted(val) for val in relation.data[remote_key].dropna().unique()
-                ][:SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR]
-                constraint_sql = ','.join(constraint_set)
-                if len(constraint_set) == 0:
-                    raise ValueError(f"The [{constraint_set}] constraint set is empty.")
-            except KeyError as err:
-                logger.critical(
-                    f'failed to build predicates for {relation.dot_notation}: '
-                    f'remote key {remote_key} not in dataframe columns ({relation.data.columns})')
-                raise err
-            except ValueError as err:
-                logger.critical(
-                    f'failed to build predicates for {relation.dot_notation}: '
-                    f'the constraint set is empty, please validate the relation.'
+            constraint_query = (
+                f"SELECT LISTAGG('''' || {remote_key}::VARCHAR || '''', ',') "
+                f"FROM ("
+                f"    SELECT DISTINCT {remote_key} "
+                f"    FROM {relation.temp_dot_notation} "
+                f"    LIMIT {SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR}"
+                f") AS subquery"
+            )
+            constraint_sql = self._safe_query(constraint_query).iloc[0, 0]
+            if not constraint_sql:
+                raise ValueError(
+                    f"The constraint set for remote key {remote_key} "
+                    f"in {relation.temp_dot_notation} is empty."
                 )
-                raise err
+            return f"{local_key} IN ({constraint_sql})"
+        except KeyError as err:
+            logger.critical(
+                "Failed to build predicates for %s: remote key %s not in %s table.",
+                relation.dot_notation,
+                remote_key,
+                relation.temp_dot_notation,
+            )
+            raise KeyError(
+                f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
+            ) from err
+        except IndexError as err:
+            logger.critical(
+                "Failed to build predicates for %s: the constraint set "
+                "is empty, please validate the relation.",
+                relation.dot_notation,
+            )
+            raise IndexError(f"Failed to build predicates: {str(err)}") from err
+        except Exception as err:
+            logger.critical(
+                "An unexpected error occurred while building predicates for %s: %s",
+                relation.dot_notation,
+                str(err),
+            )
+            raise
 
-        return f"{local_key} IN ({constraint_sql}) "
-
-    @staticmethod
-    def polymorphic_constraint_statement(relation: Relation,  # noqa pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments
+    def polymorphic_constraint_statement(self,
+                                         relation: Relation,
                                          analyze: bool,
                                          local_key: str,
                                          remote_key: str,
                                          local_type: str,
                                          local_type_match_val: str = None) -> str:
-        predicate = SnowflakeAdapter.predicate_constraint_statement(relation, analyze, local_key, remote_key)
+        predicate = SnowflakeAdapter().predicate_constraint_statement(relation, analyze, local_key, remote_key)
         if local_type_match_val:
             type_match_val = local_type_match_val
         else:

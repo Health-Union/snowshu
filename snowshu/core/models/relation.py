@@ -33,6 +33,7 @@ class Relation:
     include_outliers: bool = False
     max_number_of_outliers: int = DEFAULT_MAX_NUMBER_OF_OUTLIERS
     temp_database: str = DEFAULT_TEMPORARY_DATABASE
+    temp_schema: Optional[str] = None
 
     def __init__(self,  # noqa pylint: disable=too-many-arguments
                  database: str,
@@ -95,6 +96,18 @@ class Relation:
     @property
     def dot_notation(self) -> str:
         return f"{self.database}.{self.schema}.{self.name}"
+
+    @property
+    def temp_dot_notation(self) -> str:
+        missing: List[str] = []
+        if not self.temp_database:
+            missing.append("relation.temp_database")
+        if not self.temp_schema:
+            missing.append("relation.temp_schema")
+        if missing:
+            raise ValueError(
+                f"Cannot create temp dot notation. Missing {', '.join(missing)}")
+        return f"{self.temp_database}.{self.temp_schema}.{self.name}"
 
     @property
     def star(self) -> str:

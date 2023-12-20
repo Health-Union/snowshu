@@ -171,24 +171,23 @@ class GraphSetRunner:
         try:
             logger.debug(
                 f"Executing graph with {len(executable.graph)} relations in it...")
-            for i, relation in enumerate(
-                    nx.algorithms.dag.topological_sort(executable.graph)):
+            sorted_graphs = nx.algorithms.dag.topological_sort(executable.graph)
+            for i, relation in enumerate(sorted_graphs, start=1):
 
-                unique_schema_name = "_".join([relation.schema, self.uuid])
+                relation.temp_schema = "_".join([relation.schema, self.uuid])
                 self._generate_schemas_if_necessary(
-                    executable.source_adapter, unique_schema_name, relation.temp_database
+                    executable.source_adapter, relation.temp_schema, relation.temp_database
                 )
 
                 relation.population_size = executable.source_adapter.scalar_query(
                     executable.source_adapter.population_count_statement(relation))
                 logger.info(f'Executing source query for relation {relation.dot_notation} '
-                            f'({i+1} of {len(executable.graph)} in graph)...')
+                            f'({i} of {len(executable.graph)} in graph)...')
 
                 relation.sampling.prepare(relation,
                                           executable.source_adapter)
                 relation = RuntimeSourceCompiler.compile_queries_for_relation(
                     relation, executable.graph, executable.source_adapter, executable.analyze)
-
                 if executable.analyze:
                     if relation.is_view:
                         relation.population_size = "N/A"
@@ -223,17 +222,16 @@ class GraphSetRunner:
                         logger.info('Successfully extracted DDL statement for view '
                                     f'{executable.target_adapter.quoted_dot_notation(relation)}')
                     else:
-                        source = f"{relation.temp_database}.{relation.schema}.{relation.name}"
                         logger.info(
-                            f'Retrieving records from source {source}...')
+                            f'Retrieving records from source {relation.temp_dot_notation}...')
                         try:
                             executable.source_adapter.create_table(
                                 query=relation.compiled_query,
                                 name=relation.name,
-                                schema=unique_schema_name,
+                                schema=relation.temp_schema,
                                 database=relation.temp_database,
                             )
-                            fetch_query = f"SELECT * FROM {relation.temp_database}.{unique_schema_name}.{relation.name}"
+                            fetch_query = f"SELECT * FROM {relation.temp_dot_notation}"
                             relation.data = executable.source_adapter.check_count_and_query(
                                 fetch_query, relation.sampling.max_allowed_rows, relation.unsampled)
                         except Exception as exc:
