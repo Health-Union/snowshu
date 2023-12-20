@@ -339,28 +339,25 @@ LIMIT {max_number_of_outliers})
         self, relation: Relation, analyze: bool, local_key: str, remote_key: str
     ) -> str:
         """builds 'where' strings"""
-        constraint_sql = str()
         if analyze:
-            constraint_sql = (
-                f" SELECT {remote_key} AS {local_key} FROM ({relation.core_query})"
-            )
+            return f"{local_key} IN (SELECT {remote_key} AS {local_key} FROM ({relation.core_query}))"
         else:
             try:
                 constraint_query = (
-                    f"SELECT DISTINCT({remote_key}) FROM {relation.temp_dot_notation}"
+                    f"SELECT LISTAGG('''' || {remote_key}::VARCHAR || '''', ',') "
+                    f"FROM ("
+                    f"    SELECT DISTINCT {remote_key} "
+                    f"    FROM {relation.temp_dot_notation} "
+                    f"    LIMIT {SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR}"
+                    f") AS subquery"
                 )
-                constraint_set = (
-                    self._safe_query(constraint_query)
-                )
-                if constraint_set.empty:
+                constraint_sql = self._safe_query(constraint_query).iloc[0, 0]
+                if not constraint_sql:
                     raise ValueError(
                         f"The constraint set for remote key {remote_key} "
                         f"in {relation.temp_dot_notation} is empty."
                     )
-                constraint_set = constraint_set.iloc[:, 0].tolist()[
-                    : SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR
-                ]
-                constraint_sql = ",".join(f"'{item}'" for item in constraint_set)
+                return f"{local_key} IN ({constraint_sql})"
             except KeyError as err:
                 logger.critical(
                     "Failed to build predicates for %s: remote key %s not in %s table.",
@@ -378,8 +375,6 @@ LIMIT {max_number_of_outliers})
                     relation.dot_notation,
                 )
                 raise ValueError(f"Failed to build predicates: {str(err)}") from err
-
-        return f"{local_key} IN ({constraint_sql}) "
 
     # pylint: disable=too-many-arguments
     def polymorphic_constraint_statement(self,
