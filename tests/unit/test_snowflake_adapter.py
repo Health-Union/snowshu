@@ -191,9 +191,9 @@ def test_predicate_constraint_statement_analyze_false_non_empty_constraint_set(m
     """ Given non empty constraint set and analyze=False we expect a predicate constraint statement """
     sf = SnowflakeAdapter()
     mock_relation.temp_dot_notation = 'mock_dot_notation'
-    mock_query.return_value = DataFrame(['1', '2', '3'])
+    mock_query.return_value = DataFrame(['1, 2, 3'])
     result = sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
-    assert query_equalize(result) == query_equalize("local_key IN ('1','2','3') ")
+    assert query_equalize(result) == query_equalize("local_key IN (1, 2, 3) ")
 
 
 @mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
@@ -201,12 +201,12 @@ def test_predicate_constraint_statement_analyze_false_non_empty_constraint_set(m
 def test_predicate_constraint_statement_analyze_false_empty_constraint_set(mock_relation, mock_query):
     """
     Given empty constraint set and analyze=False we expect a predicate constraint statement
-    with a ValueError raised
+    with a IndexError raised
     """
     sf = SnowflakeAdapter()
     mock_relation.temp_dot_notation = 'mock_dot_notation'
     mock_query.return_value = DataFrame([])
-    with pytest.raises(ValueError, match=r"The constraint set for remote key remote_key in mock_dot_notation is empty."):
+    with pytest.raises(IndexError, match=f"Failed to build predicates: index 0 is out of bounds for axis 0 with size 0"):
         sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
 
 

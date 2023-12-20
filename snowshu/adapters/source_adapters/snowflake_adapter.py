@@ -339,9 +339,10 @@ LIMIT {max_number_of_outliers})
         self, relation: Relation, analyze: bool, local_key: str, remote_key: str
     ) -> str:
         """builds 'where' strings"""
-        if analyze:
-            return f"{local_key} IN (SELECT {remote_key} AS {local_key} FROM ({relation.core_query}))"
         try:
+            if analyze:
+                return f"{local_key} IN ( SELECT {remote_key} AS {local_key} FROM ({relation.core_query}))"
+
             constraint_query = (
                 f"SELECT LISTAGG('''' || {remote_key}::VARCHAR || '''', ',') "
                 f"FROM ("
@@ -367,13 +368,20 @@ LIMIT {max_number_of_outliers})
             raise KeyError(
                 f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
             ) from err
-        except ValueError as err:
+        except IndexError as err:
             logger.critical(
                 "Failed to build predicates for %s: the constraint set "
                 "is empty, please validate the relation.",
                 relation.dot_notation,
             )
-            raise ValueError(f"Failed to build predicates: {str(err)}") from err
+            raise IndexError(f"Failed to build predicates: {str(err)}") from err
+        except Exception as err:
+            logger.critical(
+                "An unexpected error occurred while building predicates for %s: %s",
+                relation.dot_notation,
+                str(err),
+            )
+            raise
 
     # pylint: disable=too-many-arguments
     def polymorphic_constraint_statement(self,
