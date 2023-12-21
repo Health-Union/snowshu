@@ -91,34 +91,34 @@ class ReplicaFactory:
                                  retry_count=self.retry_count,
                                  analyze=self.run_analyze,
                                  barf=barf)
-        if not self.run_analyze:
-            relations = [relation for graph in graphs for relation in graph.nodes]
-            if self.config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:
-                logger.info('Creating x-database links in target...')
-                self.config.target_profile.adapter.enable_cross_database()
-                logger.info('X-database enabled.')
-            self.config.target_profile.adapter.create_all_database_extensions()
+        # if not self.run_analyze:
+        #     relations = [relation for graph in graphs for relation in graph.nodes]
+        #     if self.config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:
+        #         logger.info('Creating x-database links in target...')
+        #         self.config.target_profile.adapter.enable_cross_database()
+        #         logger.info('X-database enabled.')
+        #     self.config.target_profile.adapter.create_all_database_extensions()
 
-            logger.info(
-                'Applying %s emulation functions to target...',
-                self.config.source_profile.adapter.name)
-            for function in self.config.source_profile.adapter.SUPPORTED_FUNCTIONS:
-                self.config.target_profile.adapter.create_function_if_available(
-                    function, relations)
-            logger.info('Emulation functions applied.')
+        #     logger.info(
+        #         'Applying %s emulation functions to target...',
+        #         self.config.source_profile.adapter.name)
+        #     for function in self.config.source_profile.adapter.SUPPORTED_FUNCTIONS:
+        #         self.config.target_profile.adapter.create_function_if_available(
+        #             function, relations)
+        #     logger.info('Emulation functions applied.')
 
-            logger.info('Copying replica data to shared location...')
-            status_message = self.config.target_profile.adapter.copy_replica_data()
-            if status_message[0] != 0:
-                message = (f'Failed to execute copy command: {status_message[1]}')
-                logger.error(message)
-                raise UnableToExecuteCopyReplicaCommand(message)
+        #     logger.info('Copying replica data to shared location...')
+        #     status_message = self.config.target_profile.adapter.copy_replica_data()
+        #     if status_message[0] != 0:
+        #         message = (f'Failed to execute copy command: {status_message[1]}')
+        #         logger.error(message)
+        #         raise UnableToExecuteCopyReplicaCommand(message)
 
-            self.config.target_profile.adapter.finalize_replica()
+        #     self.config.target_profile.adapter.finalize_replica()
 
-        return printable_result(
-            graph_to_result_list(graphs),
-            self.run_analyze)
+        # return printable_result(
+        #     graph_to_result_list(graphs),
+        #     self.run_analyze)
 
     def load_config(self,
                     config: Union[Path, str, TextIO],

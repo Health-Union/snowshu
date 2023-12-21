@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
 import logging
 import time
+from pandas import DataFrame
 
 import sqlalchemy
 from overrides import overrides
@@ -246,32 +247,32 @@ class PostgresAdapter(BaseTargetAdapter):
         return relations
 
     @overrides
-    def load_data_into_relation(self, relation: "Relation") -> None:
+    def load_data_into_relation(self, relation: "Relation", data: Optional[DataFrame]) -> None:
         try:
-            return super().load_data_into_relation(relation)
+            return super().load_data_into_relation(relation, data)
         except ValueError as exc:
             if 'cannot contain NUL' in str(exc):
                 logger.warning("Invalid 0x00 char found in %s. "
                                "Removing from affected columns and trying again",
                                self.quoted_dot_notation(relation))
-                fixed_relation = self.replace_x00_values(relation)
+                fixed_data = self.replace_x00_values(data)
                 logger.info("Retrying data load for %s",
                             self.quoted_dot_notation(relation))
-                return super().load_data_into_relation(fixed_relation)
+                return super().load_data_into_relation(relation, fixed_data)
 
             raise exc
 
-    def replace_x00_values(self, relation: "Relation") -> "Relation":
-        for col, col_type in relation.data.dtypes.items():
+    def replace_x00_values(self, data: DataFrame) -> DataFrame:
+        for col, col_type in data.dtypes.items():
             # str types are put into object type columns
-            if col_type == 'object' and isinstance(relation.data[col][0], str):
-                matched_nul_char = (relation.data[col].str.find('\x00') > -1)
+            if col_type == 'object' and isinstance(data[col][0], str):
+                matched_nul_char = (data[col].str.find('\x00') > -1)
                 if any(matched_nul_char):
                     logger.warning("Invalid 0x00 char found in column %s. Replacing with '%s' "
                                    "(excluding bounding single quotes)", col, self.x00_replacement)
-                    relation.data[col] = relation.data[col].str.replace(
+                    data[col] = data[col].str.replace(
                         '\x00', self.x00_replacement)
-        return relation
+        return data
 
     @staticmethod
     def quoted(val: str) -> str:
