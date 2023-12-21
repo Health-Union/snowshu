@@ -24,22 +24,19 @@ def test_x00_replacement():
         Attribute(content_col, data_types.VARCHAR)
     ]
     # test default replacement
-    relation = Relation("db", "schema", "relation", TABLE, cols)
-    relation.data = DataFrame({id_col: [1, 2], content_col: [normal_val, weird_value]})
+    query_data = DataFrame({id_col: [1, 2], content_col: [normal_val, weird_value]})
 
-    fixed_relation = adapter.replace_x00_values(relation)
-    assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 1, [content_col]] == normal_val)
-    assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 2, [content_col]] == "weirdvalue")
+    fixed_data = adapter.replace_x00_values(query_data)
+    assert all(fixed_data.loc[fixed_data[id_col] == 1, content_col] == normal_val)
+    assert all(fixed_data.loc[fixed_data[id_col] == 2, content_col] == "weirdvalue")
 
     # test custom replacement
     adapter = PostgresAdapter(replica_metadata={}, pg_0x00_replacement=custom_replacement)
-    relation = Relation("db", "schema", "relation", TABLE, cols)
-    relation.data = DataFrame({id_col: [1, 2], content_col: [normal_val, weird_value]})
+    query_data = DataFrame({id_col: [1, 2], content_col: [normal_val, weird_value]})
 
-    fixed_relation = adapter.replace_x00_values(relation)
-    assert all(fixed_relation.data.loc[fixed_relation.data[id_col] == 1, [content_col]] == normal_val)
-    assert all(
-        fixed_relation.data.loc[fixed_relation.data[id_col] == 2, [content_col]] == f"weird{custom_replacement}value")
+    fixed_data = adapter.replace_x00_values(query_data)
+    assert all(fixed_data.loc[fixed_data[id_col] == 1, content_col] == normal_val)
+    assert all(fixed_data.loc[fixed_data[id_col] == 2, content_col] == f"weird{custom_replacement}value")
 
 
 def test_create_snowshu_schema_statement():
