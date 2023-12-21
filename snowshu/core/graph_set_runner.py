@@ -264,7 +264,7 @@ class GraphSetRunner:
                     with open(os.path.join(self.barf_output, f'{relation.dot_notation}.sql'), 'w') as barf_file:  # noqa pylint: disable=unspecified-encoding
                         barf_file.write(relation.compiled_query)
                 del query_data
-
+        gc.collect()
         except Exception as exc:
             logger.error(f'failed with error of type {type(exc)}: {str(exc)}')
             raise exc
