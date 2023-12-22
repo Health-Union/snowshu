@@ -106,22 +106,32 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
         raise NotImplementedError()
 
     def load_data_into_relation(self, relation: Relation, data: pd.DataFrame) -> None:
-        """Loads data into a to target.
+        """Loads data into a target.
 
         Args:
             relation: The relation containing info about dataset to load.
             data: The data to load into the relation.
         """
-        if data is None and relation.data.empty:
-            raise ValueError("Both data and relation.data are empty.")
-
         database = self.quoted(self._correct_case(relation.database))
         schema = self.quoted(self._correct_case(relation.schema))
         engine = self.get_connection(database_override=database,
                                      schema_override=schema)
 
-        logger.info('Loading data into relation %s...',
-                    self.quoted_dot_notation(relation))
+        if data is None and relation.data.empty:
+            logger.warning(
+                "Both data and relation.data are empty for %s. "
+                "Empty database, schema, and table will be created.",
+                self.quoted_dot_notation(relation)
+            )
+            final_message = (
+                "%s created with no data." % self.quoted_dot_notation(relation)
+            )
+        else:
+            logger.info('Loading data into relation %s...',
+                        self.quoted_dot_notation(relation))
+            final_message = (
+                "Data loaded into relation %s." % self.quoted_dot_notation(relation)
+            )
 
         data = data if data is not None else relation.data
         original_columns = data.columns.copy()
@@ -150,12 +160,11 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
             )
             data.columns = original_columns
         except Exception as exc:
-            logger.info("Exception encountered loading data into %s:%s",
-                        self.quoted_dot_notation(relation), exc)
+            logger.error("Exception encountered loading data into %s: %s",
+                         self.quoted_dot_notation(relation), exc)
             raise
 
-        logger.info('Data loaded into relation %s',
-                    self.quoted_dot_notation(relation))
+        logger.info(final_message)
 
     def initialize_replica(self,
                            source_adapter_name: str,
