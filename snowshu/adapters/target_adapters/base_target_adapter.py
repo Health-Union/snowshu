@@ -124,13 +124,13 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
                 self.quoted_dot_notation(relation)
             )
             final_message = (
-                "%s created with no data." % self.quoted_dot_notation(relation)
+                f"{self.quoted_dot_notation(relation)} created with no data."
             )
         else:
             logger.info('Loading data into relation %s...',
                         self.quoted_dot_notation(relation))
             final_message = (
-                "Data loaded into relation %s." % self.quoted_dot_notation(relation)
+                f"Data loaded into relation {self.quoted_dot_notation(relation)}."
             )
 
         data = data if data is not None else relation.data
