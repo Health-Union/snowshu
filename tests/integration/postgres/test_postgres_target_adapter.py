@@ -93,7 +93,8 @@ def test_create_all_database_extensions(end_to_end):
     assert extensions in extensions_list
 
 
-def test_load_data_into_relation(end_to_end):
+def test_load_data_into_relation_relation(end_to_end):
+    """Tests that data is loaded into a relation from relation.data"""
     pg_adapter = PostgresAdapter(replica_metadata={})
     if pg_adapter.target != "localhost":
         pg_adapter._credentials.host = 'integration-test'
@@ -107,6 +108,29 @@ def test_load_data_into_relation(end_to_end):
     relation = Relation("snowshu", "snowshu", "replica_meta", TABLE, columns)
     relation.data = DataFrame({id_column: [1, 2, 3], content_column: [rand_string(5) for _ in range(3)]})
     pg_adapter.load_data_into_relation(relation)
+
+    statement = "SELECT * FROM snowshu.snowshu.replica_meta"
+    conn = pg_adapter.get_connection()
+    result = conn.execute(statement).fetchall()
+
+    assert len(result) == 3
+
+
+def test_load_data_into_relation_dataframe(end_to_end):
+    """Tests that data is loaded into a relation from local dataframe"""
+    pg_adapter = PostgresAdapter(replica_metadata={})
+    if pg_adapter.target != "localhost":
+        pg_adapter._credentials.host = 'integration-test'
+
+    id_column = "id"
+    content_column = "content"
+    columns = [
+        Attribute(id_column, data_types.BIGINT),
+        Attribute(content_column, data_types.VARCHAR)
+    ]
+    relation = Relation("snowshu", "snowshu", "replica_meta", TABLE, columns)
+    query_data = DataFrame({id_column: [1, 2, 3], content_column: [rand_string(5) for _ in range(3)]})
+    pg_adapter.load_data_into_relation(relation, query_data)
 
     statement = "SELECT * FROM snowshu.snowshu.replica_meta"
     conn = pg_adapter.get_connection()

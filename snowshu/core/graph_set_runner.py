@@ -232,14 +232,14 @@ class GraphSetRunner:
                                 database=relation.temp_database,
                             )
                             fetch_query = f"SELECT * FROM {relation.temp_dot_notation}"
-                            relation.data = executable.source_adapter.check_count_and_query(
+                            query_data = executable.source_adapter.check_count_and_query(
                                 fetch_query, relation.sampling.max_allowed_rows, relation.unsampled)
                         except Exception as exc:
                             raise SystemError(
                                 f'Failed execution of extraction sql statement: {relation.compiled_query} {exc}') \
                                 from exc
 
-                        relation.sample_size = len(relation.data)
+                        relation.sample_size = len(query_data)
                         logger.info(
                             f'{relation.sample_size} records retrieved for relation {relation.dot_notation}.')
 
@@ -247,7 +247,7 @@ class GraphSetRunner:
                                 ' into target...')
                     try:
                         executable.target_adapter.create_and_load_relation(
-                            relation)
+                            relation, query_data)
                     except Exception as exc:
                         raise SystemError('Failed to load relation '
                                           f'{executable.target_adapter.quoted_dot_notation(relation)} '
@@ -263,13 +263,6 @@ class GraphSetRunner:
                 if self.barf:
                     with open(os.path.join(self.barf_output, f'{relation.dot_notation}.sql'), 'w') as barf_file:  # noqa pylint: disable=unspecified-encoding
                         barf_file.write(relation.compiled_query)
-
-            for relation in executable.graph.nodes:
-                try:
-                    del relation.data
-                except AttributeError:
-                    logger.warning("Failed to purge data of the %s relation", relation)
-
             gc.collect()
         except Exception as exc:
             logger.error(f'failed with error of type {type(exc)}: {str(exc)}')

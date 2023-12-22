@@ -66,7 +66,7 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
     def image_finalize_bash_commands(self) -> List[str]:
         """returns an ordered list of raw bash commands used to finalize the image.
 
-        For many target images some bash cleanup is required, such as remounting data or 
+        For many target images some bash cleanup is required, such as remounting data or
         setting envars. This method returns the ordered commands to do this finalization.
 
         .. note::
@@ -86,11 +86,13 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
     def create_schema_if_not_exists(self, database: str, schema: str) -> str:
         raise NotImplementedError()
 
-    def create_and_load_relation(self, relation) -> None:
+    def create_and_load_relation(self,
+                                 relation: "Relation",
+                                 data: Optional[pd.DataFrame]) -> None:
         if relation.is_view:
             self.create_or_replace_view(relation)
         else:
-            self.load_data_into_relation(relation)
+            self.load_data_into_relation(relation, data)
 
     def create_or_replace_view(self, relation) -> None:
         """Creates a view of the specified relation in the target adapter.
@@ -103,35 +105,66 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
         """
         raise NotImplementedError()
 
-    def load_data_into_relation(self, relation: Relation) -> None:
+    def load_data_into_relation(self, relation: Relation, data: pd.DataFrame) -> None:
+        """Loads data into a target.
+
+        Args:
+            relation: The relation containing info about dataset to load.
+            data: The data to load into the relation.
+        """
         database = self.quoted(self._correct_case(relation.database))
         schema = self.quoted(self._correct_case(relation.schema))
         engine = self.get_connection(database_override=database,
                                      schema_override=schema)
-        logger.info('Loading data into relation %s...',
-                    self.quoted_dot_notation(relation))
-        original_columns = relation.data.columns.copy()
-        relation.data.columns = [self._correct_case(col) for col in original_columns]
+
+        if data is None and relation.data.empty:
+            logger.warning(
+                "Both data and relation.data are empty for %s. "
+                "Empty database, schema, and table will be created.",
+                self.quoted_dot_notation(relation)
+            )
+            final_message = (
+                f"{self.quoted_dot_notation(relation)} created with no data."
+            )
+        else:
+            logger.info('Loading data into relation %s...',
+                        self.quoted_dot_notation(relation))
+            final_message = (
+                f"Data loaded into relation {self.quoted_dot_notation(relation)}."
+            )
+
+        data = data if data is not None else relation.data
+        original_columns = data.columns.copy()
+        data.columns = [self._correct_case(col) for col in original_columns]
+
+        attribute_type_map = {
+            attr.name: attr.data_type.sqlalchemy_type
+            for attr in relation.attributes
+        }
+
+        data_type_map = {
+            col: case_insensitive_dict_value(attribute_type_map, col)
+            for col in data.columns.to_list()
+        }
+
         try:
-            attribute_type_map = {attr.name: attr.data_type.sqlalchemy_type
-                                  for attr in relation.attributes}
-            data_type_map = {col: case_insensitive_dict_value(attribute_type_map, col)
-                             for col in relation.data.columns.to_list()}
-            relation.data.to_sql(self._correct_case(relation.name),
-                                 engine,
-                                 schema=self._correct_case(schema),
-                                 if_exists='replace',
-                                 index=False,
-                                 dtype=data_type_map,
-                                 chunksize=DEFAULT_INSERT_CHUNK_SIZE,
-                                 method='multi')
-            relation.data.columns = original_columns
+            data.to_sql(
+                self._correct_case(relation.name),
+                engine,
+                schema=self._correct_case(schema),
+                if_exists='replace',
+                index=False,
+                dtype=data_type_map,
+                chunksize=DEFAULT_INSERT_CHUNK_SIZE,
+                method='multi'
+            )
+            data.columns = original_columns
         except Exception as exc:
-            logger.info("Exception encountered loading data into %s:%s",
-                        self.quoted_dot_notation(relation), exc)
-            raise exc
-        logger.info('Data loaded into relation %s',
-                    self.quoted_dot_notation(relation))
+            logger.error("Exception encountered loading data into %s: %s",
+                         self.quoted_dot_notation(relation), exc)
+            raise
+
+        logger.info(final_message)
 
     def initialize_replica(self,
                            source_adapter_name: str,
@@ -169,7 +202,7 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
             self.DOCKER_READY_COMMAND).exit_code == 0
 
     def finalize_replica(self) -> None:
-        """ Converts all containers to respective replicas, 
+        """ Converts all containers to respective replicas,
             creates 'latest' if any on the running containers are of local arch
         """
         logger.info('Finalizing target container into replica...')
@@ -229,7 +262,7 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
             mz.TABLE,
             attributes)
 
-        relation.data = pd.DataFrame(
+        meta_data = pd.DataFrame(
             [
                 dict(
                     created_at=datetime.now(),
@@ -240,7 +273,7 @@ class BaseTargetAdapter(BaseSQLAdapter):  # noqa pylint: disable=too-many-instan
                 )
             ]
         )
-        self.create_and_load_relation(relation)
+        self.create_and_load_relation(relation, meta_data)
 
     def create_function_if_available(self,
                                      function: str,
