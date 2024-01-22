@@ -344,7 +344,7 @@ LIMIT {max_number_of_outliers})
                 return f"{local_key} IN ( SELECT {remote_key} AS {local_key} FROM ({relation.core_query}))"
 
             constraint_query = (
-                f"SELECT LISTAGG('''' || REPLACE({remote_key}::VARCHAR, '''', '') || '''', ',') "
+                f"SELECT LISTAGG('''' || {remote_key}::VARCHAR || '''', ',') "
                 f"FROM ("
                 f"    SELECT DISTINCT {remote_key} "
                 f"    FROM {relation.temp_dot_notation} "
