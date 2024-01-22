@@ -348,6 +348,7 @@ LIMIT {max_number_of_outliers})
                 f"FROM ("
                 f"    SELECT DISTINCT {remote_key} "
                 f"    FROM {relation.temp_dot_notation} "
+                f"    WHERE {remote_key} NOT LIKE '%''%' "
                 f"    LIMIT {SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR}"
                 f") AS subquery"
             )
