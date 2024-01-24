@@ -348,6 +348,7 @@ LIMIT {max_number_of_outliers})
                 f"FROM ("
                 f"    SELECT DISTINCT {remote_key} "
                 f"    FROM {relation.temp_dot_notation} "
+                f"    WHERE {remote_key} NOT LIKE '%''%' "
                 f"    LIMIT {SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR}"
                 f") AS subquery"
             )
@@ -391,7 +392,7 @@ LIMIT {max_number_of_outliers})
                                          remote_key: str,
                                          local_type: str,
                                          local_type_match_val: str = None) -> str:
-        predicate = SnowflakeAdapter().predicate_constraint_statement(relation, analyze, local_key, remote_key)
+        predicate = self.predicate_constraint_statement(relation, analyze, local_key, remote_key)
         if local_type_match_val:
             type_match_val = local_type_match_val
         else:
