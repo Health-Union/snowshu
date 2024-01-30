@@ -378,7 +378,6 @@ LIMIT {max_number_of_outliers})
             constraint_query = (
                 f"    SELECT DISTINCT {remote_key} "
                 f"    FROM {relation.temp_dot_notation} "
-                f"    WHERE {remote_key} NOT LIKE '%''%' "
                 f"    LIMIT {SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR}"
             )
             self._validate_key_index_error(relation, constraint_query, remote_key)
