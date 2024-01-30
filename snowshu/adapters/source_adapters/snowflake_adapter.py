@@ -355,7 +355,7 @@ LIMIT {max_number_of_outliers})
                     "is empty, please validate the relation.",
                     constraint,
                 )
-                raise IndexError(f"Failed to build predicates, the constriant set is empty.")
+                raise IndexError("Failed to build predicates, the constriant set is empty.")
         except KeyError as err:
             logger.critical(
                 "Failed to build predicates for %s: remote key %s not in %s table.",
