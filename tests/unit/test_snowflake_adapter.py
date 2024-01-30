@@ -206,7 +206,7 @@ def test_predicate_constraint_statement_analyze_false_empty_constraint_set(mock_
     sf = SnowflakeAdapter()
     mock_relation.temp_dot_notation = 'mock_dot_notation'
     mock_query.return_value = DataFrame([])
-    with pytest.raises(IndexError, match=f"Failed to build predicates, the constriant set is empty."):
+    with pytest.raises(IndexError, match=f"Failed to build predicates, the constraint set is empty."):
         sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
 
 
