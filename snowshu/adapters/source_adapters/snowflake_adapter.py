@@ -335,6 +335,38 @@ LIMIT {max_number_of_outliers})
         return f" {local_key} in (SELECT {remote_key} FROM \
                 {adapter.quoted_dot_notation(relation)})"
 
+    def _validate_key_index_error(self,
+                                  relation: Relation,
+                                  constraint: str,
+                                  remote_key: str) -> None:
+        """
+        Validate that the constraint contains a valid key for the relation
+        and the result of it is not an empty set.
+        """
+        try:
+            # Run exists query to avoid keeping large objects in memory
+            exists_query = (
+                f"SELECT EXISTS ({constraint})"
+            )
+            result = self._safe_query(exists_query)
+            if result.empty:
+                logger.critical(
+                    "Failed to build predicates for %s: the constraint set "
+                    "is empty, please validate the relation.",
+                    constraint,
+                )
+                raise IndexError("Failed to build predicates, the constraint set is empty.")
+        except KeyError as err:
+            logger.critical(
+                "Failed to build predicates for %s: remote key %s not in %s table.",
+                relation.dot_notation,
+                constraint,
+                relation.temp_dot_notation,
+            )
+            raise KeyError(
+                f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
+            ) from err
+
     def predicate_constraint_statement(
         self, relation: Relation, analyze: bool, local_key: str, remote_key: str
     ) -> str:
@@ -344,38 +376,12 @@ LIMIT {max_number_of_outliers})
                 return f"{local_key} IN ( SELECT {remote_key} AS {local_key} FROM ({relation.core_query}))"
 
             constraint_query = (
-                f"SELECT LISTAGG('''' || {remote_key}::VARCHAR || '''', ',') "
-                f"FROM ("
                 f"    SELECT DISTINCT {remote_key} "
                 f"    FROM {relation.temp_dot_notation} "
-                f"    WHERE {remote_key} NOT LIKE '%''%' "
                 f"    LIMIT {SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR}"
-                f") AS subquery"
             )
-            constraint_sql = self._safe_query(constraint_query).iloc[0, 0]
-            if not constraint_sql:
-                raise ValueError(
-                    f"The constraint set for remote key {remote_key} "
-                    f"in {relation.temp_dot_notation} is empty."
-                )
-            return f"{local_key} IN ({constraint_sql})"
-        except KeyError as err:
-            logger.critical(
-                "Failed to build predicates for %s: remote key %s not in %s table.",
-                relation.dot_notation,
-                remote_key,
-                relation.temp_dot_notation,
-            )
-            raise KeyError(
-                f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
-            ) from err
-        except IndexError as err:
-            logger.critical(
-                "Failed to build predicates for %s: the constraint set "
-                "is empty, please validate the relation.",
-                relation.dot_notation,
-            )
-            raise IndexError(f"Failed to build predicates: {str(err)}") from err
+            self._validate_key_index_error(relation, constraint_query, remote_key)
+            return f"{local_key} IN ({constraint_query})"
         except Exception as err:
             logger.critical(
                 "An unexpected error occurred while building predicates for %s: %s",
