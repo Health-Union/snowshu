@@ -57,6 +57,6 @@ def build_typeclass(class_name,
 
 
 for dtype, sqlalchemy_type in quoted_types:
-    build_typeclass(dtype, sqlalchemy_type, True)
-for dtype, sqlalchemy_type in unquoted_types:
     build_typeclass(dtype, sqlalchemy_type, False)
+for dtype, sqlalchemy_type in unquoted_types:
+    build_typeclass(dtype, sqlalchemy_type, True)

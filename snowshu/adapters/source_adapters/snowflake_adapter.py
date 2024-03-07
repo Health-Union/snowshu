@@ -366,17 +366,29 @@ LIMIT {max_number_of_outliers})
             raise KeyError(
                 f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
             ) from err
-
+   
+    def format_remote_key(self, relation: Relation, remote_key: str) -> str:
+        """Formats the remote key based on whether it needs to be quoted or not."""
+        attribute = relation.lookup_attribute(remote_key)
+        if attribute.data_type.requires_quotes:
+            return f"{remote_key}::VARCHAR"
+        else:
+            return remote_key
+ 
     def predicate_constraint_statement(
         self, relation: Relation, analyze: bool, local_key: str, remote_key: str
     ) -> str:
-        """builds 'where' strings"""
+        """Builds 'where' strings."""
         try:
+            formatted_remote_key = self.format_remote_key(relation, remote_key)
             if analyze:
-                return f"{local_key} IN ( SELECT {remote_key} AS {local_key} FROM ({relation.core_query}))"
+                return (
+                    f"{local_key} IN ( SELECT {formatted_remote_key} AS {local_key} "
+                    f"FROM ({relation.core_query}))"
+                )
 
             constraint_query = (
-                f"    SELECT DISTINCT {remote_key} "
+                f"    SELECT DISTINCT {formatted_remote_key} "
                 f"    FROM {relation.temp_dot_notation} "
                 f"    LIMIT {SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR}"
             )
@@ -389,7 +401,7 @@ LIMIT {max_number_of_outliers})
                 str(err),
             )
             raise
-
+        
     # pylint: disable=too-many-arguments
     def polymorphic_constraint_statement(self,
                                          relation: Relation,
