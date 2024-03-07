@@ -366,7 +366,7 @@ LIMIT {max_number_of_outliers})
             raise KeyError(
                 f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
             ) from err
- 
+
     def format_remote_key(self, relation: Relation, remote_key: str) -> str:
         """Formats the remote key based on whether it needs to be quoted or not."""
         attribute = relation.lookup_attribute(remote_key)
