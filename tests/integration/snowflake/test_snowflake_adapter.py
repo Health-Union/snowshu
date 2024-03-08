@@ -187,7 +187,7 @@ def test_polymorphic_constraint_statement(sf_adapter):
                         schema=SCHEMA,
                         name=TABLE,
                         materialization=[],
-                        attributes=[Attribute("CHILD_ID", DataType("CHILD_ID", False))])
+                        attributes=[Attribute("CHILD_ID", DataType("CHILD_ID", True))])
     relation.core_query = f"""
         SELECT
             *
@@ -296,7 +296,7 @@ def test_predicate_constraint_statement(sf_adapter):
                         schema=SCHEMA,
                         name=TABLE,
                         materialization=[],
-                        attributes=[Attribute("CHILD_ID", DataType("CHILD_ID", False))])
+                        attributes=[Attribute("CHILD_ID", DataType("CHILD_ID", True))])
     relation.core_query = f"""
         SELECT
             *

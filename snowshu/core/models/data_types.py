@@ -17,6 +17,7 @@ class DataType:
         - sqlalchemy_type: and instance of `sqlalchemy.types.TypeEngine
            <https://docs-sqlalchemy.readthedocs.io/ko/latest/core/type_api.html#sqlalchemy.types.TypeEngine>`__ lineage.
     """
+
     name: str
     requires_quotes: Optional[bool] = True
     sqlalchemy_type: Optional[Any] = None
@@ -27,36 +28,89 @@ class DataType:
 
 # TODO:break these out into meaninful data types
 quoted_types = (
-    ("CHAR", types.CHAR(length=1,),),
-    ("DATE", types.DATE(),),
-    ("DATETIME", types.DATETIME(),),
-    ("JSON", types.JSON(),),
-    ("TIME", types.TIME(timezone=False),),
-    ("TIME_TZ", types.TIME(timezone=True),),
-    ("TIMESTAMP_NTZ", types.TIMESTAMP(timezone=False),),
-    ("TIMESTAMP_TZ", types.TIMESTAMP(timezone=True),),
-    ("TEXT", types.TEXT(),),
-    ("VARCHAR", types.VARCHAR(),),)
+    (
+        "CHAR",
+        types.CHAR(
+            length=1,
+        ),
+    ),
+    (
+        "DATE",
+        types.DATE(),
+    ),
+    (
+        "DATETIME",
+        types.DATETIME(),
+    ),
+    (
+        "JSON",
+        types.JSON(),
+    ),
+    (
+        "TIME",
+        types.TIME(timezone=False),
+    ),
+    (
+        "TIME_TZ",
+        types.TIME(timezone=True),
+    ),
+    (
+        "TIMESTAMP_NTZ",
+        types.TIMESTAMP(timezone=False),
+    ),
+    (
+        "TIMESTAMP_TZ",
+        types.TIMESTAMP(timezone=True),
+    ),
+    (
+        "TEXT",
+        types.TEXT(),
+    ),
+    (
+        "VARCHAR",
+        types.VARCHAR(),
+    ),
+)
 
 unquoted_types = (
-    ("BINARY", types.LargeBinary(),),
-    ("BOOLEAN", types.Boolean(),),
-    ("DECIMAL", types.DECIMAL(),),
-    ("FLOAT", types.FLOAT(),),
-    ("INTEGER", types.INTEGER(),),
-    ("BIGINT", types.BIGINT(),),
-    ("NUMERIC", types.NUMERIC(),),)
+    (
+        "BINARY",
+        types.LargeBinary(),
+    ),
+    (
+        "BOOLEAN",
+        types.Boolean(),
+    ),
+    (
+        "DECIMAL",
+        types.DECIMAL(),
+    ),
+    (
+        "FLOAT",
+        types.FLOAT(),
+    ),
+    (
+        "INTEGER",
+        types.INTEGER(),
+    ),
+    (
+        "BIGINT",
+        types.BIGINT(),
+    ),
+    (
+        "NUMERIC",
+        types.NUMERIC(),
+    ),
+)
 
 
-def build_typeclass(class_name,
-                    sql_data_type,
-                    quoted):
-    globals()[class_name] = DataType(class_name.lower(),
-                                     requires_quotes=quoted,
-                                     sqlalchemy_type=sql_data_type)
+def build_typeclass(class_name, sql_data_type, quoted):
+    globals()[class_name] = DataType(
+        class_name.lower(), requires_quotes=quoted, sqlalchemy_type=sql_data_type
+    )
 
 
 for dtype, sqlalchemy_type in quoted_types:
-    build_typeclass(dtype, sqlalchemy_type, False)
-for dtype, sqlalchemy_type in unquoted_types:
     build_typeclass(dtype, sqlalchemy_type, True)
+for dtype, sqlalchemy_type in unquoted_types:
+    build_typeclass(dtype, sqlalchemy_type, False)

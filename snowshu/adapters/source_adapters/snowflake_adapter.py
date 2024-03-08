@@ -367,11 +367,29 @@ LIMIT {max_number_of_outliers})
                 f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
             ) from err
 
-    def format_remote_key(self, relation: Relation, remote_key: str) -> str:
+    def format_remote_key(
+        self, relation: Relation, local_key: str, remote_key: str
+    ) -> str:
         """Formats the remote key based on whether it needs to be quoted or not."""
+
+        local_key_type_query = (
+            f"SELECT DATA_TYPE FROM {relation.database}.INFORMATION_SCHEMA.COLUMNS "
+            f"WHERE TABLE_NAME = '{relation.name}' "
+            f"AND COLUMN_NAME = '{local_key}'"
+        )
+        local_key_type_query_result = self._safe_query(local_key_type_query)
+        if local_key_type_query_result.empty:
+            raise ValueError(
+                f"Failed to retrieve data type for {local_key} in {relation.dot_notation}."
+            )
+
+        local_key_type = local_key_type_query_result["data_type"][0].strip()
+        logger.debug(f"Local key type: {local_key_type}")
+
         attribute = relation.lookup_attribute(remote_key)
-        if attribute.data_type.requires_quotes:
-            return f"{remote_key}::VARCHAR"
+        if not attribute.data_type.requires_quotes:
+            logger.debug(f"Casting remote key using {remote_key}::{local_key_type}")
+            return f"{remote_key}::{local_key_type}"
         return remote_key
 
     def predicate_constraint_statement(
@@ -379,7 +397,9 @@ LIMIT {max_number_of_outliers})
     ) -> str:
         """Builds 'where' strings."""
         try:
-            formatted_remote_key = self.format_remote_key(relation, remote_key)
+            formatted_remote_key = self.format_remote_key(
+                relation, local_key, remote_key
+            )
             if analyze:
                 return (
                     f"{local_key} IN ( SELECT {formatted_remote_key} AS {local_key} "
