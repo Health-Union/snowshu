@@ -87,8 +87,8 @@ FROM
     SAMPLE BERNOULLI (10)
 """)
 
-@mock.patch.object(Relation, 'lookup_attribute')
-def test_directional_statement(mock_lookup_attribute):
+@mock.patch.object(SnowflakeAdapter, 'format_remote_key')
+def test_directional_statement(mock_format_remote_key):
     sf = SnowflakeAdapter()
     DATABASE, SCHEMA, TABLE, LOCAL_KEY, REMOTE_KEY = [
         rand_string(10) for _ in range(5)]
@@ -104,9 +104,7 @@ FROM
     {DATABASE}.{SCHEMA}.{TABLE}
     SAMPLE BERNOULLI (10)
 """
-    mock_attribute = mock.Mock()
-    mock_attribute.data_type.requires_quotes = False
-    mock_lookup_attribute.return_value = mock_attribute
+    mock_format_remote_key.return_value = REMOTE_KEY
     statement = sf.predicate_constraint_statement(
         relation, True, LOCAL_KEY, REMOTE_KEY)
     assert query_equalize(statement) == query_equalize(f"""
@@ -185,7 +183,7 @@ FROM
     {relmock.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
 """)
 
-@mock.patch('snowshu.core.models.relation.Relation.format_lookup_attribute')
+@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key')
 @mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
 @mock.patch('snowshu.core.models.relation.Relation')
 def test_predicate_constraint_statement_analyze_false_quoted_non_empty_constraint_set(mock_relation, mock_query, mock_format_remote_key):
