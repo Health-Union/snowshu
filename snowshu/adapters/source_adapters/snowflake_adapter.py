@@ -371,23 +371,21 @@ LIMIT {max_number_of_outliers})
         self, relation: Relation, local_key: str, remote_key: str
     ) -> str:
         """Formats the remote key based on whether it needs to be quoted or not."""
-
-        local_key_type_query = (
-            f"SELECT DATA_TYPE FROM {relation.database}.INFORMATION_SCHEMA.COLUMNS "
-            f"WHERE TABLE_NAME = '{relation.name}' "
-            f"AND COLUMN_NAME = '{local_key}'"
-        )
-        local_key_type_query_result = self._safe_query(local_key_type_query)
-        if local_key_type_query_result.empty:
-            raise ValueError(
-                f"Failed to retrieve data type for {local_key} in {relation.dot_notation}."
-            )
-
-        local_key_type = local_key_type_query_result["data_type"][0].strip()
-        logger.debug(f"Local key type: {local_key_type}")
-
         attribute = relation.lookup_attribute(remote_key)
         if not attribute.data_type.requires_quotes:
+            local_key_type_query = (
+                f"SELECT DATA_TYPE FROM {relation.database}.INFORMATION_SCHEMA.COLUMNS "
+                f"WHERE TABLE_NAME = '{relation.name}' "
+                f"AND COLUMN_NAME = '{local_key}'"
+            )
+            local_key_type_query_result = self._safe_query(local_key_type_query)
+            if local_key_type_query_result.empty:
+                raise ValueError(
+                    f"Failed to retrieve data type for {local_key} in {relation.dot_notation}."
+                )
+
+            local_key_type = local_key_type_query_result["data_type"][0].strip()
+            logger.debug(f"Local key type: {local_key_type}")
             logger.debug(f"Casting remote key using {remote_key}::{local_key_type}")
             return f"{remote_key}::{local_key_type}"
         return remote_key
