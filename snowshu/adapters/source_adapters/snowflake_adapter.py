@@ -180,13 +180,22 @@ class SnowflakeAdapter(BaseSourceAdapter):
                 corrected_database,
             )
             result = self._safe_query(full_query)
-            logger.info("Table creation result: %s", result['status'][0])
-        except sqlalchemy.exc.ProgrammingError as err:
-            if "0000" in str(err):
+            if "already exists" in result['status'][0]:
                 logger.warning(
-                    "Table %s already exists, skipping table creation.",
-                    ".".join([corrected_database, corrected_schema, corrected_name]),
+                    "Table %s already exists in %s.%s, skipping creation...",
+                    corrected_name,
+                    corrected_schema,
+                    corrected_database,
                 )
+            else:
+                logger.info("Table creation result: %s", result['status'][0])
+        except ValueError as err:
+            error_message = (
+                f"An error occurred while creating the table {corrected_name} "
+                f"in database {corrected_database}: {err}"
+            )
+            logger.error(error_message)
+            raise
 
     def drop_table(self, name: str, schema: str, database: str = 'SNOWSHU'):
         corrected_name, corrected_schema, corrected_database = (

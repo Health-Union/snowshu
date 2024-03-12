@@ -2,7 +2,7 @@ from random import randrange
 
 import pytest
 import yaml
-
+import logging
 
 
 import snowshu.core.models.materializations as mz
@@ -393,6 +393,28 @@ def test_create_table(sf_adapter):
         sf_adapter.drop_table(name=TABLE, schema=SCHEMA, database=DATABASE)
         sf_adapter.drop_schema(name=SCHEMA, database=DATABASE)
 
+def test_create_table_same_names(sf_adapter, caplog):
+    """Test whether snowflake_adapter.create_table() successfully informs user
+    with a warning that the table already exists when trying to create a table
+    with the same name as an existing one."""
+    DATABASE, SCHEMA, TABLE = (
+        "SNOWSHU_DEVELOPMENT",
+        "_".join(["CREATE_TABLE_TEST", generate_unique_uuid().upper()]),
+        "TEST_TABLE"
+    )
+    query = "SELECT 1 AS test_col"
+    try:
+        # Setup: Create schema and table
+        sf_adapter.generate_schema(name=SCHEMA, database=DATABASE)
+        if TABLE in sf_adapter._get_all_tables(DATABASE, SCHEMA):
+            sf_adapter.drop_table(name=TABLE, schema=SCHEMA, database=DATABASE)
+        sf_adapter.create_table(query, name=TABLE, schema=SCHEMA, database=DATABASE)
+        with caplog.at_level(logging.WARNING):
+            sf_adapter.create_table(query, name=TABLE, schema=SCHEMA, database=DATABASE)
+        assert f"{TABLE} already exists" in caplog.text
+    finally:
+        # Clean up after test
+        sf_adapter.drop_schema(name=SCHEMA, database=DATABASE) 
 
 def test_drop_table(sf_adapter):
     """Test whether snowflake_adapter.drop_table() successfully
