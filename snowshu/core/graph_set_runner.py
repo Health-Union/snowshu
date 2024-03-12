@@ -168,6 +168,8 @@ class GraphSetRunner:
                                    'wb'
                                 ) as cmp_file:
                 nx.write_multiline_adjlist(executable.graph, cmp_file)
+        logger.info(executable)
+        logger.info(executable.graph)
         try:
             logger.debug(
                 f"Executing graph with {len(executable.graph)} relations in it...")
@@ -175,6 +177,9 @@ class GraphSetRunner:
             for i, relation in enumerate(sorted_graphs, start=1):
 
                 relation.temp_schema = "_".join([relation.schema, self.uuid])
+                relation.temp_name = "_".join(
+                    [relation.name, utils.generate_unique_uuid()]
+                )
                 self._generate_schemas_if_necessary(
                     executable.source_adapter, relation.temp_schema, relation.temp_database
                 )
@@ -222,26 +227,33 @@ class GraphSetRunner:
                         logger.info('Successfully extracted DDL statement for view '
                                     f'{executable.target_adapter.quoted_dot_notation(relation)}')
                     else:
-                        logger.info(
-                            f'Retrieving records from source {relation.temp_dot_notation}...')
+                        executable.source_adapter.create_table(
+                            query=relation.compiled_query,
+                            name=relation.temp_name,
+                            schema=relation.temp_schema,
+                            database=relation.temp_database,
+                        )
+
                         try:
-                            executable.source_adapter.create_table(
-                                query=relation.compiled_query,
-                                name=relation.name,
-                                schema=relation.temp_schema,
-                                database=relation.temp_database,
+                            logger.info(
+                                f"Retrieving records from source {relation.temp_dot_notation}..."
                             )
                             fetch_query = f"SELECT * FROM {relation.temp_dot_notation}"
-                            query_data = executable.source_adapter.check_count_and_query(
-                                fetch_query, relation.sampling.max_allowed_rows, relation.unsampled)
+                            query_data = (
+                                executable.source_adapter.check_count_and_query(
+                                    fetch_query,
+                                    relation.sampling.max_allowed_rows,
+                                    relation.unsampled,
+                                )
+                            )
+                            relation.sample_size = len(query_data)
+                            logger.info(
+                                f"{relation.sample_size} records retrieved for relation {relation.dot_notation}."
+                            )
                         except Exception as exc:
                             raise SystemError(
-                                f'Failed execution of extraction sql statement: {relation.compiled_query} {exc}') \
-                                from exc
-
-                        relation.sample_size = len(query_data)
-                        logger.info(
-                            f'{relation.sample_size} records retrieved for relation {relation.dot_notation}.')
+                                f"Failed to retrieve records from source {relation.temp_dot_notation} with query: {fetch_query}"
+                            ) from exc
 
                     logger.info(f'Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}'
                                 ' into target...')
