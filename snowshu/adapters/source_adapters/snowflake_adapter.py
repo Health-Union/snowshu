@@ -173,16 +173,20 @@ class SnowflakeAdapter(BaseSourceAdapter):
             {corrected_database}.{corrected_schema}.{corrected_name}
             AS {query}'''
         try:
-            logger.debug("Creating table %s in %s.%s...",
-                         corrected_name, corrected_schema, corrected_database)
+            logger.debug(
+                "Creating table %s in %s.%s...",
+                corrected_name,
+                corrected_schema,
+                corrected_database,
+            )
             result = self._safe_query(full_query)
             logger.info("Table creation result: %s", result['status'][0])
-        except ValueError as err:
-            error_message = (
-                f"An error occurred while creating the table {corrected_name} "
-                f"in database {corrected_database}: {err}")
-            logger.error(error_message)
-            raise
+        except sqlalchemy.exc.ProgrammingError as err:
+            if "0000" in str(err):
+                logger.warning(
+                    "Table %s already exists, skipping table creation.",
+                    ".".join([corrected_database, corrected_schema, corrected_name]),
+                )
 
     def drop_table(self, name: str, schema: str, database: str = 'SNOWSHU'):
         corrected_name, corrected_schema, corrected_database = (
@@ -367,27 +371,15 @@ LIMIT {max_number_of_outliers})
                 f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
             ) from err
 
-    def format_remote_key(
-        self, relation: Relation, local_key: str, remote_key: str
-    ) -> str:
+    def format_remote_key(self, relation: Relation, remote_key: str) -> str:
         """Formats the remote key based on whether it needs to be quoted or not."""
         attribute = relation.lookup_attribute(remote_key)
+        # If the data type does not require quotes, we need to cast it to VARCHAR
+        # as it lets us avoid type mismatch eg. when comparing a VARCHAR to a NUMBER
+        # though the opposite comparison is allowed.
         if not attribute.data_type.requires_quotes:
-            local_key_type_query = (
-                f"SELECT DATA_TYPE FROM {relation.database}.INFORMATION_SCHEMA.COLUMNS "
-                f"WHERE TABLE_NAME = '{relation.name}' "
-                f"AND COLUMN_NAME = '{local_key}'"
-            )
-            local_key_type_query_result = self._safe_query(local_key_type_query)
-            if local_key_type_query_result.empty:
-                raise ValueError(
-                    f"Failed to retrieve data type for {local_key} in {relation.dot_notation}."
-                )
-
-            local_key_type = local_key_type_query_result["data_type"][0].strip()
-            logger.debug(f"Local key type: {local_key_type}")
-            logger.debug(f"Casting remote key using {remote_key}::{local_key_type}")
-            return f"{remote_key}::{local_key_type}"
+            logger.debug("Casting remote key %s to VARCHAR.", remote_key)
+            return f"{remote_key}::VARCHAR"
         return remote_key
 
     def predicate_constraint_statement(
