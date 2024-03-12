@@ -387,9 +387,7 @@ LIMIT {max_number_of_outliers})
     ) -> str:
         """Builds 'where' strings."""
         try:
-            formatted_remote_key = self.format_remote_key(
-                relation, local_key, remote_key
-            )
+            formatted_remote_key = self.format_remote_key(relation, remote_key)
             if analyze:
                 return (
                     f"{local_key} IN ( SELECT {formatted_remote_key} AS {local_key} "
