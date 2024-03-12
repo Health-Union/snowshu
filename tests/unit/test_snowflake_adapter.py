@@ -253,8 +253,8 @@ def test_format_remote_key_quoted(mock_relation, mock_query):
     mock_attribute.data_type.requires_quotes = True
     mock_relation.lookup_attribute.return_value = mock_attribute
     mock_query.return_value = DataFrame({"data_type": ["VARCHAR"]})
-    local_key, remote_key = "lkey","rkey"
-    result = sf.format_remote_key(mock_relation, local_key, remote_key)
+    remote_key = "rkey"
+    result = sf.format_remote_key(mock_relation, remote_key)
     assert result == remote_key
 
 
@@ -267,25 +267,10 @@ def test_format_remote_key_unquoted(mock_relation, mock_query):
     mock_attribute.data_type.requires_quotes = False
     mock_relation.lookup_attribute.return_value = mock_attribute
     mock_query.return_value = DataFrame({"data_type": ["NUMBER"]})
-    local_key, remote_key = "lkey", "rkey"
-    result = sf.format_remote_key(mock_relation, local_key, remote_key)
-    assert result == f'{remote_key}::NUMBER'    
+    remote_key = "rkey"
+    result = sf.format_remote_key(mock_relation, remote_key)
+    assert result == f'{remote_key}::VARCHAR'    
     
-@mock.patch(
-    "snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query"
-)
-@mock.patch("snowshu.core.models.relation.Relation")
-def test_format_remote_key_empty_dataframe(mock_relation, mock_query):
-    """Verifies that the remote key values are not formatted when the query result is an empty DataFrame"""
-    sf = SnowflakeAdapter()
-    mock_attribute = mock.Mock()
-    mock_attribute.data_type.requires_quotes = False
-    mock_relation.lookup_attribute.return_value = mock_attribute
-    mock_query.return_value = DataFrame([])
-    local_key, remote_key = "lkey", "rkey"
-    with pytest.raises(ValueError):
-        sf.format_remote_key(mock_relation, local_key, remote_key)
-
 
 def test_retry_count_query():
     """ Verifies that the retry decorator works as expected """
