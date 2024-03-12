@@ -8,6 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Tuple, Set, List
 import logging
+import sqlalchemy.exc
 
 import networkx as nx
 
@@ -41,14 +42,16 @@ class GraphSetRunner:
     def __init__(self):
         self.barf = None
 
-    def execute_graph_set(self,     # noqa pylint: disable=too-many-arguments
-                          graph_set: Tuple[nx.Graph],
-                          source_adapter: BaseSourceAdapter,
-                          target_adapter: BaseTargetAdapter,
-                          threads: int,
-                          retry_count: int,
-                          analyze: bool = False,
-                          barf: bool = False) -> None:
+    def execute_graph_set(
+        self,  # noqa pylint: disable=too-many-arguments
+        graph_set: Tuple[nx.Graph],
+        source_adapter: BaseSourceAdapter,
+        target_adapter: BaseTargetAdapter,
+        threads: int,
+        retry_count: int,
+        analyze: bool = False,
+        barf: bool = False,
+    ) -> None:
         """ Processes the given graphs in parallel based on the provided adapters
 
             Args:
@@ -70,27 +73,33 @@ class GraphSetRunner:
         table_graph_set = list(set(graph_set) - set(view_graph_set))
 
         # Tables need to come first to prevent deps deadlocks with views
-        for graphs in [table_graph_set, view_graph_set]:
-            with ThreadPoolExecutor(max_workers=threads) as executor:
-                if graphs:
-                    executables = [GraphExecutable(graph,
-                                                   source_adapter,
-                                                   target_adapter,
-                                                   analyze)
-                                   for graph in graphs]
-                    self.process_executables(executables,
-                                             executor,
-                                             retry_count)
+        try:
+            for graphs in [table_graph_set, view_graph_set]:
+                with ThreadPoolExecutor(max_workers=threads) as executor:
+                    if graphs:
+                        executables = [
+                            GraphExecutable(
+                                graph, source_adapter, target_adapter, analyze
+                            )
+                            for graph in graphs
+                        ]
+                        self.process_executables(executables, executor, retry_count)
+        except KeyboardInterrupt:
+            logger.error(
+                "Execution interrupted by user, wait for schemas to be dropped..."
+            )
+        finally:
+            # Drop schemas after all threads completed work
+            for schema in self.schemas:
+                source_adapter.drop_schema(schema)
+            self.schemas.clear()
 
-        # Drop schemas after all threads completed work
-        for schema in self.schemas:
-            source_adapter.drop_schema(schema)
-        self.schemas.clear()
-
-    def process_executables(self,
-                            executables: List[GraphExecutable],
-                            executor: ThreadPoolExecutor,
-                            retries: int) -> None:
+    def process_executables(
+        self,
+        executables: List[GraphExecutable],
+        executor: ThreadPoolExecutor,
+        retries: int,
+    ) -> None:
         """
         Executes a list of GraphExecutable tasks concurrently using a ThreadPoolExecutor.
         If any task fails due to an exception, it is retried a specified number of times.
@@ -117,16 +126,21 @@ class GraphSetRunner:
             for future in completed:
                 executable = futures[future]
                 if exception := future.exception():
-                    logger.warning("Concurrent thread finished work with exception:\n%s: %s",
-                                   str(exception.__class__),
-                                   str(exception))
+                    logger.warning(
+                        "Concurrent thread finished work with exception:\n%s: %s",
+                        str(exception.__class__),
+                        str(exception),
+                    )
                     re_executables.append(executable)
 
             if not re_executables:
                 return  # Success
 
-            logging.error("Failed because '%i' executables can't be finished successfully:\n%s",
-                          len(re_executables), str(re_executables))
+            logging.error(
+                "Failed because '%i' executables can't be finished successfully:\n%s",
+                len(re_executables),
+                str(re_executables),
+            )
             executables = re_executables
             retries -= 1
         logging.error("Max retries reached. Some executables failed.")
@@ -222,36 +236,41 @@ class GraphSetRunner:
                         logger.info('Successfully extracted DDL statement for view '
                                     f'{executable.target_adapter.quoted_dot_notation(relation)}')
                     else:
+                        executable.source_adapter.create_table(
+                            query=relation.compiled_query,
+                            name=relation.name,
+                            schema=relation.temp_schema,
+                            database=relation.temp_database,
+                        )
+                        
                         logger.info(
-                            f'Retrieving records from source {relation.temp_dot_notation}...')
-                        try:
-                            executable.source_adapter.create_table(
-                                query=relation.compiled_query,
-                                name=relation.name,
-                                schema=relation.temp_schema,
-                                database=relation.temp_database,
-                            )
-                            fetch_query = f"SELECT * FROM {relation.temp_dot_notation}"
-                            query_data = executable.source_adapter.check_count_and_query(
-                                fetch_query, relation.sampling.max_allowed_rows, relation.unsampled)
-                        except Exception as exc:
-                            raise SystemError(
-                                f'Failed execution of extraction sql statement: {relation.compiled_query} {exc}') \
-                                from exc
-
+                            f"Retrieving records from source {relation.temp_dot_notation}..."
+                        )
+                        fetch_query = f"SELECT * FROM {relation.temp_dot_notation}"
+                        query_data = executable.source_adapter.check_count_and_query(
+                            fetch_query,
+                            relation.sampling.max_allowed_rows,
+                            relation.unsampled,
+                        )
                         relation.sample_size = len(query_data)
                         logger.info(
-                            f'{relation.sample_size} records retrieved for relation {relation.dot_notation}.')
+                            f"{relation.sample_size} records retrieved for relation {relation.dot_notation}."
+                        )
 
-                    logger.info(f'Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}'
-                                ' into target...')
+                    logger.info(
+                        f"Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}"
+                        " into target..."
+                    )
                     try:
                         executable.target_adapter.create_and_load_relation(
-                            relation, query_data)
+                            relation, query_data
+                        )
                     except Exception as exc:
-                        raise SystemError('Failed to load relation '
-                                          f'{executable.target_adapter.quoted_dot_notation(relation)} '
-                                          f' into target: {exc}') from exc
+                        raise SystemError(
+                            "Failed to load relation "
+                            f"{executable.target_adapter.quoted_dot_notation(relation)} "
+                            f" into target: {exc}"
+                        ) from exc
 
                     logger.info('Done replication of relation '
                                 f'{executable.target_adapter.quoted_dot_notation(relation)} '
@@ -263,6 +282,7 @@ class GraphSetRunner:
                 if self.barf:
                     with open(os.path.join(self.barf_output, f'{relation.dot_notation}.sql'), 'w') as barf_file:  # noqa pylint: disable=unspecified-encoding
                         barf_file.write(relation.compiled_query)
+
             gc.collect()
         except Exception as exc:
             logger.error(f'failed with error of type {type(exc)}: {str(exc)}')
