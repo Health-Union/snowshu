@@ -8,7 +8,6 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Tuple, Set, List
 import logging
-import sqlalchemy.exc
 
 import networkx as nx
 
@@ -42,8 +41,8 @@ class GraphSetRunner:
     def __init__(self):
         self.barf = None
 
-    def execute_graph_set(
-        self,  # noqa pylint: disable=too-many-arguments
+    def execute_graph_set(  # noqa pylint: disable=too-many-arguments
+        self,  
         graph_set: Tuple[nx.Graph],
         source_adapter: BaseSourceAdapter,
         target_adapter: BaseTargetAdapter,
@@ -165,7 +164,7 @@ class GraphSetRunner:
                 adapter.generate_schema(name, database)
                 self.schemas.add(name)
 
-    def _traverse_and_execute(self, executable: GraphExecutable) -> None:  # noqa: pylint: disable=too-many-statements
+    def _traverse_and_execute(self, executable: GraphExecutable) -> None:  
         """ Processes a single graph and loads the data into the replica if required
 
             To save memory after processing, the loaded dataframes are deleted, and
@@ -242,7 +241,7 @@ class GraphSetRunner:
                             schema=relation.temp_schema,
                             database=relation.temp_database,
                         )
-                        
+
                         logger.info(
                             f"Retrieving records from source {relation.temp_dot_notation}..."
                         )
