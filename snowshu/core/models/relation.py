@@ -34,7 +34,6 @@ class Relation:
     max_number_of_outliers: int = DEFAULT_MAX_NUMBER_OF_OUTLIERS
     temp_database: str = DEFAULT_TEMPORARY_DATABASE
     temp_schema: Optional[str] = None
-    temp_name: Optional[str] = None
 
     def __init__(self,  # noqa pylint: disable=too-many-arguments
                  database: str,
