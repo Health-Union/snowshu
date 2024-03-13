@@ -105,12 +105,10 @@ class Relation:
             missing.append("relation.temp_database")
         if not self.temp_schema:
             missing.append("relation.temp_schema")
-        if not self.temp_name:
-            missing.append("relation.temp_name")
         if missing:
             raise ValueError(
                 f"Cannot create temp dot notation. Missing {', '.join(missing)}")
-        return f"{self.temp_database}.{self.temp_schema}.{self.temp_name}"
+        return f"{self.temp_database}.{self.temp_schema}.{self.name}"
 
     @property
     def star(self) -> str:

@@ -2,6 +2,7 @@ import gc
 import os
 import shutil
 import time
+import json
 import threading
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
@@ -168,17 +169,13 @@ class GraphSetRunner:
                                    'wb'
                                 ) as cmp_file:
                 nx.write_multiline_adjlist(executable.graph, cmp_file)
-        logger.info(executable)
-        logger.info(executable.graph)
         try:
             logger.debug(
                 f"Executing graph with {len(executable.graph)} relations in it...")
             sorted_graphs = nx.algorithms.dag.topological_sort(executable.graph)
             for i, relation in enumerate(sorted_graphs, start=1):
-
-                relation.temp_schema = "_".join([relation.schema, self.uuid])
-                relation.temp_name = "_".join(
-                    [relation.name, utils.generate_unique_uuid()]
+                relation.temp_schema = "_".join(
+                    [relation.database, relation.schema, self.uuid]
                 )
                 self._generate_schemas_if_necessary(
                     executable.source_adapter, relation.temp_schema, relation.temp_database
@@ -229,7 +226,7 @@ class GraphSetRunner:
                     else:
                         executable.source_adapter.create_table(
                             query=relation.compiled_query,
-                            name=relation.temp_name,
+                            name=relation.name,
                             schema=relation.temp_schema,
                             database=relation.temp_database,
                         )
@@ -250,9 +247,23 @@ class GraphSetRunner:
                             logger.info(
                                 f"{relation.sample_size} records retrieved for relation {relation.dot_notation}."
                             )
+                        # This except block is necessary due to VARIANT data type issues
+                        # in Snowflake. In the future, we should remove this and find a
+                        # better solution. 
+                        except json.decoder.JSONDecodeError as exc:
+                            logger.error(
+                                f"Failed to retrieve records from source {relation.temp_dot_notation} with query: {fetch_query}"
+                            )
+                            logger.error(f"Issue details: {exc}")
+                            logger.error(
+                                f"Skipping relation insert {relation.dot_notation}"
+                            )
+                            continue
+
                         except Exception as exc:
                             raise SystemError(
                                 f"Failed to retrieve records from source {relation.temp_dot_notation} with query: {fetch_query}"
+                                f" issue details: {exc}"
                             ) from exc
 
                     logger.info(f'Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}'
