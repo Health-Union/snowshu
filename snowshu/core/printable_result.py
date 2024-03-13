@@ -65,7 +65,7 @@ def process_relation(graph, relation):
             exc,
         )
     finally:
-        return ReportRow(
+        return ReportRow(  # noqa: pylint: disable=lost-exception
             relation.dot_notation,
             relation.population_size,
             target_sample_size,
