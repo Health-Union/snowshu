@@ -29,67 +29,63 @@ class ReportRow:
                 )
 
 
+def process_relation(graph, relation):
+    sample_size = "N/A"
+    percent = "N/A"
+    percent_is_acceptable = False
+    target_sample_size = "N/A"
+
+    try:
+        deps = len(nx.ancestors(graph, relation))
+        deps = " " if deps == 0 else str(deps)
+
+        if isinstance(relation.population_size, str):
+            target_sample_size = "N/A"
+            percent = "N/A"
+        elif int(relation.population_size) < 1:
+            percent = 0
+            target_sample_size = relation.population_size
+        else:
+            target_sample_size = (
+                relation.population_size
+                if relation.unsampled
+                or (relation.population_size < relation.sampling.size)
+                else relation.sampling.size
+            )
+            percent = int(round(100.0 * (relation.sample_size / target_sample_size)))
+
+        percent_is_acceptable = (
+            True if isinstance(percent, str) else abs(percent - 100) <= 5
+        )
+        sample_size = relation.sample_size
+    except AttributeError as exc:
+        logger.error(
+            "Failure in building row for relation %s : %s",
+            relation.dot_notation,
+            exc,
+        )
+    finally:
+        return ReportRow(
+            relation.dot_notation,
+            relation.population_size,
+            target_sample_size,
+            sample_size,
+            deps,
+            percent,
+            percent_is_acceptable,
+        )
+
+
 def graph_to_result_list(graphs: nx.Graph) -> list:
     report = []
     for graph in graphs:
-        try:
-            for relation in graph.nodes:
-                # This try except block should be removed when we have a solution
-                # for the issue in the except block.
-                try:
-                    deps = len(nx.ancestors(graph, relation))
-                    deps = " " if deps == 0 else str(deps)
-
-                    if isinstance(relation.population_size, str):
-                        target_sample_size = "N/A"
-                        percent = "N/A"
-                    elif int(relation.population_size) < 1:
-                        percent = 0
-                        target_sample_size = relation.population_size
-                    else:
-                        target_sample_size = (
-                            relation.population_size
-                            if relation.unsampled
-                            or (relation.population_size < relation.sampling.size)
-                            else relation.sampling.size
-                        )
-                        percent = int(
-                            round(100.0 * (relation.sample_size / target_sample_size))
-                        )
-
-                    percent_is_acceptable = (
-                        True if isinstance(percent, str) else abs(percent - 100) <= 5
-                    )
-                    sample_size = relation.sample_size
-                except AttributeError as exc:
-                    logger.error(
-                        "Failure in building row for relation %s : %s",
-                        relation.dot_notation,
-                        exc,
-                    )
-                    sample_size = "N/A"
-                    percent = "N/A"
-                    continue
-                finally:
-                    report.append(
-                        ReportRow(
-                            relation.dot_notation,
-                            relation.population_size,
-                            target_sample_size,
-                            sample_size,
-                            deps,
-                            percent,
-                            percent_is_acceptable,
-                        )
-                    )
-        except Exception as exc:
-            message = (
-                f"failure in building row for relation {relation.dot_notation} : {exc}"
-            )
-            logger.critical(message)
-            raise ValueError(message)  # noqa: pylint: disable=raise-missing-from
-        finally:
-            pass
+        for relation in graph.nodes:
+            try:
+                report.append(process_relation(graph, relation))
+            except Exception as exc:
+                message = f"failure in building row for relation {relation.dot_notation} : {exc}"
+                logger.critical(message)
+                raise ValueError(message)  # noqa: pylint: disable=raise-missing-from
     return report
 
 

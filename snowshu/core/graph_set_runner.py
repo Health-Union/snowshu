@@ -252,7 +252,8 @@ class GraphSetRunner:
                         # better solution. 
                         except json.decoder.JSONDecodeError as exc:
                             logger.error(
-                                f"Failed to retrieve records from source {relation.temp_dot_notation} with query: {fetch_query}"
+                                f"Failed to retrieve records from source {relation.temp_dot_notation} "
+                                f"with query: {fetch_query}"
                             )
                             logger.error(f"Issue details: {exc}")
                             logger.error(
@@ -262,8 +263,9 @@ class GraphSetRunner:
 
                         except Exception as exc:
                             raise SystemError(
-                                f"Failed to retrieve records from source {relation.temp_dot_notation} with query: {fetch_query}"
-                                f" issue details: {exc}"
+                                f"Failed to retrieve records from source {relation.temp_dot_notation} "
+                                f"with query: {fetch_query} "
+                                f"issue details: {exc}"
                             ) from exc
 
                     logger.info(f'Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}'
