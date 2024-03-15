@@ -178,14 +178,14 @@ class GraphSetRunner:
     def _process_relation(
         self, i: int, relation: Relation, executable: GraphExecutable
     ) -> None:
-    """Processes a single relation in the graph, extracting and loading it into the target
+        """Processes a single relation in the graph, extracting and loading it into the target
     
-    Args:
-        i (int): index of the relation in the graph
-        relation (Relation): relation to process
-        executable (GraphExecutable): object that contains all of the necessary info for
-            executing a sample and loading it into the target
-    """
+        Args:
+            i (int): index of the relation in the graph
+            relation (Relation): relation to process
+            executable (GraphExecutable): object that contains all of the necessary info for
+                executing a sample and loading it into the target
+        """
         relation.temp_schema = "_".join([relation.database, relation.schema, self.uuid])
 
         start_time = time.time()
