@@ -8,8 +8,6 @@ from pandas.core.frame import DataFrame
 from psycopg2 import OperationalError
 
 from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter
-from snowshu.core.models import data_types
-from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.credentials import Credentials
 from snowshu.core.models.materializations import TABLE
 from snowshu.core.models.relation import Relation
@@ -89,8 +87,8 @@ FROM
     SAMPLE BERNOULLI (10)
 """)
 
-
-def test_directional_statement():
+@mock.patch.object(SnowflakeAdapter, 'format_remote_key')
+def test_directional_statement(mock_format_remote_key):
     sf = SnowflakeAdapter()
     DATABASE, SCHEMA, TABLE, LOCAL_KEY, REMOTE_KEY = [
         rand_string(10) for _ in range(5)]
@@ -106,6 +104,7 @@ FROM
     {DATABASE}.{SCHEMA}.{TABLE}
     SAMPLE BERNOULLI (10)
 """
+    mock_format_remote_key.return_value = REMOTE_KEY
     statement = sf.predicate_constraint_statement(
         relation, True, LOCAL_KEY, REMOTE_KEY)
     assert query_equalize(statement) == query_equalize(f"""
@@ -184,41 +183,94 @@ FROM
     {relmock.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
 """)
 
-
+@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key')
 @mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
 @mock.patch('snowshu.core.models.relation.Relation')
-def test_predicate_constraint_statement_analyze_false_non_empty_constraint_set(mock_relation, mock_query):
+def test_predicate_constraint_statement_analyze_false_quoted_non_empty_constraint_set(mock_relation, mock_query, mock_format_remote_key):
     """ Given non empty constraint set and analyze=False we expect a predicate constraint statement """
     sf = SnowflakeAdapter()
+    mock_format_remote_key.return_value = "remote_key::VARCHAR"
     mock_relation.temp_dot_notation = 'mock_dot_notation'
     mock_query.return_value = DataFrame(['1, 2, 3'])
     result = sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
-    assert query_equalize(result) == query_equalize("local_key IN ( SELECT DISTINCT remote_key FROM mock_dot_notation LIMIT 16384) ")
+    assert query_equalize(result) == query_equalize("local_key IN ( SELECT DISTINCT remote_key::VARCHAR FROM mock_dot_notation LIMIT 16384) ")
+
+    
+@mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key")
+@mock.patch(
+    "snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query"
+)
+@mock.patch("snowshu.core.models.relation.Relation")
+def test_predicate_constraint_statement_analyze_false_unquoted_non_empty_constraint_set(
+    mock_relation, mock_query, mock_format_remote_key
+):
+    """Given non empty constraint set and analyze=False we expect a predicate constraint statement"""
+    sf = SnowflakeAdapter()
+    mock_format_remote_key.return_value = "remote_key"
+    mock_relation.temp_dot_notation = "mock_dot_notation"
+    mock_query.return_value = DataFrame(["1, 2, 3"])
+    result = sf.predicate_constraint_statement(
+        mock_relation, False, "local_key", "remote_key"
+    )
+    assert query_equalize(result) == query_equalize(
+        "local_key IN ( SELECT DISTINCT remote_key FROM mock_dot_notation LIMIT 16384) "
+    )
 
 
+@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key')
 @mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
 @mock.patch('snowshu.core.models.relation.Relation')
-def test_predicate_constraint_statement_analyze_false_empty_constraint_set(mock_relation, mock_query):
+def test_predicate_constraint_statement_analyze_false_empty_constraint_set(mock_relation, mock_query, mock_format_remote_key):
     """
     Given empty constraint set and analyze=False we expect a predicate constraint statement
     with a IndexError raised
     """
     sf = SnowflakeAdapter()
+    mock_format_remote_key.return_value = 'remote_key'
     mock_relation.temp_dot_notation = 'mock_dot_notation'
     mock_query.return_value = DataFrame([])
     with pytest.raises(IndexError, match=f"Failed to build predicates, the constraint set is empty."):
         sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
 
 
+@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key')
 @mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
 @mock.patch('snowshu.core.models.relation.Relation')
-def test_predicate_constraint_statement_analyze_false_key_error(mock_relation, mock_safe_query):
+def test_predicate_constraint_statement_analyze_false_key_error(mock_relation, mock_safe_query, mock_format_remote_key):
     sf = SnowflakeAdapter()
+    mock_format_remote_key.return_value = 'remote_key'
     mock_relation.temp_dot_notation = 'mock_dot_notation'
     mock_safe_query.side_effect = KeyError()
     with pytest.raises(KeyError, match=r"Remote key remote_key not found in mock_dot_notation table."):
         sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
+        
+@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')    
+@mock.patch("snowshu.core.models.relation.Relation")
+def test_format_remote_key_quoted(mock_relation, mock_query):
+    """ Verifies that the remote key values is formatted to VARCHAR if it's a type that requires quotes """
+    sf = SnowflakeAdapter()
+    mock_attribute = mock.Mock()
+    mock_attribute.data_type.requires_quotes = True
+    mock_relation.lookup_attribute.return_value = mock_attribute
+    mock_query.return_value = DataFrame({"data_type": ["VARCHAR"]})
+    remote_key = "rkey"
+    result = sf.format_remote_key(mock_relation, remote_key)
+    assert result == remote_key
 
+
+@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
+@mock.patch("snowshu.core.models.relation.Relation")
+def test_format_remote_key_unquoted(mock_relation, mock_query):
+    """ Verifies that the remote key values is NOT formatted, if it's a type that does not require quotes"""
+    sf = SnowflakeAdapter()
+    mock_attribute = mock.Mock()
+    mock_attribute.data_type.requires_quotes = False
+    mock_relation.lookup_attribute.return_value = mock_attribute
+    mock_query.return_value = DataFrame({"data_type": ["NUMBER"]})
+    remote_key = "rkey"
+    result = sf.format_remote_key(mock_relation, remote_key)
+    assert result == f'{remote_key}::VARCHAR'    
+    
 
 def test_retry_count_query():
     """ Verifies that the retry decorator works as expected """
