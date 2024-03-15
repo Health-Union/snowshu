@@ -66,7 +66,7 @@ class RuntimeSourceCompiler:
                     edge = dag.edges[parent, relation, key]
                     # if any incoming edge is bidirectional or polymorphic set do_not_sample flag
                     # do_not_sample is set since those types are most likely already restricted
-                    do_not_sample = (edge['direction'] in ('bidirectional', 'polymorphic',) or do_not_sample)
+                    do_not_sample = (edge['direction'] in ('polymorphic',) or do_not_sample)
                     if edge['direction'] == 'polymorphic':
                         # if the local type attribute is set, the constraint needs to account for it
                         # otherwise we only need the normal predicate constraint
