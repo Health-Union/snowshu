@@ -163,6 +163,7 @@ class GraphSetRunner:
                 self.schemas.add(name)
 
     def _write_adjlist_if_necessary(self, executable: GraphExecutable) -> None:
+        """ Writes the graph to disk in adjlist format if the barf flag is set"""
         if self.barf:
             with open(
                 os.path.join(
@@ -177,6 +178,14 @@ class GraphSetRunner:
     def _process_relation(
         self, i: int, relation: Relation, executable: GraphExecutable
     ) -> None:
+    """Processes a single relation in the graph, extracting and loading it into the target
+    
+    Args:
+        i (int): index of the relation in the graph
+        relation (Relation): relation to process
+        executable (GraphExecutable): object that contains all of the necessary info for
+            executing a sample and loading it into the target
+    """
         relation.temp_schema = "_".join([relation.database, relation.schema, self.uuid])
 
         start_time = time.time()
@@ -313,10 +322,7 @@ class GraphSetRunner:
                 barf_file.write(relation.compiled_query)
 
     def _traverse_and_execute(self, executable: GraphExecutable) -> None:
-        """Processes a single graph and loads the data into the replica if required
-
-        To save memory after processing, the loaded dataframes are deleted, and
-        garbage collection manually called.
+        """Processes the given graph in topological order, executing each relation in turn
 
         Args:
             executable (GraphExecutable): object that contains all of the necessary info for
