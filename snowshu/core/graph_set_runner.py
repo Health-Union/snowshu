@@ -179,7 +179,7 @@ class GraphSetRunner:
         self, i: int, relation: Relation, executable: GraphExecutable
     ) -> None:
         """Processes a single relation in the graph, extracting and loading it into the target
-    
+
         Args:
             i (int): index of the relation in the graph
             relation (Relation): relation to process
