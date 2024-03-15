@@ -12,6 +12,7 @@ import logging
 
 import networkx as nx
 
+from snowshu.core.models import Relation
 from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
 from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
 from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
@@ -161,6 +162,155 @@ class GraphSetRunner:
                 adapter.generate_schema(name, database)
                 self.schemas.add(name)
 
+    def _write_adjlist_if_necessary(self, executable: GraphExecutable) -> None:
+        if self.barf:
+            with open(
+                os.path.join(
+                    self.barf_output,
+                    f"{next(iter(executable.graph.nodes)).dot_notation}.component",
+                ),
+                "wb",
+                encoding="utf-8",
+            ) as cmp_file:
+                nx.write_multiline_adjlist(executable.graph, cmp_file)
+
+    def _process_relation(
+        self, i: int, relation: Relation, executable: GraphExecutable
+    ) -> None:
+        relation.temp_schema = "_".join([relation.database, relation.schema, self.uuid])
+
+        start_time = time.time()
+        self._generate_schemas_if_necessary(
+            executable.source_adapter,
+            relation.temp_schema,
+            relation.temp_database,
+        )
+
+        relation.population_size = executable.source_adapter.scalar_query(
+            executable.source_adapter.population_count_statement(relation)
+        )
+        logger.info(
+            f"Executing source query for relation {relation.dot_notation} "
+            f"({i} of {len(executable.graph)} in graph)..."
+        )
+
+        relation.sampling.prepare(relation, executable.source_adapter)
+        relation = RuntimeSourceCompiler.compile_queries_for_relation(
+            relation,
+            executable.graph,
+            executable.source_adapter,
+            executable.analyze,
+        )
+        if executable.analyze:
+            if relation.is_view:
+                relation.population_size = "N/A"
+                relation.sample_size = "N/A"
+                logger.info(f"Relation {relation.dot_notation} is a view, skipping.")
+            else:
+                result = executable.source_adapter.check_count_and_query(
+                    relation.compiled_query,
+                    relation.sampling.max_allowed_rows,
+                    relation.unsampled,
+                ).iloc[0]
+                relation.population_size = result.population_size
+                relation.sample_size = result.sample_size
+                logger.info(
+                    f"Analysis of relation {relation.dot_notation} completed in {duration(start_time)}."
+                )
+        else:
+            executable.target_adapter.create_database_if_not_exists(relation.database)
+            executable.target_adapter.create_schema_if_not_exists(
+                relation.database, relation.schema
+            )
+            if relation.is_view:
+                logger.info(
+                    f"Retrieving DDL statement for view {relation.dot_notation} in source..."
+                )
+                relation.population_size = "N/A"
+                relation.sample_size = "N/A"
+                try:
+                    relation.view_ddl = executable.source_adapter.scalar_query(
+                        relation.compiled_query
+                    )
+                except Exception as exc:
+                    raise SystemError(
+                        f"Failed to extract DDL statement: {relation.compiled_query}"
+                    ) from exc
+                logger.info(
+                    "Successfully extracted DDL statement for view "
+                    f"{executable.target_adapter.quoted_dot_notation(relation)}"
+                )
+            else:
+                executable.source_adapter.create_table(
+                    query=relation.compiled_query,
+                    name=relation.name,
+                    schema=relation.temp_schema,
+                    database=relation.temp_database,
+                )
+
+                try:
+                    logger.info(
+                        f"Retrieving records from source {relation.temp_dot_notation}..."
+                    )
+                    fetch_query = f"SELECT * FROM {relation.temp_dot_notation}"
+                    query_data = executable.source_adapter.check_count_and_query(
+                        fetch_query,
+                        relation.sampling.max_allowed_rows,
+                        relation.unsampled,
+                    )
+                    relation.sample_size = len(query_data)
+                    logger.info(
+                        f"{relation.sample_size} records retrieved for relation {relation.dot_notation}."
+                    )
+                # This except block is necessary due to VARIANT data type issues
+                # in Snowflake. In the future, we should remove this and find a
+                # better solution.
+                except json.decoder.JSONDecodeError as exc:
+                    logger.error(
+                        f"Failed to retrieve records from source {relation.temp_dot_notation} "
+                        f"with query: {fetch_query}"
+                    )
+                    logger.error(f"Issue details: {exc}")
+                    logger.error(f"Skipping relation insert {relation.dot_notation}")
+                    return  # Return early to avoid inserting empty relation
+
+                except Exception as exc:
+                    raise SystemError(
+                        f"Failed to retrieve records from source {relation.temp_dot_notation} "
+                        f"with query: {fetch_query} "
+                        f"issue details: {exc}"
+                    ) from exc
+
+            logger.info(
+                f"Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}"
+                " into target..."
+            )
+            try:
+                executable.target_adapter.create_and_load_relation(relation, query_data)
+            except Exception as exc:
+                raise SystemError(
+                    "Failed to load relation "
+                    f"{executable.target_adapter.quoted_dot_notation(relation)} "
+                    f" into target: {exc}"
+                ) from exc
+
+            logger.info(
+                "Done replication of relation "
+                f"{executable.target_adapter.quoted_dot_notation(relation)} "
+                f" in {duration(start_time)}."
+            )
+            relation.target_loaded = True
+        relation.source_extracted = True
+        logger.info(
+            f"population:{relation.population_size}, sample:{relation.sample_size}"
+        )
+        if self.barf:
+            with open(
+                os.path.join(self.barf_output, f"{relation.dot_notation}.sql"),
+                "w",
+            ) as barf_file:  # noqa pylint: disable=unspecified-encoding
+                barf_file.write(relation.compiled_query)
+
     def _traverse_and_execute(self, executable: GraphExecutable) -> None:
         """Processes a single graph and loads the data into the replica if required
 
@@ -171,166 +321,14 @@ class GraphSetRunner:
             executable (GraphExecutable): object that contains all of the necessary info for
                 executing a sample and loading it into the target
         """
-        start_time = time.time()
-        if self.barf:
-            with open(
-                os.path.join(
-                    self.barf_output,
-                    f"{[n for n in executable.graph.nodes][0].dot_notation}.component",
-                ),  # noqa: pylint: disable=unnecessary-comprehension
-                "wb",
-            ) as cmp_file:
-                nx.write_multiline_adjlist(executable.graph, cmp_file)
+        self._write_adjlist_if_necessary(executable)
         try:
             logger.debug(
                 f"Executing graph with {len(executable.graph)} relations in it..."
             )
             sorted_graphs = nx.algorithms.dag.topological_sort(executable.graph)
             for i, relation in enumerate(sorted_graphs, start=1):
-                relation.temp_schema = "_".join(
-                    [relation.database, relation.schema, self.uuid]
-                )
-                self._generate_schemas_if_necessary(
-                    executable.source_adapter,
-                    relation.temp_schema,
-                    relation.temp_database,
-                )
-
-                relation.population_size = executable.source_adapter.scalar_query(
-                    executable.source_adapter.population_count_statement(relation)
-                )
-                logger.info(
-                    f"Executing source query for relation {relation.dot_notation} "
-                    f"({i} of {len(executable.graph)} in graph)..."
-                )
-
-                relation.sampling.prepare(relation, executable.source_adapter)
-                relation = RuntimeSourceCompiler.compile_queries_for_relation(
-                    relation,
-                    executable.graph,
-                    executable.source_adapter,
-                    executable.analyze,
-                )
-                if executable.analyze:
-                    if relation.is_view:
-                        relation.population_size = "N/A"
-                        relation.sample_size = "N/A"
-                        logger.info(
-                            f"Relation {relation.dot_notation} is a view, skipping."
-                        )
-                    else:
-                        result = executable.source_adapter.check_count_and_query(
-                            relation.compiled_query,
-                            relation.sampling.max_allowed_rows,
-                            relation.unsampled,
-                        ).iloc[0]
-                        relation.population_size = result.population_size
-                        relation.sample_size = result.sample_size
-                        logger.info(
-                            f"Analysis of relation {relation.dot_notation} completed in {duration(start_time)}."
-                        )
-                else:
-                    executable.target_adapter.create_database_if_not_exists(
-                        relation.database
-                    )
-                    executable.target_adapter.create_schema_if_not_exists(
-                        relation.database, relation.schema
-                    )
-                    if relation.is_view:
-                        logger.info(
-                            f"Retrieving DDL statement for view {relation.dot_notation} in source..."
-                        )
-                        relation.population_size = "N/A"
-                        relation.sample_size = "N/A"
-                        try:
-                            relation.view_ddl = executable.source_adapter.scalar_query(
-                                relation.compiled_query
-                            )
-                        except Exception as exc:
-                            raise SystemError(
-                                f"Failed to extract DDL statement: {relation.compiled_query}"
-                            ) from exc
-                        logger.info(
-                            "Successfully extracted DDL statement for view "
-                            f"{executable.target_adapter.quoted_dot_notation(relation)}"
-                        )
-                    else:
-                        executable.source_adapter.create_table(
-                            query=relation.compiled_query,
-                            name=relation.name,
-                            schema=relation.temp_schema,
-                            database=relation.temp_database,
-                        )
-
-                        try:
-                            logger.info(
-                                f"Retrieving records from source {relation.temp_dot_notation}..."
-                            )
-                            fetch_query = f"SELECT * FROM {relation.temp_dot_notation}"
-                            query_data = (
-                                executable.source_adapter.check_count_and_query(
-                                    fetch_query,
-                                    relation.sampling.max_allowed_rows,
-                                    relation.unsampled,
-                                )
-                            )
-                            relation.sample_size = len(query_data)
-                            logger.info(
-                                f"{relation.sample_size} records retrieved for relation {relation.dot_notation}."
-                            )
-                        # This except block is necessary due to VARIANT data type issues
-                        # in Snowflake. In the future, we should remove this and find a
-                        # better solution.
-                        except json.decoder.JSONDecodeError as exc:
-                            logger.error(
-                                f"Failed to retrieve records from source {relation.temp_dot_notation} "
-                                f"with query: {fetch_query}"
-                            )
-                            logger.error(f"Issue details: {exc}")
-                            logger.error(
-                                f"Skipping relation insert {relation.dot_notation}"
-                            )
-                            continue
-
-                        except Exception as exc:
-                            raise SystemError(
-                                f"Failed to retrieve records from source {relation.temp_dot_notation} "
-                                f"with query: {fetch_query} "
-                                f"issue details: {exc}"
-                            ) from exc
-
-                    logger.info(
-                        f"Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}"
-                        " into target..."
-                    )
-                    try:
-                        executable.target_adapter.create_and_load_relation(
-                            relation, query_data
-                        )
-                    except Exception as exc:
-                        raise SystemError(
-                            "Failed to load relation "
-                            f"{executable.target_adapter.quoted_dot_notation(relation)} "
-                            f" into target: {exc}"
-                        ) from exc
-
-                    logger.info(
-                        "Done replication of relation "
-                        f"{executable.target_adapter.quoted_dot_notation(relation)} "
-                        f" in {duration(start_time)}."
-                    )
-                    relation.target_loaded = True
-                relation.source_extracted = True
-                logger.info(
-                    f"population:{relation.population_size}, sample:{relation.sample_size}"
-                )
-                if self.barf:
-                    with open(
-                        os.path.join(self.barf_output, f"{relation.dot_notation}.sql"),
-                        "w",
-                    ) as barf_file:  # noqa pylint: disable=unspecified-encoding
-                        barf_file.write(relation.compiled_query)
-
+                self._process_relation(i, relation, executable)
             gc.collect()
         except Exception as exc:
             logger.error(f"failed with error of type {type(exc)}: {str(exc)}")
