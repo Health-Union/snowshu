@@ -308,7 +308,8 @@ class GraphSetRunner:
             with open(
                 os.path.join(self.barf_output, f"{relation.dot_notation}.sql"),
                 "w",
-            ) as barf_file:  # noqa pylint: disable=unspecified-encoding
+                encoding="utf-8",
+            ) as barf_file: 
                 barf_file.write(relation.compiled_query)
 
     def _traverse_and_execute(self, executable: GraphExecutable) -> None:
