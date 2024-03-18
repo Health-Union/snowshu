@@ -11,5 +11,5 @@ apt-get install -y gcc && \
 apt-get install -y vim nano htop screen && \
 echo "export PYTHONPATH=${PWD}:$PYTHONPATH" >> /root/.bashrc && \
 pip3 install uv \
-uv pip install -r requirements/dev.txt && \
-uv pip install -e .
+uv pip install --system -r requirements/dev.txt && \
+uv pip install --system -e .
