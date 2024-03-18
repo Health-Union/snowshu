@@ -193,9 +193,9 @@ def test_predicate_constraint_statement_analyze_false_quoted_non_empty_constrain
     mock_relation.temp_dot_notation = 'mock_dot_notation'
     mock_query.return_value = DataFrame(['1, 2, 3'])
     result = sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
-    assert query_equalize(result) == query_equalize("local_key IN ( SELECT DISTINCT remote_key::VARCHAR FROM mock_dot_notation LIMIT 16384) ")
+    assert query_equalize(result) == query_equalize("local_key IN ( SELECT DISTINCT remote_key::VARCHAR FROM mock_dot_notation )")
 
-    
+
 @mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key")
 @mock.patch(
     "snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query"
@@ -213,7 +213,7 @@ def test_predicate_constraint_statement_analyze_false_unquoted_non_empty_constra
         mock_relation, False, "local_key", "remote_key"
     )
     assert query_equalize(result) == query_equalize(
-        "local_key IN ( SELECT DISTINCT remote_key FROM mock_dot_notation LIMIT 16384) "
+        "local_key IN ( SELECT DISTINCT remote_key FROM mock_dot_notation ) "
     )
 
 
@@ -243,8 +243,8 @@ def test_predicate_constraint_statement_analyze_false_key_error(mock_relation, m
     mock_safe_query.side_effect = KeyError()
     with pytest.raises(KeyError, match=r"Remote key remote_key not found in mock_dot_notation table."):
         sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
-        
-@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')    
+
+@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
 @mock.patch("snowshu.core.models.relation.Relation")
 def test_format_remote_key_quoted(mock_relation, mock_query):
     """ Verifies that the remote key values is formatted to VARCHAR if it's a type that requires quotes """
@@ -269,8 +269,8 @@ def test_format_remote_key_unquoted(mock_relation, mock_query):
     mock_query.return_value = DataFrame({"data_type": ["NUMBER"]})
     remote_key = "rkey"
     result = sf.format_remote_key(mock_relation, remote_key)
-    assert result == f'{remote_key}::VARCHAR'    
-    
+    assert result == f'{remote_key}::VARCHAR'
+
 
 def test_retry_count_query():
     """ Verifies that the retry decorator works as expected """
