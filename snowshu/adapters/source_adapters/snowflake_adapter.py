@@ -44,7 +44,6 @@ class SnowflakeAdapter(BaseSourceAdapter):
     ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
     # snowflake in-db is UPPER, but connector is actually lower :(
     DEFAULT_CASE = 'upper'
-    SNOWFLAKE_MAX_NUMBER_EXPR = 16384
 
     DATA_TYPE_MAPPINGS = {
         "array": dtypes.JSON,
@@ -406,7 +405,6 @@ LIMIT {max_number_of_outliers})
             constraint_query = (
                 f"    SELECT DISTINCT {formatted_remote_key} "
                 f"    FROM {relation.temp_dot_notation} "
-                f"    LIMIT {SnowflakeAdapter.SNOWFLAKE_MAX_NUMBER_EXPR}"
             )
             self._validate_key_index_error(relation, constraint_query, remote_key)
             return f"{local_key} IN ({constraint_query})"
