@@ -38,6 +38,7 @@ def _is_in_docker() -> bool:
     except FileNotFoundError:
         return False
 
+
 class Architecture(Enum):
     ARM64 = "arm64"
     AMD64 = "amd64"
@@ -51,10 +52,9 @@ def _get_architecture() -> Architecture:
     iso_arch = platform.machine()
     if Architecture.ARM64.value in iso_arch.lower():
         return Architecture.ARM64
-    elif Architecture.AMD64.value in iso_arch.lower():
+    if Architecture.AMD64.value in iso_arch.lower():
         return Architecture.AMD64
-    else:
-        raise ValueError(f"Unknown architecture: {iso_arch}")
+    raise ValueError(f"Unknown architecture: {iso_arch}")
 
 
 LOCAL_ARCHITECTURE: Architecture = _get_architecture()
