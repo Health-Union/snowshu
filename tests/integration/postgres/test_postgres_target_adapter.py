@@ -146,7 +146,7 @@ def test_restore_data_from_shared_replica(docker_flush):
     target_container, _ = shdocker.startup(
         target_adapter,
         'SnowflakeAdapter',
-        [LOCAL_ARCHITECTURE],
+        [LOCAL_ARCHITECTURE.value],
         envars=['POSTGRES_USER=snowshu',
                 'POSTGRES_PASSWORD=snowshu',
                 'POSTGRES_DB=snowshu',
@@ -179,7 +179,7 @@ def test_restore_data_from_shared_replica(docker_flush):
     target_container, _ = shdocker.startup(
         target_adapter,
         'SnowflakeAdapter',
-        [LOCAL_ARCHITECTURE],
+        [LOCAL_ARCHITECTURE.value],
         envars=['POSTGRES_USER=snowshu',
                 'POSTGRES_PASSWORD=snowshu',
                 'POSTGRES_DB=snowshu',
@@ -203,14 +203,14 @@ def test_initialize_replica(docker_flush):
 
             pg_adapter = PostgresAdapter(replica_metadata={})
             pg_adapter._credentials.host = 'snowshu_replica-integration-test'
-            pg_adapter.target_arch = [LOCAL_ARCHITECTURE]
+            pg_adapter.target_arch = [LOCAL_ARCHITECTURE.value]
 
             pg_adapter.initialize_replica(source_adapter_name='SnowflakeAdapter')
 
             # check if container with name snowshu_replica-integration-test exists
             client = docker.from_env()
-            assert client.containers.get(f'snowshu_replica-integration-test_{LOCAL_ARCHITECTURE}')
+            assert client.containers.get(f'snowshu_replica-integration-test_{LOCAL_ARCHITECTURE.value}')
 
             # check if it has dependencies installed
-            container = client.containers.get(f'snowshu_replica-integration-test_{LOCAL_ARCHITECTURE}')
+            container = client.containers.get(f'snowshu_replica-integration-test_{LOCAL_ARCHITECTURE.value}')
             assert container.exec_run('psql --version').exit_code == 0

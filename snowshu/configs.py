@@ -1,5 +1,5 @@
 import os
-import re
+from enum import Enum
 from pathlib import Path
 from shutil import which
 import platform
@@ -38,18 +38,24 @@ def _is_in_docker() -> bool:
     except FileNotFoundError:
         return False
 
+class Architecture(Enum):
+    ARM64 = "arm64"
+    AMD64 = "amd64"
+    UNKNOWN = ""
 
-def _get_architecture() -> str:
+def _get_architecture() -> Architecture:
     """
-     Returns the machine type. An empty string is returned if the value cannot be determined.
+    Returns the machine type. Architecture.UNKNOWN is returned if the value cannot be determined.
     """
     iso_arch = platform.machine()
-    arch = re.sub(r"(?:aarch64).*", "arm64", iso_arch) if 'aarch' in iso_arch.lower() else re.sub(r"(?:x86_64).*",
-                                                                                                  "amd64", iso_arch)
-    return arch
+    if 'arm64' in iso_arch.lower():
+        return Architecture.ARM64
+    elif 'amd64' in iso_arch.lower():
+        return Architecture.AMD64
+    else:
+        raise ValueError(f"Unknown architecture: {iso_arch}")
 
-
-LOCAL_ARCHITECTURE = _get_architecture()
+LOCAL_ARCHITECTURE: Architecture = _get_architecture()
 IS_IN_DOCKER = _is_in_docker()
 DOCKER_SHARED_FOLDER_NAME = 'snowshu_replica_data_shared'
 DOCKER_REPLICA_MOUNT_FOLDER = os.path.join(os.path.sep,

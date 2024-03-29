@@ -9,6 +9,7 @@ import logging
 import yaml
 import docker
 
+from snowshu.configs import Architecture
 if TYPE_CHECKING:
     from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
     from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
@@ -104,16 +105,16 @@ def fetch_adapter(name: str,
         raise err
 
 
-def get_multiarch_list(local_arch: str) -> List[str]:
-    """ Finds an opposite arch to the one passed here and returns both as a list,
-        ordered in a way that passed arch is first
+def get_multiarch_list(local_arch: Architecture) -> List[Architecture]:
     """
-    if local_arch == 'amd64':
-        return_list = ['amd64', 'arm64']
-    else:
-        return_list = ['arm64', 'amd64']
-
-    return return_list
+    This function generates a list of all known architectures, excluding the 'UNKNOWN' architecture.
+    The list is ordered such that the architecture provided as input is placed at the beginning.
+    """
+    all_archs = [arch.value for arch in Architecture if arch != Architecture.UNKNOWN]
+    all_archs.remove(local_arch.value)
+    all_archs.insert(0, local_arch.value)
+    logger.info(f"Building for architectures: {all_archs}")
+    return all_archs
 
 
 def remove_dangling_replica_containers() -> None:

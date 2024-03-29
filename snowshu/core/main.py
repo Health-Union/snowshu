@@ -132,7 +132,7 @@ def create(replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
     if multiarch:
         target_arch = get_multiarch_list(LOCAL_ARCHITECTURE)
     else:
-        target_arch = [LOCAL_ARCHITECTURE]
+        target_arch = [LOCAL_ARCHITECTURE.value]
 
     replica = ReplicaFactory()
     replica.load_config(replica_file, target_arch=target_arch)
@@ -162,7 +162,7 @@ def analyze(replica_file: click.Path,
     """Perform a "dry run" of the replica creation without actually executing, and return the expected results.
     """
     replica = ReplicaFactory()
-    replica.load_config(replica_file, [LOCAL_ARCHITECTURE])
+    replica.load_config(replica_file, [LOCAL_ARCHITECTURE.value])
     click.echo(replica.analyze(barf=barf, retry_count=retry_count))
 
 
