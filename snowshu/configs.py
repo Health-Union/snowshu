@@ -46,12 +46,14 @@ class Architecture(Enum):
     X86_64 = "x86_64"
     UNKNOWN = ""
 
+
 ARCH_MAP = {
     Architecture.ARM64: Architecture.ARM64,
     Architecture.AARCH64: Architecture.ARM64,
     Architecture.AMD64: Architecture.AMD64,
     Architecture.X86_64: Architecture.AMD64,
 }
+
 
 def _get_architecture() -> Architecture:
     """
