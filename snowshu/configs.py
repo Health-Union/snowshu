@@ -41,7 +41,9 @@ def _is_in_docker() -> bool:
 
 class Architecture(Enum):
     ARM64 = "arm64"
+    AARCH64 = "arm64"
     AMD64 = "amd64"
+    X86_64 = "amd64"
     UNKNOWN = ""
 
 
@@ -49,11 +51,10 @@ def _get_architecture() -> Architecture:
     """
     Returns the machine type. Architecture.UNKNOWN is returned if the value cannot be determined.
     """
-    iso_arch = platform.machine()
-    if Architecture.ARM64.value in iso_arch.lower():
-        return Architecture.ARM64
-    if Architecture.AMD64.value in iso_arch.lower():
-        return Architecture.AMD64
+    iso_arch = platform.machine().lower()
+    for arch in Architecture:
+        if arch.value in iso_arch:
+            return arch
     raise ValueError(f"Unknown architecture: {iso_arch}")
 
 
