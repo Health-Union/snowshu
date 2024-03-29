@@ -124,21 +124,20 @@ def test_custom_cli_input_analyze(analyze, load, temporary_replica):  # noqa pyl
     runner.invoke(main.cli, ('analyze -r 50'))
     analyze.assert_called_with(barf=ANY, retry_count=50)
 
-
-
+from snowshu.configs import Architecture, ARCH_MAP
 @patch('snowshu.core.main.ReplicaFactory.load_config')
 def test_custom_cli_input_load(load, temporary_replica):  # noqa pylint: disable=unused-argument
     # test if CLI input is passed to correct calls
     runner = CliRunner()
-    
-    for local_arch in ['arm64', 'amd64']:
+
+    for local_arch in ARCH_MAP.values():
         with patch('snowshu.core.main.LOCAL_ARCHITECTURE', new=local_arch) as _:
             # test load_config
             runner.invoke(main.cli, ('create'))
-            load.assert_called_with(ANY, target_arch=[local_arch])
+            load.assert_called_with(ANY, target_arch=[local_arch.value])
 
             runner.invoke(main.cli, ('create -m'))
-            multiarch_list = ['arm64', 'amd64'] if local_arch == 'arm64' else ['amd64', 'arm64']
+            multiarch_list = ['arm64', 'amd64'] if local_arch.value == 'arm64' else ['amd64', 'arm64']
             load.assert_called_with(ANY, target_arch=multiarch_list)
 
 

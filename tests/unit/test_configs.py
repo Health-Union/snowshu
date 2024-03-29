@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 
-from snowshu.configs import _get_architecture
+from snowshu.configs import _get_architecture, ARCH_MAP
 
 outputs_to_check = [
     (
@@ -41,5 +41,5 @@ outputs_to_check = [
 @mock.patch("platform.machine")
 def test__get_architecture(arch_local, test_name, output_arch, expected):
     arch_local.return_value = output_arch
-    arch = _get_architecture()
+    arch = ARCH_MAP[_get_architecture()].value
     assert arch == expected

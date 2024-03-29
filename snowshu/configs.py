@@ -46,16 +46,21 @@ class Architecture(Enum):
     X86_64 = "x86_64"
     UNKNOWN = ""
 
+ARCH_MAP = {
+    Architecture.ARM64: Architecture.ARM64,
+    Architecture.AARCH64: Architecture.ARM64,
+    Architecture.AMD64: Architecture.AMD64,
+    Architecture.X86_64: Architecture.AMD64,
+}
 
 def _get_architecture() -> Architecture:
     """
     Returns the machine type. Architecture.UNKNOWN is returned if the value cannot be determined.
     """
     iso_arch = platform.machine().lower()
-    if Architecture.ARM64.value in iso_arch or Architecture.AARCH64.value in iso_arch:
-        return Architecture.ARM64
-    if Architecture.AMD64.value in iso_arch or Architecture.X86_64.value in iso_arch:
-        return Architecture.AMD64
+    for arch in Architecture:
+        if arch.value in iso_arch:
+            return ARCH_MAP[arch]
     raise ValueError(f"Unknown architecture: {iso_arch}")
 
 
