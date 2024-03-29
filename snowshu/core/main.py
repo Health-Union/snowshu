@@ -121,14 +121,15 @@ def init(path: click.Path) -> None:
     help="Tells SnowShu to build replicas of both arm and amd architectures",
     is_flag=True
 )
-def create(replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
-           name: str,
-           barf: bool,
-           incremental: str,
-           retry_count: int,
-           multiarch):
-    """Generate a new replica from a replica.yml file.
-    """
+def create(
+    replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
+    name: str,
+    barf: bool,
+    incremental: str,
+    retry_count: int,
+    multiarch,
+):
+    """Generate a new replica from a replica.yml file."""
     if multiarch:
         target_arch = get_multiarch_list(LOCAL_ARCHITECTURE)
     else:
