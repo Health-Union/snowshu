@@ -28,22 +28,22 @@ def test_creates_replica(docker_flush):
     arch_input_options = {
         'amd64': {
             'input_arch_list': ['amd64'],
-            'result_images': ['latest', 'amd64'] if LOCAL_ARCHITECTURE == 'amd64' else ['amd64'],
+            'result_images': ['latest', 'amd64'] if LOCAL_ARCHITECTURE.value == 'amd64' else ['amd64'],
             'active_container_arch': 'amd64',
             'passive_container_arch': None
         },
         'arm64': {
             'input_arch_list': ['arm64'],
-            'result_images': ['latest', 'arm64'] if LOCAL_ARCHITECTURE == 'arm64' else ['arm64'],
+            'result_images': ['latest', 'arm64'] if LOCAL_ARCHITECTURE.value == 'arm64' else ['arm64'],
             'active_container_arch': 'arm64',
             'passive_container_arch': None
         },
         'all': {
             # this case is different per machine type it runs in to save time
-            'input_arch_list': ['arm64', 'amd64'] if LOCAL_ARCHITECTURE == 'arm64' else ['amd64', 'arm64'],
+            'input_arch_list': ['arm64', 'amd64'] if LOCAL_ARCHITECTURE.value == 'arm64' else ['amd64', 'arm64'],
             'result_images': ['latest', 'arm64', 'amd64'],
-            'active_container_arch': 'arm64' if LOCAL_ARCHITECTURE == 'arm64' else 'amd64',
-            'passive_container_arch': 'amd64' if LOCAL_ARCHITECTURE == 'arm64' else 'arm64'
+            'active_container_arch': 'arm64' if LOCAL_ARCHITECTURE.value == 'arm64' else 'amd64',
+            'passive_container_arch': 'amd64' if LOCAL_ARCHITECTURE.value == 'arm64' else 'arm64'
         }
     }
 

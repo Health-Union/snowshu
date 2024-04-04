@@ -69,7 +69,7 @@ class SnowShuDocker:
             self.remove_container(container.name)
 
         for replica in replica_list:
-            if replica.attrs.get('Architecture') == LOCAL_ARCHITECTURE:
+            if replica.attrs.get('Architecture') == LOCAL_ARCHITECTURE.value:
                 local_arch_replica = replica
                 local_arch_replica.tag(
                     repository=new_replica_name, tag='latest')
@@ -108,7 +108,7 @@ class SnowShuDocker:
                 arch_list) == 2 else [base_image_arch]
 
             # warn user if non-native architecture base was supplied
-            if base_image_arch != LOCAL_ARCHITECTURE:
+            if base_image_arch != LOCAL_ARCHITECTURE.value:
                 logger.warning(
                     'Supplied base image is of a non-native architecture,'
                     ' please try to use native for better performance')

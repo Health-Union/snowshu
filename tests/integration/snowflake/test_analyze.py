@@ -9,7 +9,7 @@ def test_analyze_unsampled(docker_flush):
     replica = ReplicaFactory()
 
     config = os.path.join(PACKAGE_ROOT, "tests", "assets", "replica_test_config.yml")
-    replica.load_config(config, target_arch=[LOCAL_ARCHITECTURE])
+    replica.load_config(config, target_arch=[LOCAL_ARCHITECTURE.value])
     result = replica.analyze(barf=False, retry_count=1).split('\n')
     result.reverse()
     for line in result:
