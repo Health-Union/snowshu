@@ -1,2 +1,2 @@
-from .base_target_adapter import BaseTargetAdapter
+from .base_target_adapter import BaseLocalTargetAdapter, BaseRemoteTargetAdapter
 from .postgres_adapter import PostgresAdapter

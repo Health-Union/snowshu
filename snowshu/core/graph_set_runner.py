@@ -7,7 +7,7 @@ import threading
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Tuple, Set, List
+from typing import Tuple, Set, List, Union
 import logging
 
 import networkx as nx
@@ -15,7 +15,7 @@ import networkx as nx
 from snowshu.core.models import Relation
 from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
 from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
-from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
+from snowshu.adapters.target_adapters.base_target_adapter import BaseRemoteTargetAdapter, BaseLocalTargetAdapter
 from snowshu.core import utils
 from snowshu.core.compile import RuntimeSourceCompiler
 from snowshu.logger import duration
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class GraphExecutable:
     graph: nx.Graph
     source_adapter: BaseSourceAdapter
-    target_adapter: BaseTargetAdapter
+    target_adapter: Union[BaseLocalTargetAdapter, BaseRemoteTargetAdapter]
     analyze: bool
 
 
@@ -44,7 +44,7 @@ class GraphSetRunner:
         self,
         graph_set: Tuple[nx.Graph],
         source_adapter: BaseSourceAdapter,
-        target_adapter: BaseTargetAdapter,
+        target_adapter: Union[BaseLocalTargetAdapter, BaseRemoteTargetAdapter],
         threads: int,
         retry_count: int,
         analyze: bool = False,
@@ -318,7 +318,7 @@ class GraphSetRunner:
                 os.path.join(self.barf_output, f"{relation.dot_notation}.sql"),
                 "w",
                 encoding="utf-8",
-            ) as barf_file: 
+            ) as barf_file:
                 barf_file.write(relation.compiled_query)
 
     def _traverse_and_execute(self, executable: GraphExecutable) -> None:

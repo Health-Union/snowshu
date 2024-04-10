@@ -199,7 +199,7 @@ def test_restore_data_from_shared_replica(docker_flush):
 
 def test_initialize_replica(docker_flush):
     with mock.patch('snowshu.adapters.target_adapters.postgres_adapter.PostgresAdapter._initialize_snowshu_meta_database', return_value=None):
-        with mock.patch('snowshu.adapters.target_adapters.postgres_adapter.PostgresAdapter.target_database_is_ready', return_value=True):
+        with mock.patch('snowshu.adapters.target_adapters.postgres_adapter.PostgresAdapter._target_database_is_ready', return_value=True):
 
             pg_adapter = PostgresAdapter(replica_metadata={})
             pg_adapter._credentials.host = 'snowshu_replica-integration-test'

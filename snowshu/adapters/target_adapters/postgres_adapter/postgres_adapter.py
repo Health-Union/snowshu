@@ -1,13 +1,14 @@
-from typing import List, Optional, Tuple
-import logging
 import time
-from pandas import DataFrame
+import logging
+from typing import List, Optional, Tuple
+
 
 import sqlalchemy
+from pandas import DataFrame
 from overrides import overrides
 
 import snowshu.core.models.data_types as dtypes
-from snowshu.adapters.target_adapters import BaseTargetAdapter
+from snowshu.adapters.target_adapters import BaseLocalTargetAdapter
 from snowshu.configs import DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER, POSTGRES_IMAGE
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
@@ -18,7 +19,7 @@ from snowshu.exceptions import UnableToStartPostgres
 logger = logging.getLogger(__name__)
 
 
-class PostgresAdapter(BaseTargetAdapter):
+class PostgresAdapter(BaseLocalTargetAdapter):
     name = 'postgres'
     dialect = 'postgresql'
     DOCKER_IMAGE = POSTGRES_IMAGE
@@ -184,7 +185,7 @@ class PostgresAdapter(BaseTargetAdapter):
         return [s[0] for s in schemas] if len(schemas) > 0 else schemas
 
     @overrides
-    def _get_relations_from_database(self, schema_obj: BaseTargetAdapter._DatabaseObject) -> List[Relation]:
+    def _get_relations_from_database(self, schema_obj: BaseLocalTargetAdapter._DatabaseObject) -> List[Relation]:
         quoted_database = self.quoted(
             schema_obj.full_relation.database)  # quoted db name
         relation_database = schema_obj.full_relation.database  # case corrected db name
