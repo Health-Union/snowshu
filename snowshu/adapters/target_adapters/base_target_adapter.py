@@ -352,4 +352,3 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
 
 class BaseRemoteTargetAdapter(BaseTargetAdapter):
     """Base class for all remote target adapters eg. Snowflake, BigQuery etc."""
-

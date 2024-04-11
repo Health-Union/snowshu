@@ -424,22 +424,22 @@ class SnowShuGraph:
         logger.debug("building sum patterns for configs...")
 
         approved_default_patterns = []
-        for d in config.general_relations.databases:
-            for s in d.schemas:
-                for r in s.relations:
+        for database in config.general_relations.databases:
+            for schema in database.schemas:
+                for relation in schema.relations:
                     pattern = dict(
-                        database=d.database_pattern,
-                        schema=s.schema_pattern,
-                        name=r.relation_pattern,
+                        database=database.database_pattern,
+                        schema=schema.schema_pattern,
+                        name=relation.relation_pattern,
                     )
                     approved_default_patterns.append(pattern)
 
         approved_specified_patterns = []
-        for r in config.specified_relations:
+        for relation in config.specified_relations:
             pattern = dict(
-                database=r.database_pattern,
-                schema=r.schema_pattern,
-                name=r.relation_pattern,
+                database=relation.database_pattern,
+                schema=relation.schema_pattern,
+                name=relation.relation_pattern,
             )
             approved_specified_patterns.append(pattern)
 
