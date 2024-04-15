@@ -168,8 +168,8 @@ class GraphSetRunner:
             with open(
                 os.path.join(
                     self.barf_output,
-                    f"{[n for n in executable.graph.nodes][0].dot_notation}.component",
-                ),  # noqa: pylint: disable=unnecessary-comprehension
+                    f"{[n for n in executable.graph.nodes][0].dot_notation}.component", # noqa: pylint: disable=unnecessary-comprehension
+                ),
                 "wb",
             ) as cmp_file:
                 nx.write_multiline_adjlist(executable.graph, cmp_file)
