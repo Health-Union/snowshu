@@ -8,7 +8,7 @@ from pandas import DataFrame
 from overrides import overrides
 
 import snowshu.core.models.data_types as dtypes
-from snowshu.adapters.target_adapters import BaseLocalTargetAdapter
+from snowshu.adapters.target_adapters.base_local_target_adapter import BaseLocalTargetAdapter
 from snowshu.configs import DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER, POSTGRES_IMAGE
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute

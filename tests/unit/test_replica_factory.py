@@ -6,7 +6,7 @@ from unittest import mock
 
 import yaml
 
-from snowshu.adapters.target_adapters.base_target_adapter import BaseLocalTargetAdapter
+from snowshu.adapters.target_adapters.base_local_target_adapter import BaseLocalTargetAdapter
 from snowshu.core.models import Relation
 from snowshu.core.models.relation import alter_relation_case
 from snowshu.core.replica.replica_factory import ReplicaFactory
