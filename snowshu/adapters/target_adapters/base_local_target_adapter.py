@@ -2,10 +2,11 @@ import logging
 from time import sleep
 from datetime import datetime
 from abc import abstractmethod
+from typing import TYPE_CHECKING, Tuple, Set, Optional
 
 import pandas as pd
 
-from typing import TYPE_CHECKING, Tuple, Set, Optional
+
 from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models.credentials import DATABASE, HOST, PASSWORD, PORT, USER
 from snowshu.core.models.credentials import Credentials
@@ -25,6 +26,7 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
 
 class BaseLocalTargetAdapter(BaseTargetAdapter):
     """Base class for all local target adapters eg. Postgres, SQLite, MySQL etc."""

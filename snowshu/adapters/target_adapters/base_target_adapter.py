@@ -2,12 +2,17 @@ import logging
 from pathlib import Path
 from abc import abstractmethod
 from typing import Iterable, Optional
-from snowshu.core.models import DataType
+
+
 import pandas as pd
+
+
+from snowshu.core.models import DataType
 from snowshu.configs import DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.core.models import Credentials, Relation
 from snowshu.core.utils import case_insensitive_dict_value
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +34,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
     @abstractmethod
     def create_schema_if_not_exists(self, database: str, schema: str) -> str:
-        """ Creates a schema if it does not already exist."""
+        """Creates a schema if it does not already exist."""
 
     @abstractmethod
     def create_or_replace_view(self, relation) -> None:
@@ -44,7 +49,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
 
     @abstractmethod
     def _initialize_snowshu_meta_database(self) -> None:
-        """ Initializes the snowshu meta database in the target adapter."""
+        """Initializes the snowshu meta database in the target adapter."""
 
     def create_and_load_relation(
         self, relation: "Relation", data: Optional[pd.DataFrame]
