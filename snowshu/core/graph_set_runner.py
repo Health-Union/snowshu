@@ -163,15 +163,14 @@ class GraphSetRunner:
                 self.schemas.add(name)
 
     def _write_adjlist_if_necessary(self, executable: GraphExecutable) -> None:
-        """ Writes the graph to disk in adjlist format if the barf flag is set"""
+        """Writes the graph to disk in adjlist format if the barf flag is set"""
         if self.barf:
             with open(
                 os.path.join(
                     self.barf_output,
-                    f"{next(iter(executable.graph.nodes)).dot_notation}.component",
-                ),
+                    f"{[n for n in executable.graph.nodes][0].dot_notation}.component",
+                ),  # noqa: pylint: disable=unnecessary-comprehension
                 "wb",
-                encoding="utf-8",
             ) as cmp_file:
                 nx.write_multiline_adjlist(executable.graph, cmp_file)
 
@@ -318,7 +317,7 @@ class GraphSetRunner:
                 os.path.join(self.barf_output, f"{relation.dot_notation}.sql"),
                 "w",
                 encoding="utf-8",
-            ) as barf_file: 
+            ) as barf_file:
                 barf_file.write(relation.compiled_query)
 
     def _traverse_and_execute(self, executable: GraphExecutable) -> None:
