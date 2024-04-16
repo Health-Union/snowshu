@@ -318,7 +318,7 @@ class GraphSetRunner:
                 os.path.join(self.barf_output, f"{relation.dot_notation}.sql"),
                 "w",
                 encoding="utf-8",
-            ) as barf_file: 
+            ) as barf_file:
                 barf_file.write(relation.compiled_query)
 
     def _traverse_and_execute(self, executable: GraphExecutable) -> None:

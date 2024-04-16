@@ -1,6 +1,7 @@
 import copy
 import re
 import time
+from abc import ABC
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable, List, Optional, Set
 import logging
@@ -19,7 +20,7 @@ from snowshu.logger import duration
 logger = logging.getLogger(__name__)
 
 
-class BaseSQLAdapter:
+class BaseSQLAdapter(ABC):
     DEFAULT_CASE = 'lower'
 
     class _DatabaseObject:
@@ -157,7 +158,7 @@ class BaseSQLAdapter:
         )
 
     def build_catalog(self, patterns: Iterable[dict], thread_workers: int, flags: re.RegexFlag = 0) -> Set[Relation]:
-        """ This function is expected to return all of the relations that satisfy the filters 
+        """ This function is expected to return all of the relations that satisfy the filters
 
             Args:
                 patterns (Iterable[dict]): Filter dictionaries to apply to the databases

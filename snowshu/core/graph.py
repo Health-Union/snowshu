@@ -421,31 +421,52 @@ class SnowShuGraph:
         Args:
             config: :class:`Configuration <snowshu.core.configuration_parser.Configuration>` object.
         """
-        logger.debug('building sum patterns for configs...')
-        approved_default_patterns = [dict(database=d.database_pattern,
-                                          schema=s.schema_pattern,
-                                          name=r.relation_pattern) for d in config.general_relations.databases
-                                     for s in d.schemas
-                                     for r in s.relations]
+        logger.debug("building sum patterns for configs...")
 
-        approved_specified_patterns = [
-            dict(
-                database=r.database_pattern,
-                schema=r.schema_pattern,
-                name=r.relation_pattern) for r in config.specified_relations]
+        approved_default_patterns = []
+        for database in config.general_relations.databases:
+            for schema in database.schemas:
+                for relation in schema.relations:
+                    pattern = dict(
+                        database=database.database_pattern,
+                        schema=schema.schema_pattern,
+                        name=relation.relation_pattern,
+                    )
+                    approved_default_patterns.append(pattern)
 
-        approved_second_level_specified_patterns = [
-            dict(
-                database=lower_level.database_pattern if lower_level.database_pattern else upper_level.database_pattern,
-                schema=lower_level.schema_pattern if lower_level.schema_pattern else upper_level.schema_pattern,
-                name=lower_level.relation_pattern
-            ) for upper_level in config.specified_relations
-            for lower_level in upper_level.relationships.bidirectional + upper_level.relationships.directional + upper_level.relationships.polymorphic  # noqa: pylint: disable=line-too-long
-        ]
+        approved_specified_patterns = []
+        for relation in config.specified_relations:
+            pattern = dict(
+                database=relation.database_pattern,
+                schema=relation.schema_pattern,
+                name=relation.relation_pattern,
+            )
+            approved_specified_patterns.append(pattern)
 
-        all_patterns = approved_default_patterns + approved_specified_patterns + approved_second_level_specified_patterns  # noqa: pylint: disable=line-too-long
+        approved_second_level_specified_patterns = []
+        for upper_level in config.specified_relations:
+            for lower_level in (
+                upper_level.relationships.bidirectional
+                + upper_level.relationships.directional
+                + upper_level.relationships.polymorphic
+            ):
+                pattern = dict(
+                    database=lower_level.database_pattern
+                    if lower_level.database_pattern
+                    else upper_level.database_pattern,
+                    schema=lower_level.schema_pattern
+                    if lower_level.schema_pattern
+                    else upper_level.schema_pattern,
+                    name=lower_level.relation_pattern,
+                )
+                approved_second_level_specified_patterns.append(pattern)
 
-        logger.debug(f'All config primary patterns: {all_patterns}')
+        all_patterns = (
+            approved_default_patterns
+            + approved_specified_patterns
+            + approved_second_level_specified_patterns
+        )
+        logger.debug(f"All config primary patterns: {all_patterns}")
         return all_patterns
 
     @staticmethod

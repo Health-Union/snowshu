@@ -6,7 +6,7 @@ from unittest import mock
 
 import yaml
 
-from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
+from snowshu.adapters.target_adapters.base_local_target_adapter import BaseLocalTargetAdapter
 from snowshu.core.models import Relation
 from snowshu.core.models.relation import alter_relation_case
 from snowshu.core.replica.replica_factory import ReplicaFactory
@@ -31,7 +31,7 @@ def tests_incremental_flag(graph, stub_configs):
     replica.load_config(stub_configs())
     test_name = rand_string(10)
     replica.incremental = rand_string(10)
-    adapter = replica.config.target_profile.adapter = mock.Mock(spec=BaseTargetAdapter)
+    adapter = replica.config.target_profile.adapter = mock.Mock(spec=BaseLocalTargetAdapter)
     adapter.build_catalog = mock.MagicMock(return_value=set())
     result = replica.create(test_name, False, 1)
     adapter.initialize_replica.assert_called_once_with('default', replica.incremental)
@@ -79,7 +79,7 @@ def tests_incremental_run_patched(stub_graph_set, stub_relation_set):
     replica.config.source_profile.adapter.build_catalog.return_value = source_catalog
     test_name = rand_string(10)
     replica.incremental = rand_string(10)
-    adapter = replica.config.target_profile.adapter = mock.Mock(spec=BaseTargetAdapter)
+    adapter = replica.config.target_profile.adapter = mock.Mock(spec=BaseLocalTargetAdapter)
     adapter.DEFAULT_CASE = 'lower'
     adapter.build_catalog = mock.MagicMock(return_value=target_catalog)
     result = replica.create(test_name, False, 1)
