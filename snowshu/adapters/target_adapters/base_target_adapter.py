@@ -128,11 +128,10 @@ class BaseTargetAdapter(BaseSQLAdapter):
         This helper method translates source data types to target data types.
         """
         try:
-            return self.DATA_TYPE_MAPPINGS.get(source_type.replace(" ", "_").lower())
+            return self.DATA_TYPE_MAPPINGS[source_type.replace(' ', '_').lower()]
         except KeyError as err:
             logger.error(
-                f"{self.CLASSNAME} adapter does not support data type {source_type}."
-            )
+                '%s adapter does not support data type %s.', self.CLASSNAME, source_type)
             raise err
 
     def quoted_dot_notation(self, rel: Relation) -> str:
@@ -191,4 +190,4 @@ class BaseTargetAdapter(BaseSQLAdapter):
                 self.CLASSNAME,
                 exc,
             )
-            raise
+            raise RuntimeError("An error occurred while applying the function.") from exc
