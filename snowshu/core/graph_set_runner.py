@@ -7,7 +7,7 @@ import threading
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Tuple, Set, List, Union
+from typing import Tuple, Set, List
 import logging
 
 import networkx as nx
