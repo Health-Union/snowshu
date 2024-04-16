@@ -16,8 +16,6 @@ from snowshu.core.models import Relation
 from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
 from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
 from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
-from snowshu.adapters.target_adapters.base_local_target_adapter import BaseLocalTargetAdapter
-from snowshu.adapters.target_adapters.base_remote_target_adapter import BaseRemoteTargetAdapter
 from snowshu.core import utils
 from snowshu.core.compile import RuntimeSourceCompiler
 from snowshu.logger import duration
