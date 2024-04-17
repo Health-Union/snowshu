@@ -5,7 +5,6 @@ from typing import List, Optional, Tuple
 
 import sqlalchemy
 from pandas import DataFrame
-from overrides import overrides
 
 import snowshu.core.models.data_types as dtypes
 from snowshu.adapters.target_adapters.base_local_target_adapter import BaseLocalTargetAdapter
