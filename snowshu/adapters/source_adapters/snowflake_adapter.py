@@ -526,7 +526,6 @@ LIMIT {max_number_of_outliers})
             f'Acquired {len(relations)} total relations from database {quoted_database}.')
         return relations
 
-    @overrides
     def _count_query(self, query: str) -> int:
         count_sql = f"WITH __SNOWSHU__COUNTABLE__QUERY as ({query}) \
                     SELECT COUNT(*) AS count FROM __SNOWSHU__COUNTABLE__QUERY"
@@ -537,7 +536,7 @@ LIMIT {max_number_of_outliers})
                     stop=stop_after_attempt(4),
                     before_sleep=Logger().log_retries,
                     reraise=True)
-    @overrides
+
     def check_count_and_query(self, query: str,
                               max_count: int,
                               unsampled: bool) -> pd.DataFrame:

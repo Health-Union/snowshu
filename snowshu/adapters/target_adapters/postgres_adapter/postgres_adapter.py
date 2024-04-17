@@ -147,7 +147,6 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             else:
                 raise sql_errs
 
-    @overrides
     def _get_all_databases(self) -> List[str]:
         logger.debug('Getting all databases from postgres...')
         query = "SELECT datname FROM pg_database WHERE datistemplate = false;"
@@ -162,7 +161,6 @@ class PostgresAdapter(BaseLocalTargetAdapter):
         logger.debug(f'Done. Found {len(databases)} databases.')
         return [d[0] for d in databases] if len(databases) > 0 else databases
 
-    @overrides
     def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         database = self.quoted(database)
         logger.debug(f'Collecting schemas from {database} in postgres...')
@@ -184,7 +182,6 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             f'Done. Found {len(schemas)} schemas in {database} database.')
         return [s[0] for s in schemas] if len(schemas) > 0 else schemas
 
-    @overrides
     def _get_relations_from_database(self, schema_obj: BaseLocalTargetAdapter._DatabaseObject) -> List[Relation]:
         quoted_database = self.quoted(
             schema_obj.full_relation.database)  # quoted db name
@@ -247,7 +244,6 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             f'Acquired {len(relations)} total relations from database {quoted_database}.')
         return relations
 
-    @overrides
     def load_data_into_relation(self, relation: "Relation", data: Optional[DataFrame]) -> None:
         try:
             return super().load_data_into_relation(relation, data)
