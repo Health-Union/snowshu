@@ -5,6 +5,7 @@ from typing import Optional, TextIO, Union
 
 import logging
 
+from snowshu.adapters.target_adapters.base_remote_target_adapter import BaseRemoteTargetAdapter
 from snowshu.core.configuration_parser import (Configuration,
                                                ConfigurationParser)
 from snowshu.core.graph import SnowShuGraph
@@ -43,6 +44,15 @@ class ReplicaFactory:
         self.retry_count = retry_count
         return self._execute(barf=barf)
 
+    @staticmethod
+    def check_adapter_support(replica, feature, flag, feature_name):
+        if issubclass(replica.config.target_profile.adapter.__class__, BaseRemoteTargetAdapter):
+            if feature:
+                raise NotImplementedError(
+                    f"Remote target adapters do not support {feature_name} builds."
+                    f"Please remove the {flag} flag and try again or use a local target adapter."
+                )
+
     def _execute(self,
                  barf: bool = False,
                  name: Optional[str] = None) -> Optional[str]:
@@ -52,13 +62,12 @@ class ReplicaFactory:
 
         graph.build_graph(self.config)
 
-        if self.incremental:
-            # TODO replica container should not be started for analyze commands
-
-            self.config.target_profile.adapter.initialize_replica(
+        # TODO replica container should not be started for analyze commands
+        self.config.target_profile.adapter.initialize_replica(
                 self.config.source_profile.name,
-                self.incremental)
+                incremental_image=self.incremental)
 
+        if self.incremental:
             incremental_target_catalog = self.config.target_profile.adapter.build_catalog(
                 patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
                 thread_workers=self.config.threads,
@@ -78,11 +87,7 @@ class ReplicaFactory:
             remove_dangling_replica_containers()
             return message
 
-        if not self.config.target_profile.adapter.container:
-            # TODO replica container should not be started for analyze commands
-            self.config.target_profile.adapter.initialize_replica(
-                self.config.source_profile.name)
-
+        # TODO replica container should not be started for analyze commands
         runner = GraphSetRunner()
         runner.execute_graph_set(graphs,
                                  self.config.source_profile.adapter,
