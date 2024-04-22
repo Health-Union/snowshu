@@ -108,10 +108,11 @@ class ConfigurationParser:
     default_case: str = None
     preserve_case: bool = False
 
-    def _get_dict_from_anything(self,
+
+    def get_dict_from_anything(self,
                                 dict_like_object: Union[str, 'StringIO', dict],
                                 schema_path: Path) -> dict:
-        """Returns dict from path, io object or dict.  
+        """Returns dict from path, io object or dict.
 
         Returns:
             a formatted dict.
@@ -193,13 +194,14 @@ class ConfigurationParser:
             self, loadable: Union[Path, str, TextIO]) -> Configuration:
         """rips through a configuration and returns a configuration object."""
         logger.debug('loading configuration...')
-        loaded = self._get_dict_from_anything(loadable, REPLICA_JSON_SCHEMA)
+        loaded = self.get_dict_from_anything(loadable, REPLICA_JSON_SCHEMA)
         logger.debug('Done loading.')
 
         # we need the source adapter first to case-correct everything else
         self._set_default(loaded, 'preserve_case', DEFAULT_PRESERVE_CASE)
         self.preserve_case = loaded['preserve_case']
         source_adapter_profile = self._build_adapter_profile('source', loaded)
+
         self.default_case = source_adapter_profile.adapter.DEFAULT_CASE
 
         # Pass materialization mapping to source adapter
@@ -346,7 +348,7 @@ class ConfigurationParser:
             except KeyError as err:
                 raise ValueError(f'Credentials missing required section: {err}') from err
         try:
-            profile_dict = lookup_profile_from_creds(self._get_dict_from_anything(credentials,
+            profile_dict = lookup_profile_from_creds(self.get_dict_from_anything(credentials,
                                                                                   CREDENTIALS_JSON_SCHEMA),
                                                      profile,
                                                      section)
