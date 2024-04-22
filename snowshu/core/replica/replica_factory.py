@@ -62,11 +62,11 @@ class ReplicaFactory:
 
         graph.build_graph(self.config)
 
-        # TODO replica container should not be started for analyze commands
-        self.config.target_profile.adapter.initialize_replica(
-            self.config.source_profile.name, incremental_image=self.incremental)
-
         if self.incremental:
+            # TODO replica container should not be started for analyze commands
+            self.config.target_profile.adapter.initialize_replica(
+                self.config.source_profile.name, incremental_image=self.incremental)
+
             incremental_target_catalog = self.config.target_profile.adapter.build_catalog(
                 patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
                 thread_workers=self.config.threads,
@@ -85,6 +85,10 @@ class ReplicaFactory:
             message = "No{}relations found per provided{}replica configuration{}, exiting.".format(*args)  # noqa: pylint: disable=consider-using-f-string
             remove_dangling_replica_containers()
             return message
+
+        if self.config.target_profile.adapter.container:
+            self.config.target_profile.adapter.initialize_replica(
+                self.config.source_profile.name)
 
         # TODO replica container should not be started for analyze commands
         runner = GraphSetRunner()
