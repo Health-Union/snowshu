@@ -92,9 +92,10 @@ def test_analyze_does_all_but_run(replica, create_relation):
         create_relation.assert_not_called()
 
 
+@patch('snowshu.core.main.ReplicaFactory.check_adapter_support', return_value=None)
 @patch('snowshu.core.main.ReplicaFactory.load_config')
 @patch('snowshu.core.main.ReplicaFactory.create')
-def test_custom_cli_input_create(create, load, temporary_replica):  # noqa pylint: disable=unused-argument
+def test_custom_cli_input_create(create, load, mock_check_adapter_support, temporary_replica):  # noqa pylint: disable=unused-argument
     # test if CLI input is passed to correct calls
     runner = CliRunner()
     # test create

@@ -3,6 +3,7 @@ import json
 from io import StringIO
 from pathlib import Path
 from unittest import mock
+from webbrowser import get
 
 import yaml
 
@@ -10,6 +11,8 @@ from snowshu.adapters.target_adapters.base_local_target_adapter import BaseLocal
 from snowshu.core.models import Relation
 from snowshu.core.models.relation import alter_relation_case
 from snowshu.core.replica.replica_factory import ReplicaFactory
+from snowshu.core.utils import get_multiarch_list
+from snowshu.configs import LOCAL_ARCHITECTURE
 from tests.common import rand_string
 from tests.conftest import BASIC_CONFIGURATION
 
@@ -18,25 +21,32 @@ from tests.conftest import BASIC_CONFIGURATION
 @mock.patch('snowshu.core.replica.replica_factory.SnowShuGraph.get_connected_subgraphs', return_value=[])
 def tests_replica_rename(_, build_graph, stub_configs):
     replica = ReplicaFactory()
-    replica.load_config(stub_configs())
+    replica.load_config(
+        stub_configs(), target_arch=get_multiarch_list(LOCAL_ARCHITECTURE)
+    )
+    replica.config.container = True # prevent from starting container
     test_name = rand_string(10)
     replica.create(test_name, False, 1)
     assert build_graph.call_args[0][0].name == test_name
 
 
-@mock.patch('snowshu.core.replica.replica_factory.SnowShuGraph')
+@mock.patch("snowshu.core.replica.replica_factory.SnowShuGraph")
 def tests_incremental_flag(graph, stub_configs):
     graph.return_value.graph = mock.Mock()
     replica = ReplicaFactory()
     replica.load_config(stub_configs())
     test_name = rand_string(10)
     replica.incremental = rand_string(10)
-    adapter = replica.config.target_profile.adapter = mock.Mock(spec=BaseLocalTargetAdapter)
+    adapter = replica.config.target_profile.adapter = mock.Mock(
+        spec=BaseLocalTargetAdapter
+    )
     adapter.build_catalog = mock.MagicMock(return_value=set())
     result = replica.create(test_name, False, 1)
-    adapter.initialize_replica.assert_called_once_with('default', replica.incremental)
+    adapter.initialize_replica.assert_called_once_with(
+        "default", incremental_image=replica.incremental
+    )
     adapter.build_catalog.assert_called()
-    assert 'image up-to-date' in result
+    assert "image up-to-date" in result
 
 
 def tests_incremental_run_patched(stub_graph_set, stub_relation_set):
@@ -83,7 +93,9 @@ def tests_incremental_run_patched(stub_graph_set, stub_relation_set):
     adapter.DEFAULT_CASE = 'lower'
     adapter.build_catalog = mock.MagicMock(return_value=target_catalog)
     result = replica.create(test_name, False, 1)
-    adapter.initialize_replica.assert_called_once_with('default', replica.incremental)
+    adapter.initialize_replica.assert_called_once_with(
+        "default", incremental_image=replica.incremental
+    )
     adapter.build_catalog.assert_called()
     assert 'image up-to-date' in result
 
