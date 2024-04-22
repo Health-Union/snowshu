@@ -11,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 CREDENTIALS_JSON_SCHEMA = TEMPLATES_PATH / 'credentials_schema_target.json'
 
+
 class BaseRemoteTargetAdapter(BaseTargetAdapter):
     """Base class for all remote target adapters eg. Snowflake, BigQuery etc."""
-
 
     def _generate_credentials(self, host: Union[str, 'StringIO', dict]) -> Credentials:
         """ Check if credentials has been passed to credentials.yaml """

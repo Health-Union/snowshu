@@ -42,9 +42,9 @@ class SnowflakeCommon():
     def _build_conn_string(self) -> str:
         """Overrides the base method to align with snowflake's connection string format."""
         base_conn = (f"snowflake://{quote(self._credentials.user)}:"
-                    f"{quote(self._credentials.password)}@"
-                    f"{quote(self._credentials.account)}"
-                    f"/{quote(self._credentials.database)}/")
+                     f"{quote(self._credentials.password)}@"
+                     f"{quote(self._credentials.account)}"
+                     f"/{quote(self._credentials.database)}/")
         schema = quote(self._credentials.schema) if self._credentials.schema else ""
 
         get_args = [
