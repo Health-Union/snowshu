@@ -24,7 +24,6 @@ def tests_replica_rename(_, build_graph, stub_configs):
     replica.load_config(
         stub_configs(), target_arch=get_multiarch_list(LOCAL_ARCHITECTURE)
     )
-    replica.config.container = True # prevent from starting container
     test_name = rand_string(10)
     replica.create(test_name, False, 1)
     assert build_graph.call_args[0][0].name == test_name
