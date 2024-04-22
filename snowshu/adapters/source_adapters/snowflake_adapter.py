@@ -1,16 +1,14 @@
 import logging
 import time
 from typing import TYPE_CHECKING, List, Optional, Union
-from urllib.parse import quote
 
 import pandas as pd
-import sqlalchemy
 import tenacity
 from overrides import overrides
-from sqlalchemy.pool import NullPool
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
 
+from snowshu.adapters.snowflake_common import SnowflakeCommon
 import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
 from snowshu.adapters.source_adapters import BaseSourceAdapter
@@ -28,7 +26,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SnowflakeAdapter(BaseSourceAdapter):
+class SnowflakeAdapter(SnowflakeCommon, BaseSourceAdapter):
     """The Snowflake Data Warehouse source adapter.
 
     Args:
@@ -448,21 +446,6 @@ LIMIT {max_number_of_outliers})
     def quoted(val: str) -> str:
         return f'"{val}"' if ' ' in val else val
 
-    # TODO: change arg name in parent to the fix issue here
-    @overrides
-    def _build_conn_string(self, overrides: Optional[dict] = None) -> str:  # noqa pylint: disable=redefined-outer-name
-        """overrides the base conn string."""
-        conn_parts = [f"snowflake://{quote(self.credentials.user)}:{quote(self.credentials.password)}"
-                      f"@{quote(self.credentials.account)}/{quote(self.credentials.database)}/",
-                      quote(self.credentials.schema) if self.credentials.schema is not None else '']
-        get_args = []
-        for arg in ('warehouse', 'role',):
-            if self.credentials.__dict__[arg] is not None:
-                get_args.append(f"{arg}={quote(self.credentials.__dict__[arg])}")
-
-        get_string = "?" + "&".join(get_args)
-        return (''.join(conn_parts)) + get_string
-
     @overrides
     def _get_relations_from_database(
             self, schema_obj: BaseSourceAdapter._DatabaseObject) -> List[Relation]:
@@ -562,29 +545,3 @@ LIMIT {max_number_of_outliers})
             raise TooManyRecords(message) from exc
         response = self._safe_query(query)
         return response
-
-    @overrides
-    def get_connection(
-            self,
-            database_override: Optional[str] = None,
-            schema_override: Optional[str] = None) -> sqlalchemy.engine.base.Engine:
-        """Creates a connection engine without transactions.
-
-        By default, uses the instance credentials unless database or
-        schema override are provided.
-        """
-        if not self._credentials:
-            raise KeyError(
-                'Adapter.get_connection called before setting Adapter.credentials')
-
-        logger.debug(f'Acquiring {self.CLASSNAME} connection...')
-        overrides = {  # noqa pylint: disable=redefined-outer-name
-            'database': database_override,
-            'schema': schema_override
-        }
-        overrides = {k: v for k, v in overrides.items() if v is not None}
-
-        engine = sqlalchemy.create_engine(
-            self._build_conn_string(overrides), poolclass=NullPool)
-        logger.debug(f'Engine acquired. Conn string: {repr(engine.url)}')
-        return engine
