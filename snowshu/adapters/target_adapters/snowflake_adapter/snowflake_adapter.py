@@ -1,6 +1,7 @@
 import logging
 
 from snowshu.adapters.snowflake_common import SnowflakeCommon
+from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models.credentials import (
     USER,
@@ -34,7 +35,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     MATERIALIZATION_MAPPINGS = {}
 
     def __init__(self, replica_metadata: dict):
-        super().__init__(replica_metadata)
+        super(BaseTargetAdapter).__init__(replica_metadata)
 
     def initialize_replica(self, config: Configuration, **kwargs):
         pass
