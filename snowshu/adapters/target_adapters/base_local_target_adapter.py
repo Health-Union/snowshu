@@ -161,8 +161,7 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
 
     @abstractmethod
     def initialize_replica(
-        self, source_adapter_name: str, incremental_image: str = None
-    ) -> None:
+        self, source_adapter_name: str, **kwargs) -> None:
         """Launches a container and initializes the replica.
             Should be defined in specific target adapters due to different setup of different dbs
 

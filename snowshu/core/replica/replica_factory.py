@@ -64,8 +64,7 @@ class ReplicaFactory:
 
         # TODO replica container should not be started for analyze commands
         self.config.target_profile.adapter.initialize_replica(
-                self.config.source_profile.name,
-                incremental_image=self.incremental)
+            self.config.source_profile.name, incremental_image=self.incremental)
 
         if self.incremental:
             incremental_target_catalog = self.config.target_profile.adapter.build_catalog(

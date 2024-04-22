@@ -27,7 +27,7 @@ class SnowflakeCommon():
             )
 
         logger.debug(f"Acquiring {self.CLASSNAME} connection...")
-        overrides = {  # noqa pylint: disable=redefined-outer-name
+        overrides = {
             "database": database_override,
             "schema": schema_override,
         }
@@ -41,15 +41,15 @@ class SnowflakeCommon():
 
     def _build_conn_string(self) -> str:
         """Overrides the base method to align with snowflake's connection string format."""
-        base_conn = f"snowflake://{quote(self._credentials.user)}:{quote(self._credentials.password)}@{quote(self._credentials.account)}/{quote(self._credentials.database)}/"
+        base_conn = (f"snowflake://{quote(self._credentials.user)}:"
+                    f"{quote(self._credentials.password)}@"
+                    f"{quote(self._credentials.account)}"
+                    f"/{quote(self._credentials.database)}/")
         schema = quote(self._credentials.schema) if self._credentials.schema else ""
 
         get_args = [
             f"{arg}={quote(getattr(self._credentials, arg))}"
-            for arg in (
-            "warehouse",
-            "role",
-            )
+            for arg in ("warehouse", "role",)
             if getattr(self._credentials, arg) is not None
         ]
         get_string = "?" + "&".join(get_args) if get_args else ""

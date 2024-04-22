@@ -18,6 +18,8 @@ from snowshu.adapters.target_adapters.base_remote_target_adapter import (
 logger = logging.getLogger(__name__)
 
 class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
+
+
     REQUIRED_CREDENTIALS = (
         USER,
         PASSWORD,
@@ -32,7 +34,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     MATERIALIZATION_MAPPINGS = {}
 
     def __init__(self, replica_metadata: dict):
-        super().__init__(replica_metadata)
+        pass
 
     def initialize_replica(self, config: Configuration, **kwargs):
         pass
@@ -40,11 +42,11 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def _initialize_snowshu_meta_database(self):
         pass
 
-    def create_database_if_not_exists(self):
+    def create_database_if_not_exists(self, database):
         pass
 
-    def create_or_replace_view(self):
+    def create_or_replace_view(self, relation):
         pass
 
-    def create_schema_if_not_exists(self):
+    def create_schema_if_not_exists(self, database, schema):
         pass

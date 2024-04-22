@@ -108,10 +108,9 @@ class ConfigurationParser:
     default_case: str = None
     preserve_case: bool = False
 
-
     def get_dict_from_anything(self,
-                                dict_like_object: Union[str, 'StringIO', dict],
-                                schema_path: Path) -> dict:
+                               dict_like_object: Union[str, 'StringIO', dict],
+                               schema_path: Path) -> dict:
         """Returns dict from path, io object or dict.
 
         Returns:
@@ -348,10 +347,8 @@ class ConfigurationParser:
             except KeyError as err:
                 raise ValueError(f'Credentials missing required section: {err}') from err
         try:
-            profile_dict = lookup_profile_from_creds(self.get_dict_from_anything(credentials,
-                                                                                  CREDENTIALS_JSON_SCHEMA),
-                                                     profile,
-                                                     section)
+            profile_dict = lookup_profile_from_creds(self.get_dict_from_anything(
+                credentials, CREDENTIALS_JSON_SCHEMA), profile, section)
         except FileNotFoundError as err:
             err.strerror = "Credentials specified in replica.yml not found. " + err.strerror
             raise
