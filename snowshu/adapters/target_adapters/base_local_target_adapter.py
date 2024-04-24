@@ -166,6 +166,6 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
 
         Args:
             source_adapter_name: the classname of the source adapter
-            incremental_image: the name of incremental image to initialize,
-                if specified will override default image
+            kwargs: additional arguments to pass to the initialization method
+                e.g. incremental_image for incremental replicas
         """

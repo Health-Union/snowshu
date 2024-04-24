@@ -3,7 +3,6 @@ import json
 from io import StringIO
 from pathlib import Path
 from unittest import mock
-from webbrowser import get
 
 import yaml
 

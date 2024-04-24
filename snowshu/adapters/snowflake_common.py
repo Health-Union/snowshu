@@ -26,7 +26,7 @@ class SnowflakeCommon():
                 "Adapter.get_connection called before setting Adapter.credentials"
             )
 
-        logger.debug(f"Acquiring {self.CLASSNAME} connection...")
+        logger.debug(f"Acquiring {self.__class__.__name__} connection...")
         overrides = {
             "database": database_override,
             "schema": schema_override,
