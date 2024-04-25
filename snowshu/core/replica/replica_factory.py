@@ -86,7 +86,7 @@ class ReplicaFactory:
             remove_dangling_replica_containers()
             return message
 
-        if self.config.target_profile.adapter.container:
+        if not self.config.target_profile.adapter.container:
             self.config.target_profile.adapter.initialize_replica(
                 self.config.source_profile.name)
 
