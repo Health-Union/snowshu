@@ -1,7 +1,7 @@
 import copy
 import re
 import time
-from abc import ABC
+from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from typing import Iterable, List, Optional, Set
 import logging
@@ -192,12 +192,13 @@ class BaseSQLAdapter(ABC):
                     f'from the database in {duration(start_time)}.')
         return set(catalog)
 
+    @abstractmethod
     def _get_all_databases(self) -> List[str]:
-        raise NotImplementedError()
+        """ Returns the raw names of the databases (raw case) """
 
+    @abstractmethod
     def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         """ Returns the raw names of the schemas in the given database (raw case) """
-        raise NotImplementedError()
 
     def _get_filtered_schemas(self, filters: Iterable[dict], flags: re.RegexFlag = 0) -> List[_DatabaseObject]:
         """ Get all of the filtered schema structures based on the provided filters. """
@@ -234,12 +235,14 @@ class BaseSQLAdapter(ABC):
 
         return filtered_schemas
 
+    @abstractmethod
     def _get_relations_from_database(self, schema_obj: _DatabaseObject):
-        raise NotImplementedError()
+        """ Returns all of the relations in the given schema """
 
     @staticmethod
+    @abstractmethod
     def quoted(val: str) -> str:
-        raise NotImplementedError()
+        """ Returns the quoted version of the value """
 
     def quoted_dot_notation(self, rel: Relation) -> str:
         case_corrected_database = self._correct_case(rel.database)

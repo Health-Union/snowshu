@@ -1,4 +1,5 @@
 from typing import Any
+from abc import abstractmethod
 import logging
 
 import pandas as pd
@@ -25,18 +26,19 @@ class BaseSourceAdapter(BaseSQLAdapter):
                 raise NotImplementedError(
                     f'Source adapter requires attribute f{attr} but was not set.')
 
+    @abstractmethod
     def _count_query(self, query: str) -> int:
         """wraps any query in a COUNT statement, returns that integer."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
+    @abstractmethod
     def check_count_and_query(self, query: str, max_count: int, unsampled: bool) -> pd.DataFrame:
         """checks the count, if count passes returns results as a dataframe."""
-        raise NotImplementedError()
 
     def scalar_query(self, query: str) -> Any:
         """Returns only a single value.
 
-        When the database is expected to return a single row with a single column, 
+        When the database is expected to return a single row with a single column,
         this method will return the raw value from that cell. Will throw a :class:`TooManyRecords
         <snowshu.exceptions.TooManyRecords>` exception.
 
