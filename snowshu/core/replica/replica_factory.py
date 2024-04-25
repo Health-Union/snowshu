@@ -63,11 +63,11 @@ class ReplicaFactory:
 
         graph.build_graph(self.config)
 
+
         if self.incremental:
             if issubclass(self.config.target_profile.adapter.__class__, BaseLocalTargetAdapter):
-                # TODO replica container should not be started for analyze commands
                 self.config.target_profile.adapter.initialize_replica(
-                    self.config.source_profile.name, incremental_image=self.incremental)
+                    config=self.config, incremental_image=self.incremental)
 
                 incremental_target_catalog = self.config.target_profile.adapter.build_catalog(
                     patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
@@ -83,6 +83,8 @@ class ReplicaFactory:
             else:
                 raise NotImplementedError(
                     "Incremental builds are only supported for local target adapters.")
+        else:
+            self.config.target_profile.adapter.initialize_replica(config=self.config)
 
         graphs = graph.get_connected_subgraphs()
         if len(graphs) < 1:
@@ -90,10 +92,6 @@ class ReplicaFactory:
             message = "No{}relations found per provided{}replica configuration{}, exiting.".format(*args)  # noqa: pylint: disable=consider-using-f-string
             remove_dangling_replica_containers()
             return message
-
-        if not self.config.target_profile.adapter.container:
-            self.config.target_profile.adapter.initialize_replica(
-                self.config.source_profile.name)
 
         # TODO replica container should not be started for analyze commands
         runner = GraphSetRunner()
