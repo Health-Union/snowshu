@@ -5,6 +5,7 @@ from typing import Optional, TextIO, Union
 
 import logging
 
+from snowshu.adapters.target_adapters.base_local_target_adapter import BaseLocalTargetAdapter
 from snowshu.adapters.target_adapters.base_remote_target_adapter import BaseRemoteTargetAdapter
 from snowshu.core.configuration_parser import (Configuration,
                                                ConfigurationParser)
@@ -63,21 +64,25 @@ class ReplicaFactory:
         graph.build_graph(self.config)
 
         if self.incremental:
-            # TODO replica container should not be started for analyze commands
-            self.config.target_profile.adapter.initialize_replica(
-                self.config.source_profile.name, incremental_image=self.incremental)
+            if issubclass(self.config.target_profile.adapter.__class__, BaseLocalTargetAdapter):
+                # TODO replica container should not be started for analyze commands
+                self.config.target_profile.adapter.initialize_replica(
+                    self.config.source_profile.name, incremental_image=self.incremental)
 
-            incremental_target_catalog = self.config.target_profile.adapter.build_catalog(
-                patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
-                thread_workers=self.config.threads,
-                flags=re.IGNORECASE)
+                incremental_target_catalog = self.config.target_profile.adapter.build_catalog(
+                    patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
+                    thread_workers=self.config.threads,
+                    flags=re.IGNORECASE)
 
-            apply_source_case = alter_relation_case(
-                case_function=self.config.source_profile.adapter._correct_case)  # noqa pylint: disable=protected-access
-            incremental_target_catalog_casted = set(map(apply_source_case, incremental_target_catalog))
+                apply_source_case = alter_relation_case(
+                    case_function=self.config.source_profile.adapter._correct_case)  # noqa pylint: disable=protected-access
+                incremental_target_catalog_casted = set(map(apply_source_case, incremental_target_catalog))
 
-            graph.graph = SnowShuGraph.catalog_difference(graph.graph,
-                                                          incremental_target_catalog_casted)
+                graph.graph = SnowShuGraph.catalog_difference(graph.graph,
+                                                              incremental_target_catalog_casted)
+            else:
+                raise NotImplementedError(
+                    "Incremental builds are only supported for local target adapters.")
 
         graphs = graph.get_connected_subgraphs()
         if len(graphs) < 1:

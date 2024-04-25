@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, List, Type, Dict
+from typing import TYPE_CHECKING, List, Tuple, Type, Dict
 import logging
 
 import docker
@@ -83,7 +83,7 @@ class SnowShuDocker:
                 target_adapter: Type['BaseTargetAdapter'],
                 source_adapter: str,
                 arch_list: list[str],
-                envars: list) -> tuple(docker.models.containers.Container):
+                envars: list) -> Tuple[docker.models.containers.Container]:
 
         # Unpack target adapter's data
         image_name = target_adapter.DOCKER_IMAGE
