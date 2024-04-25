@@ -63,26 +63,38 @@ class ReplicaFactory:
 
         graph.build_graph(self.config)
 
-
         if self.incremental:
-            if issubclass(self.config.target_profile.adapter.__class__, BaseLocalTargetAdapter):
+            if issubclass(
+                self.config.target_profile.adapter.__class__, BaseLocalTargetAdapter
+            ):
                 self.config.target_profile.adapter.initialize_replica(
-                    config=self.config, incremental_image=self.incremental)
+                    config=self.config, incremental_image=self.incremental
+                )
 
-                incremental_target_catalog = self.config.target_profile.adapter.build_catalog(
-                    patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
-                    thread_workers=self.config.threads,
-                    flags=re.IGNORECASE)
+                incremental_target_catalog = (
+                    self.config.target_profile.adapter.build_catalog(
+                        patterns=SnowShuGraph.build_sum_patterns_from_configs(
+                            self.config
+                        ),
+                        thread_workers=self.config.threads,
+                        flags=re.IGNORECASE,
+                    )
+                )
 
                 apply_source_case = alter_relation_case(
-                    case_function=self.config.source_profile.adapter._correct_case)  # noqa pylint: disable=protected-access
-                incremental_target_catalog_casted = set(map(apply_source_case, incremental_target_catalog))
+                    case_function=self.config.source_profile.adapter._correct_case
+                )  # noqa pylint: disable=protected-access
+                incremental_target_catalog_casted = set(
+                    map(apply_source_case, incremental_target_catalog)
+                )
 
-                graph.graph = SnowShuGraph.catalog_difference(graph.graph,
-                                                              incremental_target_catalog_casted)
+                graph.graph = SnowShuGraph.catalog_difference(
+                    graph.graph, incremental_target_catalog_casted
+                )
             else:
                 raise NotImplementedError(
-                    "Incremental builds are only supported for local target adapters.")
+                    "Incremental builds are only supported for local target adapters."
+                )
         else:
             self.config.target_profile.adapter.initialize_replica(config=self.config)
 
@@ -104,28 +116,9 @@ class ReplicaFactory:
                                  barf=barf)
         if not self.run_analyze:
             relations = [relation for graph in graphs for relation in graph.nodes]
-            if self.config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:
-                logger.info('Creating x-database links in target...')
-                self.config.target_profile.adapter.enable_cross_database()
-                logger.info('X-database enabled.')
-            self.config.target_profile.adapter.create_all_database_extensions()
-
-            logger.info(
-                'Applying %s emulation functions to target...',
-                self.config.source_profile.adapter.name)
-            for function in self.config.source_profile.adapter.SUPPORTED_FUNCTIONS:
-                self.config.target_profile.adapter.create_function_if_available(
-                    function, relations)
-            logger.info('Emulation functions applied.')
-
-            logger.info('Copying replica data to shared location...')
-            status_message = self.config.target_profile.adapter.copy_replica_data()
-            if status_message[0] != 0:
-                message = (f'Failed to execute copy command: {status_message[1]}')
-                logger.error(message)
-                raise UnableToExecuteCopyReplicaCommand(message)
-
-            self.config.target_profile.adapter.finalize_replica()
+            self.config.target_profile.adapter.finalize_replica(
+                config=self.config, relations=relations
+            )
 
         return printable_result(
             graph_to_result_list(graphs),
