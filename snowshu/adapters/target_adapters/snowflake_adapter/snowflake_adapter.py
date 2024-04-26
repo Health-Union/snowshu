@@ -35,9 +35,13 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     MATERIALIZATION_MAPPINGS = {}
 
     def __init__(self, replica_metadata: dict):
-        super(BaseTargetAdapter).__init__(replica_metadata)
+        super().__init__(replica_metadata)
 
     def initialize_replica(self, config: Configuration, **kwargs):
+        if kwargs.get("incremental_image", None):
+            raise NotImplementedError(
+                "Incremental builds are not supported for Snowflake target adapter."
+            )
         pass
 
     def _initialize_snowshu_meta_database(self):
@@ -50,4 +54,16 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         pass
 
     def create_schema_if_not_exists(self, database, schema):
+        pass
+
+    def _get_all_databases(self):
+        pass
+
+    def _get_all_schemas(self):
+        pass
+
+    def _get_relations_from_database(self, database):
+        pass
+
+    def quoted(self, identifier):
         pass
