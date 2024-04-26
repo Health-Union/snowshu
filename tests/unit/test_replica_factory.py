@@ -21,7 +21,7 @@ from tests.conftest import BASIC_CONFIGURATION
 def tests_replica_rename(_, build_graph, stub_configs):
     replica = ReplicaFactory()
     replica.load_config(
-        stub_configs()
+        stub_configs(), target_arch=get_multiarch_list(LOCAL_ARCHITECTURE)
     )
     test_name = rand_string(10)
     replica.create(test_name, False, 1)
