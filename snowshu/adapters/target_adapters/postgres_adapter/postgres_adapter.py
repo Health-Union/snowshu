@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple
 import sqlalchemy
 from pandas import DataFrame
 
+from snowshu.core.configuration_parser import Configuration
 import snowshu.core.models.data_types as dtypes
 from snowshu.adapters.target_adapters.base_local_target_adapter import BaseLocalTargetAdapter
 from snowshu.configs import DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER, POSTGRES_IMAGE
@@ -288,7 +289,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}']
         return commands
 
-    def initialize_replica(self, **kwargs) -> None:
+    def initialize_replica(self, config: Configuration, **kwargs) -> None:
         """shimming but will want to move _init_image public with this
         interface.
 
@@ -297,8 +298,11 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             incremental_image: the name of incremental image to initialize,
                 if specified will override default image
         """
+        if not config:
+            raise ValueError("config is required to initialize replica.")
+
         incremental_image = kwargs.get("incremental_image", None)
-        if not kwargs["config"].target_profile.adapter.container:
+        if not config.target_profile.adapter.container:
             if incremental_image:
                 try:
                     # If image tag not specified, explicilty set to "latest"
@@ -306,35 +310,34 @@ class PostgresAdapter(BaseLocalTargetAdapter):
                         incremental_image = f"{incremental_image}:latest"
 
                     images = self.shdocker.client.images.list(name=incremental_image)
-
                     logger.debug(
                         f"List of images found with name {incremental_image}: {images}"
                     )
-                    image_commands = []
-                    for item in images[0].history():
-                        if ("postgres" in item["CreatedBy"]) or (
-                            "PGDATA" in item["CreatedBy"]
-                        ):
-                            image_commands.append(item["CreatedBy"])
+                    image_commands = [
+                        item["CreatedBy"]
+                        for item in images[0].history()
+                        if "postgres" in item["CreatedBy"]
+                        or "PGDATA" in item["CreatedBy"]
+                    ]
 
-                    if len(image_commands) > 0:
+                    if image_commands:
                         self.__class__.DOCKER_IMAGE = incremental_image
                         self.is_incremental = True
 
                     else:
-                        logger.error(
-                            f"The override image is not a Postgres image: {incremental_image}"
+                        error_message = (
+                            "The override image is not a Postgres image: %s ",
+                            incremental_image,
                         )
-                        raise Exception(
-                            f"The override image is not a Postgres image: {incremental_image}"
-                        )
+                        logger.error(error_message)
+                        raise Exception(error_message)
                 except Exception as error:
                     logger.error(
                         "Looks like provided DOCKER_IMAGE does not exist, error:\n%s",
                         error,
                     )
                     raise error
-            self._init_image(kwargs["config"].source_profile.name)
+            self._init_image(config.source_profile.name)
 
     def create_or_replace_view(self, relation) -> None:
         """Creates a view of the specified relation in the target adapter.
