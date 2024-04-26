@@ -1,7 +1,7 @@
 import logging
+from unittest.mock import Base
 
 from snowshu.adapters.snowflake_common import SnowflakeCommon
-from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models.credentials import (
     USER,
@@ -35,14 +35,13 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     MATERIALIZATION_MAPPINGS = {}
 
     def __init__(self, replica_metadata: dict):
-        super().__init__(replica_metadata)
+        BaseRemoteTargetAdapter.__init__(self, replica_metadata)
 
     def initialize_replica(self, config: Configuration, **kwargs):
         if kwargs.get("incremental_image", None):
             raise NotImplementedError(
                 "Incremental builds are not supported for Snowflake target adapter."
             )
-        pass
 
     def _initialize_snowshu_meta_database(self):
         pass
@@ -59,11 +58,11 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def _get_all_databases(self):
         pass
 
-    def _get_all_schemas(self):
+    def _get_all_schemas(self, database, exclude_defaults):
         pass
 
-    def _get_relations_from_database(self, database):
+    def _get_relations_from_database(self, schema_obj):
         pass
 
-    def quoted(self, identifier):
+    def quoted(self, val):
         pass
