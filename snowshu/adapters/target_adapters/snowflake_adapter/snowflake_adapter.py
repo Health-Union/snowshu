@@ -1,5 +1,4 @@
 import logging
-from unittest.mock import Base
 
 from snowshu.adapters.snowflake_common import SnowflakeCommon
 from snowshu.core.configuration_parser import Configuration
@@ -58,7 +57,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def _get_all_databases(self):
         pass
 
-    def _get_all_schemas(self, database, exclude_defaults):
+    def _get_all_schemas(self, database, exclude_defaults=False):
         pass
 
     def _get_relations_from_database(self, schema_obj):

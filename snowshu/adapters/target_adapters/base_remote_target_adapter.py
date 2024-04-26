@@ -23,5 +23,5 @@ class BaseRemoteTargetAdapter(BaseTargetAdapter):
         del credentials["adapter"]
         return Credentials(**credentials)
 
-    def finalize_replica(self) -> None:
+    def finalize_replica(self, config, **kwargs) -> None:
         pass
