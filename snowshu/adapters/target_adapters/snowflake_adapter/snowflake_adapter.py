@@ -63,5 +63,6 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def _get_relations_from_database(self, schema_obj):
         pass
 
-    def quoted(self, val):
+    @staticmethod
+    def quoted(val):
         pass
