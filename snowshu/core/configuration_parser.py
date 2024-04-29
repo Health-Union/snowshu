@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 TEMPLATES_PATH = Path(os.path.dirname(__file__)).parent / 'templates'
 REPLICA_JSON_SCHEMA = TEMPLATES_PATH / 'replica_schema.json'
 CREDENTIALS_JSON_SCHEMA = TEMPLATES_PATH / 'credentials_schema.json'
+CREDENTIALS_TARGET_JSON_SCHEMA = TEMPLATES_PATH / 'credentials_schema_target.json'
 
 
 @dataclass
