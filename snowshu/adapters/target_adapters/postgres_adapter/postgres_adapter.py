@@ -290,7 +290,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
 
     def initialize_replica(self,
                            source_adapter_name: str,
-                           incremental_image: str = None) -> None:
+                           **kwargs) -> None:
         """shimming but will want to move _init_image public with this
         interface.
 
@@ -299,6 +299,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             incremental_image: the name of incremental image to initialize,
                 if specified will override default image
         """
+        incremental_image = kwargs.get('incremental_image', None)
         if incremental_image:
             try:
                 # If image tag not specified, explicilty set to "latest"

@@ -136,8 +136,11 @@ def create(replica_file: click.Path,  # noqa pylint: disable=too-many-arguments
 
     replica = ReplicaFactory()
     replica.load_config(replica_file, target_arch=target_arch)
-    replica.incremental = incremental
 
+    replica.check_adapter_support(replica, incremental, '-i', 'incremental')
+    replica.check_adapter_support(replica, multiarch, '-m', 'multiarch')
+
+    replica.incremental = incremental
     click.echo(replica.create(name=name, barf=barf, retry_count=retry_count))
 
 

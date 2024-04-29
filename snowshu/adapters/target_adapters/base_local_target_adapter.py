@@ -160,14 +160,12 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
         """Create all required database extensions for the target adapter."""
 
     @abstractmethod
-    def initialize_replica(
-        self, source_adapter_name: str, incremental_image: str = None
-    ) -> None:
+    def initialize_replica(self, source_adapter_name: str, **kwargs) -> None:
         """Launches a container and initializes the replica.
             Should be defined in specific target adapters due to different setup of different dbs
 
         Args:
             source_adapter_name: the classname of the source adapter
-            incremental_image: the name of incremental image to initialize,
-                if specified will override default image
+            kwargs: additional arguments to pass to the initialization method
+                e.g. incremental_image for incremental replicas
         """

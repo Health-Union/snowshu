@@ -130,16 +130,16 @@ def test_schema_verification(tmpdir, stub_creds, stub_configs):
     cred_file.write_text(json.dumps(stub_creds))
     replica_file.write_text(json.dumps(stub_configs))
 
-    replica_config = ConfigurationParser()._get_dict_from_anything(
+    replica_config = ConfigurationParser().get_dict_from_anything(
         replica_file, REPLICA_JSON_SCHEMA)
-    cred_config = ConfigurationParser()._get_dict_from_anything(
+    cred_config = ConfigurationParser().get_dict_from_anything(
         cred_file, CREDENTIALS_JSON_SCHEMA)
     assert isinstance(replica_config, dict)
     assert isinstance(cred_config, dict)
 
 
 materialization_mappings_test_cases = [
-    (   
+    (
         True,  # set to True
         {
             "BASE TABLE": materializations.TABLE,
