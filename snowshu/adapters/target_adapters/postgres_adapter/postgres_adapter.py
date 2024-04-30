@@ -298,9 +298,6 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             incremental_image: the name of incremental image to initialize,
                 if specified will override default image
         """
-        if not config:
-            raise ValueError("config is required to initialize replica.")
-
         incremental_image = kwargs.get("incremental_image", None)
         if not config.target_profile.adapter.container:
             if incremental_image:
