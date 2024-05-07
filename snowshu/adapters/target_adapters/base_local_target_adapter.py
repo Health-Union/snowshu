@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Tuple, Set, Optional
 import pandas as pd
 
 
+from snowshu.core.configuration_parser import Configuration
 from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models.credentials import DATABASE, HOST, PASSWORD, PORT, USER
 from snowshu.core.models.credentials import Credentials
@@ -20,6 +21,7 @@ from snowshu.configs import (
     DOCKER_TARGET_PORT,
     IS_IN_DOCKER,
 )
+from snowshu.exceptions import UnableToExecuteCopyReplicaCommand
 
 if TYPE_CHECKING:
     from docker.models.containers import Container
@@ -89,15 +91,44 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
     def _target_database_is_ready(self) -> bool:
         return self.container.exec_run(self.DOCKER_READY_COMMAND).exit_code == 0
 
-    def finalize_replica(self) -> None:
+    def finalize_replica(self, config: Configuration, **kwargs) -> None:
         """Converts all containers to respective replicas,
         creates 'latest' if any on the running containers are of local arch
         """
-        logger.info("Finalizing target container into replica...")
+        # Section 1: Enable cross-database links if supported
+        if config.source_profile.adapter.SUPPORTS_CROSS_DATABASE:
+            logger.info("Enabling cross-database links in target...")
+            config.target_profile.adapter.enable_cross_database()
+            logger.info("Cross-database links enabled.")
+
+        # Section 2: Create all database extensions
+        logger.info("Creating all database extensions in target...")
+        config.target_profile.adapter.create_all_database_extensions()
+        logger.info("Database extensions created.")
+
+        # Section 3: Apply emulation functions
+        logger.info("Applying emulation functions to target...")
+        for function in config.source_profile.adapter.SUPPORTED_FUNCTIONS:
+            config.target_profile.adapter.create_function_if_available(
+                function, kwargs["relations"]
+            )
+        logger.info("Emulation functions applied to target.")
+
+        # Section 4: Copy replica data
+        logger.info("Initiating replica data copy to shared location...")
+        status_message = config.target_profile.adapter.copy_replica_data()
+        if status_message[0] != 0:
+            message = f"Failed to execute copy command: {status_message[1]}"
+            logger.error(message)
+            raise UnableToExecuteCopyReplicaCommand(message)
+        logger.info("Replica data copied to shared location.")
+
+        # Section 5: Finalize target container
+        logger.info("Converting target container into replica...")
         self.shdocker.convert_container_to_replica(
             self.replica_meta["name"], self.container, self.passive_container
         )
-        logger.info(f'Finalized replica image {self.replica_meta["name"]}')
+        logger.info(f'Replica image {self.replica_meta["name"]} finalized.')
 
     def _build_conn_string_partial(
         self, dialect: str, database: Optional[str] = None
@@ -160,12 +191,12 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
         """Create all required database extensions for the target adapter."""
 
     @abstractmethod
-    def initialize_replica(self, source_adapter_name: str, **kwargs) -> None:
+    def initialize_replica(self, config: Configuration, **kwargs) -> None:
         """Launches a container and initializes the replica.
             Should be defined in specific target adapters due to different setup of different dbs
 
         Args:
-            source_adapter_name: the classname of the source adapter
+            config: the Configuration object
             kwargs: additional arguments to pass to the initialization method
                 e.g. incremental_image for incremental replicas
         """

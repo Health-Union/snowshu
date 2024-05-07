@@ -10,8 +10,8 @@ from snowshu.adapters.target_adapters.base_local_target_adapter import BaseLocal
 from snowshu.core.models import Relation
 from snowshu.core.models.relation import alter_relation_case
 from snowshu.core.replica.replica_factory import ReplicaFactory
-from snowshu.core.utils import get_multiarch_list
 from snowshu.configs import LOCAL_ARCHITECTURE
+from snowshu.core.utils import get_multiarch_list
 from tests.common import rand_string
 from tests.conftest import BASIC_CONFIGURATION
 
@@ -21,7 +21,7 @@ from tests.conftest import BASIC_CONFIGURATION
 def tests_replica_rename(_, build_graph, stub_configs):
     replica = ReplicaFactory()
     replica.load_config(
-        stub_configs(), target_arch=get_multiarch_list(LOCAL_ARCHITECTURE)
+        stub_configs(), target_arch=[LOCAL_ARCHITECTURE.value]
     )
     test_name = rand_string(10)
     replica.create(test_name, False, 1)
@@ -41,7 +41,7 @@ def tests_incremental_flag(graph, stub_configs):
     adapter.build_catalog = mock.MagicMock(return_value=set())
     result = replica.create(test_name, False, 1)
     adapter.initialize_replica.assert_called_once_with(
-        "default", incremental_image=replica.incremental
+        config=replica.config, incremental_image=replica.incremental
     )
     adapter.build_catalog.assert_called()
     assert "image up-to-date" in result
@@ -92,7 +92,7 @@ def tests_incremental_run_patched(stub_graph_set, stub_relation_set):
     adapter.build_catalog = mock.MagicMock(return_value=target_catalog)
     result = replica.create(test_name, False, 1)
     adapter.initialize_replica.assert_called_once_with(
-        "default", incremental_image=replica.incremental
+        config=replica.config, incremental_image=replica.incremental
     )
     adapter.build_catalog.assert_called()
     assert 'image up-to-date' in result

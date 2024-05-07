@@ -7,6 +7,7 @@ from typing import Iterable, Optional
 import pandas as pd
 
 
+from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models import DataType
 from snowshu.configs import DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.adapters import BaseSQLAdapter
@@ -48,8 +49,23 @@ class BaseTargetAdapter(BaseSQLAdapter):
         """
 
     @abstractmethod
+    def initialize_replica(self, config: Configuration, **kwargs) -> None:
+        """Initializes the target adapter for a replica build. This method should
+            be used to set up any necessary database objects or connections.
+
+        Args:
+            config: The configuration object for the replica build.
+            kwargs: Any additional keyword arguments to be passed to the method.
+        """
+
+    @abstractmethod
     def _initialize_snowshu_meta_database(self) -> None:
         """Initializes the snowshu meta database in the target adapter."""
+
+    @abstractmethod
+    def finalize_replica(self, config: Configuration, **kwargs) -> None:
+        """Finalizes the target adapter for a replica build. This method should be
+            used to clean up any temporary database objects or connections."""
 
     def create_and_load_relation(
         self, relation: "Relation", data: Optional[pd.DataFrame]
