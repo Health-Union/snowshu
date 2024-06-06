@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 SNOWFLAKE_ACCOUNT_DEFAULT_ROLE = "SNOWSHU_REPLICA_BUILDER_ROLE"
 
+
 class SnowflakeCommon():
 
     def set_default_role(self) -> None:
