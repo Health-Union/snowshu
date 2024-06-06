@@ -360,8 +360,12 @@ class ConfigurationParser:
         del profile_dict['adapter']
         adapter = adapter()
         adapter.credentials = Credentials(**profile_dict)
-        return AdapterProfile(profile,
-                              adapter)
+        try:
+            adapter.set_default_role()
+        except NotImplementedError:
+            logger.warning("Adapter does not support setting default role.")
+            logger.warning("Default role for adapter %s will not be set.", adapter.__class__.__name__)
+        return AdapterProfile(profile, adapter)
 
     @staticmethod
     def _build_target(full_config: dict) -> AdapterProfile:

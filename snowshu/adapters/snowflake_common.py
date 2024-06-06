@@ -8,8 +8,16 @@ from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
 
+SNOWFLAKE_ACCOUNT_DEFAULT_ROLE = "SNOWSHU_REPLICA_BUILDER_ROLE"
 
 class SnowflakeCommon():
+
+    def set_default_role(self) -> None:
+        """Sets the default role for the connection."""
+        if self.credentials.role is None:
+            logger.info('Setting default role to %s...', SNOWFLAKE_ACCOUNT_DEFAULT_ROLE)
+            self.credentials.role = SNOWFLAKE_ACCOUNT_DEFAULT_ROLE
+            logger.debug("Default role set to %s.", self.credentials.role)
 
     def get_connection(
         self,
@@ -53,5 +61,7 @@ class SnowflakeCommon():
             if getattr(self._credentials, arg) is not None
         ]
         get_string = "?" + "&".join(get_args) if get_args else ""
+
+        logger.info(f"#### Connection String #### {base_conn}{schema}{get_string}")
 
         return f"{base_conn}{schema}{get_string}"
