@@ -62,7 +62,4 @@ class SnowflakeCommon():
             if getattr(self._credentials, arg) is not None
         ]
         get_string = "?" + "&".join(get_args) if get_args else ""
-
-        logger.info(f"#### Connection String #### {base_conn}{schema}{get_string}")
-
         return f"{base_conn}{schema}{get_string}"
