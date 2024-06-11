@@ -99,7 +99,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
     def _create_snowshu_schema_statement() -> str:
         return 'CREATE SCHEMA IF NOT EXISTS snowshu;'
 
-    def create_database_if_not_exists(self, database: str, **kwargs) -> str: # noqa pylint: disable=unused-argument
+    def create_database_if_not_exists(self, database: str, **kwargs) -> str:  # noqa pylint: disable=unused-argument
         """Postgres doesn't have great CINE support.
 
         So ask for forgiveness instead.
