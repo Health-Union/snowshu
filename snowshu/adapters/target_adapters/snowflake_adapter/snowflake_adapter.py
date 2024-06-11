@@ -59,7 +59,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         logger.debug(f"Creating database {database_name}...")
         try:
             self.conn.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
-        except sqlalchemy.exc.ProgrammingError  as exc:
+        except sqlalchemy.exc.ProgrammingError as exc:
             logger.error(f"Failed to create database {database_name}.")
             if 'insufficient privileges' in str(exc):
                 logger.error("Please ensure the user has the required privileges.")
