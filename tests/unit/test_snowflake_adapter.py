@@ -14,6 +14,11 @@ from snowshu.core.models.relation import Relation
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from tests.common import query_equalize, rand_string
 
+@pytest.fixture
+def credentials():
+    return Credentials(
+        user="user", password="password", account="account", database="database"
+    )
 
 def test_get_connection():
     sf = SnowflakeAdapter()
@@ -305,3 +310,20 @@ def test_sample_type_to_query_sql():
     qualifier = sample_type.probability
 
     assert sf._sample_type_to_query_sql(sample_type) == f"SAMPLE BERNOULLI ({qualifier})"
+
+
+def test_default_role_setting_is_null(credentials):
+    sf = SnowflakeAdapter()
+    sf.credentials = credentials
+    assert sf.credentials.role is None
+    sf.set_default_role()
+    assert sf.credentials.role == "SNOWSHU_REPLICA_BUILDER_ROLE"
+
+def test_default_role_setting_is_not_null(credentials):
+    sf = SnowflakeAdapter()
+    sf.credentials = credentials
+    sf.credentials.role = "role"
+    assert sf.credentials.role == "role"
+    sf.set_default_role()
+    assert sf.credentials.role == "role"
+
