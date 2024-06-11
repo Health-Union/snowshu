@@ -23,6 +23,7 @@ ASSETS_DIR = Path(os.path.dirname(__file__))
 DATA_DIR = ASSETS_DIR / 'data'
 """ 'SNOWSHU_DEVELOPMENT_USER' and 'SNOWSHU_DEVELOPMENT_ROLE" should be used when integration tests are running """
 CREDENTIALS = ASSETS_DIR / 'integration' / 'credentials.yml'
+CREDENTIALS_SNOWFLAKE_TARGET = ASSETS_DIR / 'integration' / 'credentials_snowflake_target.yml'
 SQL_CREATION_FILE = ASSETS_DIR / "data" / "data_types_snowflake_creation.sql"
 
 EXT = '*.csv'

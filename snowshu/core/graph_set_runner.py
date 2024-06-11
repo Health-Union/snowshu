@@ -226,7 +226,9 @@ class GraphSetRunner:
                     f"Analysis of relation {relation.dot_notation} completed in {duration(start_time)}."
                 )
         else:
-            executable.target_adapter.create_database_if_not_exists(relation.database)
+            executable.target_adapter.create_database_if_not_exists(
+                relation.database, uuid=self.uuid
+            )
             executable.target_adapter.create_schema_if_not_exists(
                 relation.database, relation.schema
             )
