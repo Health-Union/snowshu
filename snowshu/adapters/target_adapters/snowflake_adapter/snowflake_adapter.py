@@ -1,6 +1,8 @@
 import json
 import logging
 
+import sqlalchemy
+
 from snowshu.adapters.snowflake_common import SnowflakeCommon
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models.credentials import (
@@ -55,8 +57,12 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         database_name = f"SNOWSHU_{kwargs['uuid']}_{replica_name}_{database}"
 
         logger.debug(f"Creating database {database_name}...")
-        self.conn.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
-        logger.info(f"Database {database_name} created.")
+        try:
+            self.conn.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
+        except sqlalchemy.exc.ProgrammingError as exc:
+            logger.error(f"Failed to create database {database_name}.")
+            if 'insufficient privileges' in str(exc):
+                logger.error("Please ensure the user has the required privileges.")
 
     def create_or_replace_view(self, relation):
         pass
