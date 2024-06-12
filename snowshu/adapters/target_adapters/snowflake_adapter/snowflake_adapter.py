@@ -1,4 +1,7 @@
+import json
 import logging
+
+import sqlalchemy
 
 from snowshu.adapters.snowflake_common import SnowflakeCommon
 from snowshu.core.configuration_parser import Configuration
@@ -36,6 +39,10 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def __init__(self, replica_metadata: dict):
         BaseRemoteTargetAdapter.__init__(self, replica_metadata)
 
+        config_json = json.loads(self.replica_meta["config_json"])
+        self.credentials = self._generate_credentials(config_json["credpath"])
+        self.conn = self.get_connection()
+
     def initialize_replica(self, config: Configuration, **kwargs):
         if kwargs.get("incremental_image", None):
             raise NotImplementedError(
@@ -45,8 +52,17 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def _initialize_snowshu_meta_database(self):
         pass
 
-    def create_database_if_not_exists(self, database):
-        pass
+    def create_database_if_not_exists(self, database: str, **kwargs):
+        replica_name = self.replica_meta["name"].upper()
+        database_name = f"SNOWSHU_{kwargs['uuid']}_{replica_name}_{database}"
+
+        logger.debug(f"Creating database {database_name}...")
+        try:
+            self.conn.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
+        except sqlalchemy.exc.ProgrammingError as exc:
+            logger.error(f"Failed to create database {database_name}.")
+            if 'insufficient privileges' in str(exc):
+                logger.error("Please ensure the user has the required privileges.")
 
     def create_or_replace_view(self, relation):
         pass
@@ -61,6 +77,9 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         pass
 
     def _get_relations_from_database(self, schema_obj):
+        pass
+
+    def finalize_replica(self, config: Configuration, **kwargs) -> None:
         pass
 
     @staticmethod

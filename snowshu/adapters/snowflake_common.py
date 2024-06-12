@@ -62,5 +62,4 @@ class SnowflakeCommon():
             if getattr(self._credentials, arg) is not None
         ]
         get_string = "?" + "&".join(get_args) if get_args else ""
-
         return f"{base_conn}{schema}{get_string}"

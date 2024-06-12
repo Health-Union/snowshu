@@ -1,0 +1,95 @@
+version: "1"
+credpath: "./tests/assets/integration/credentials_snowflake_target.yml" ## can be a relative or expandable path
+name: integration_test
+short_description: this is a sample with LIVE CREDS for integration
+long_description: this is for testing against a live db
+threads: 15
+target:
+  adapter: 'snowflake'
+source:
+  profile: default
+  sampling: default
+  include_outliers: True
+  general_relations:
+    databases:
+      - pattern: SNOWSHU_DEVELOPMENT # matches our test database
+        schemas:
+          - pattern: "(?i)(EXTERNAL_DATA|SOURCE_SYSTEM|TESTS_DATA)" # matches our test schemas
+            relations:
+              - '(?i)^.*(?<!_view)$' # matches all relations that do not end with '_VIEW'
+  # these are exceptions to the 'default' sampling above
+  specified_relations:
+    - database: SNOWSHU_DEVELOPMENT
+      schema: SOURCE_SYSTEM
+      relation: ORDERS
+      unsampled: True
+    - database: SNOWSHU_DEVELOPMENT
+      schema: SOURCE_SYSTEM
+      relation: ORDER_ITEMS_VIEW
+      unsampled: True
+    - database: SNOWSHU_DEVELOPMENT
+      schema: TESTS_DATA
+      relation: DATA_TYPES
+      unsampled: True
+
+    - database: SNOWSHU_DEVELOPMENT
+      schema: SOURCE_SYSTEM
+      relation: ORDER_ITEMS
+      relationships:
+        bidirectional:
+          - local_attribute: PRODUCT_ID
+            database: '' ## empty strings inherit from the downstream relation
+            schema: ''
+            relation: PRODUCTS
+            remote_attribute: ID
+        directional:
+          - local_attribute: ORDER_ID
+            database: SNOWSHU_DEVELOPMENT
+            schema: SOURCE_SYSTEM
+            relation: ORDERS
+            remote_attribute: ID
+    - database: SNOWSHU_DEVELOPMENT
+      schema: SOURCE_SYSTEM
+      relation: USER_COOKIES
+      relationships:
+        bidirectional:
+          - local_attribute: USER_ID
+            database: '' ## empty strings inherit from the downstream relation
+            schema: ''
+            relation: USERS
+            remote_attribute: ID
+    - database: SNOWSHU_DEVELOPMENT
+      schema: EXTERNAL_DATA
+      relation: SOCIAL_USERS_IMPORT
+      sampling:
+        default:
+          margin_of_error: 0.05
+          confidence: 0.95
+          min_sample_size: 300
+          max_allowed_rows: 123456
+    - database: SNOWSHU_DEVELOPMENT
+      schema: POLYMORPHIC_DATA
+      relation: PARENT_TABLE
+      relationships:
+        polymorphic:
+          - local_attribute: CHILD_ID
+            local_type_attribute: CHILD_TYPE
+            database: ''
+            schema: ''
+            relation: '(?i)^CHILD_TYPE_[0-9]_ITEMS$'
+            remote_attribute: ID
+            local_type_overrides:
+              - database: SNOWSHU_DEVELOPMENT
+                schema: POLYMORPHIC_DATA
+                relation: CHILD_TYPE_2_ITEMS
+                override_value: type_2
+    - database: SNOWSHU_DEVELOPMENT
+      schema: POLYMORPHIC_DATA
+      relation: PARENT_TABLE_2
+      relationships:
+        polymorphic:
+          - local_attribute: ID
+            database: SNOWSHU_DEVELOPMENT
+            schema: POLYMORPHIC_DATA
+            relation: '(?i)^CHILD_TYPE_[0-9]_ITEMS$'
+            remote_attribute: PARENT_2_ID
