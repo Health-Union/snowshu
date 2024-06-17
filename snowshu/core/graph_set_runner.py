@@ -2,7 +2,6 @@ import gc
 import os
 import shutil
 import time
-import json
 import threading
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
@@ -34,7 +33,9 @@ class GraphExecutable:
 class GraphSetRunner:
     barf_output = "snowshu_barf_output"
     schemas_lock: threading.Lock = threading.Lock()
+    db_lock: threading.Lock = threading.Lock()
     schemas: Set[str] = set()
+    databases: Set[str] = set()
     uuid: str = utils.generate_unique_uuid()
 
     def __init__(self):
@@ -84,13 +85,30 @@ class GraphSetRunner:
                         self.process_executables(executables, executor, retry_count)
         except KeyboardInterrupt:
             logger.error(
-                "Execution interrupted by user, wait for schemas to be dropped..."
+                "Execution interrupted by user, wait for all threads to finish..."
             )
+            self._rollback_on_failure(executables, databases=self.databases)
+        except Exception as exc:
+            logger.error(f"Execution failed with error: {exc}")
+            self._rollback_on_failure(executables, databases=self.databases)
         finally:
             # Drop schemas after all threads completed work
             for schema in self.schemas:
                 source_adapter.drop_schema(schema)
             self.schemas.clear()
+
+    def _rollback_on_failure(self, executables, databases=None):
+        """Rolls back the databases created during the failed execution of the executables"""
+        if executables:
+            unique_target_adapters = set(
+                [
+                    executable.target_adapter
+                    for executable in executables
+                    if executable.target_adapter.ROLLBACK
+                ]
+            )
+            for target_adapter in unique_target_adapters:
+                target_adapter.rollback_database_creation(databases=databases)
 
     def process_executables(
         self,
@@ -111,19 +129,27 @@ class GraphSetRunner:
             Exception: If a task fails after the specified number of retries,
                     an exception is logged and the function returns None.
         """
+        # Continue to retry as long as there are retries left
         while retries >= 0:
+            # Submit each executable to the executor and store the resulting Future
             futures = {
                 executor.submit(self._traverse_and_execute, executable): executable
                 for executable in executables
             }
+
+            # Wait for all futures to complete
             completed, _ = concurrent.futures.wait(
                 futures.keys(), return_when=concurrent.futures.ALL_COMPLETED
             )
+
+            # Initialize a list to hold any executables that need to be retried
             re_executables = []
 
+            # Check each completed future for exceptions
             for future in completed:
                 executable = futures[future]
                 if exception := future.exception():
+                    # Log any exceptions that occurred and add the executable to the retry list
                     logger.warning(
                         "Concurrent thread finished work with exception:\n%s: %s",
                         str(exception.__class__),
@@ -131,17 +157,29 @@ class GraphSetRunner:
                     )
                     re_executables.append(executable)
 
+            # If there are no executables to retry, the process was successful
             if not re_executables:
-                return  # Success
+                return
 
+            # Log the executables that failed and will be retried
             logging.error(
                 "Failed because '%i' executables can't be finished successfully:\n%s",
                 len(re_executables),
                 str(re_executables),
             )
+
+            # Update the list of executables to the ones that need to be retried
             executables = re_executables
+
+            # Decrement the number of retries
             retries -= 1
+
+        # If the code reaches this point, all retries have been exhausted
         logging.error("Max retries reached. Some executables failed.")
+
+        # Roll back any changes made during the execution
+        logging.info("DATABASES %s", self.databases)
+        self._rollback_on_failure(executables, databases=self.databases)
 
     def _generate_schemas_if_necessary(
         self, adapter: BaseSQLAdapter, name: str, database: str
@@ -227,7 +265,7 @@ class GraphSetRunner:
                 )
         else:
             executable.target_adapter.create_database_if_not_exists(
-                relation.database, uuid=self.uuid
+                relation.database, uuid=self.uuid, db_lock=self.db_lock, databases=self.databases
             )
             executable.target_adapter.create_schema_if_not_exists(
                 relation.database, relation.schema
