@@ -98,13 +98,11 @@ class GraphSetRunner:
     def _rollback_on_failure(self, executables, databases=None):
         """Rolls back the databases created during the failed execution of the executables"""
         if executables:
-            unique_target_adapters = set(
-                [
-                    executable.target_adapter
-                    for executable in executables
-                    if executable.target_adapter.ROLLBACK
-                ]
-            )
+            unique_target_adapters = {
+                executable.target_adapter
+                for executable in executables
+                if executable.target_adapter.ROLLBACK
+            }
             for target_adapter in unique_target_adapters:
                 target_adapter.rollback_database_creation(databases=databases)
 
