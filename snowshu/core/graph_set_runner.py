@@ -1,6 +1,7 @@
 import gc
 import os
 import shutil
+import json
 import time
 import threading
 import concurrent.futures
@@ -87,9 +88,6 @@ class GraphSetRunner:
             logger.error(
                 "Execution interrupted by user, wait for all threads to finish..."
             )
-            self._rollback_on_failure(executables, databases=self.databases)
-        except Exception as exc:
-            logger.error(f"Execution failed with error: {exc}")
             self._rollback_on_failure(executables, databases=self.databases)
         finally:
             # Drop schemas after all threads completed work
