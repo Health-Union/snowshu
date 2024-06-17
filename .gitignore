@@ -15,5 +15,5 @@ keyfile.json
 tests/assets/integration/trail-path.yml
 tests/assets/integration/credentials.yml
 /credentials.yml
-tests/integration/credentials_snowflake_target.yml
+tests/assets/integration/credentials_snowflake_target.yml
 /replica.yml
