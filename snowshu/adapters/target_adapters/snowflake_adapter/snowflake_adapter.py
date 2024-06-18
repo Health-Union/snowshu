@@ -1,7 +1,10 @@
 import json
 import logging
+import threading
+from typing import Optional
 
 import sqlalchemy
+import pendulum
 
 from snowshu.adapters.snowflake_common import SnowflakeCommon
 from snowshu.core.configuration_parser import Configuration
@@ -35,6 +38,9 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         ROLE,
     )
     MATERIALIZATION_MAPPINGS = {}
+    ROLLBACK = True
+
+    crt_databases_lock = threading.Lock()
 
     def __init__(self, replica_metadata: dict):
         BaseRemoteTargetAdapter.__init__(self, replica_metadata)
@@ -52,17 +58,87 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def _initialize_snowshu_meta_database(self):
         pass
 
-    def create_database_if_not_exists(self, database: str, **kwargs):
+    def create_database_if_not_exists(self, database: Optional[str] = None, **kwargs):
+        """
+        This function uses a lock (`db_lock`) to ensure that the operation of
+        checking the existence of the database and its creation is atomic. This
+        is necessary because multiple threads may be attempting to create the
+        same database at the same time. Without the lock, a race condition could
+        occur where two threads both see that the database does not exist, and
+        then both attempt to create it, leading to an error.
+
+        The `databases` set is used to keep track of the databases that have
+        already been created during the execution of the program. This is an
+        optimization that allows us to avoid making unnecessary queries to the
+        database to check if a database exists. Once a database is created, its
+        name is added to the `databases` set.
+
+        Parameters:
+        database (str, optional): The name of the database to create. If not
+        provided, the name will be generated based on the replica metadata and
+        a unique identifier.
+        **kwargs: Arbitrary keyword arguments. Must include 'db_lock' (a
+        threading.Lock object) and 'databases' (a set of database names).
+        """
         replica_name = self.replica_meta["name"].upper()
         database_name = f"SNOWSHU_{kwargs['uuid']}_{replica_name}_{database}"
 
-        logger.debug(f"Creating database {database_name}...")
+        logger.info(f"Creating database {database_name}...")
         try:
-            self.conn.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
+            with kwargs["db_lock"]:
+                if database_name not in kwargs["databases"]:
+                    kwargs["databases"].add(database_name)
+                    self.conn.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
+                    logger.info(f"Database {database_name} created.")
+                    logger.info(kwargs["databases"])
+                else:
+                    logger.debug(f"Database {database_name} already exists.")
         except sqlalchemy.exc.ProgrammingError as exc:
             logger.error(f"Failed to create database {database_name}.")
-            if 'insufficient privileges' in str(exc):
+            if "insufficient privileges" in str(exc):
                 logger.error("Please ensure the user has the required privileges.")
+
+    def rollback_database_creation(self, databases: Optional[set] = None):
+        """
+        Rollbacks the creation of the specified databases.
+
+        Parameters:
+        databases (set, optional): The set of database names to rollback.
+        If not provided, all databases will be rolled back.
+
+        Note:
+        This function performs a safety check to ensure that only databases
+        created by SnowShu are dropped. It checks the database name, owner,
+        and creation date to determine if a database should be dropped. If a
+        database does not meet the safety criteria, it will not be dropped.
+
+        If the user does not have sufficient privileges to drop a database,
+        an error message will be logged.
+        """
+        for database in databases:
+            logger.info(f"Rolling back database creation for {database}...")
+            try:
+                # 1 = name, 5 = owner, 0 = created
+                database_meta = self.conn.execute("SHOW DATABASES").fetchall()
+                database_details = [row for row in database_meta if row[1] == database]
+                if database_details:
+                    database_name, database_owner, database_created = (
+                        database_details[0][1],
+                        database_details[0][5],
+                        database_details[0][0],
+                    )
+                    if (
+                        "SNOWSHU_" in database_name
+                        and database_owner == self.credentials.role
+                        and database_created >= pendulum.now().subtract(days=1)
+                    ):
+                        self.conn.execute(
+                            f"DROP DATABASE IF EXISTS {database_name} CASCADE"
+                        )
+            except sqlalchemy.exc.ProgrammingError as exc:
+                logger.error("Failed to drop database.")
+                if "insufficient privileges" in str(exc):
+                    logger.error("Please ensure the user has the required privileges.")
 
     def create_or_replace_view(self, relation):
         pass

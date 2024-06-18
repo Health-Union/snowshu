@@ -1,3 +1,4 @@
+import threading
 import pytest
 import json
 import yaml
@@ -13,9 +14,12 @@ CONFIGURATION_PATH = os.path.join(
     PACKAGE_ROOT, "tests", "assets", "replica_test_config_snowflake.yml"
 )
 
+DB_LOCK = threading.Lock()
+DATABASES = set()
 
 @pytest.fixture(scope="session")
 def sf_adapter():
+    
     with open(CONFIGURATION_PATH) as config_file:
         full_config = yaml.safe_load(config_file)
 
@@ -37,11 +41,30 @@ def sf_adapter():
     return adapter
 
 
-def test_create_database_if_not_exists(sf_adapter):
-    sf_adapter.create_database_if_not_exists("test_database", uuid="1234")
+def test_create_database_if_not_exists(
+    sf_adapter, db_lock=DB_LOCK, databases=DATABASES
+):
+    sf_adapter.create_database_if_not_exists(
+        "test_database", uuid="1234", db_lock=db_lock, databases=databases
+    )
     assert sf_adapter.conn.execute(
         "SHOW DATABASES LIKE 'SNOWSHU_1234_INTEGRATION_TEST_TEST_DATABASE'"
     ).fetchone()
     sf_adapter.conn.execute(
         "DROP DATABASE IF EXISTS SNOWSHU_1234_INTEGRATION_TEST_TEST_DATABASE"
     )
+
+
+def test_rolling_back_database_creation(
+    sf_adapter, db_lock=DB_LOCK, databases=DATABASES
+):
+    sf_adapter.create_database_if_not_exists(
+        "test_database", uuid="1234", db_lock=db_lock, databases=databases
+    )
+    assert sf_adapter.conn.execute(
+        "SHOW DATABASES LIKE 'SNOWSHU_1234_INTEGRATION_TEST_TEST_DATABASE'"
+    ).fetchone()
+    sf_adapter.rollback_database_creation(databases=databases)
+    assert not sf_adapter.conn.execute(
+        "SHOW DATABASES LIKE 'SNOWSHU_1234_INTEGRATION_TEST_TEST_DATABASE'"
+    ).fetchone()
