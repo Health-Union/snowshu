@@ -11,6 +11,7 @@ overrides==7.3.1
 jsonschema==4.17.3
 tenacity==8.1.0
 matplotlib==3.6.2
+pendulum==3.0.0
 
 
 #SNOWFLAKE
