@@ -68,3 +68,19 @@ def test_rolling_back_database_creation(
     assert not sf_adapter.conn.execute(
         "SHOW DATABASES LIKE 'SNOWSHU_1234_INTEGRATION_TEST_TEST_DATABASE'"
     ).fetchone()
+
+    
+def test_create_schema_if_not_exists(sf_adapter, db_lock=DB_LOCK, databases=DATABASES):
+    sf_adapter.create_database_if_not_exists(
+        "test_database", uuid="1234", db_lock=db_lock, databases=databases
+    )
+    sf_adapter.create_schema_if_not_exists(
+        "test_database", "test_schema", uuid="1234"
+    )
+    result = sf_adapter.conn.execute(
+        "SELECT SCHEMA_NAME FROM SNOWSHU_1234_INTEGRATION_TEST_TEST_DATABASE.INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'TEST_SCHEMA'"
+    ).fetchone()
+    assert result is not None, "Schema does not exist"
+    sf_adapter.conn.execute(
+        "DROP DATABASE IF EXISTS SNOWSHU_1234_INTEGRATION_TEST_TEST_DATABASE CASCADE"
+    )

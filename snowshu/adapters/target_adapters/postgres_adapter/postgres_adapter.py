@@ -132,18 +132,22 @@ class PostgresAdapter(BaseLocalTargetAdapter):
                     logger.error(
                         'Duplicate extension creation of %s caused an error:\n%s', ext, error)
 
-    def create_schema_if_not_exists(self, database: str, schema: str) -> None:
+    def create_schema_if_not_exists(
+            self, database: str, schema: str, **kwargs) -> None:  # noqa pylint: disable=unused-argument
         database = self.quoted(self._correct_case(database))
         schema = self.quoted(self._correct_case(schema))
         conn = self.get_connection(database_override=database)
-        statement = f'CREATE SCHEMA IF NOT EXISTS {schema}'
+        statement = f"CREATE SCHEMA IF NOT EXISTS {schema}"
         try:
             conn.execute(statement)
-        except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as sql_errs:
-            if (f'Key (nspname)=({schema}) already exists' in str(sql_errs)) or (
-                    'duplicate key value violates unique constraint ' in str(sql_errs)):
-                logger.debug(
-                    'Schema %s.%s already exists, skipping.', database, schema)
+        except (
+            sqlalchemy.exc.ProgrammingError,
+            sqlalchemy.exc.IntegrityError,
+        ) as sql_errs:
+            if (f"Key (nspname)=({schema}) already exists" in str(sql_errs)) or (
+                "duplicate key value violates unique constraint " in str(sql_errs)
+            ):
+                logger.debug("Schema %s.%s already exists, skipping.", database, schema)
             else:
                 raise sql_errs
 
