@@ -9,10 +9,8 @@ import pandas as pd
 
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models import DataType
-from snowshu.configs import DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.core.models import Credentials, Relation
-from snowshu.core.utils import case_insensitive_dict_value
 
 
 logger = logging.getLogger(__name__)
@@ -155,13 +153,12 @@ class BaseTargetAdapter(BaseSQLAdapter):
                     self.quoted(rel.name),
                 ]
             )
-        else:
-            return ".".join(
-                [
-                    self.quoted(getattr(rel, relation))
-                    for relation in ("database", "schema", "name")
-                ]
-            )
+        return ".".join(
+            [
+                self.quoted(getattr(rel, relation))
+                for relation in ("database", "schema", "name")
+            ]
+        )
 
     def create_function_if_available(
         self, function: str, relations: Iterable["Relation"]

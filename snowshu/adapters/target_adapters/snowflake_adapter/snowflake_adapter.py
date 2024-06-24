@@ -7,7 +7,6 @@ import pandas as pd
 import sqlalchemy
 import pendulum
 
-from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
 from snowshu.adapters.snowflake_common import SnowflakeCommon
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models.credentials import (
@@ -160,17 +159,17 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             logger.info(f"Schema {schema} created.")
         except sqlalchemy.exc.ProgrammingError as exc:
             logger.error(f"Failed to create schema {schema} - {exc}.")
-    
+
     def create_insertion_arguments(self, relation: Relation, data: Optional[pd.DataFrame] = None) -> dict:
         database_name = self.create_database_name(relation.database, self.uuid)
         quoted_database, quoted_schema = (
             self.quoted(self._correct_case(database_name)),
             self.quoted(self._correct_case(relation.schema)),
         )
-        
+
         engine = self.get_connection(database_override=quoted_database, schema_override=quoted_schema)
         original_columns, data = self.prepare_columns_and_data_for_insertion(data)
-        
+
         return {
             "name": self._correct_case(relation.name),
             "con": engine,
@@ -180,7 +179,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             "chunksize": DEFAULT_INSERT_CHUNK_SIZE,
             "method": "multi",
         }, original_columns, data
-            
+
     def _get_all_databases(self):
         pass
 

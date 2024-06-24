@@ -155,7 +155,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
                 logger.debug("Schema %s.%s already exists, skipping.", database, schema)
             else:
                 raise sql_errs
-       
+
     def create_insertion_arguments(self, relation: Relation, data: Optional[DataFrame] = None) -> dict:
         quoted_database, quoted_schema = (
             self.quoted(self._correct_case(relation.database)),
@@ -163,7 +163,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
         )
         engine = self.get_connection(database_override=quoted_database, schema_override=quoted_schema)
         original_columns, data = self.prepare_columns_and_data_for_insertion(data)
-        
+
         attribute_type_map = {
             attr.name: attr.data_type.sqlalchemy_type for attr in relation.attributes
         }
@@ -171,7 +171,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             col: case_insensitive_dict_value(attribute_type_map, col)
             for col in data.columns.to_list()
         }
-        
+
         return {
             "name": self._correct_case(relation.name),
             "con": engine,
@@ -182,7 +182,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             "chunksize": DEFAULT_INSERT_CHUNK_SIZE,
             "method": "multi",
         }, original_columns, data
-        
+
     def _get_all_databases(self) -> List[str]:
         logger.debug('Getting all databases from postgres...')
         query = "SELECT datname FROM pg_database WHERE datistemplate = false;"
