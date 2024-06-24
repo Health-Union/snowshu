@@ -63,6 +63,7 @@ class GraphSetRunner:
             analyze (bool): whether to run analyze or actually transfer the sampled data
             barf (bool): whether to dump diagnostic files to disk
         """
+        target_adapter.uuid = self.uuid
 
         self.barf = barf
         if self.barf:
@@ -264,7 +265,7 @@ class GraphSetRunner:
                 relation.database, uuid=self.uuid, db_lock=self.db_lock, databases=self.databases
             )
             executable.target_adapter.create_schema_if_not_exists(
-                relation.database, relation.schema, uuid=self.uuid
+                relation.database, relation.schema
             )
             if relation.is_view:
                 logger.info(
@@ -324,13 +325,8 @@ class GraphSetRunner:
                         f"with query: {fetch_query} "
                         f"issue details: {exc}"
                     ) from exc
-
-            logger.info(
-                f"Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}"
-                " into target..."
-            )
             try:
-                executable.target_adapter.create_and_load_relation(relation, query_data)
+                executable.target_adapter.create_and_load_relation(relation, query_data) 
             except Exception as exc:
                 raise SystemError(
                     "Failed to load relation "
