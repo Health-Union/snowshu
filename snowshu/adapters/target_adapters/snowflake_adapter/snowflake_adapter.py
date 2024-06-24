@@ -3,9 +3,11 @@ import logging
 import threading
 from typing import Optional
 
+import pandas as pd
 import sqlalchemy
 import pendulum
 
+from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
 from snowshu.adapters.snowflake_common import SnowflakeCommon
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models.credentials import (
@@ -17,9 +19,11 @@ from snowshu.core.models.credentials import (
     WAREHOUSE,
     ROLE,
 )
+from snowshu.configs import DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.adapters.target_adapters.base_remote_target_adapter import (
     BaseRemoteTargetAdapter,
 )
+from snowshu.core.models.relation import Relation
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +89,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         **kwargs: Arbitrary keyword arguments. Must include 'db_lock' (a
         threading.Lock object) and 'databases' (a set of database names).
         """
-        database_name = self.create_database_name(database, kwargs["uuid"])
+        database_name = self.create_database_name(database, self.uuid)
         logger.info(f"Creating database {database_name}...")
         try:
             with kwargs["db_lock"]:
@@ -146,8 +150,8 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def create_or_replace_view(self, relation):
         pass
 
-    def create_schema_if_not_exists(self, database, schema, **kwargs):
-        database_name = self.create_database_name(database, kwargs["uuid"])
+    def create_schema_if_not_exists(self, database, schema):
+        database_name = self.create_database_name(database, self.uuid)
         logger.info(f"Creating schema {schema}...")
         try:
             self.conn.execute(
@@ -156,7 +160,27 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             logger.info(f"Schema {schema} created.")
         except sqlalchemy.exc.ProgrammingError as exc:
             logger.error(f"Failed to create schema {schema} - {exc}.")
-
+    
+    def create_insertion_arguments(self, relation: Relation, data: Optional[pd.DataFrame] = None) -> dict:
+        database_name = self.create_database_name(relation.database, self.uuid)
+        quoted_database, quoted_schema = (
+            self.quoted(self._correct_case(database_name)),
+            self.quoted(self._correct_case(relation.schema)),
+        )
+        
+        engine = self.get_connection(database_override=quoted_database, schema_override=quoted_schema)
+        original_columns, data = self.prepare_columns_and_data_for_insertion(data)
+        
+        return {
+            "name": self._correct_case(relation.name),
+            "con": engine,
+            "schema": self._correct_case(quoted_schema),
+            "if_exists": "replace",
+            "index": False,
+            "chunksize": DEFAULT_INSERT_CHUNK_SIZE,
+            "method": "multi",
+        }, original_columns, data
+            
     def _get_all_databases(self):
         pass
 
@@ -170,5 +194,6 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         pass
 
     @staticmethod
-    def quoted(val):
-        pass
+    def quoted(val: str) -> str:
+        """Returns quoted value if appropriate."""
+        return f'"{val}"' if ' ' in val else val

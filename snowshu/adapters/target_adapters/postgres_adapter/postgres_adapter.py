@@ -9,7 +9,13 @@ from pandas import DataFrame
 from snowshu.core.configuration_parser import Configuration
 import snowshu.core.models.data_types as dtypes
 from snowshu.adapters.target_adapters.base_local_target_adapter import BaseLocalTargetAdapter
-from snowshu.configs import DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER, POSTGRES_IMAGE
+from snowshu.configs import (
+    DOCKER_REMOUNT_DIRECTORY,
+    DOCKER_REPLICA_MOUNT_FOLDER,
+    POSTGRES_IMAGE,
+    DEFAULT_INSERT_CHUNK_SIZE,
+)
+from snowshu.core.utils import case_insensitive_dict_value
 from snowshu.core.models import materializations as mz
 from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
@@ -132,8 +138,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
                     logger.error(
                         'Duplicate extension creation of %s caused an error:\n%s', ext, error)
 
-    def create_schema_if_not_exists(
-            self, database: str, schema: str, **kwargs) -> None:  # noqa pylint: disable=unused-argument
+    def create_schema_if_not_exists(self, database: str, schema: str) -> None:
         database = self.quoted(self._correct_case(database))
         schema = self.quoted(self._correct_case(schema))
         conn = self.get_connection(database_override=database)
@@ -150,7 +155,34 @@ class PostgresAdapter(BaseLocalTargetAdapter):
                 logger.debug("Schema %s.%s already exists, skipping.", database, schema)
             else:
                 raise sql_errs
-
+       
+    def create_insertion_arguments(self, relation: Relation, data: Optional[DataFrame] = None) -> dict:
+        quoted_database, quoted_schema = (
+            self.quoted(self._correct_case(relation.database)),
+            self.quoted(self._correct_case(relation.schema)),
+        )
+        engine = self.get_connection(database_override=quoted_database, schema_override=quoted_schema)
+        original_columns, data = self.prepare_columns_and_data_for_insertion(data)
+        
+        attribute_type_map = {
+            attr.name: attr.data_type.sqlalchemy_type for attr in relation.attributes
+        }
+        data_type_map = {
+            col: case_insensitive_dict_value(attribute_type_map, col)
+            for col in data.columns.to_list()
+        }
+        
+        return {
+            "name": self._correct_case(relation.name),
+            "con": engine,
+            "schema": self._correct_case(quoted_schema),
+            "if_exists": "replace",
+            "index": False,
+            "dtype": data_type_map,
+            "chunksize": DEFAULT_INSERT_CHUNK_SIZE,
+            "method": "multi",
+        }, original_columns, data
+        
     def _get_all_databases(self) -> List[str]:
         logger.debug('Getting all databases from postgres...')
         query = "SELECT datname FROM pg_database WHERE datistemplate = false;"
