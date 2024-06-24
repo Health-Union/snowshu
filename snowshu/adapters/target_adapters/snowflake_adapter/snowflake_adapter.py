@@ -58,6 +58,11 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def _initialize_snowshu_meta_database(self):
         pass
 
+    def create_database_name(self, database: str, uuid: str) -> str:
+        replica_name = self.replica_meta["name"].upper()
+        db_name = f"SNOWSHU_{uuid}_{replica_name}_{database}"
+        return db_name
+
     def create_database_if_not_exists(self, database: Optional[str] = None, **kwargs):
         """
         This function uses a lock (`db_lock`) to ensure that the operation of
@@ -80,9 +85,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         **kwargs: Arbitrary keyword arguments. Must include 'db_lock' (a
         threading.Lock object) and 'databases' (a set of database names).
         """
-        replica_name = self.replica_meta["name"].upper()
-        database_name = f"SNOWSHU_{kwargs['uuid']}_{replica_name}_{database}"
-
+        database_name = self.create_database_name(database, kwargs["uuid"])
         logger.info(f"Creating database {database_name}...")
         try:
             with kwargs["db_lock"]:
@@ -115,11 +118,11 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         If the user does not have sufficient privileges to drop a database,
         an error message will be logged.
         """
+        database_meta = self.conn.execute("SHOW DATABASES").fetchall()
         for database in databases:
             logger.info(f"Rolling back database creation for {database}...")
             try:
                 # 1 = name, 5 = owner, 0 = created
-                database_meta = self.conn.execute("SHOW DATABASES").fetchall()
                 database_details = [row for row in database_meta if row[1] == database]
                 if database_details:
                     database_name, database_owner, database_created = (
@@ -143,8 +146,16 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def create_or_replace_view(self, relation):
         pass
 
-    def create_schema_if_not_exists(self, database, schema):
-        pass
+    def create_schema_if_not_exists(self, database, schema, **kwargs):
+        database_name = self.create_database_name(database, kwargs["uuid"])
+        logger.info(f"Creating schema {schema}...")
+        try:
+            self.conn.execute(
+                f"CREATE SCHEMA IF NOT EXISTS {database_name}.{schema}"
+            )
+            logger.info(f"Schema {schema} created.")
+        except sqlalchemy.exc.ProgrammingError as exc:
+            logger.error(f"Failed to create schema {schema} - {exc}.")
 
     def _get_all_databases(self):
         pass

@@ -264,7 +264,7 @@ class GraphSetRunner:
                 relation.database, uuid=self.uuid, db_lock=self.db_lock, databases=self.databases
             )
             executable.target_adapter.create_schema_if_not_exists(
-                relation.database, relation.schema
+                relation.database, relation.schema, uuid=self.uuid
             )
             if relation.is_view:
                 logger.info(
