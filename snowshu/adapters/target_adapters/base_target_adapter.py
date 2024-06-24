@@ -72,6 +72,19 @@ class BaseTargetAdapter(BaseSQLAdapter):
             self.create_or_replace_view(relation)
         else:
             self.load_data_into_relation(relation, data)
+    
+    def prepare_columns_and_data_for_insertion(self, data: pd.DataFrame) -> pd.DataFrame:
+        """Prepares data for insertion into the target.
+
+        Args:
+            data: The data to prepare for insertion.
+
+        Returns:
+            The prepared data.
+        """
+        original_columns = data.columns.copy()
+        data.columns = [self._correct_case(col) for col in original_columns]
+        return original_columns, data
 
     def prepare_columns_and_data_for_insertion(self, data: pd.DataFrame) -> pd.DataFrame:
         """Prepares data for insertion into the target.
@@ -109,7 +122,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
             final_message = (
                 f"Data loaded into relation {self.quoted_dot_notation(relation)}."
             )
-
+        
         arguments, original_columns, data = self.create_insertion_arguments(relation, data)
 
         try:
