@@ -36,29 +36,38 @@ class SnowflakeCommon():
             )
 
         logger.debug(f"Acquiring {self.__class__.__name__} connection...")
-        overrides = {
-            "database": database_override,
-            "schema": schema_override,
-        }
-        overrides = {k: v for k, v in overrides.items() if v is not None}
-
         engine = sqlalchemy.create_engine(
-            self._build_conn_string(), poolclass=NullPool
+            self._build_conn_string(database_override, schema_override),
+            poolclass=NullPool,
         )
         logger.debug(f"Engine acquired. Conn string: {repr(engine.url)}")
         return engine
 
-    def _build_conn_string(self) -> str:
+    def _build_conn_string(
+        self,
+        database_override: Optional[str] = None,
+        schema_override: Optional[str] = None,
+    ) -> str:
         """Overrides the base method to align with snowflake's connection string format."""
-        base_conn = (f"snowflake://{quote(self._credentials.user)}:"
-                     f"{quote(self._credentials.password)}@"
-                     f"{quote(self._credentials.account)}"
-                     f"/{quote(self._credentials.database)}/")
-        schema = quote(self._credentials.schema) if self._credentials.schema else ""
+        database = (
+            database_override if database_override else self._credentials.database
+        )
+        schema = schema_override if schema_override else self._credentials.schema
+
+        base_conn = (
+            f"snowflake://{quote(self._credentials.user)}:"
+            f"{quote(self._credentials.password)}@"
+            f"{quote(self._credentials.account)}"
+            f"/{quote(database)}/"
+        )
+        schema = quote(schema) if schema else ""
 
         get_args = [
             f"{arg}={quote(getattr(self._credentials, arg))}"
-            for arg in ("warehouse", "role",)
+            for arg in (
+                "warehouse",
+                "role",
+            )
             if getattr(self._credentials, arg) is not None
         ]
         get_string = "?" + "&".join(get_args) if get_args else ""
