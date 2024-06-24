@@ -7,7 +7,6 @@ import pandas as pd
 import sqlalchemy
 import pendulum
 
-from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
 from snowshu.adapters.snowflake_common import SnowflakeCommon
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models.credentials import (
