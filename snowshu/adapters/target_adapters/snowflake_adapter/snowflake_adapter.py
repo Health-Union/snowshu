@@ -1,7 +1,7 @@
 import json
 import logging
 import threading
-from typing import Optional
+from typing import Optional, Tuple, Any
 
 import pandas as pd
 import sqlalchemy
@@ -160,25 +160,33 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         except sqlalchemy.exc.ProgrammingError as exc:
             logger.error(f"Failed to create schema {schema} - {exc}.")
 
-    def create_insertion_arguments(self, relation: Relation, data: Optional[pd.DataFrame] = None) -> dict:
+    def create_insertion_arguments(
+        self, relation: Relation, data: Optional[pd.DataFrame] = None
+    ) -> Tuple[dict, Any, Any]:
         database_name = self.create_database_name(relation.database, self.uuid)
         quoted_database, quoted_schema = (
             self.quoted(self._correct_case(database_name)),
             self.quoted(self._correct_case(relation.schema)),
         )
 
-        engine = self.get_connection(database_override=quoted_database, schema_override=quoted_schema)
+        engine = self.get_connection(
+            database_override=quoted_database, schema_override=quoted_schema
+        )
         original_columns, data = self.prepare_columns_and_data_for_insertion(data)
 
-        return {
-            "name": self._correct_case(relation.name),
-            "con": engine,
-            "schema": self._correct_case(quoted_schema),
-            "if_exists": "replace",
-            "index": False,
-            "chunksize": DEFAULT_INSERT_CHUNK_SIZE,
-            "method": "multi",
-        }, original_columns, data
+        return (
+            {
+                "name": self._correct_case(relation.name),
+                "con": engine,
+                "schema": self._correct_case(quoted_schema),
+                "if_exists": "replace",
+                "index": False,
+                "chunksize": DEFAULT_INSERT_CHUNK_SIZE,
+                "method": "multi",
+            },
+            original_columns,
+            data,
+        )
 
     def _get_all_databases(self):
         pass
