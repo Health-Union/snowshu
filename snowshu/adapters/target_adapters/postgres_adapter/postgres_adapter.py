@@ -156,12 +156,16 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             else:
                 raise sql_errs
 
-    def create_insertion_arguments(self, relation: Relation, data: Optional[DataFrame] = None) -> dict:
+    def create_insertion_arguments(
+        self, relation: Relation, data: Optional[DataFrame] = None
+    ) -> Tuple[dict, List, DataFrame]:
         quoted_database, quoted_schema = (
             self.quoted(self._correct_case(relation.database)),
             self.quoted(self._correct_case(relation.schema)),
         )
-        engine = self.get_connection(database_override=quoted_database, schema_override=quoted_schema)
+        engine = self.get_connection(
+            database_override=quoted_database, schema_override=quoted_schema
+        )
         original_columns, data = self.prepare_columns_and_data_for_insertion(data)
 
         attribute_type_map = {
@@ -172,16 +176,20 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             for col in data.columns.to_list()
         }
 
-        return {
-            "name": self._correct_case(relation.name),
-            "con": engine,
-            "schema": self._correct_case(quoted_schema),
-            "if_exists": "replace",
-            "index": False,
-            "dtype": data_type_map,
-            "chunksize": DEFAULT_INSERT_CHUNK_SIZE,
-            "method": "multi",
-        }, original_columns, data
+        return (
+            {
+                "name": self._correct_case(relation.name),
+                "con": engine,
+                "schema": self._correct_case(quoted_schema),
+                "if_exists": "replace",
+                "index": False,
+                "dtype": data_type_map,
+                "chunksize": DEFAULT_INSERT_CHUNK_SIZE,
+                "method": "multi",
+            },
+            original_columns,
+            data,
+        )
 
     def _get_all_databases(self) -> List[str]:
         logger.debug('Getting all databases from postgres...')

@@ -1,7 +1,7 @@
 import json
 import logging
 import threading
-from typing import Optional, Tuple, Any
+from typing import Optional, Tuple, List
 
 import pandas as pd
 import sqlalchemy
@@ -162,7 +162,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
 
     def create_insertion_arguments(
         self, relation: Relation, data: Optional[pd.DataFrame] = None
-    ) -> Tuple[dict, Any, Any]:
+    ) -> Tuple[dict, List, pd.DataFrame]:
         database_name = self.create_database_name(relation.database, self.uuid)
         quoted_database, quoted_schema = (
             self.quoted(self._correct_case(database_name)),
