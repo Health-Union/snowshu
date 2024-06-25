@@ -7,6 +7,9 @@ import pandas as pd
 import sqlalchemy
 import pendulum
 
+from snowshu.core.models import Attribute
+from snowshu.core.models import data_types as dt
+from snowshu.core.models import materializations as mz
 from snowshu.adapters.snowflake_common import SnowflakeCommon
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models.credentials import (
@@ -54,18 +57,17 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         self.uuid = None
 
     def initialize_replica(self, config: Configuration, **kwargs):
+        self._initialize_snowshu_meta_database()
         if kwargs.get("incremental_image", None):
             raise NotImplementedError(
                 "Incremental builds are not supported for Snowflake target adapter."
-            )
+            )        
 
-    def _initialize_snowshu_meta_database(self):
-        pass
-
-    def create_database_name(self, database: str, uuid: str) -> str:
-        replica_name = self.replica_meta["name"].upper()
-        db_name = f"SNOWSHU_{uuid}_{replica_name}_{database}"
-        return db_name
+    def create_database_name(self, database: str) -> str:
+        if database != "SNOWSHU":
+            replica_name = self.replica_meta["name"].upper()
+            database = f"SNOWSHU_{self.uuid}_{replica_name}_{database}"
+        return database
 
     def create_database_if_not_exists(self, database: Optional[str] = None, **kwargs):
         """
@@ -89,7 +91,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         **kwargs: Arbitrary keyword arguments. Must include 'db_lock' (a
         threading.Lock object) and 'databases' (a set of database names).
         """
-        database_name = self.create_database_name(database, self.uuid)
+        database_name = self.create_database_name(database)
         logger.info(f"Creating database {database_name}...")
         try:
             with kwargs["db_lock"]:
@@ -150,13 +152,15 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def create_or_replace_view(self, relation):
         pass
 
-    def create_schema_if_not_exists(self, database, schema):
-        database_name = self.create_database_name(database, self.uuid)
+    def create_schema_if_not_exists(
+        self, database: str, schema: str, engine: sqlalchemy.engine.base.Engine = None
+    ):
+        database_name = self.create_database_name(database) 
         logger.info(f"Creating schema {schema}...")
+        if not engine:
+            engine = self.conn
         try:
-            self.conn.execute(
-                f"CREATE SCHEMA IF NOT EXISTS {database_name}.{schema}"
-            )
+            engine.execute(f"CREATE SCHEMA IF NOT EXISTS {database_name}.{schema}")
             logger.info(f"Schema {schema} created.")
         except sqlalchemy.exc.ProgrammingError as exc:
             logger.error(f"Failed to create schema {schema} - {exc}.")
