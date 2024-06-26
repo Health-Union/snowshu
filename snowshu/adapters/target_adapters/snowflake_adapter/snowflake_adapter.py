@@ -52,7 +52,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         self.credentials = self._generate_credentials(config_json["credpath"])
         self.conn = self.get_connection()
         self.uuid = None
-        
+
     def initialize_replica(self, config: Configuration, **kwargs):
         if kwargs.get("incremental_image", None):
             raise NotImplementedError(
