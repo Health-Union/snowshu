@@ -63,8 +63,6 @@ class GraphSetRunner:
             analyze (bool): whether to run analyze or actually transfer the sampled data
             barf (bool): whether to dump diagnostic files to disk
         """
-        target_adapter.uuid = self.uuid
-
         self.barf = barf
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
@@ -220,6 +218,7 @@ class GraphSetRunner:
             executable (GraphExecutable): object that contains all of the necessary info for
                 executing a sample and loading it into the target
         """
+        executable.target_adapter.uuid = self.uuid
         relation.temp_schema = "_".join([relation.database, relation.schema, self.uuid])
 
         start_time = time.time()
@@ -262,7 +261,7 @@ class GraphSetRunner:
                 )
         else:
             executable.target_adapter.create_database_if_not_exists(
-                relation.database, uuid=self.uuid, db_lock=self.db_lock, databases=self.databases
+                relation.database, db_lock=self.db_lock, databases=self.databases
             )
             executable.target_adapter.create_schema_if_not_exists(
                 relation.database, relation.schema
