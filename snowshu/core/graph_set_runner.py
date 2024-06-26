@@ -63,7 +63,6 @@ class GraphSetRunner:
             analyze (bool): whether to run analyze or actually transfer the sampled data
             barf (bool): whether to dump diagnostic files to disk
         """
-
         self.barf = barf
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
@@ -219,6 +218,7 @@ class GraphSetRunner:
             executable (GraphExecutable): object that contains all of the necessary info for
                 executing a sample and loading it into the target
         """
+        executable.target_adapter.uuid = self.uuid
         relation.temp_schema = "_".join([relation.database, relation.schema, self.uuid])
 
         start_time = time.time()
@@ -261,10 +261,10 @@ class GraphSetRunner:
                 )
         else:
             executable.target_adapter.create_database_if_not_exists(
-                relation.database, uuid=self.uuid, db_lock=self.db_lock, databases=self.databases
+                relation.database, db_lock=self.db_lock, databases=self.databases
             )
             executable.target_adapter.create_schema_if_not_exists(
-                relation.database, relation.schema, uuid=self.uuid
+                relation.database, relation.schema
             )
             if relation.is_view:
                 logger.info(
@@ -324,13 +324,8 @@ class GraphSetRunner:
                         f"with query: {fetch_query} "
                         f"issue details: {exc}"
                     ) from exc
-
-            logger.info(
-                f"Inserting relation {executable.target_adapter.quoted_dot_notation(relation)}"
-                " into target..."
-            )
             try:
-                executable.target_adapter.create_and_load_relation(relation, query_data)
+                executable.target_adapter.create_and_load_relation(relation, query_data) 
             except Exception as exc:
                 raise SystemError(
                     "Failed to load relation "
