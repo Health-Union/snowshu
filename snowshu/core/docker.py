@@ -6,8 +6,15 @@ import logging
 
 import docker
 
-from snowshu.configs import (DOCKER_NETWORK, DOCKER_REPLICA_MOUNT_FOLDER,
-                             DOCKER_WORKING_DIR, DOCKER_REPLICA_VOLUME, DOCKER_API_TIMEOUT, LOCAL_ARCHITECTURE)
+from snowshu.configs import (
+    DOCKER_NETWORK,
+    DOCKER_REPLICA_MOUNT_FOLDER,
+    Architecture,
+    DOCKER_WORKING_DIR,
+    DOCKER_REPLICA_VOLUME,
+    DOCKER_API_TIMEOUT,
+    LOCAL_ARCHITECTURE,
+)
 from snowshu.core.utils import get_multiarch_list
 
 if TYPE_CHECKING:
@@ -101,8 +108,15 @@ class SnowShuDocker:
         if is_incremental:
             name = self.replica_image_name_to_common_name(image_name)
             # get arch of the supplied image
-            base_image_arch = self.get_docker_image_attributes(image_name)[
-                'Architecture']
+            try:
+                base_image_arch = Architecture(
+                    self.get_docker_image_attributes(image_name)["Architecture"]
+                )
+            except ValueError:
+                base_image_arch = Architecture.UNKNOWN
+                logger.warning(
+                    "Could not determine architecture of supplied image, set to UNKNOWN"
+                )
             # set arch list to always set supplied image as active container, regardless of if it is native
             arch_list_i = get_multiarch_list(base_image_arch) if len(
                 arch_list) == 2 else [base_image_arch]
