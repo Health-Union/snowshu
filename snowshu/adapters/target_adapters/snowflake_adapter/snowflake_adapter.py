@@ -26,7 +26,6 @@ from snowshu.configs import DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.adapters.target_adapters.base_remote_target_adapter import (
     BaseRemoteTargetAdapter,
 )
-from snowshu.core.models.relation import Relation
 
 logger = logging.getLogger(__name__)
 
