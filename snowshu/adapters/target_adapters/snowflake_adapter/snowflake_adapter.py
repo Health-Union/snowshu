@@ -188,8 +188,8 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     ):
         database_name = self.create_database_name(database) 
         logger.info(f"Creating schema {schema}...")
-        if not engine:
-            engine = self.conn
+
+        engine = self.conn if not engine else engine
         try:
             engine.execute(f"CREATE SCHEMA IF NOT EXISTS {database_name}.{schema}")
             logger.info(f"Schema {schema} created.")
@@ -239,4 +239,5 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     @staticmethod
     def quoted(val: str) -> str:
         """Returns quoted value if appropriate."""
+        engine = self.conn if not engine else engine
         return f'"{val}"' if ' ' in val else val
