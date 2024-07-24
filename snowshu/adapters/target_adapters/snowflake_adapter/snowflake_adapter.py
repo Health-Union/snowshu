@@ -7,6 +7,10 @@ import pandas as pd
 import sqlalchemy
 import pendulum
 
+from snowshu.core.models import Attribute
+from snowshu.core.models import Relation
+from snowshu.core.models import data_types as dt
+from snowshu.core.models import materializations as mz
 from snowshu.adapters.snowflake_common import SnowflakeCommon
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models.credentials import (
@@ -146,11 +150,42 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                 if "insufficient privileges" in str(exc):
                     logger.error("Please ensure the user has the required privileges.")
 
+    def _initialize_snowshu_meta_database(self):
+        engine = self.get_connection(
+            database_override="SNOWSHU", schema_override="SNOWSHU"
+        )
+        self.create_schema_if_not_exists("SNOWSHU", "SNOWSHU", engine)
+        attributes = [
+            Attribute("created_at", dt.TIMESTAMP_TZ),
+            Attribute("name", dt.VARCHAR),
+            Attribute("short_description", dt.VARCHAR),
+            Attribute("long_description", dt.VARCHAR),
+            Attribute("config_json", dt.JSON),
+        ]
+
+        relation = Relation("SNOWSHU", "SNOWSHU", "REPLICA_META", mz.TABLE, attributes)
+
+        meta_data = pd.DataFrame(
+            [
+                dict(
+                    created_at=pendulum.now(),
+                    name=self.replica_meta["name"],
+                    short_description=self.replica_meta["short_description"],
+                    long_description=self.replica_meta["long_description"],
+                    config_json=self.replica_meta["config_json"],
+                )
+            ]
+        )
+        self.create_and_load_relation(relation, meta_data)
+
     def create_or_replace_view(self, relation):
         pass
 
     def create_schema_if_not_exists(
-        self, database: str, schema: str, engine: sqlalchemy.engine.base.Engine = None
+        self,
+        database: str,
+        schema: str,
+        engine: Optional[sqlalchemy.engine.base.Engine] = None,
     ):
         database_name = self.create_database_name(database) 
         logger.info(f"Creating schema {schema}...")
@@ -165,7 +200,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def create_insertion_arguments(
         self, relation: Relation, data: Optional[pd.DataFrame] = None
     ) -> Tuple[dict, List, pd.DataFrame]:
-        database_name = self.create_database_name(relation.database, self.uuid)
+        database_name = self.create_database_name(relation.database)
         quoted_database, quoted_schema = (
             self.quoted(self._correct_case(database_name)),
             self.quoted(self._correct_case(relation.schema)),

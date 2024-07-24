@@ -32,7 +32,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         """Creates a database if it does not already exist."""
 
     @abstractmethod
-    def create_schema_if_not_exists(self, database: str, schema: str, **kwargs) -> str:
+    def create_schema_if_not_exists(self, database: str, schema: str) -> str:
         """Creates a schema if it does not already exist."""
 
     @abstractmethod
