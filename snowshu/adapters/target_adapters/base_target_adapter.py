@@ -9,10 +9,8 @@ import pandas as pd
 
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models import DataType
-from snowshu.configs import DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.adapters import BaseSQLAdapter
 from snowshu.core.models import Credentials, Relation
-from snowshu.core.utils import case_insensitive_dict_value
 
 
 logger = logging.getLogger(__name__)
@@ -75,6 +73,19 @@ class BaseTargetAdapter(BaseSQLAdapter):
         else:
             self.load_data_into_relation(relation, data)
 
+    def prepare_columns_and_data_for_insertion(self, data: pd.DataFrame) -> pd.DataFrame:
+        """Prepares data for insertion into the target.
+
+        Args:
+            data: The data to prepare for insertion.
+
+        Returns:
+            The prepared data.
+        """
+        original_columns = data.columns.copy()
+        data.columns = [self._correct_case(col) for col in original_columns]
+        return original_columns, data
+
     def load_data_into_relation(self, relation: Relation, data: pd.DataFrame) -> None:
         """Loads data into a target.
 
@@ -82,10 +93,6 @@ class BaseTargetAdapter(BaseSQLAdapter):
             relation: The relation containing info about dataset to load.
             data: The data to load into the relation.
         """
-        database = self.quoted(self._correct_case(relation.database))
-        schema = self.quoted(self._correct_case(relation.schema))
-        engine = self.get_connection(database_override=database, schema_override=schema)
-
         if data is None and relation.data.empty:
             logger.warning(
                 "Both data and relation.data are empty for %s. "
@@ -103,29 +110,11 @@ class BaseTargetAdapter(BaseSQLAdapter):
                 f"Data loaded into relation {self.quoted_dot_notation(relation)}."
             )
 
-        data = data if data is not None else relation.data
-        original_columns = data.columns.copy()
-        data.columns = [self._correct_case(col) for col in original_columns]
-
-        attribute_type_map = {
-            attr.name: attr.data_type.sqlalchemy_type for attr in relation.attributes
-        }
-
-        data_type_map = {
-            col: case_insensitive_dict_value(attribute_type_map, col)
-            for col in data.columns.to_list()
-        }
+        arguments, original_columns, data = self.create_insertion_arguments(relation, data)
 
         try:
             data.to_sql(
-                self._correct_case(relation.name),
-                engine,
-                schema=self._correct_case(schema),
-                if_exists="replace",
-                index=False,
-                dtype=data_type_map,
-                chunksize=DEFAULT_INSERT_CHUNK_SIZE,
-                method="multi",
+                **arguments
             )
             data.columns = original_columns
         except Exception as exc:
@@ -150,8 +139,20 @@ class BaseTargetAdapter(BaseSQLAdapter):
                 '%s adapter does not support data type %s.', self.CLASSNAME, source_type)
             raise err
 
-    def quoted_dot_notation(self, rel: Relation) -> str:
+    def quoted_dot_notation(
+        self,
+        rel: Relation,
+        database: Optional[str] = None,
+    ) -> str:
         """Helper method to return a quoted dot notation string for a relation."""
+        if database:
+            return ".".join(
+                [
+                    self.quoted(database),
+                    self.quoted(rel.schema),
+                    self.quoted(rel.name),
+                ]
+            )
         return ".".join(
             [
                 self.quoted(getattr(rel, relation))
