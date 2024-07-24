@@ -239,5 +239,4 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     @staticmethod
     def quoted(val: str) -> str:
         """Returns quoted value if appropriate."""
-        engine = self.conn if not engine else engine
         return f'"{val}"' if ' ' in val else val
