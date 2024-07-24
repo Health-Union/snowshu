@@ -24,7 +24,7 @@ class BaseRemoteTargetAdapter(BaseTargetAdapter):
         engine = self.get_connection(
             database_override="SNOWSHU", schema_override="SNOWSHU"
         )
-        self.create_schema_if_not_exists("SNOWSHU", "SNOWSHU", engine)
+        self.create_schema_if_not_exists("SNOWSHU", "SNOWSHU", engine=engine)
         attributes = [
             Attribute("created_at", dt.TIMESTAMP_TZ),
             Attribute("name", dt.VARCHAR),

@@ -32,7 +32,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         """Creates a database if it does not already exist."""
 
     @abstractmethod
-    def create_schema_if_not_exists(self, database: str, schema: str) -> str:
+    def create_schema_if_not_exists(self, database: str, schema: str, **kwargs) -> str:
         """Creates a schema if it does not already exist."""
 
     @abstractmethod
@@ -86,20 +86,9 @@ class BaseTargetAdapter(BaseSQLAdapter):
         data.columns = [self._correct_case(col) for col in original_columns]
         return original_columns, data
 
-    def prepare_columns_and_data_for_insertion(self, data: pd.DataFrame) -> pd.DataFrame:
-        """Prepares data for insertion into the target.
-
-        Args:
-            data: The data to prepare for insertion.
-
-        Returns:
-            The prepared data.
-        """
-        original_columns = data.columns.copy()
-        data.columns = [self._correct_case(col) for col in original_columns]
-        return original_columns, data
-
-    def load_data_into_relation(self, relation: Relation, data: pd.DataFrame) -> None:
+    def load_data_into_relation(
+        self, relation: Relation, data: Optional[pd.DataFrame]
+    ) -> None:
         """Loads data into a target.
 
         Args:
@@ -123,12 +112,12 @@ class BaseTargetAdapter(BaseSQLAdapter):
                 f"Data loaded into relation {self.quoted_dot_notation(relation)}."
             )
 
-        arguments, original_columns, data = self.create_insertion_arguments(relation, data)
+        arguments, original_columns, data = self.create_insertion_arguments(
+            relation, data
+        )
 
         try:
-            data.to_sql(
-                **arguments
-            )
+            data.to_sql(**arguments)
             data.columns = original_columns
         except Exception as exc:
             logger.error(
