@@ -155,7 +155,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         )
         self.create_schema_if_not_exists("SNOWSHU", "SNOWSHU", engine)
         attributes = [
-            Attribute("created_at", dt.TIMESTAMP_TZ),
+            Attribute("created_at", dt.TIMESTAMP_NTZ),
             Attribute("name", dt.VARCHAR),
             Attribute("short_description", dt.VARCHAR),
             Attribute("long_description", dt.VARCHAR),
@@ -167,7 +167,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         meta_data = pd.DataFrame(
             [
                 dict(
-                    created_at=pendulum.now(),
+                    created_at=pendulum.now('UTC').naive(),
                     name=self.replica_meta["name"],
                     short_description=self.replica_meta["short_description"],
                     long_description=self.replica_meta["long_description"],
