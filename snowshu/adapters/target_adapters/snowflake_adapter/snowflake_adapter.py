@@ -65,10 +65,9 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             )
 
     def create_database_name(self, database: str) -> str:
-        if SnowflakeAdapter.replica_prefix is None:
-            SnowflakeAdapter.replica_prefix = (
-                f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
-            )
+        SnowflakeAdapter.replica_prefix = (
+            f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
+        )
         if database != "SNOWSHU":
             return f"{SnowflakeAdapter.replica_prefix}_{database}"
         return database
