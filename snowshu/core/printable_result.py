@@ -28,6 +28,7 @@ class ReportRow:
                 self.percent_to_target,
                 )
 
+
 @dataclass
 class ReplicaReportRow:
     replica_name: str

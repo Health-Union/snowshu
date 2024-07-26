@@ -47,7 +47,8 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     ROLLBACK = True
 
     crt_databases_lock = threading.Lock()
-
+    replica_prefix = None
+    
     def __init__(self, replica_metadata: dict):
         BaseRemoteTargetAdapter.__init__(self, replica_metadata)
 
@@ -61,14 +62,17 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         if kwargs.get("incremental_image", None):
             raise NotImplementedError(
                 "Incremental builds are not supported for Snowflake target adapter."
-            )        
+            )
 
     def create_database_name(self, database: str) -> str:
-        self.replica_prefix = f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
+        if SnowflakeAdapter.replica_prefix is None:
+            SnowflakeAdapter.replica_prefix = (
+                f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
+            )
         if database != "SNOWSHU":
             return f"{self.replica_prefix}_{database}"
         return database
-    
+
     def create_database_if_not_exists(self, database: Optional[str] = None, **kwargs):
         """
         This function uses a lock (`db_lock`) to ensure that the operation of
@@ -242,7 +246,6 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
 
     def finalize_replica(self, config: Configuration, **kwargs) -> None:
         self._get_replica_metadata()
-        
 
     @staticmethod
     def quoted(val: str) -> str:
