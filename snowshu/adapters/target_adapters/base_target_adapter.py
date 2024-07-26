@@ -86,7 +86,9 @@ class BaseTargetAdapter(BaseSQLAdapter):
         data.columns = [self._correct_case(col) for col in original_columns]
         return original_columns, data
 
-    def load_data_into_relation(self, relation: Relation, data: pd.DataFrame) -> None:
+    def load_data_into_relation(
+        self, relation: Relation, data: Optional[pd.DataFrame]
+    ) -> None:
         """Loads data into a target.
 
         Args:
@@ -110,12 +112,12 @@ class BaseTargetAdapter(BaseSQLAdapter):
                 f"Data loaded into relation {self.quoted_dot_notation(relation)}."
             )
 
-        arguments, original_columns, data = self.create_insertion_arguments(relation, data)
+        arguments, original_columns, data = self.create_insertion_arguments(
+            relation, data
+        )
 
         try:
-            data.to_sql(
-                **arguments
-            )
+            data.to_sql(**arguments)
             data.columns = original_columns
         except Exception as exc:
             logger.error(

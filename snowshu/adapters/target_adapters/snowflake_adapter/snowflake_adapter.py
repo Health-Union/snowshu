@@ -7,6 +7,10 @@ import pandas as pd
 import sqlalchemy
 import pendulum
 
+from snowshu.core.models import Attribute
+from snowshu.core.models import Relation
+from snowshu.core.models import data_types as dt
+from snowshu.core.models import materializations as mz
 from snowshu.adapters.snowflake_common import SnowflakeCommon
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.models.credentials import (
@@ -22,7 +26,6 @@ from snowshu.configs import DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.adapters.target_adapters.base_remote_target_adapter import (
     BaseRemoteTargetAdapter,
 )
-from snowshu.core.models.relation import Relation
 
 logger = logging.getLogger(__name__)
 
@@ -54,18 +57,17 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         self.uuid = None
 
     def initialize_replica(self, config: Configuration, **kwargs):
+        self._initialize_snowshu_meta_database()
         if kwargs.get("incremental_image", None):
             raise NotImplementedError(
                 "Incremental builds are not supported for Snowflake target adapter."
-            )
+            )        
 
-    def _initialize_snowshu_meta_database(self):
-        pass
-
-    def create_database_name(self, database: str, uuid: str) -> str:
-        replica_name = self.replica_meta["name"].upper()
-        db_name = f"SNOWSHU_{uuid}_{replica_name}_{database}"
-        return db_name
+    def create_database_name(self, database: str) -> str:
+        if database != "SNOWSHU":
+            replica_name = self.replica_meta["name"].upper()
+            database = f"SNOWSHU_{self.uuid}_{replica_name}_{database}"
+        return database
 
     def create_database_if_not_exists(self, database: Optional[str] = None, **kwargs):
         """
@@ -89,7 +91,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         **kwargs: Arbitrary keyword arguments. Must include 'db_lock' (a
         threading.Lock object) and 'databases' (a set of database names).
         """
-        database_name = self.create_database_name(database, self.uuid)
+        database_name = self.create_database_name(database)
         logger.info(f"Creating database {database_name}...")
         try:
             with kwargs["db_lock"]:
@@ -147,16 +149,49 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                 if "insufficient privileges" in str(exc):
                     logger.error("Please ensure the user has the required privileges.")
 
+    def _initialize_snowshu_meta_database(self):
+        engine = self.get_connection(
+            database_override="SNOWSHU", schema_override="SNOWSHU"
+        )
+        self.create_schema_if_not_exists("SNOWSHU", "SNOWSHU", engine)
+        attributes = [
+            Attribute("created_at", dt.TIMESTAMP_NTZ),
+            Attribute("name", dt.VARCHAR),
+            Attribute("short_description", dt.VARCHAR),
+            Attribute("long_description", dt.VARCHAR),
+            Attribute("config_json", dt.JSON),
+        ]
+
+        relation = Relation("SNOWSHU", "SNOWSHU", "REPLICA_META", mz.TABLE, attributes)
+
+        meta_data = pd.DataFrame(
+            [
+                dict(
+                    created_at=pendulum.now('UTC').naive(),
+                    name=self.replica_meta["name"],
+                    short_description=self.replica_meta["short_description"],
+                    long_description=self.replica_meta["long_description"],
+                    config_json=self.replica_meta["config_json"],
+                )
+            ]
+        )
+        self.create_and_load_relation(relation, meta_data)
+
     def create_or_replace_view(self, relation):
         pass
 
-    def create_schema_if_not_exists(self, database, schema):
-        database_name = self.create_database_name(database, self.uuid)
+    def create_schema_if_not_exists(
+        self,
+        database: str,
+        schema: str,
+        engine: Optional[sqlalchemy.engine.base.Engine] = None,
+    ):
+        database_name = self.create_database_name(database) 
         logger.info(f"Creating schema {schema}...")
+
+        engine = self.conn if not engine else engine
         try:
-            self.conn.execute(
-                f"CREATE SCHEMA IF NOT EXISTS {database_name}.{schema}"
-            )
+            engine.execute(f"CREATE SCHEMA IF NOT EXISTS {database_name}.{schema}")
             logger.info(f"Schema {schema} created.")
         except sqlalchemy.exc.ProgrammingError as exc:
             logger.error(f"Failed to create schema {schema} - {exc}.")
@@ -164,7 +199,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def create_insertion_arguments(
         self, relation: Relation, data: Optional[pd.DataFrame] = None
     ) -> Tuple[dict, List, pd.DataFrame]:
-        database_name = self.create_database_name(relation.database, self.uuid)
+        database_name = self.create_database_name(relation.database)
         quoted_database, quoted_schema = (
             self.quoted(self._correct_case(database_name)),
             self.quoted(self._correct_case(relation.schema)),

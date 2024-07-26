@@ -1,11 +1,10 @@
 import logging
 from time import sleep
-from datetime import datetime
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Tuple, Set, Optional
 
+import pendulum
 import pandas as pd
-
 
 from snowshu.core.configuration_parser import Configuration
 from snowshu.core.docker import SnowShuDocker
@@ -145,7 +144,7 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
         self.create_database_if_not_exists("snowshu")
         self.create_schema_if_not_exists("snowshu", "snowshu")
         attributes = [
-            Attribute("created_at", dt.TIMESTAMP_TZ),
+            Attribute("created_at", dt.TIMESTAMP_NTZ),
             Attribute("name", dt.VARCHAR),
             Attribute("short_description", dt.VARCHAR),
             Attribute("long_description", dt.VARCHAR),
@@ -157,7 +156,7 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
         meta_data = pd.DataFrame(
             [
                 dict(
-                    created_at=datetime.now(),
+                    created_at=pendulum.now('UTC').naive(),
                     name=self.replica_meta["name"],
                     short_description=self.replica_meta["short_description"],
                     long_description=self.replica_meta["long_description"],
