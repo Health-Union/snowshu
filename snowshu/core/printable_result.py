@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, List, Union
+from typing import Any, List, Union, Optional
 import logging
 
 import networkx as nx
@@ -27,6 +27,11 @@ class ReportRow:
                 self.count_of_dependencies,
                 self.percent_to_target,
                 )
+
+@dataclass
+class ReplicaReportRow:
+    replica_name: str
+    replica_prefix: str
 
 
 def process_relation(graph, relation):
@@ -89,7 +94,11 @@ def graph_to_result_list(graphs: nx.Graph) -> list:
     return report
 
 
-def printable_result(report: List[ReportRow], analyze: bool) -> str:
+def printable_result(
+    report: List[ReportRow],
+    analyze: bool,
+    replica_meta: Optional[List[ReplicaReportRow]] = None,
+) -> str:
     colors = dict(reset="\033[0m",
                   red="\033[0;31m",
                   green="\033[0;32m")
@@ -105,6 +114,19 @@ def printable_result(report: List[ReportRow], analyze: bool) -> str:
     column_alignment = ('left', 'right', 'right', 'right', 'center', 'right',)
     title = 'ANALYZE' if analyze else 'RUN'
     message_top = f"\n\n{title} RESULTS:\n\n"
+
+    # Add replica meta data if available
+    if replica_meta:
+        replica_headers = (
+            "meta key",
+            "meta value",
+        )
+        message_top = (
+            message_top
+            + tabulate(replica_meta, headers=replica_headers, colalign=("left", "left"))
+            + "\n\n"
+        )
+
     return message_top + \
         tabulate(printable, headers, colalign=column_alignment) + "\n"
 
