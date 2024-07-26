@@ -64,11 +64,11 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             )        
 
     def create_database_name(self, database: str) -> str:
+        self.replica_prefix = f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
         if database != "SNOWSHU":
-            replica_name = self.replica_meta["name"].upper()
-            database = f"SNOWSHU_{self.uuid}_{replica_name}_{database}"
+            return f"{self.replica_prefix}_{database}"
         return database
-
+    
     def create_database_if_not_exists(self, database: Optional[str] = None, **kwargs):
         """
         This function uses a lock (`db_lock`) to ensure that the operation of
@@ -99,7 +99,6 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                     kwargs["databases"].add(database_name)
                     self.conn.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
                     logger.info(f"Database {database_name} created.")
-                    logger.info(kwargs["databases"])
                 else:
                     logger.debug(f"Database {database_name} already exists.")
         except sqlalchemy.exc.ProgrammingError as exc:
@@ -187,12 +186,12 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         engine: Optional[sqlalchemy.engine.base.Engine] = None,
     ):
         database_name = self.create_database_name(database) 
-        logger.info(f"Creating schema {schema}...")
+        logger.debug(f"Creating schema {schema}...")
 
         engine = self.conn if not engine else engine
         try:
             engine.execute(f"CREATE SCHEMA IF NOT EXISTS {database_name}.{schema}")
-            logger.info(f"Schema {schema} created.")
+            logger.debug(f"Schema {schema} created.")
         except sqlalchemy.exc.ProgrammingError as exc:
             logger.error(f"Failed to create schema {schema} - {exc}.")
 
@@ -233,8 +232,17 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def _get_relations_from_database(self, schema_obj):
         pass
 
+    def _get_replica_metadata(self) -> None:
+        # Prepare for tabular format
+        if self.replica_prefix:
+            self.replica_meta = [
+                ["Replica Name", self.replica_meta["name"].upper()],
+                ["Replica Prefix", self.replica_prefix.upper()],
+            ]
+
     def finalize_replica(self, config: Configuration, **kwargs) -> None:
-        pass
+        self._get_replica_metadata()
+        
 
     @staticmethod
     def quoted(val: str) -> str:
