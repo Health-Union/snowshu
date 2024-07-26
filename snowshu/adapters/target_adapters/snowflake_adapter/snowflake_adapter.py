@@ -70,7 +70,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                 f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
             )
         if database != "SNOWSHU":
-            return f"{self.replica_prefix}_{database}"
+            return f"{SnowflakeAdapter.replica_prefix}_{database}"
         return database
 
     def create_database_if_not_exists(self, database: Optional[str] = None, **kwargs):
@@ -239,7 +239,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def _get_replica_metadata(self) -> None:
         # Prepare for tabular format
         if self.replica_prefix:
-            self.replica_meta = [
+            self.replica_meta["meta_report"] = [
                 ["Replica Name", self.replica_meta["name"].upper()],
                 ["Replica Prefix", self.replica_prefix.upper()],
             ]
