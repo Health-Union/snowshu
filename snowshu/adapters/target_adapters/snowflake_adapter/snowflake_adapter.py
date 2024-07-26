@@ -48,7 +48,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
 
     crt_databases_lock = threading.Lock()
     replica_prefix = None
-    
+
     def __init__(self, replica_metadata: dict):
         BaseRemoteTargetAdapter.__init__(self, replica_metadata)
 
