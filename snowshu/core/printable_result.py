@@ -117,14 +117,18 @@ def printable_result(
     message_top = f"\n\n{title} RESULTS:\n\n"
 
     # Add replica meta data if available
-    if replica_meta:
+    if replica_meta["meta_report"]:
         replica_headers = (
             "meta key",
             "meta value",
         )
         message_top = (
             message_top
-            + tabulate(replica_meta, headers=replica_headers, colalign=("left", "left"))
+            + tabulate(
+                replica_meta["meta_report"],
+                headers=replica_headers,
+                colalign=("left", "left"),
+            )
             + "\n\n"
         )
 

@@ -109,7 +109,8 @@ class ReplicaFactory:
         return printable_result(
             graph_to_result_list(graphs),
             self.run_analyze,
-            self.config.target_profile.adapter.replica_meta)
+            self.config.target_profile.adapter.replica_meta["meta_report"],
+        )
 
     def load_config(self,
                     config: Union[Path, str, TextIO],
