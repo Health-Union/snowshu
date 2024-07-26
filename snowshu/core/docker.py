@@ -117,9 +117,16 @@ class SnowShuDocker:
                 logger.warning(
                     "Could not determine architecture of supplied image, set to UNKNOWN"
                 )
+
             # set arch list to always set supplied image as active container, regardless of if it is native
-            arch_list_i = get_multiarch_list(base_image_arch) if len(
-                arch_list) == 2 else [base_image_arch]
+            if len(arch_list) == 2:
+                # If arch_list has exactly two elements, get the multiarch list for the base image architecture
+                arch_list_i = [
+                    arch.value for arch in get_multiarch_list(base_image_arch)
+                ]
+            else:
+                # Otherwise, use a list containing only the base image architecture
+                arch_list_i = [base_image_arch.value]
 
             # warn user if non-native architecture base was supplied
             if base_image_arch != LOCAL_ARCHITECTURE.value:
