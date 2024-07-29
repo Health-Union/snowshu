@@ -50,14 +50,14 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     crt_databases_lock = threading.Lock()
     uuid: Optional[str] = None
     replica_prefix: Optional[str] = None
-        
+
     def __init__(self, replica_metadata: dict, uuid: Optional[str] = None):
         BaseRemoteTargetAdapter.__init__(self, replica_metadata)
 
         config_json = json.loads(self.replica_meta["config_json"])
         self.credentials = self._generate_credentials(config_json["credpath"])
         self.conn = self.get_connection()
-        
+
         # Initialize the UUID and replica prefix if they have not been set
         # These values need to be set once per adapter instance
         if SnowflakeAdapter.uuid is None:
@@ -254,7 +254,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         ]
 
     def finalize_replica(self, config: Configuration, **kwargs) -> None:
-       pass
+        pass
 
     @staticmethod
     def quoted(val: str) -> str:
