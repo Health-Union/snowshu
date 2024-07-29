@@ -11,6 +11,7 @@ from snowshu.core.models.relation import Relation
 
 def test_traverse_and_execute_analyze(stub_graph_set):
     source_adapter,target_adapter=[mock.MagicMock() for _ in range(2)]
+    target_adapter.uuid = "1234"
     source_adapter.predicate_constraint_statement.return_value=str()
     source_adapter.upstream_constraint_statement.return_value=str()
     source_adapter.union_constraint_statement.return_value=str()
@@ -63,6 +64,7 @@ def test_traverse_and_execute_custom_max_rows_pass(stub_graph_set):
     """
 
     source_adapter,target_adapter=[mock.MagicMock() for _ in range(2)]
+    target_adapter.uuid = "1234"
     source_adapter.predicate_constraint_statement.return_value=str()
     source_adapter.upstream_constraint_statement.return_value=str()
     source_adapter.union_constraint_statement.return_value=str()

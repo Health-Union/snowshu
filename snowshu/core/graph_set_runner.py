@@ -16,7 +16,6 @@ from snowshu.core.models import Relation
 from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
 from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
 from snowshu.adapters.target_adapters.base_target_adapter import BaseTargetAdapter
-from snowshu.core import utils
 from snowshu.core.compile import RuntimeSourceCompiler
 from snowshu.logger import duration
 
@@ -37,7 +36,6 @@ class GraphSetRunner:
     db_lock: threading.Lock = threading.Lock()
     schemas: Set[str] = set()
     databases: Set[str] = set()
-    uuid: str = utils.generate_unique_uuid()
 
     def __init__(self):
         self.barf = None
@@ -218,8 +216,9 @@ class GraphSetRunner:
             executable (GraphExecutable): object that contains all of the necessary info for
                 executing a sample and loading it into the target
         """
-        executable.target_adapter.uuid = self.uuid
-        relation.temp_schema = "_".join([relation.database, relation.schema, self.uuid])
+        relation.temp_schema = "_".join(
+            [relation.database, relation.schema, executable.target_adapter.uuid]
+        )
 
         start_time = time.time()
         self._generate_schemas_if_necessary(

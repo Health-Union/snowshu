@@ -26,6 +26,7 @@ from snowshu.configs import DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.adapters.target_adapters.base_remote_target_adapter import (
     BaseRemoteTargetAdapter,
 )
+from snowshu.core import utils
 
 logger = logging.getLogger(__name__)
 
@@ -47,26 +48,39 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     ROLLBACK = True
 
     crt_databases_lock = threading.Lock()
+    uuid: Optional[str] = None
+    replica_prefix: Optional[str] = None
 
-    def __init__(self, replica_metadata: dict):
+    def __init__(self, replica_metadata: dict, uuid: Optional[str] = None):
         BaseRemoteTargetAdapter.__init__(self, replica_metadata)
 
         config_json = json.loads(self.replica_meta["config_json"])
         self.credentials = self._generate_credentials(config_json["credpath"])
         self.conn = self.get_connection()
-        self.uuid = None
+
+        # Initialize the UUID and replica prefix if they have not been set
+        # These values need to be set once per adapter instance
+        if SnowflakeAdapter.uuid is None:
+            SnowflakeAdapter.uuid = (
+                uuid if uuid is not None else utils.generate_unique_uuid()
+            )
+        if SnowflakeAdapter.replica_prefix is None:
+            SnowflakeAdapter.replica_prefix = (
+                f"SNOWSHU_{SnowflakeAdapter.uuid}_{self.replica_meta['name'].upper()}"
+            )
 
     def initialize_replica(self, config: Configuration, **kwargs):
         self._initialize_snowshu_meta_database()
+        self._initialize_replica_info()
         if kwargs.get("incremental_image", None):
             raise NotImplementedError(
                 "Incremental builds are not supported for Snowflake target adapter."
-            )        
+            )
 
     def create_database_name(self, database: str) -> str:
         if database != "SNOWSHU":
-            replica_name = self.replica_meta["name"].upper()
-            database = f"SNOWSHU_{self.uuid}_{replica_name}_{database}"
+            # Use the replica prefix as a prefix for the database name
+            return f"{self.replica_prefix}_{database}"
         return database
 
     def create_database_if_not_exists(self, database: Optional[str] = None, **kwargs):
@@ -99,7 +113,6 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                     kwargs["databases"].add(database_name)
                     self.conn.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
                     logger.info(f"Database {database_name} created.")
-                    logger.info(kwargs["databases"])
                 else:
                     logger.debug(f"Database {database_name} already exists.")
         except sqlalchemy.exc.ProgrammingError as exc:
@@ -187,12 +200,12 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         engine: Optional[sqlalchemy.engine.base.Engine] = None,
     ):
         database_name = self.create_database_name(database) 
-        logger.info(f"Creating schema {schema}...")
+        logger.debug(f"Creating schema {schema}...")
 
         engine = self.conn if not engine else engine
         try:
             engine.execute(f"CREATE SCHEMA IF NOT EXISTS {database_name}.{schema}")
-            logger.info(f"Schema {schema} created.")
+            logger.debug(f"Schema {schema} created.")
         except sqlalchemy.exc.ProgrammingError as exc:
             logger.error(f"Failed to create schema {schema} - {exc}.")
 
@@ -232,6 +245,13 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
 
     def _get_relations_from_database(self, schema_obj):
         pass
+
+    def _initialize_replica_info(self) -> None:
+        # Prepare for tabular format
+        self.replica_meta["replica_info"] = [
+            ["Replica Name", self.replica_meta["name"].upper()],
+            ["Replica Prefix", self.replica_prefix],
+        ]
 
     def finalize_replica(self, config: Configuration, **kwargs) -> None:
         pass
