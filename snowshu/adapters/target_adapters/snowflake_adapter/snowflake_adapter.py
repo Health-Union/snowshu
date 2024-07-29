@@ -26,6 +26,7 @@ from snowshu.configs import DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.adapters.target_adapters.base_remote_target_adapter import (
     BaseRemoteTargetAdapter,
 )
+from snowshu.core import utils
 
 logger = logging.getLogger(__name__)
 
@@ -48,28 +49,32 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
 
     crt_databases_lock = threading.Lock()
     replica_prefix = None
-
-    def __init__(self, replica_metadata: dict):
+    uuid: Optional[str] = None
+    
+    def __init__(self, replica_metadata: dict, uuid: Optional[str] = None):
         BaseRemoteTargetAdapter.__init__(self, replica_metadata)
 
         config_json = json.loads(self.replica_meta["config_json"])
         self.credentials = self._generate_credentials(config_json["credpath"])
         self.conn = self.get_connection()
-        self.uuid = None
+        if SnowflakeAdapter.uuid is None:
+            SnowflakeAdapter.uuid = (
+                uuid if uuid is not None else utils.generate_unique_uuid()
+            )
 
     def initialize_replica(self, config: Configuration, **kwargs):
         self._initialize_snowshu_meta_database()
+        self._initialize_replica_info()
         if kwargs.get("incremental_image", None):
             raise NotImplementedError(
                 "Incremental builds are not supported for Snowflake target adapter."
             )
 
     def create_database_name(self, database: str) -> str:
-        SnowflakeAdapter.replica_prefix = (
-            f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
-        )
         if database != "SNOWSHU":
-            return f"{SnowflakeAdapter.replica_prefix}_{database}"
+            # Use the replica prefix as a prefix for the database name
+            replica_prefix = self.replica_meta["replica_info"][1][1]
+            return f"{replica_prefix}_{database}"
         return database
 
     def create_database_if_not_exists(self, database: Optional[str] = None, **kwargs):
@@ -235,16 +240,18 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def _get_relations_from_database(self, schema_obj):
         pass
 
-    def _get_replica_metadata(self) -> None:
+    def _initialize_replica_info(self) -> None:
         # Prepare for tabular format
-        if self.replica_prefix:
-            self.replica_meta["meta_report"] = [
-                ["Replica Name", self.replica_meta["name"].upper()],
-                ["Replica Prefix", self.replica_prefix.upper()],
-            ]
+        self.replica_meta["replica_info"] = [
+            ["Replica Name", self.replica_meta["name"].upper()],
+            [
+                "Replica Prefix",
+                f"SNOWSHU_{SnowflakeAdapter.uuid}_{self.replica_meta['name'].upper()}",
+            ],
+        ]
 
     def finalize_replica(self, config: Configuration, **kwargs) -> None:
-        self._get_replica_metadata()
+       pass
 
     @staticmethod
     def quoted(val: str) -> str:
