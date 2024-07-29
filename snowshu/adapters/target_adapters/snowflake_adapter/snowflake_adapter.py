@@ -48,18 +48,25 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     ROLLBACK = True
 
     crt_databases_lock = threading.Lock()
-    replica_prefix = None
     uuid: Optional[str] = None
-    
+    replica_prefix: Optional[str] = None
+        
     def __init__(self, replica_metadata: dict, uuid: Optional[str] = None):
         BaseRemoteTargetAdapter.__init__(self, replica_metadata)
 
         config_json = json.loads(self.replica_meta["config_json"])
         self.credentials = self._generate_credentials(config_json["credpath"])
         self.conn = self.get_connection()
+        
+        # Initialize the UUID and replica prefix if they have not been set
+        # These values need to be set once per adapter instance
         if SnowflakeAdapter.uuid is None:
             SnowflakeAdapter.uuid = (
                 uuid if uuid is not None else utils.generate_unique_uuid()
+            )
+        if SnowflakeAdapter.replica_prefix is None:
+            SnowflakeAdapter.replica_prefix = (
+                f"SNOWSHU_{SnowflakeAdapter.uuid}_{self.replica_meta['name'].upper()}"
             )
 
     def initialize_replica(self, config: Configuration, **kwargs):
@@ -73,8 +80,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def create_database_name(self, database: str) -> str:
         if database != "SNOWSHU":
             # Use the replica prefix as a prefix for the database name
-            replica_prefix = self.replica_meta["replica_info"][1][1]
-            return f"{replica_prefix}_{database}"
+            return f"{self.replica_prefix}_{database}"
         return database
 
     def create_database_if_not_exists(self, database: Optional[str] = None, **kwargs):
@@ -244,10 +250,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         # Prepare for tabular format
         self.replica_meta["replica_info"] = [
             ["Replica Name", self.replica_meta["name"].upper()],
-            [
-                "Replica Prefix",
-                f"SNOWSHU_{SnowflakeAdapter.uuid}_{self.replica_meta['name'].upper()}",
-            ],
+            ["Replica Prefix", self.replica_prefix],
         ]
 
     def finalize_replica(self, config: Configuration, **kwargs) -> None:
