@@ -97,8 +97,8 @@ class BaseTargetAdapter(BaseSQLAdapter):
         """
         if clone:
             self.clone_relation(relation)
-            return 
-        
+            return
+
         if data is None and relation.data.empty:
             logger.warning(
                 "Both data and relation.data are empty for %s. "
@@ -132,7 +132,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
             raise
 
         logger.info(final_message)
-        
+ 
     def clone_relation(self, relation: Relation) -> None:
         """Clones a relation in the target.
         Args:
