@@ -252,12 +252,12 @@ class GraphSetRunner:
                 relation.sample_size = "N/A"
                 logger.info(f"Relation {relation.dot_notation} is a view, skipping.")
             else:
-                result, sample_size = executable.source_adapter.check_count_and_query(
+                result = executable.source_adapter.check_count_and_query(
                     relation.compiled_query,
                     relation.sampling.max_allowed_rows,
                     relation.unsampled,
                     self.same_as_source
-                )
+                ).iloc[0]
                 relation.population_size = result.population_size
                 relation.sample_size = result.sample_size
                 logger.info(
@@ -301,13 +301,13 @@ class GraphSetRunner:
                         f"Retrieving records from source {relation.temp_dot_notation}..."
                     )
                     fetch_query = f"SELECT * FROM {relation.temp_dot_notation}"
-                    query_data, sample_size = executable.source_adapter.check_count_and_query(
+                    query_data = executable.source_adapter.check_count_and_query(
                         fetch_query,
                         relation.sampling.max_allowed_rows,
                         relation.unsampled,
                         self.same_as_source
                     )
-                    relation.sample_size = sample_size
+                    relation.sample_size = len(query_data)
                     logger.info(
                         f"{relation.sample_size} records retrieved for relation {relation.dot_notation}."
                     )

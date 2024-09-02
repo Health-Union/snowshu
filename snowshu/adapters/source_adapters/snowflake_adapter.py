@@ -545,6 +545,6 @@ LIMIT {max_number_of_outliers})
             logger.debug(f'failed sql: {query}')
             raise TooManyRecords(message) from exc
         if same_as_source:
-            return (pd.DataFrame(), count)
+            return pd.DataFrame()
         response = self._safe_query(query)
-        return (response, count)
+        return response
