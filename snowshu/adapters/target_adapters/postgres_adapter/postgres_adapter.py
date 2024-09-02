@@ -288,7 +288,9 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             f'Acquired {len(relations)} total relations from database {quoted_database}.')
         return relations
 
-    def load_data_into_relation(self, relation: "Relation", data: Optional[DataFrame]) -> None:
+    def load_data_into_relation(
+        self, relation: "Relation", data: Optional[DataFrame], clone: bool = False
+    ) -> None:
         try:
             return super().load_data_into_relation(relation, data)
         except ValueError as exc:

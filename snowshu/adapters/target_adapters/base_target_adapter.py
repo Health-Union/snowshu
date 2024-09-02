@@ -98,7 +98,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         if clone:
             self.clone_relation(relation)
             return
-        
+
         if data is None and relation.data.empty:
             logger.warning(
                 "Both data and relation.data are empty for %s. "
