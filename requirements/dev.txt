@@ -2,6 +2,7 @@
 -r readthedocs.txt
 
 pytest==7.2.0
+pytest-mock==3.14.0
 mock==5.0.0
 autopep8==2.0.1
 testfixtures==7.0.4

@@ -33,7 +33,7 @@ def sf_adapter():
     }
     metadata["config_json"] = json.dumps(full_config)
     adapter_args["replica_metadata"] = metadata
-
+    
     adapter = SnowflakeAdapter(**adapter_args)
     return adapter
 
