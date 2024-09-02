@@ -40,7 +40,7 @@ class GraphSetRunner:
     def __init__(self):
         self.barf = None
         self.same_as_source: bool = False
-        
+
     def execute_graph_set(  # noqa pylint: disable=too-many-arguments
         self,
         graph_set: Tuple[nx.Graph],
