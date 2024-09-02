@@ -522,7 +522,8 @@ LIMIT {max_number_of_outliers})
 
     def check_count_and_query(self, query: str,
                               max_count: int,
-                              unsampled: bool) -> pd.DataFrame:
+                              unsampled: bool,
+                              same_as_source: bool = False) -> pd.DataFrame:
         """checks the count, if count passes returns results as a dataframe."""
         try:
             logger.debug('Checking count for query...')
@@ -543,5 +544,7 @@ LIMIT {max_number_of_outliers})
             logger.error(message)
             logger.debug(f'failed sql: {query}')
             raise TooManyRecords(message) from exc
+        if same_as_source:
+            return pd.DataFrame(), count
         response = self._safe_query(query)
-        return response
+        return response, count

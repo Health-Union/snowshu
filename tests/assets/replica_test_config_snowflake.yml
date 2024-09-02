@@ -6,6 +6,7 @@ long_description: this is for testing against a live db
 threads: 15
 target:
   adapter: 'snowflake'
+  same_as_source: True
 source:
   profile: default
   sampling: default
