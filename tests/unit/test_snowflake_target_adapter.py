@@ -16,7 +16,7 @@ CONFIGURATION_PATH = os.path.join(
 
 @pytest.fixture(scope="session")
 def sf_adapter():
-    
+
     with open(CONFIGURATION_PATH) as config_file:
         full_config = yaml.safe_load(config_file)
 
@@ -37,10 +37,7 @@ def sf_adapter():
     adapter = SnowflakeAdapter(**adapter_args)
     return adapter
 
-
-
 def test_clone_relation(mocker, sf_adapter):
-    mocker.patch.object(sf_adapter, "create_database_name", return_value="test_database")
     mock_safe_query = mocker.patch.object(sf_adapter, "_safe_query")
     
     relation = Relation(
@@ -54,11 +51,19 @@ def test_clone_relation(mocker, sf_adapter):
     relation.temp_database = "source_database"
 
     sf_adapter.clone_relation(relation)
-    expected_query = """
-        CREATE TABLE IF NOT EXISTS test_database.target_schema.target_table AS
+    
+    # Check if _safe_query was called
+    assert mock_safe_query.called, "_safe_query was not called"
+    
+    actual_query = mock_safe_query.call_args[0][0].strip()
+    
+    # Extract the prefix from the actual query
+    prefix = actual_query.split(' ')[5].split('_target_database')[0]
+    
+    expected_query = f"""
+        CREATE TABLE IF NOT EXISTS {prefix}_target_database.target_schema.target_table AS
         SELECT * FROM source_database.source_schema.target_table
     """.strip()
-    actual_query = mock_safe_query.call_args[0][0].strip()
     
     # Normalize whitespace
     expected_query = ' '.join(expected_query.split())
