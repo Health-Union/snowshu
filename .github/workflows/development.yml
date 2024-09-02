@@ -18,7 +18,7 @@ jobs:
     - name: Setup template credentials
       run: cp snowshu/templates/credentials.yml tests/assets/integration/credentials.yml
     - name: Set up Docker
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
     - name: Install Docker Compose
       run: |
         sudo apt-get update
