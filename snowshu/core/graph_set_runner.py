@@ -252,11 +252,12 @@ class GraphSetRunner:
                 relation.sample_size = "N/A"
                 logger.info(f"Relation {relation.dot_notation} is a view, skipping.")
             else:
-                result = executable.source_adapter.check_count_and_query(
+                result, sample_size = executable.source_adapter.check_count_and_query(
                     relation.compiled_query,
                     relation.sampling.max_allowed_rows,
                     relation.unsampled,
-                ).iloc[0]
+                    self.same_as_source
+                )
                 relation.population_size = result.population_size
                 relation.sample_size = result.sample_size
                 logger.info(
