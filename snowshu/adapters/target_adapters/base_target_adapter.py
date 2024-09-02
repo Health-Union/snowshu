@@ -132,7 +132,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
             raise
 
         logger.info(final_message)
- 
+
     def clone_relation(self, relation: Relation) -> None:
         """Clones a relation in the target.
         Args:
