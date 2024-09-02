@@ -39,6 +39,7 @@ class GraphSetRunner:
 
     def __init__(self):
         self.barf = None
+        self.same_as_source: bool = False
 
     def execute_graph_set(  # noqa pylint: disable=too-many-arguments
         self,
@@ -65,6 +66,9 @@ class GraphSetRunner:
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
             os.makedirs(self.barf_output)
+        self.same_as_source = json.loads(target_adapter.replica_meta["config_json"])[
+            "target"
+        ]["same_as_source"]
 
         view_graph_set = [graph for graph in graph_set if graph.contains_views]
         table_graph_set = list(set(graph_set) - set(view_graph_set))
@@ -252,6 +256,7 @@ class GraphSetRunner:
                     relation.compiled_query,
                     relation.sampling.max_allowed_rows,
                     relation.unsampled,
+                    self.same_as_source
                 ).iloc[0]
                 relation.population_size = result.population_size
                 relation.sample_size = result.sample_size
@@ -300,6 +305,7 @@ class GraphSetRunner:
                         fetch_query,
                         relation.sampling.max_allowed_rows,
                         relation.unsampled,
+                        self.same_as_source
                     )
                     relation.sample_size = len(query_data)
                     logger.info(
@@ -324,7 +330,9 @@ class GraphSetRunner:
                         f"issue details: {exc}"
                     ) from exc
             try:
-                executable.target_adapter.create_and_load_relation(relation, query_data) 
+                executable.target_adapter.create_and_load_relation(
+                    relation, query_data, clone=self.same_as_source
+                )
             except Exception as exc:
                 raise SystemError(
                     "Failed to load relation "

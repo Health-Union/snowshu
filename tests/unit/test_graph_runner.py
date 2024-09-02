@@ -92,7 +92,7 @@ def test_traverse_and_execute_custom_max_rows_pass(stub_graph_set):
         with mock.patch.object(source_adapter, 'check_count_and_query') as mock_1,\
              mock.patch.object(Relation, 'data', new=fake_data):
             runner._traverse_and_execute(dag_executable)
-            mock_1.assert_called_with(ANY, 1000000, ANY)
+            mock_1.assert_called_with(ANY, 1000000, ANY, ANY)
 
         # test if custom values are passed
         for rel in dag.nodes:
@@ -107,4 +107,4 @@ def test_traverse_and_execute_custom_max_rows_pass(stub_graph_set):
         with mock.patch.object(source_adapter, 'check_count_and_query') as mock_2,\
              mock.patch.object(Relation, 'data', new=fake_data):
             runner._traverse_and_execute(dag_executable)
-            mock_2.assert_called_with(ANY, 1234567, ANY)
+            mock_2.assert_called_with(ANY, 1234567, ANY, ANY)
