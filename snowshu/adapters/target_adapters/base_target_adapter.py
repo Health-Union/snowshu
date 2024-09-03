@@ -140,7 +140,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         """
         database_name = self.create_database_name(relation.database)
         clone_query = f"""
-            CREATE TABLE IF NOT EXISTS {database_name}.{relation.schema}.{relation.name} AS
+            CREATE OR REPLACE TABLE {database_name}.{relation.schema}.{relation.name} AS
             SELECT * FROM {relation.temp_database}.{relation.temp_schema}.{relation.name}
         """
         self._safe_query(clone_query)
