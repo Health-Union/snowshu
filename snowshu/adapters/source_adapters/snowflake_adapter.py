@@ -523,7 +523,7 @@ LIMIT {max_number_of_outliers})
     def check_count_and_query(self, query: str,
                               max_count: int,
                               unsampled: bool,
-                              same_as_source: bool = False) -> Tuple[pd.DataFrame, int] :
+                              same_as_source: bool = False) -> Tuple[pd.DataFrame, int]:
         """checks the count, if count passes returns results as a dataframe."""
         try:
             logger.debug('Checking count for query...')
