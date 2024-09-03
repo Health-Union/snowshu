@@ -20,7 +20,7 @@ def test_traverse_and_execute_analyze(stub_graph_set):
     runner.barf=False
     graph_set,vals=stub_graph_set
     source_adapter.scalar_query.return_value=1000
-    source_adapter.check_count_and_query.return_value=pd.DataFrame([dict(population_size=1000,sample_size=100)])
+    source_adapter.check_count_and_query.return_value=(pd.DataFrame([dict(population_size=1000,sample_size=100)]), 100)
     dag=copy.deepcopy(graph_set[-1]) # last graph in the set is the dag
     
     ## stub in the sampling pop defaults
@@ -73,7 +73,6 @@ def test_traverse_and_execute_custom_max_rows_pass(stub_graph_set):
     runner.barf=False
     graph_set,vals=stub_graph_set
     source_adapter.scalar_query.return_value=1000
-    source_adapter.check_count_and_query.return_value=pd.DataFrame([dict(population_size=1000,sample_size=100)])
     dag=copy.deepcopy(graph_set[-1])  # last graph in the set is the dag
 
     def fake_data(self, val: pd.DataFrame):
@@ -89,7 +88,7 @@ def test_traverse_and_execute_custom_max_rows_pass(stub_graph_set):
         dag_executable = GraphExecutable(
             dag, source_adapter, target_adapter, do_analyze)
 
-        with mock.patch.object(source_adapter, 'check_count_and_query') as mock_1,\
+        with mock.patch.object(source_adapter, 'check_count_and_query', return_value=(pd.DataFrame([dict(population_size=1000,sample_size=100)]), 1000)) as mock_1,\
              mock.patch.object(Relation, 'data', new=fake_data):
             runner._traverse_and_execute(dag_executable)
             mock_1.assert_called_with(ANY, 1000000, ANY, ANY)
@@ -104,7 +103,7 @@ def test_traverse_and_execute_custom_max_rows_pass(stub_graph_set):
         dag_executable = GraphExecutable(
             dag, source_adapter, target_adapter, do_analyze)
 
-        with mock.patch.object(source_adapter, 'check_count_and_query') as mock_2,\
+        with mock.patch.object(source_adapter, 'check_count_and_query', return_value=(pd.DataFrame([dict(population_size=1000,sample_size=100)]), 1000)) as mock_2,\
              mock.patch.object(Relation, 'data', new=fake_data):
             runner._traverse_and_execute(dag_executable)
             mock_2.assert_called_with(ANY, 1234567, ANY, ANY)
