@@ -169,7 +169,7 @@ Let's disect each of the components:
 
   - **adapter** (*Required*) For Snowflake, BigQuery and Redshift this should be ``postgres``.
   - **adapter_args** (*Optional*) Some targets may require additional configuration, especially when emulating a different source type. These keys and values are specific to the target type. Currently, only `pg_extensions` is supported.
-
+  - **same_as_source** (*Optional*)   If adapters support this parameter and it is set to True, SnowShu will attempt to create the replica in the same account/database as the source. This is recommended as it avoids fetching data locally and greatly improves performance.
 Source
 ------
 

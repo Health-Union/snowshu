@@ -66,12 +66,12 @@ class BaseTargetAdapter(BaseSQLAdapter):
             used to clean up any temporary database objects or connections."""
 
     def create_and_load_relation(
-        self, relation: "Relation", data: Optional[pd.DataFrame]
+        self, relation: "Relation", data: Optional[pd.DataFrame], clone: bool = False
     ) -> None:
         if relation.is_view:
             self.create_or_replace_view(relation)
         else:
-            self.load_data_into_relation(relation, data)
+            self.load_data_into_relation(relation, data, clone)
 
     def prepare_columns_and_data_for_insertion(self, data: pd.DataFrame) -> pd.DataFrame:
         """Prepares data for insertion into the target.
@@ -87,7 +87,7 @@ class BaseTargetAdapter(BaseSQLAdapter):
         return original_columns, data
 
     def load_data_into_relation(
-        self, relation: Relation, data: Optional[pd.DataFrame]
+        self, relation: Relation, data: Optional[pd.DataFrame], clone: bool = False
     ) -> None:
         """Loads data into a target.
 
@@ -95,6 +95,10 @@ class BaseTargetAdapter(BaseSQLAdapter):
             relation: The relation containing info about dataset to load.
             data: The data to load into the relation.
         """
+        if clone:
+            self.clone_relation(relation)
+            return
+
         if data is None and relation.data.empty:
             logger.warning(
                 "Both data and relation.data are empty for %s. "
@@ -128,6 +132,18 @@ class BaseTargetAdapter(BaseSQLAdapter):
             raise
 
         logger.info(final_message)
+
+    def clone_relation(self, relation: Relation) -> None:
+        """Clones a relation in the target.
+        Args:
+            relation: The relation to clone.
+        """
+        database_name = self.create_database_name(relation.database)
+        clone_query = f"""
+            CREATE OR REPLACE TABLE {database_name}.{relation.schema}.{relation.name} AS
+            SELECT * FROM {relation.temp_database}.{relation.temp_schema}.{relation.name}
+        """
+        self._safe_query(clone_query)
 
     def _get_data_type(self, source_type: str) -> DataType:
         """

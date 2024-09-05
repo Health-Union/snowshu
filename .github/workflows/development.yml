@@ -17,6 +17,12 @@ jobs:
       uses: actions/checkout@v2
     - name: Setup template credentials
       run: cp snowshu/templates/credentials.yml tests/assets/integration/credentials.yml
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+    - name: Install Docker Compose
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y docker-compose
     - name: Build the Docker image
       run: docker-compose up -d
     - name: Run Linter

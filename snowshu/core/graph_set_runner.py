@@ -39,6 +39,7 @@ class GraphSetRunner:
 
     def __init__(self):
         self.barf = None
+        self.same_as_source: bool = False
 
     def execute_graph_set(  # noqa pylint: disable=too-many-arguments
         self,
@@ -65,6 +66,9 @@ class GraphSetRunner:
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
             os.makedirs(self.barf_output)
+        self.same_as_source = json.loads(target_adapter.replica_meta["config_json"])[
+            "target"
+        ]["same_as_source"]
 
         view_graph_set = [graph for graph in graph_set if graph.contains_views]
         table_graph_set = list(set(graph_set) - set(view_graph_set))
@@ -248,13 +252,14 @@ class GraphSetRunner:
                 relation.sample_size = "N/A"
                 logger.info(f"Relation {relation.dot_notation} is a view, skipping.")
             else:
-                result = executable.source_adapter.check_count_and_query(
+                result, sample_size = executable.source_adapter.check_count_and_query(
                     relation.compiled_query,
                     relation.sampling.max_allowed_rows,
                     relation.unsampled,
-                ).iloc[0]
-                relation.population_size = result.population_size
-                relation.sample_size = result.sample_size
+                    self.same_as_source
+                )
+                relation.population_size = result.iloc[0].population_size
+                relation.sample_size = result.iloc[0].sample_size
                 logger.info(
                     f"Analysis of relation {relation.dot_notation} completed in {duration(start_time)}."
                 )
@@ -296,12 +301,13 @@ class GraphSetRunner:
                         f"Retrieving records from source {relation.temp_dot_notation}..."
                     )
                     fetch_query = f"SELECT * FROM {relation.temp_dot_notation}"
-                    query_data = executable.source_adapter.check_count_and_query(
+                    query_data, sample_size = executable.source_adapter.check_count_and_query(
                         fetch_query,
                         relation.sampling.max_allowed_rows,
                         relation.unsampled,
+                        self.same_as_source
                     )
-                    relation.sample_size = len(query_data)
+                    relation.sample_size = sample_size
                     logger.info(
                         f"{relation.sample_size} records retrieved for relation {relation.dot_notation}."
                     )
@@ -324,7 +330,9 @@ class GraphSetRunner:
                         f"issue details: {exc}"
                     ) from exc
             try:
-                executable.target_adapter.create_and_load_relation(relation, query_data) 
+                executable.target_adapter.create_and_load_relation(
+                    relation, query_data, clone=self.same_as_source
+                )
             except Exception as exc:
                 raise SystemError(
                     "Failed to load relation "
