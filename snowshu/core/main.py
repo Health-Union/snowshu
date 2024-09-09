@@ -201,17 +201,18 @@ def adapter(ctx, type):
     ctx.ensure_object(dict)
     ctx.obj["TYPE"] = type
 
+
 @adapter.command()
 @click.option(
     "--credentials-file",
-    default='./replicas/credentials.yml',
+    default="./replicas/credentials.yml",
     type=click.Path(exists=True),
     help="The path to the credentials file.",
     required=True,
 )
 @click.option(
     "--prod-prefix",
-    default='SNOWSHU_PROD',
+    default="SNOWSHU_PROD",
     type=str,
     help="The prefix to set for the prod replica objects.",
     required=True,
@@ -238,16 +239,16 @@ def promote(ctx, credentials_file: str, prod_prefix: str, replica_prefix: str):
     connect_to_database = utils_module.connect_to_database
     handle_exisiting_prod_databases = utils_module.handle_exisiting_prod_databases
     handle_replica_databases = utils_module.handle_replica_databases
-    
+
     credentials = read_credentials_file(credentials_file)["targets"][0]
     conn = connect_to_database(credentials)
     if not conn:
         return
-    
+
     try:
         cursor = conn.cursor()
         current_date = pendulum.now()
-        
+
         handle_exisiting_prod_databases(cursor, prod_prefix, current_date)
         handle_replica_databases(cursor, replica_prefix, prod_prefix)
     except snowflake.connector.errors.Error as e:
@@ -261,8 +262,8 @@ def promote(ctx, credentials_file: str, prod_prefix: str, replica_prefix: str):
 @click.pass_context
 def list(ctx):
     """List available utilities for the selected type."""
-    type = ctx.obj['TYPE']
-    if type == 'snowflake':
+    type = ctx.obj["TYPE"]
+    if type == "snowflake":
         click.echo("Available Snowflake utilities:")
         click.echo("- promote: Promote a replica to production.")
         click.echo("- list: List available utilities for the selected type.")
