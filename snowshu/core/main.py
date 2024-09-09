@@ -1,14 +1,18 @@
-import logging
 import os
+import logging
+import importlib
 from pathlib import Path
 from shutil import copyfile, which
 
 import click
+import pendulum
+import snowflake.connector
 
 from snowshu.configs import IS_IN_DOCKER, DEFAULT_RETRY_COUNT, LOCAL_ARCHITECTURE
 from snowshu.core.utils import get_multiarch_list
 from snowshu.core.replica.replica_factory import ReplicaFactory
 from snowshu.core.replica.replica_manager import ReplicaManager
+from snowshu.core.utils import read_credentials_file
 from snowshu.logger import Logger
 
 # Always check for docker
@@ -182,3 +186,85 @@ def launch_docker_cmd(replica: str):
     """Return the docker command line string to start a given replica."""
     replica_manager = ReplicaManager()
     click.echo(replica_manager.launch_docker_command(replica))
+
+@cli.group()
+@click.option(
+    "--type",
+    "-t",
+    help="The type of adapter to use for the operation.",
+    type=click.Choice(["snowflake", "postgres"]),
+    required=True,
+)
+@click.pass_context
+def adapter(ctx, type):
+    """Adapter related commands."""
+    ctx.ensure_object(dict)
+    ctx.obj["TYPE"] = type
+
+@adapter.command()
+@click.option(
+    "--credentials-file",
+    default='./replicas/credentials.yml',
+    type=click.Path(exists=True),
+    help="The path to the credentials file.",
+    required=True,
+)
+@click.option(
+    "--prod-prefix",
+    default='SNOWSHU_PROD',
+    type=str,
+    help="The prefix to set for the prod replica objects.",
+    required=True,
+)
+@click.option(
+    "--replica-prefix",
+    type=str,
+    help="The prefix name of the staging replica objects.",
+    required=True,
+)
+@click.pass_context
+def promote(ctx, credentials_file: str, prod_prefix: str, replica_prefix: str):
+    """Promote a replica to production."""
+    if ctx.obj["TYPE"] != "snowflake":
+        click.echo("Promote is only supported for Snowflake replicas.")
+        return
+    # Construct the module name dynamically
+    module_name = f"snowshu.adapters.target_adapter.{ctx.obj['TYPE']}.utils"
+
+    # Import the module
+    utils_module = importlib.import_module(module_name)
+
+    # Extract the required functions
+    connect_to_database = utils_module.connect_to_database
+    handle_exisiting_prod_databases = utils_module.handle_exisiting_prod_databases
+    handle_replica_databases = utils_module.handle_replica_databases
+    
+    credentials = read_credentials_file(credentials_file)["targets"][0]
+    conn = connect_to_database(credentials)
+    if not conn:
+        return
+    
+    try:
+        cursor = conn.cursor()
+        current_date = pendulum.now()
+        
+        handle_exisiting_prod_databases(cursor, prod_prefix, current_date)
+        handle_replica_databases(cursor, replica_prefix, prod_prefix)
+    except snowflake.connector.errors.Error as e:
+        click.echo(f"Error during database operations: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@adapter.command()
+@click.pass_context
+def list(ctx):
+    """List available utilities for the selected type."""
+    type = ctx.obj['TYPE']
+    if type == 'snowflake':
+        click.echo("Available Snowflake utilities:")
+        click.echo("- promote: Promote a replica to production.")
+        click.echo("- list: List available utilities for the selected type.")
+    else:
+        click.echo(f"No utilities available for the selected type: {type}")
