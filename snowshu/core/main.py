@@ -230,27 +230,25 @@ def promote(ctx, credentials_file: str, prod_prefix: str, replica_prefix: str):
         click.echo("Promote is only supported for Snowflake replicas.")
         return
     # Construct the module name dynamically
-    module_name = f"snowshu.adapters.target_adapter.{ctx.obj['TYPE']}.utils"
+    module_name = f"snowshu.adapters.target_adapters.{ctx.obj['TYPE']}_adapter.utils"
 
     # Import the module
     utils_module = importlib.import_module(module_name)
 
     # Extract the required functions
     connect_to_database = utils_module.connect_to_database
-    handle_exisiting_prod_databases = utils_module.handle_exisiting_prod_databases
+    handle_existing_databases = utils_module.handle_existing_prod_databases
     handle_replica_databases = utils_module.handle_replica_databases
 
     credentials = read_credentials_file(credentials_file)["targets"][0]
     conn = connect_to_database(credentials)
-    if not conn:
-        return
 
     try:
         cursor = conn.cursor()
         current_date = pendulum.now()
 
-        handle_exisiting_prod_databases(cursor, prod_prefix, current_date)
-        handle_replica_databases(cursor, replica_prefix, prod_prefix)
+        if handle_existing_databases(cursor, prod_prefix, replica_prefix, current_date):
+            handle_replica_databases(cursor, replica_prefix, prod_prefix)
     except snowflake.connector.errors.Error as e:
         click.echo(f"Error during database operations: {e}")
     finally:
@@ -260,7 +258,7 @@ def promote(ctx, credentials_file: str, prod_prefix: str, replica_prefix: str):
 
 @adapter.command()
 @click.pass_context
-def list(ctx):
+def list(ctx): # noqa pylint: disable=redefined-builtin
     """List available utilities for the selected type."""
     type = ctx.obj["TYPE"]
     if type == "snowflake":
