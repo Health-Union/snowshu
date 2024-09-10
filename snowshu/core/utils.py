@@ -137,3 +137,9 @@ def generate_unique_uuid(is_upper: bool = True) -> str:
     """Generates a unique name based on name and randomly generated uuid."""
     _uuid = str(uuid.uuid4()).rsplit('-', maxsplit=1)[-1]
     return _uuid.upper() if is_upper else _uuid
+
+
+def read_credentials_file(file: Union[str, Path]) -> dict:
+    """Reads a credentials file and returns the contents as a dictionary."""
+    with open(file, encoding="utf-8") as file_obj:
+        return yaml.safe_load(file_obj)
