@@ -87,6 +87,7 @@ def handle_existing_prod_databases(cursor, prod_prefix, replica_prefix, current_
                 f"Renaming production database {old_prod_db_name} to {new_prod_db_name}."
             )
             rename_database(cursor, old_prod_db_name, new_prod_db_name)
+    return True
 
 
 def handle_replica_databases(cursor, replica_prefix, prod_prefix):
@@ -96,7 +97,7 @@ def handle_replica_databases(cursor, replica_prefix, prod_prefix):
     if not replica_databases:
         logger.warning(f"No replica databases found with prefix {replica_prefix}.")
         return False
-    
+
     for database in replica_databases:
         old_replica_db_name = database[1]
         logger.info(f"Processing replica database: {old_replica_db_name}")
@@ -108,3 +109,4 @@ def handle_replica_databases(cursor, replica_prefix, prod_prefix):
                     f"Renaming replica database {old_replica_db_name} to {new_prod_db_name}."
                 )
                 rename_database(cursor, old_replica_db_name, new_prod_db_name)
+    return True
