@@ -187,6 +187,7 @@ def launch_docker_cmd(replica: str):
     replica_manager = ReplicaManager()
     click.echo(replica_manager.launch_docker_command(replica))
 
+
 @cli.group()
 @click.option(
     "--type",
@@ -249,8 +250,8 @@ def promote(ctx, credentials_file: str, prod_prefix: str, replica_prefix: str):
 
         if handle_existing_databases(cursor, prod_prefix, replica_prefix, current_date):
             handle_replica_databases(cursor, replica_prefix, prod_prefix)
-    except snowflake.connector.errors.Error as e:
-        click.echo(f"Error during database operations: {e}")
+    except snowflake.connector.errors.Error as error:
+        click.echo(f"Error during database operations: {error}")
     finally:
         cursor.close()
         conn.close()
