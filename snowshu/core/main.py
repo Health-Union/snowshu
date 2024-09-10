@@ -197,7 +197,7 @@ def launch_docker_cmd(replica: str):
     required=True,
 )
 @click.pass_context
-def adapter(ctx, type):
+def adapter(ctx, type):  # noqa pylint: disable=redefined-builtin
     """Adapter related commands."""
     ctx.ensure_object(dict)
     ctx.obj["TYPE"] = type
@@ -261,8 +261,8 @@ def promote(ctx, credentials_file: str, prod_prefix: str, replica_prefix: str):
 @click.pass_context
 def list_commands(ctx): 
     """List available utilities for the selected type."""
-    type = ctx.obj["TYPE"]
-    if type == "snowflake":
+    adapter_type = ctx.obj["TYPE"]
+    if adapter_type == "snowflake":
         click.echo("Available Snowflake utilities:")
         click.echo("- promote: Promote a replica to production.")
         click.echo("- list_commands: List available utilities for the selected type.")
