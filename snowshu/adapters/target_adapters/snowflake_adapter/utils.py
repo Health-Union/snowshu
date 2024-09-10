@@ -9,11 +9,7 @@ def connect_to_database(credentials):
     try:
         logger.info("Attempting to connect to Snowflake with provided credentials.")
         conn = snowflake.connector.connect(
-            user=credentials["user"],
-            password=credentials["password"],
-            account=credentials["account"],
-            database=credentials["database"],
-            role=credentials["role"],
+            **credentials
         )
         logger.info("Successfully connected to Snowflake.")
         return conn
