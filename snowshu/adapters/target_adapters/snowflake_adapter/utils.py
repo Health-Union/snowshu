@@ -52,7 +52,7 @@ def get_type_of_replica(replica_prefix):
 
 def fetch_databases(cursor, prefix):
     """Fetch databases with the given prefix."""
-    query = f"SHOW DATABASES LIKE '{prefix}%'"
+    query = f"SHOW DATABASES STARTS WITH '{prefix}'"
     cursor.execute(query)
     return cursor.fetchall()
 
