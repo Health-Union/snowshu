@@ -23,7 +23,7 @@ from tests.conftest_modules.test_configuration import CONFIGURATION, BASIC_CONFI
 from tests.conftest_modules.test_credentials import CREDENTIALS
 
 
-CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, "tests", "assets", "replica_test_config.yml")
+CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, "tests",  "assets", "replica_test_config.yml")
 DOCKER_SPIN_UP_TIMEOUT = 15
 
 

@@ -4,3 +4,7 @@ repos:
     hooks:
       - id: ruff
         args: ["--fix"]  # This will auto-fix issues where possible
+      - id: ruff
+        name: ruff-linter
+        stages: [push]
+        args: ["--no-fix"]  # This will only lint without fixing
