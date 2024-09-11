@@ -1,0 +1,6 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.4  # Use the version of ruff you have specified in your requirements
+    hooks:
+      - id: ruff
+        args: ["--fix"]  # This will auto-fix issues where possible

@@ -3,14 +3,12 @@
 
 pytest==7.2.0
 mock==5.0.0
-autopep8==2.0.1
 testfixtures==7.0.4
 pytest-cov==4.0.0
 pipupgrade==1.12.0
 dfmock==0.0.14
 coverage==7.0.3
-pylint==2.15.9
-prospector==1.8.3
 pur==7.0.0
 beautifulsoup4==4.11.1
 ruff==0.6.4
+pre-commit==3.8.0
