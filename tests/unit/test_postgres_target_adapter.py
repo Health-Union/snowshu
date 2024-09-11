@@ -1,13 +1,9 @@
-from unittest.mock import MagicMock, ANY
+from unittest.mock import MagicMock
 
 from pandas.core.frame import DataFrame
 
 from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
-from snowshu.configs import DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER
-from snowshu.core.models import data_types
-from snowshu.core.models.attribute import Attribute
-from snowshu.core.models.materializations import TABLE
-from snowshu.core.models.relation import Relation
+from snowshu.configs import DOCKER_REMOUNT_DIRECTORY
 from tests.common import rand_string
 
 
@@ -19,10 +15,6 @@ def test_x00_replacement():
     weird_value = "weird\x00value"
     custom_replacement = "__CUSTOM_VALUE__"
 
-    cols = [
-        Attribute(id_col, data_types.BIGINT),
-        Attribute(content_col, data_types.VARCHAR)
-    ]
     # test default replacement
     query_data = DataFrame({id_col: [1, 2], content_col: [normal_val, weird_value]})
 

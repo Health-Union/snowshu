@@ -50,7 +50,7 @@ def temporary_replica():
 def test_sample_defaults(load, create, temporary_replica):
     runner = CliRunner()
     EXPECTED_REPLICA_FILE = temporary_replica
-    result = runner.invoke(main.cli, ('create',))
+    result = runner.invoke(main.cli, ('create',))  # noqa: F841
     ACTUAL_REPLICA_FILE = load.call_args_list[0][0][0]
     # run_args = create.call_args_list[0][0][0]   # wasn't used and broke down
     assert ACTUAL_REPLICA_FILE == EXPECTED_REPLICA_FILE
@@ -65,9 +65,9 @@ def test_sample_args_valid(run, replica):
         tempfile = Path('./test-file.yml')
         tempfile.touch()
         EXPECTED_REPLICA_FILE = tempfile.absolute()
-        EXPECTED_TAG = rand_string(10)
-        EXPECTED_DEBUG = True
-        result = runner.invoke(main.cli, ('--debug',
+        EXPECTED_TAG = rand_string(10)  # noqa: F841
+        EXPECTED_DEBUG = True  # noqa: F841
+        result = runner.invoke(main.cli, ('--debug',  # noqa: F841
                                           'create',
                                           '--replica-file', EXPECTED_REPLICA_FILE,
                                           ))
@@ -83,7 +83,7 @@ def test_analyze_does_all_but_run(replica, create_relation):
         tempfile = Path('./replica.yml')
         tempfile.touch()
         REPLICA_FILE = tempfile.absolute()
-        result = runner.invoke(
+        result = runner.invoke(  # noqa: F841
             main.cli, ('analyze', '--replica-file', REPLICA_FILE.absolute()))
         replica_methods = replica.mock_calls
         assert '().load_config' == replica_methods[1][0]
@@ -125,13 +125,12 @@ def test_custom_cli_input_analyze(analyze, load, temporary_replica):  # noqa pyl
     runner.invoke(main.cli, ('analyze -r 50'))
     analyze.assert_called_with(barf=ANY, retry_count=50)
 
-from snowshu.configs import Architecture, ARCH_MAP
 @patch('snowshu.core.main.ReplicaFactory.load_config')
 def test_custom_cli_input_load(load, temporary_replica):  # noqa pylint: disable=unused-argument
     # test if CLI input is passed to correct calls
     runner = CliRunner()
 
-    for local_arch in ARCH_MAP.values():
+    for local_arch in ARCH_MAP.values(): # type: ignore
         with patch('snowshu.core.main.LOCAL_ARCHITECTURE', new=local_arch) as _:
             # test load_config
             runner.invoke(main.cli, ('create'))

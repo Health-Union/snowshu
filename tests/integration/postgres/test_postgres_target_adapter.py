@@ -1,6 +1,5 @@
 import time
 from unittest import mock
-import pytest
 
 from pandas.core.frame import DataFrame
 from sqlalchemy import create_engine
@@ -8,7 +7,7 @@ import docker
 
 from snowshu.adapters.target_adapters import BaseTargetAdapter
 from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
-from snowshu.configs import (DOCKER_REMOUNT_DIRECTORY, DOCKER_REPLICA_MOUNT_FOLDER, LOCAL_ARCHITECTURE)
+from snowshu.configs import (LOCAL_ARCHITECTURE)
 from snowshu.core.docker import SnowShuDocker
 from snowshu.core.models import Relation, Attribute, data_types
 from snowshu.core.models.materializations import TABLE
@@ -150,13 +149,13 @@ def test_restore_data_from_shared_replica(docker_flush):
         envars=['POSTGRES_USER=snowshu',
                 'POSTGRES_PASSWORD=snowshu',
                 'POSTGRES_DB=snowshu',
-                f'PGDATA=/pgdata'])
+                'PGDATA=/pgdata'])
 
     # load test data
     time.sleep(DOCKER_SPIN_UP_TIMEOUT)  # give pg a moment to spin up all the way
     # generate some test data
     engine = create_engine(
-        f'postgresql://snowshu:snowshu@snowshu_target:9999/snowshu')
+        'postgresql://snowshu:snowshu@snowshu_target:9999/snowshu')
     engine.execute(
         f'CREATE TABLE {TEST_TABLE} (column_one VARCHAR, column_two INT)')
     engine.execute(
@@ -183,7 +182,7 @@ def test_restore_data_from_shared_replica(docker_flush):
         envars=['POSTGRES_USER=snowshu',
                 'POSTGRES_PASSWORD=snowshu',
                 'POSTGRES_DB=snowshu',
-                f'PGDATA=/pgdata'])
+                'PGDATA=/pgdata'])
 
     # starting our new container
     target_container.start()

@@ -1,4 +1,3 @@
-import pytest
 
 from snowshu.samplings.sample_sizes import CochransSampleSize
 

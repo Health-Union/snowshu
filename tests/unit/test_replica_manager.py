@@ -25,4 +25,4 @@ def test_launch_docker_cmd_bad(docker,mock_docker_image):
     docker.return_value=[mock_docker_image.get_image(rand_string(10))]
     result=ReplicaManager.launch_docker_command(replica_name)
 
-    assert result == f'No replica found for does_not_exist.'
+    assert result == 'No replica found for does_not_exist.'

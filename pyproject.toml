@@ -1,0 +1,13 @@
+[tool.ruff]
+line-length = 120
+exclude = [
+    "__init__.py",
+    "snowshu/core/models/credentials.py",
+]
+
+[tool.ruff.lint]
+ignore = [
+    "F821",  # Undefined name
+    # "MC0001",  # McCabe complexity
+    # "C0411",  # cyclic-import
+]

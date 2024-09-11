@@ -2,7 +2,6 @@ import json
 import tempfile
 from io import StringIO
 from pathlib import Path
-import copy
 
 import pytest
 import yaml
@@ -35,7 +34,7 @@ def test_fills_empty_top_level_values(stub_configs):
     parsed = ConfigurationParser().from_file_or_path(mock_config_file)
 
     assert parsed.long_description == ''
-    assert parsed.include_outliers == False
+    assert parsed.include_outliers is False
     assert parsed.max_number_of_outliers == DEFAULT_MAX_NUMBER_OF_OUTLIERS
 
 
@@ -166,7 +165,7 @@ materialization_mappings_test_cases = [
 @pytest.mark.parametrize('condition,expected', materialization_mappings_test_cases)
 def test_materialization_mappings(condition, expected, stub_configs):
     local_stub_configs = stub_configs()
-    if condition != None:
+    if condition is not None:
         local_stub_configs['source']['copy_views_as_tables'] = condition
     mock_config_file = StringIO(yaml.dump(local_stub_configs))
     parsed = ConfigurationParser().from_file_or_path(mock_config_file)

@@ -1,7 +1,5 @@
-from unittest import mock
 from unittest.mock import Mock, patch
 import networkx as nx
-import pandas as pd
 
 import snowshu.core.models.data_types as dt
 from snowshu.adapters.source_adapters.snowflake_adapter import SnowflakeAdapter

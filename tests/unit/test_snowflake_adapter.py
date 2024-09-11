@@ -1,5 +1,4 @@
 import random
-from contextlib import nullcontext as does_not_raise
 from unittest import mock
 from urllib.parse import quote
 
@@ -132,7 +131,7 @@ def test_analyze_wrap_statement():
     DATABASE, SCHEMA, NAME = [rand_string(10) for _ in range(3)]
     relation = Relation(database=DATABASE, schema=SCHEMA,
                         name=NAME, materialization=TABLE, attributes=[])
-    sql = f"SELECT * FROM some_crazy_query"
+    sql = "SELECT * FROM some_crazy_query"
     statement = sf.analyze_wrap_statement(sql, relation)
     assert query_equalize(statement) == query_equalize(f"""
 WITH
@@ -234,7 +233,7 @@ def test_predicate_constraint_statement_analyze_false_empty_constraint_set(mock_
     mock_format_remote_key.return_value = 'remote_key'
     mock_relation.temp_dot_notation = 'mock_dot_notation'
     mock_query.return_value = DataFrame([])
-    with pytest.raises(IndexError, match=f"Failed to build predicates, the constraint set is empty."):
+    with pytest.raises(IndexError, match="Failed to build predicates, the constraint set is empty."):
         sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
 
 

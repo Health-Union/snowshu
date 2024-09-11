@@ -13,3 +13,4 @@ pylint==2.15.9
 prospector==1.8.3
 pur==7.0.0
 beautifulsoup4==4.11.1
+ruff==0.6.4

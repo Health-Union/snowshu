@@ -11,7 +11,6 @@ from snowshu.core.models import Relation
 from snowshu.core.models.relation import alter_relation_case
 from snowshu.core.replica.replica_factory import ReplicaFactory
 from snowshu.configs import LOCAL_ARCHITECTURE
-from snowshu.core.utils import get_multiarch_list
 from tests.common import rand_string
 from tests.conftest import BASIC_CONFIGURATION
 

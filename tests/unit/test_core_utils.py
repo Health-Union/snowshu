@@ -1,4 +1,3 @@
-import pytest
 
 from snowshu.core.utils import case_insensitive_dict_value, correct_case
 

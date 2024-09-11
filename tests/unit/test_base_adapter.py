@@ -3,7 +3,6 @@ from unittest.mock import patch
 
 import snowshu.core.models.materializations as mz
 from snowshu.adapters import BaseSQLAdapter
-from snowshu.adapters.source_adapters import BaseSourceAdapter
 from snowshu.core.models import Relation
 from snowshu.core.models.credentials import (ACCOUNT, DATABASE, HOST, PASSWORD,
                                              ROLE, SCHEMA, USER, Credentials)

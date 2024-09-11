@@ -93,7 +93,6 @@ def test_logger_debug_log_level(temp_log):
 
 @pytest.mark.skip
 def test_logger_always_logs_debug_to_file(temp_log):
-    levels = (logging.WARNING, logging.DEBUG, logging.INFO, logging.CRITICAL)
     log_engine = Logger()
     log_engine.initialize_logger(log_file_location=temp_log.strpath)
     for level in LOG_LEVELS:

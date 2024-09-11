@@ -1,4 +1,3 @@
-import snowshu.core.models.materializations as mz
 import snowshu.core.printable_result as pr
 from snowshu.samplings.samplings import DefaultSampling
 
@@ -37,11 +36,11 @@ def test_graph_to_list(stub_graph_set):
             assert row.final_sample_size == 'N/A'
             assert row.count_of_dependencies in (' ')
             assert row.percent_to_target == 'N/A'
-            assert row.percent_is_acceptable == True
+            assert row.percent_is_acceptable is True
         else:
             assert row.population_size == 1000
             assert row.target_sample_size == 1000
             assert row.final_sample_size == 10
             assert row.count_of_dependencies in (' ', '1')  # some relations had a dependency
             assert row.percent_to_target == 1
-            assert row.percent_is_acceptable == False
+            assert row.percent_is_acceptable is False

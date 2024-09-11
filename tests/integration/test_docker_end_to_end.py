@@ -1,5 +1,4 @@
 import time
-from unittest import mock
 
 import docker
 from sqlalchemy import create_engine
