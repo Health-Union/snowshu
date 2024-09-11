@@ -6,12 +6,10 @@ from typing import Optional, TextIO, Union
 import logging
 
 from snowshu.adapters.target_adapters.base_remote_target_adapter import BaseRemoteTargetAdapter
-from snowshu.core.configuration_parser import (Configuration,
-                                               ConfigurationParser)
+from snowshu.core.configuration_parser import Configuration, ConfigurationParser
 from snowshu.core.graph import SnowShuGraph
 from snowshu.core.graph_set_runner import GraphSetRunner
-from snowshu.core.printable_result import (graph_to_result_list,
-                                           printable_result)
+from snowshu.core.printable_result import graph_to_result_list, printable_result
 from snowshu.logger import duration
 from snowshu.configs import DEFAULT_RETRY_COUNT
 from snowshu.core.models.relation import alter_relation_case
@@ -21,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 
 class ReplicaFactory:
-
     def __init__(self):
         self._credentials = {}
         self.config: Optional[Configuration] = None
@@ -29,10 +26,9 @@ class ReplicaFactory:
         self.incremental: Optional[str] = None
         self.retry_count: Optional[int] = DEFAULT_RETRY_COUNT
 
-    def create(self,
-               name: Optional[str],
-               barf: bool,
-               retry_count: Optional[int] = DEFAULT_RETRY_COUNT) -> Optional[str]:
+    def create(
+        self, name: Optional[str], barf: bool, retry_count: Optional[int] = DEFAULT_RETRY_COUNT
+    ) -> Optional[str]:
         self.run_analyze = False
         if retry_count:
             self.retry_count = retry_count
@@ -52,59 +48,49 @@ class ReplicaFactory:
                     f"Please remove the {flag} flag and try again or use a local target adapter."
                 )
 
-    def _execute(self,
-                 barf: bool = False,
-                 name: Optional[str] = None) -> Optional[str]:
+    def _execute(self, barf: bool = False, name: Optional[str] = None) -> Optional[str]:
         graph = SnowShuGraph()
         if name is not None:
             self.config.name = name
 
         graph.build_graph(self.config)
 
-        self.config.target_profile.adapter.initialize_replica(
-            config=self.config, incremental_image=self.incremental
-        )
+        self.config.target_profile.adapter.initialize_replica(config=self.config, incremental_image=self.incremental)
         if self.incremental:
-            incremental_target_catalog = (
-                self.config.target_profile.adapter.build_catalog(
-                    patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
-                    thread_workers=self.config.threads,
-                    flags=re.IGNORECASE,
-                )
+            incremental_target_catalog = self.config.target_profile.adapter.build_catalog(
+                patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
+                thread_workers=self.config.threads,
+                flags=re.IGNORECASE,
             )
 
             apply_source_case = alter_relation_case(
                 case_function=self.config.source_profile.adapter._correct_case  # noqa pylint: disable=protected-access
             )
-            incremental_target_catalog_casted = set(
-                map(apply_source_case, incremental_target_catalog)
-            )
+            incremental_target_catalog_casted = set(map(apply_source_case, incremental_target_catalog))
 
-            graph.graph = SnowShuGraph.catalog_difference(
-                graph.graph, incremental_target_catalog_casted
-            )
+            graph.graph = SnowShuGraph.catalog_difference(graph.graph, incremental_target_catalog_casted)
 
         graphs = graph.get_connected_subgraphs()
         if len(graphs) < 1:
-            args = (' new ', ' incremental ', '; image up-to-date') if self.incremental else (' ', ' ', '')
+            args = (" new ", " incremental ", "; image up-to-date") if self.incremental else (" ", " ", "")
             message = "No{}relations found per provided{}replica configuration{}, exiting.".format(*args)  # noqa: pylint: disable=consider-using-f-string
             remove_dangling_replica_containers()
             return message
 
         # TODO replica container should not be started for analyze commands
         runner = GraphSetRunner()
-        runner.execute_graph_set(graphs,
-                                 self.config.source_profile.adapter,
-                                 self.config.target_profile.adapter,
-                                 threads=self.config.threads,
-                                 retry_count=self.retry_count,
-                                 analyze=self.run_analyze,
-                                 barf=barf)
+        runner.execute_graph_set(
+            graphs,
+            self.config.source_profile.adapter,
+            self.config.target_profile.adapter,
+            threads=self.config.threads,
+            retry_count=self.retry_count,
+            analyze=self.run_analyze,
+            barf=barf,
+        )
         if not self.run_analyze:
             relations = [relation for graph in graphs for relation in graph.nodes]
-            self.config.target_profile.adapter.finalize_replica(
-                config=self.config, relations=relations
-            )
+            self.config.target_profile.adapter.finalize_replica(config=self.config, relations=relations)
 
         return printable_result(
             graph_to_result_list(graphs),
@@ -112,13 +98,11 @@ class ReplicaFactory:
             self.config.target_profile.adapter.replica_meta["replica_info"],
         )
 
-    def load_config(self,
-                    config: Union[Path, str, TextIO],
-                    target_arch=None):
+    def load_config(self, config: Union[Path, str, TextIO], target_arch=None):
         """does all the initial work to make the resulting ReplicaFactory
         object usable."""
-        logger.info('Loading configuration...')
+        logger.info("Loading configuration...")
         start_timer = time.time()
         self.config = ConfigurationParser().from_file_or_path(config)
         self.config.target_profile.adapter.target_arch = target_arch
-        logger.info('Configuration loaded in %s.', duration(start_timer))
+        logger.info("Configuration loaded in %s.", duration(start_timer))

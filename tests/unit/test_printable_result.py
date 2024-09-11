@@ -31,16 +31,16 @@ def test_graph_to_list(stub_graph_set):
     for row in report:
         assert isinstance(row, pr.ReportRow)
         if row.dot_notation in view_list:
-            assert row.population_size == 'N/A'
-            assert row.target_sample_size == 'N/A'
-            assert row.final_sample_size == 'N/A'
-            assert row.count_of_dependencies in (' ')
-            assert row.percent_to_target == 'N/A'
+            assert row.population_size == "N/A"
+            assert row.target_sample_size == "N/A"
+            assert row.final_sample_size == "N/A"
+            assert row.count_of_dependencies in (" ")
+            assert row.percent_to_target == "N/A"
             assert row.percent_is_acceptable is True
         else:
             assert row.population_size == 1000
             assert row.target_sample_size == 1000
             assert row.final_sample_size == 10
-            assert row.count_of_dependencies in (' ', '1')  # some relations had a dependency
+            assert row.count_of_dependencies in (" ", "1")  # some relations had a dependency
             assert row.percent_to_target == 1
             assert row.percent_is_acceptable is False

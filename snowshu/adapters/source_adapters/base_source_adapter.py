@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseSourceAdapter(BaseSQLAdapter):
-    name = ''
+    name = ""
     MAX_ALLOWED_DATABASES = MAX_ALLOWED_DATABASES
     MAX_ALLOWED_ROWS = MAX_ALLOWED_ROWS
     SUPPORTS_CROSS_DATABASE = False
@@ -21,10 +21,12 @@ class BaseSourceAdapter(BaseSQLAdapter):
     def __init__(self, preserve_case: bool = False):
         self.preserve_case = preserve_case
         super().__init__()
-        for attr in ('DATA_TYPE_MAPPINGS', 'SUPPORTED_SAMPLE_METHODS',):
+        for attr in (
+            "DATA_TYPE_MAPPINGS",
+            "SUPPORTED_SAMPLE_METHODS",
+        ):
             if not hasattr(self, attr):
-                raise NotImplementedError(
-                    f'Source adapter requires attribute f{attr} but was not set.')
+                raise NotImplementedError(f"Source adapter requires attribute f{attr} but was not set.")
 
     @abstractmethod
     def _count_query(self, query: str) -> int:
@@ -54,6 +56,5 @@ class BaseSourceAdapter(BaseSQLAdapter):
         try:
             return self.DATA_TYPE_MAPPINGS[source_type.lower()]
         except KeyError as err:
-            logger.error(
-                '%s adapter does not support data type %s.', self.CLASSNAME, source_type)
+            logger.error("%s adapter does not support data type %s.", self.CLASSNAME, source_type)
             raise err

@@ -40,9 +40,7 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
         super().__init__(replica_metadata)
         for attr in ("DOCKER_IMAGE", "DOCKER_SNOWSHU_ENVARS"):
             if not hasattr(self, attr):
-                raise NotImplementedError(
-                    f"Target adapter requires attribute {attr} but was not set."
-                )
+                raise NotImplementedError(f"Target adapter requires attribute {attr} but was not set.")
         self.target = DOCKER_TARGET_CONTAINER if IS_IN_DOCKER else "localhost"
         self.credentials = self._generate_credentials(self.target)
         self.shdocker = SnowShuDocker()
@@ -108,9 +106,7 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
         # Section 3: Apply emulation functions
         logger.info("Applying emulation functions to target...")
         for function in config.source_profile.adapter.SUPPORTED_FUNCTIONS:
-            config.target_profile.adapter.create_function_if_available(
-                function, kwargs["relations"]
-            )
+            config.target_profile.adapter.create_function_if_available(function, kwargs["relations"])
         logger.info("Emulation functions applied to target.")
 
         # Section 4: Copy replica data
@@ -124,14 +120,10 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
 
         # Section 5: Finalize target container
         logger.info("Converting target container into replica...")
-        self.shdocker.convert_container_to_replica(
-            self.replica_meta["name"], self.container, self.passive_container
-        )
+        self.shdocker.convert_container_to_replica(self.replica_meta["name"], self.container, self.passive_container)
         logger.info(f'Replica image {self.replica_meta["name"]} finalized.')
 
-    def _build_conn_string_partial(
-        self, dialect: str, database: Optional[str] = None
-    ) -> Tuple[str, Set[str]]:
+    def _build_conn_string_partial(self, dialect: str, database: Optional[str] = None) -> Tuple[str, Set[str]]:
         """Builds a partial connection string for the target adapter."""
         database = database if database is not None else self._credentials.database
         conn_string = (
@@ -156,7 +148,7 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
         meta_data = pd.DataFrame(
             [
                 dict(
-                    created_at=pendulum.now('UTC').naive(),
+                    created_at=pendulum.now("UTC").naive(),
                     name=self.replica_meta["name"],
                     short_description=self.replica_meta["short_description"],
                     long_description=self.replica_meta["long_description"],

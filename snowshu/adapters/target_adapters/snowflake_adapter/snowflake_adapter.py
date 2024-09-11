@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 
 class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
-
     REQUIRED_CREDENTIALS = (
         USER,
         PASSWORD,
@@ -61,21 +60,15 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         # Initialize the UUID and replica prefix if they have not been set
         # These values need to be set once per adapter instance
         if SnowflakeAdapter.uuid is None:
-            SnowflakeAdapter.uuid = (
-                uuid if uuid is not None else utils.generate_unique_uuid()
-            )
+            SnowflakeAdapter.uuid = uuid if uuid is not None else utils.generate_unique_uuid()
         if SnowflakeAdapter.replica_prefix is None:
-            SnowflakeAdapter.replica_prefix = (
-                f"SNOWSHU_{SnowflakeAdapter.uuid}_{self.replica_meta['name'].upper()}"
-            )
+            SnowflakeAdapter.replica_prefix = f"SNOWSHU_{SnowflakeAdapter.uuid}_{self.replica_meta['name'].upper()}"
 
     def initialize_replica(self, config: Configuration, **kwargs):
         self._initialize_snowshu_meta_database()
         self._initialize_replica_info()
         if kwargs.get("incremental_image", None):
-            raise NotImplementedError(
-                "Incremental builds are not supported for Snowflake target adapter."
-            )
+            raise NotImplementedError("Incremental builds are not supported for Snowflake target adapter.")
 
     def create_database_name(self, database: str) -> str:
         if database != "SNOWSHU":
@@ -154,18 +147,14 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                         and database_owner == self.credentials.role
                         and database_created >= pendulum.now().subtract(days=1)
                     ):
-                        self.conn.execute(
-                            f"DROP DATABASE IF EXISTS {database_name} CASCADE"
-                        )
+                        self.conn.execute(f"DROP DATABASE IF EXISTS {database_name} CASCADE")
             except sqlalchemy.exc.ProgrammingError as exc:
                 logger.error("Failed to drop database.")
                 if "insufficient privileges" in str(exc):
                     logger.error("Please ensure the user has the required privileges.")
 
     def _initialize_snowshu_meta_database(self):
-        engine = self.get_connection(
-            database_override="SNOWSHU", schema_override="SNOWSHU"
-        )
+        engine = self.get_connection(database_override="SNOWSHU", schema_override="SNOWSHU")
         self.create_schema_if_not_exists("SNOWSHU", "SNOWSHU", engine)
         attributes = [
             Attribute("created_at", dt.TIMESTAMP_NTZ),
@@ -180,7 +169,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         meta_data = pd.DataFrame(
             [
                 dict(
-                    created_at=pendulum.now('UTC').naive(),
+                    created_at=pendulum.now("UTC").naive(),
                     name=self.replica_meta["name"],
                     short_description=self.replica_meta["short_description"],
                     long_description=self.replica_meta["long_description"],
@@ -199,7 +188,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         schema: str,
         engine: Optional[sqlalchemy.engine.base.Engine] = None,
     ):
-        database_name = self.create_database_name(database) 
+        database_name = self.create_database_name(database)
         logger.debug(f"Creating schema {schema}...")
 
         engine = self.conn if not engine else engine
@@ -218,9 +207,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             self.quoted(self._correct_case(relation.schema)),
         )
 
-        engine = self.get_connection(
-            database_override=quoted_database, schema_override=quoted_schema
-        )
+        engine = self.get_connection(database_override=quoted_database, schema_override=quoted_schema)
         original_columns, data = self.prepare_columns_and_data_for_insertion(data)
 
         return (
@@ -259,4 +246,4 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     @staticmethod
     def quoted(val: str) -> str:
         """Returns quoted value if appropriate."""
-        return f'"{val}"' if ' ' in val else val
+        return f'"{val}"' if " " in val else val

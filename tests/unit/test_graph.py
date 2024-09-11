@@ -20,12 +20,14 @@ def test_graph_builds_dags_correctly(stub_graph_set):
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
 
-    full_catalog = [vals.iso_relation,
-                    vals.view_relation,
-                    vals.downstream_relation,
-                    vals.upstream_relation,
-                    vals.birelation_left,
-                    vals.birelation_right]
+    full_catalog = [
+        vals.iso_relation,
+        vals.view_relation,
+        vals.downstream_relation,
+        vals.upstream_relation,
+        vals.birelation_left,
+        vals.birelation_right,
+    ]
 
     graph = nx.MultiGraph()
     graph.add_nodes_from(full_catalog)
@@ -42,36 +44,44 @@ def test_graph_allows_upstream_wildcards(stub_graph_set):
 
     vals.upstream_relation.database = vals.downstream_relation.database
     vals.upstream_relation.schema = vals.downstream_relation.schema
-    full_catalog = [vals.iso_relation,
-                    vals.view_relation,
-                    vals.downstream_relation,
-                    vals.upstream_relation,
-                    vals.birelation_left,
-                    vals.birelation_right]
+    full_catalog = [
+        vals.iso_relation,
+        vals.view_relation,
+        vals.downstream_relation,
+        vals.upstream_relation,
+        vals.birelation_left,
+        vals.birelation_right,
+    ]
     config_dict = copy.deepcopy(CONFIGURATION)
 
-    config_dict['source']['specified_relations'] = [dict(relation=vals.downstream_relation.name,
-                                                         database=vals.downstream_relation.database,
-                                                         schema=vals.downstream_relation.schema,
-                                                         unsampled=False,
-                                                         relationships=dict(directional=[],
-                                                                            bidirectional=[dict(
-                                                                                relation=vals.upstream_relation.name,
-                                                                                database='',
-                                                                                schema='',
-                                                                                local_attribute=
-                                                                                vals.downstream_relation.attributes[
-                                                                                    0].name,
-                                                                                remote_attribute=
-                                                                                vals.upstream_relation.attributes[
-                                                                                    0].name)]))]
+    config_dict["source"]["specified_relations"] = [
+        dict(
+            relation=vals.downstream_relation.name,
+            database=vals.downstream_relation.database,
+            schema=vals.downstream_relation.schema,
+            unsampled=False,
+            relationships=dict(
+                directional=[],
+                bidirectional=[
+                    dict(
+                        relation=vals.upstream_relation.name,
+                        database="",
+                        schema="",
+                        local_attribute=vals.downstream_relation.attributes[0].name,
+                        remote_attribute=vals.upstream_relation.attributes[0].name,
+                    )
+                ],
+            ),
+        )
+    ]
 
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
-    modified_graph = shgraph._apply_specifications(
-        config, nx.MultiDiGraph(), full_catalog)
-    assert (vals.upstream_relation, vals.downstream_relation,
-            ) in modified_graph.edges
+    modified_graph = shgraph._apply_specifications(config, nx.MultiDiGraph(), full_catalog)
+    assert (
+        vals.upstream_relation,
+        vals.downstream_relation,
+    ) in modified_graph.edges
 
 
 def test_unsampled(stub_graph_set):
@@ -79,24 +89,29 @@ def test_unsampled(stub_graph_set):
 
     _, vals = stub_graph_set
 
-    full_catalog = [vals.iso_relation,
-                    vals.view_relation,
-                    vals.downstream_relation,
-                    vals.upstream_relation,
-                    vals.birelation_left,
-                    vals.birelation_right]
+    full_catalog = [
+        vals.iso_relation,
+        vals.view_relation,
+        vals.downstream_relation,
+        vals.upstream_relation,
+        vals.birelation_left,
+        vals.birelation_right,
+    ]
 
     config_dict = copy.deepcopy(CONFIGURATION)
-    config_dict['source']['specified_relations'] = [dict(relation=vals.iso_relation.name,
-                                                         database=vals.iso_relation.database,
-                                                         schema=vals.iso_relation.schema,
-                                                         unsampled=True)]
+    config_dict["source"]["specified_relations"] = [
+        dict(
+            relation=vals.iso_relation.name,
+            database=vals.iso_relation.database,
+            schema=vals.iso_relation.schema,
+            unsampled=True,
+        )
+    ]
 
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
     assert vals.iso_relation.unsampled is False
 
-    shgraph._apply_specifications(
-        config, nx.MultiDiGraph(), full_catalog)
+    shgraph._apply_specifications(config, nx.MultiDiGraph(), full_catalog)
     shgraph._apply_specifications(config, nx.MultiDiGraph(), full_catalog)
 
     assert vals.iso_relation.unsampled is True
@@ -107,16 +122,18 @@ def test_sets_outliers(stub_graph_set):
 
     _, vals = stub_graph_set
 
-    full_catalog = [vals.iso_relation,
-                    vals.view_relation,
-                    vals.downstream_relation,
-                    vals.upstream_relation,
-                    vals.birelation_left,
-                    vals.birelation_right]
+    full_catalog = [
+        vals.iso_relation,
+        vals.view_relation,
+        vals.downstream_relation,
+        vals.upstream_relation,
+        vals.birelation_left,
+        vals.birelation_right,
+    ]
 
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
-    config_dict['source']['include_outliers'] = True
-    config_dict['source']['max_number_of_outliers'] = 1000
+    config_dict["source"]["include_outliers"] = True
+    config_dict["source"]["max_number_of_outliers"] = 1000
 
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
@@ -134,12 +151,14 @@ def test_no_duplicates(stub_graph_set):
 
     _, vals = stub_graph_set
 
-    full_catalog = [vals.iso_relation,
-                    vals.view_relation,
-                    vals.downstream_relation,
-                    vals.upstream_relation,
-                    vals.birelation_left,
-                    vals.birelation_right]
+    full_catalog = [
+        vals.iso_relation,
+        vals.view_relation,
+        vals.downstream_relation,
+        vals.upstream_relation,
+        vals.birelation_left,
+        vals.birelation_right,
+    ]
 
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
 
@@ -159,37 +178,37 @@ def test_sets_only_existing_adapters():
     shgraph = SnowShuGraph()
 
     test_relation = Relation(
-        database='SNOWSHU_DEVELOPMENT',
-        schema='SOURCE_SYSTEM',
-        name='ORDER_ITEMS',
+        database="SNOWSHU_DEVELOPMENT",
+        schema="SOURCE_SYSTEM",
+        name="ORDER_ITEMS",
         materialization=mz.TABLE,
-        attributes=[]
+        attributes=[],
     )
     test_relation.include_outliers, test_relation.unsampled = [False for _ in range(2)]
     test_relation.sampling = DefaultSampling()
     config_dict = copy.deepcopy(CONFIGURATION)
-    config_dict['preserve_case'] = True
-    config_dict['source']['specified_relations'][1]['sampling'] = 'lucky_guess'
+    config_dict["preserve_case"] = True
+    config_dict["source"]["specified_relations"][1]["sampling"] = "lucky_guess"
     with pytest.raises(AttributeError):
         config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
     assert isinstance(test_relation.sampling, DefaultSampling)
-    config_dict['source']['specified_relations'][1]['sampling'] = 'brute_force'
+    config_dict["source"]["specified_relations"][1]["sampling"] = "brute_force"
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
 
-    assert isinstance(shgraph._set_overriding_params_for_node(test_relation, config).sampling,
-                      BruteForceSampling)
+    assert isinstance(shgraph._set_overriding_params_for_node(test_relation, config).sampling, BruteForceSampling)
 
 
 def test_build_graph_partitions_wildcards(stub_graph_set):
-    """ Tests build_graph partitions wildcard relationships """
+    """Tests build_graph partitions wildcard relationships"""
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
-    full_catalog = [vals.downstream_wildcard_relation_1,
-                    vals.downstream_wildcard_relation_2,
-                    vals.upstream_wildcard_relation_1,
-                    vals.upstream_wildcard_relation_2,
-                    ]
+    full_catalog = [
+        vals.downstream_wildcard_relation_1,
+        vals.downstream_wildcard_relation_2,
+        vals.upstream_wildcard_relation_1,
+        vals.upstream_wildcard_relation_2,
+    ]
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
@@ -203,10 +222,10 @@ def test_build_graph_partitions_wildcards(stub_graph_set):
                         "database": "",
                         "schema": "",
                         "relation": ".*UPSTREAM.*$",
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -223,13 +242,10 @@ def test_build_graph_partitions_wildcards(stub_graph_set):
 
 
 def test_build_graph_allows_upstream_regex(stub_graph_set):
-    """ Tests build_graph builds multiple upstream relationships """
+    """Tests build_graph builds multiple upstream relationships"""
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
-    full_catalog = [vals.downstream_relation,
-                    vals.upstream_relation,
-                    vals.birelation_left,
-                    vals.birelation_right]
+    full_catalog = [vals.downstream_relation, vals.upstream_relation, vals.birelation_left, vals.birelation_right]
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
@@ -243,10 +259,10 @@ def test_build_graph_allows_upstream_regex(stub_graph_set):
                         "database": ".*",
                         "schema": ".*",
                         "relation": ".*RELATION.*$",  # incl birelations
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -263,55 +279,52 @@ def test_build_graph_allows_upstream_regex(stub_graph_set):
 
 outputs_to_check = [
     (
-
-        'Not valid local_attribute',
+        "Not valid local_attribute",
         rand_string(5).upper(),  # not valid attribute
         None,  # it will be taken from vals - valid
         pytest.raises(
             InvalidRelationshipException,
-            match=r".* Please ensure that remote_attribute & local_attribute are correctly defined.")
-
+            match=r".* Please ensure that remote_attribute & local_attribute are correctly defined.",
+        ),
     ),
     (
-
-        'Not valid remote_attribute',
+        "Not valid remote_attribute",
         None,  # it will be taken from vals - valid
         rand_string(5).upper(),  # not valid attribute
         pytest.raises(
             InvalidRelationshipException,
-            match=r".* Please ensure that remote_attribute & local_attribute are correctly defined.")
-
+            match=r".* Please ensure that remote_attribute & local_attribute are correctly defined.",
+        ),
     ),
     (
-
-        'Not valid local attribute',
+        "Not valid local attribute",
         rand_string(5).upper(),  # not valid attribute
         None,  # it will be taken from vals - valid attribute
         pytest.raises(
             InvalidRelationshipException,
-            match=r".* Please ensure that remote_attribute & local_attribute are correctly defined.")
-
+            match=r".* Please ensure that remote_attribute & local_attribute are correctly defined.",
+        ),
     ),
     (
-
-        'No issues',
+        "No issues",
         None,  # it will be taken from vals - valid attribute
         None,  # it will be taken from vals - valid attribute
-        does_not_raise()
-
-    )
+        does_not_raise(),
+    ),
 ]
 
 
-@pytest.mark.parametrize('test_name, local_attribute, remote_attribute, expectation', outputs_to_check,
-                         ids=[i[0] for i in outputs_to_check])
+@pytest.mark.parametrize(
+    "test_name, local_attribute, remote_attribute, expectation", outputs_to_check, ids=[i[0] for i in outputs_to_check]
+)
 def test_build_graph_not_valid_edge(stub_graph_set, test_name, local_attribute, remote_attribute, expectation):
-    """ Tests not valid relation - the incorrect local_attribute/remote_attribute is defined """
+    """Tests not valid relation - the incorrect local_attribute/remote_attribute is defined"""
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
-    full_catalog = [vals.downstream_relation,
-                    vals.upstream_relation,
-                    ]
+    full_catalog = [
+        vals.downstream_relation,
+        vals.upstream_relation,
+    ]
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
@@ -325,10 +338,10 @@ def test_build_graph_not_valid_edge(stub_graph_set, test_name, local_attribute, 
                         "database": vals.upstream_relation.database,
                         "schema": vals.upstream_relation.schema,
                         "relation": vals.upstream_relation.name,  # incl birelations
-                        "remote_attribute": remote_attribute if remote_attribute else vals.directional_key
+                        "remote_attribute": remote_attribute if remote_attribute else vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -342,7 +355,7 @@ def test_build_graph_not_valid_edge(stub_graph_set, test_name, local_attribute, 
 
 
 def test_build_graph_fails_no_downstream():
-    """ Tests build_graph exits on no downstream relations """
+    """Tests build_graph exits on no downstream relations"""
     shgraph = SnowShuGraph()
     full_catalog = []  # no relations in filtered catalog
     config_dict = copy.deepcopy(CONFIGURATION)  # use the "live" config on random test data
@@ -359,7 +372,7 @@ def test_build_graph_fails_no_downstream():
 
 
 def test_build_graph_fails_no_upstream(stub_graph_set):
-    """ Tests build_graph exits on no upstream relations """
+    """Tests build_graph exits on no upstream relations"""
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
     full_catalog = [
@@ -380,10 +393,10 @@ def test_build_graph_fails_no_upstream(stub_graph_set):
                         "database": vals.upstream_relation.database,
                         "schema": vals.upstream_relation.schema,
                         "relation": vals.upstream_relation.name,
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -398,7 +411,7 @@ def test_build_graph_fails_no_upstream(stub_graph_set):
 
 
 def test_build_graph_fails_no_distinct_upstream(stub_graph_set):
-    """ Tests build_graph exits on no distinct upstream relations """
+    """Tests build_graph exits on no distinct upstream relations"""
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
     full_catalog = [
@@ -421,10 +434,10 @@ def test_build_graph_fails_no_distinct_upstream(stub_graph_set):
                         "database": vals.downstream_relation.database,
                         "schema": vals.downstream_relation.schema,
                         "relation": vals.downstream_relation.name,
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -439,15 +452,17 @@ def test_build_graph_fails_no_distinct_upstream(stub_graph_set):
 
 
 def test_build_graph_fails_many_to_many(stub_graph_set):
-    """ Tests build_graph exits on many-to-many relationships """
+    """Tests build_graph exits on many-to-many relationships"""
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
-    full_catalog = [vals.iso_relation,
-                    vals.view_relation,
-                    vals.downstream_relation,
-                    vals.upstream_relation,
-                    vals.birelation_left,
-                    vals.birelation_right]
+    full_catalog = [
+        vals.iso_relation,
+        vals.view_relation,
+        vals.downstream_relation,
+        vals.upstream_relation,
+        vals.birelation_left,
+        vals.birelation_right,
+    ]
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
@@ -461,10 +476,10 @@ def test_build_graph_fails_many_to_many(stub_graph_set):
                         "database": ".*",
                         "schema": ".*",
                         "relation": ".*RELATION$",  # non birelations
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -480,15 +495,17 @@ def test_build_graph_fails_many_to_many(stub_graph_set):
 
 
 def test_build_graph_fails_view(stub_graph_set):
-    """ Tests build_graph exits on views as upstream relations """
+    """Tests build_graph exits on views as upstream relations"""
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
-    full_catalog = [vals.iso_relation,
-                    vals.view_relation,
-                    vals.downstream_relation,
-                    vals.upstream_relation,
-                    vals.birelation_left,
-                    vals.birelation_right]
+    full_catalog = [
+        vals.iso_relation,
+        vals.view_relation,
+        vals.downstream_relation,
+        vals.upstream_relation,
+        vals.birelation_left,
+        vals.birelation_right,
+    ]
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
@@ -502,10 +519,10 @@ def test_build_graph_fails_view(stub_graph_set):
                         "database": vals.view_relation.database,
                         "schema": vals.view_relation.schema,
                         "relation": vals.view_relation.name,
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -520,13 +537,10 @@ def test_build_graph_fails_view(stub_graph_set):
 
 
 def test_graph_difference_empty_target(stub_graph_set):
-    """ Tests graph_difference returns source graph with all nodes if target catalog is empty """
+    """Tests graph_difference returns source graph with all nodes if target catalog is empty"""
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
-    full_catalog = [vals.downstream_relation,
-                    vals.upstream_relation,
-                    vals.birelation_left,
-                    vals.birelation_right]
+    full_catalog = [vals.downstream_relation, vals.upstream_relation, vals.birelation_left, vals.birelation_right]
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
@@ -540,10 +554,10 @@ def test_graph_difference_empty_target(stub_graph_set):
                         "database": ".*",
                         "schema": ".*",
                         "relation": ".*RELATION.*$",
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -559,13 +573,10 @@ def test_graph_difference_empty_target(stub_graph_set):
 
 
 def test_graph_difference_no_changes(stub_graph_set):
-    """ Tests graph_difference returns graph with no nodes if target catalog has same nodes as source """
+    """Tests graph_difference returns graph with no nodes if target catalog has same nodes as source"""
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
-    full_catalog = [vals.downstream_relation,
-                    vals.upstream_relation,
-                    vals.birelation_left,
-                    vals.birelation_right]
+    full_catalog = [vals.downstream_relation, vals.upstream_relation, vals.birelation_left, vals.birelation_right]
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
@@ -579,10 +590,10 @@ def test_graph_difference_no_changes(stub_graph_set):
                         "database": ".*",
                         "schema": ".*",
                         "relation": ".*RELATION.*$",  # incl birelations
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -597,19 +608,18 @@ def test_graph_difference_no_changes(stub_graph_set):
 
 
 def test_graph_difference_less_relations_source(stub_graph_set):
-    """ Tests graph_difference returns graph with no nodes if target catalog has more nodes
-    than source, including all nodes present in source graph """
+    """Tests graph_difference returns graph with no nodes if target catalog has more nodes
+    than source, including all nodes present in source graph"""
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
-    source_catalog = [vals.downstream_relation,
-                      vals.upstream_relation,
-                      vals.birelation_left,
-                      vals.birelation_right]
-    target_catalog = [vals.downstream_relation,
-                      vals.upstream_relation,
-                      vals.birelation_left,
-                      vals.birelation_right,
-                      vals.iso_relation]
+    source_catalog = [vals.downstream_relation, vals.upstream_relation, vals.birelation_left, vals.birelation_right]
+    target_catalog = [
+        vals.downstream_relation,
+        vals.upstream_relation,
+        vals.birelation_left,
+        vals.birelation_right,
+        vals.iso_relation,
+    ]
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
@@ -623,10 +633,10 @@ def test_graph_difference_less_relations_source(stub_graph_set):
                         "database": ".*",
                         "schema": ".*",
                         "relation": ".*RELATION.*$",  # incl birelations
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -640,18 +650,17 @@ def test_graph_difference_less_relations_source(stub_graph_set):
 
 
 def test_graph_difference_more_isolated_relations_source(stub_graph_set, stub_relation_set):
-    """ Tests graph_difference returns graph with expected nodes if source graph has isolated nodes
-    which are not present in target catalog """
-    relation_set = {Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
-                    Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
-                    Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper())}
+    """Tests graph_difference returns graph with expected nodes if source graph has isolated nodes
+    which are not present in target catalog"""
+    relation_set = {
+        Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+        Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+        Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+    }
 
     shgraph = SnowShuGraph()
     _, vals = stub_graph_set
-    full_catalog = [vals.downstream_relation,
-                    vals.upstream_relation,
-                    vals.birelation_left,
-                    vals.birelation_right]
+    full_catalog = [vals.downstream_relation, vals.upstream_relation, vals.birelation_left, vals.birelation_right]
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
         {
@@ -665,10 +674,10 @@ def test_graph_difference_more_isolated_relations_source(stub_graph_set, stub_re
                         "database": ".*",
                         "schema": ".*",
                         "relation": ".*RELATION.*$",
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -685,21 +694,20 @@ def test_graph_difference_more_isolated_relations_source(stub_graph_set, stub_re
 
 
 def test_graph_difference_more_non_isolated_relations_source(stub_graph_set, stub_relation_set):
-    """ Tests graph_difference returns graph with expected nodes if source graph has non-isolated
-    nodes which are not present in target catalog """
+    """Tests graph_difference returns graph with expected nodes if source graph has non-isolated
+    nodes which are not present in target catalog"""
 
     _, vals = stub_graph_set
     common_relation = Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper())
-    source_catalog = [common_relation,
-                      vals.downstream_relation,
-                      vals.upstream_relation,
-                      vals.birelation_right]
+    source_catalog = [common_relation, vals.downstream_relation, vals.upstream_relation, vals.birelation_right]
 
-    target_catalog = {common_relation,
-                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
-                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
-                      vals.birelation_left,
-                      vals.birelation_right}
+    target_catalog = {
+        common_relation,
+        Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+        Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+        vals.birelation_left,
+        vals.birelation_right,
+    }
 
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
@@ -714,10 +722,10 @@ def test_graph_difference_more_non_isolated_relations_source(stub_graph_set, stu
                         "database": ".*",
                         "schema": ".*",
                         "relation": ".*RELATION.*$",
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -733,23 +741,27 @@ def test_graph_difference_more_non_isolated_relations_source(stub_graph_set, stu
 
 
 def test_graph_difference_more_both_isolated_non_isolated_relations_source(stub_graph_set, stub_relation_set):
-    """ Tests graph_difference returns graph with expected nodes if source graph has non-isolated
-    and isolated nodes which are not present in target catalog """
+    """Tests graph_difference returns graph with expected nodes if source graph has non-isolated
+    and isolated nodes which are not present in target catalog"""
 
     _, vals = stub_graph_set
     common_relation = Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper())
-    source_catalog = [common_relation,
-                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
-                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
-                      vals.downstream_relation,
-                      vals.upstream_relation,
-                      vals.birelation_right]
+    source_catalog = [
+        common_relation,
+        Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+        Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+        vals.downstream_relation,
+        vals.upstream_relation,
+        vals.birelation_right,
+    ]
 
-    target_catalog = {common_relation,
-                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
-                      Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
-                      vals.birelation_left,
-                      vals.birelation_right}
+    target_catalog = {
+        common_relation,
+        Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+        Relation(name=rand_string(10), **stub_relation_set.rand_relation_helper()),
+        vals.birelation_left,
+        vals.birelation_right,
+    }
 
     config_dict = copy.deepcopy(BASIC_CONFIGURATION)
     config_dict["source"]["specified_relations"] = [
@@ -764,10 +776,10 @@ def test_graph_difference_more_both_isolated_non_isolated_relations_source(stub_
                         "database": ".*",
                         "schema": ".*",
                         "relation": ".*RELATION.*$",
-                        "remote_attribute": vals.directional_key
+                        "remote_attribute": vals.directional_key,
                     }
                 ]
-            }
+            },
         }
     ]
     config = ConfigurationParser().from_file_or_path(StringIO(yaml.dump(config_dict)))
@@ -783,50 +795,68 @@ def test_graph_difference_more_both_isolated_non_isolated_relations_source(stub_
 
 
 def test_graph_diff_with_existing_relationships():
-    """ Test graph difference for combination of directional and bidirectional edges that were missed 
-    
-        Reproducible case is when the graph has an existing (directional) edge between two nodes
-        and the upstream node needs to have an added (bidirectional) edge to a new relation node,
-        which came with another missing node with a (bidirectional) edge between the new relations
+    """Test graph difference for combination of directional and bidirectional edges that were missed
+
+    Reproducible case is when the graph has an existing (directional) edge between two nodes
+    and the upstream node needs to have an added (bidirectional) edge to a new relation node,
+    which came with another missing node with a (bidirectional) edge between the new relations
     """
 
     helper = RelationTestHelper()
-    downstream_relation = Relation(name='DOWNSTREAM_RELATION', **helper.rand_relation_helper())
-    upstream_relation = Relation(name='UPSTREAM_RELATION', **helper.rand_relation_helper())
-    birelation_one = Relation(name='BIRELATION_ONE', **helper.rand_relation_helper())
-    birelation_two = Relation(name='BIRELATION_TWO', **helper.rand_relation_helper())
+    downstream_relation = Relation(name="DOWNSTREAM_RELATION", **helper.rand_relation_helper())
+    upstream_relation = Relation(name="UPSTREAM_RELATION", **helper.rand_relation_helper())
+    birelation_one = Relation(name="BIRELATION_ONE", **helper.rand_relation_helper())
+    birelation_two = Relation(name="BIRELATION_TWO", **helper.rand_relation_helper())
 
     bidirectional_pair_key = rand_string(10).upper()
     birelation_two_bi_key = rand_string(15).upper()
     upstream_bi_key = rand_string(15).upper()
     directional_key = rand_string(20).upper()
 
-    for n in (downstream_relation, upstream_relation,):
+    for n in (
+        downstream_relation,
+        upstream_relation,
+    ):
         n.attributes = [Attribute(directional_key, dt.INTEGER)]
 
     upstream_relation.attributes.append(Attribute(upstream_bi_key, dt.INTEGER))
     birelation_one.attributes = [Attribute(bidirectional_pair_key, dt.VARCHAR)]
-    birelation_two.attributes = [Attribute(bidirectional_pair_key, dt.VARCHAR), Attribute(birelation_two_bi_key, dt.INTEGER)]
+    birelation_two.attributes = [
+        Attribute(bidirectional_pair_key, dt.VARCHAR),
+        Attribute(birelation_two_bi_key, dt.INTEGER),
+    ]
 
     for r in (downstream_relation, upstream_relation, birelation_one, birelation_two):
-        r.compiled_query = ''
+        r.compiled_query = ""
 
     dag = nx.MultiDiGraph()
-    dag.add_edge(birelation_one, birelation_two, direction='bidirectional',
-                 local_attribute=bidirectional_pair_key, remote_attribute=bidirectional_pair_key)
-    dag.add_edge(upstream_relation, birelation_two, direction='bidirectional',
-                 local_attribute=upstream_bi_key, remote_attribute=birelation_two_bi_key)
-    dag.add_edge(upstream_relation, downstream_relation, direction='directional',
-                 local_attribute=directional_key, remote_attribute=directional_key)
+    dag.add_edge(
+        birelation_one,
+        birelation_two,
+        direction="bidirectional",
+        local_attribute=bidirectional_pair_key,
+        remote_attribute=bidirectional_pair_key,
+    )
+    dag.add_edge(
+        upstream_relation,
+        birelation_two,
+        direction="bidirectional",
+        local_attribute=upstream_bi_key,
+        remote_attribute=birelation_two_bi_key,
+    )
+    dag.add_edge(
+        upstream_relation,
+        downstream_relation,
+        direction="directional",
+        local_attribute=directional_key,
+        remote_attribute=directional_key,
+    )
 
     shgraph = SnowShuGraph()
     shgraph.graph = dag
 
     # all relations found in source catalog
-    source_catalog = [downstream_relation,
-                      upstream_relation,
-                      birelation_one,
-                      birelation_two]
+    source_catalog = [downstream_relation, upstream_relation, birelation_one, birelation_two]
     # all relations in source catalog are in a single (weakly) connected component
     expected_nodes = set(source_catalog)
     # relations exisitng in target catalog

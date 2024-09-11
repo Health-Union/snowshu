@@ -11,7 +11,7 @@ CREDENTIALS = {
             "account": "nwa1992.us-east-1",
             "password": "P@$$w0rD!",
             "database": "SNOWSHU_DEVELOPMENT",
-            "user": "hanzgreuber"
+            "user": "hanzgreuber",
         }
     ],
     "targets": [
@@ -21,7 +21,7 @@ CREDENTIALS = {
             "host": "localhost",
             "password": "postgres",
             "port": "5432",
-            "user": "postgres"
+            "user": "postgres",
         }
     ],
     "storages": [
@@ -30,13 +30,15 @@ CREDENTIALS = {
             "adapter": "aws-ecr",
             "access_key": "aosufipaufp",
             "access_key_id": "aiosfuaoifuafuiosf",
-            "account": "sasquach.us-east-1"
+            "account": "sasquach.us-east-1",
         }
-    ]
+    ],
 }
+
 
 def credentials_as_dict():
     return CREDENTIALS
+
 
 def credentials_as_file_obj():
     return StringIO(yaml.dump(CONFIGURATION))

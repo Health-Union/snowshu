@@ -26,24 +26,21 @@ logger = logging.getLogger(__name__)
 
 
 class PostgresAdapter(BaseLocalTargetAdapter):
-    name = 'postgres'
-    dialect = 'postgresql'
+    name = "postgres"
+    dialect = "postgresql"
     DOCKER_IMAGE = POSTGRES_IMAGE
     # One below has to be separate since incremental build logic overwrites DOCKER_IMAGE
     BASE_DB_IMAGE = POSTGRES_IMAGE
-    PRELOADED_PACKAGES = ['postgresql-plpython3-12']
-    MATERIALIZATION_MAPPINGS = dict(
-        TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
+    PRELOADED_PACKAGES = ["postgresql-plpython3-12"]
+    MATERIALIZATION_MAPPINGS = dict(TABLE=mz.TABLE, BASE_TABLE=mz.TABLE, VIEW=mz.VIEW)
     DOCKER_REMOUNT_DIRECTORY = DOCKER_REMOUNT_DIRECTORY
     DOCKER_REPLICA_MOUNT_FOLDER = DOCKER_REPLICA_MOUNT_FOLDER
-    DEFAULT_CASE = 'lower'
+    DEFAULT_CASE = "lower"
 
     # NOTE: either start container with db listening on port 9999,
     # or override with DOCKER_TARGET_PORT
 
-    DOCKER_SNOWSHU_ENVARS = ['POSTGRES_PASSWORD',
-                             'POSTGRES_USER',
-                             'POSTGRES_DB']
+    DOCKER_SNOWSHU_ENVARS = ["POSTGRES_PASSWORD", "POSTGRES_USER", "POSTGRES_DB"]
 
     DATA_TYPE_MAPPINGS = {
         "bigint": dtypes.BIGINT,
@@ -81,7 +78,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
         "bytea": dtypes.BINARY,
         "varbinary": dtypes.BINARY,
         "varchar": dtypes.VARCHAR,
-        "character_varying": dtypes.VARCHAR
+        "character_varying": dtypes.VARCHAR,
     }
 
     def __init__(self, replica_metadata: dict, **kwargs):
@@ -90,20 +87,25 @@ class PostgresAdapter(BaseLocalTargetAdapter):
         self.extensions = kwargs.get("pg_extensions", [])
         self.x00_replacement = kwargs.get("pg_0x00_replacement", "")
 
-        self.DOCKER_START_COMMAND = f'postgres -p {self._credentials.port} '  # noqa pylint: disable=invalid-name
-        self.DOCKER_READY_COMMAND = (f'pg_isready -p {self._credentials.port} '  # noqa pylint: disable=invalid-name
-                                     f'-h {self._credentials.host} '
-                                     f'-U {self._credentials.user} '
-                                     f'-d {self._credentials.database}')
-        self.DOCKER_SHARE_REPLICA_DATA = f"pg_dumpall -c -U {self._credentials.user} -p 9999 | " \
-                                         f"gzip > {self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.gz"  # noqa pylint: disable=invalid-name
+        self.DOCKER_START_COMMAND = f"postgres -p {self._credentials.port} "  # noqa pylint: disable=invalid-name
+        self.DOCKER_READY_COMMAND = (
+            f"pg_isready -p {self._credentials.port} "  # noqa pylint: disable=invalid-name
+            f"-h {self._credentials.host} "
+            f"-U {self._credentials.user} "
+            f"-d {self._credentials.database}"
+        )
+        self.DOCKER_SHARE_REPLICA_DATA = (
+            f"pg_dumpall -c -U {self._credentials.user} -p 9999 | "
+            f"gzip > {self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.gz"
+        )  # noqa pylint: disable=invalid-name
         self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE = (  # noqa pylint: disable=invalid-name
             f"gunzip -c {self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.gz"
-            f" | psql -p {self._credentials.port} -U {self._credentials.user}")
+            f" | psql -p {self._credentials.port} -U {self._credentials.user}"
+        )
 
     @staticmethod
     def _create_snowshu_schema_statement() -> str:
-        return 'CREATE SCHEMA IF NOT EXISTS snowshu;'
+        return "CREATE SCHEMA IF NOT EXISTS snowshu;"
 
     def create_database_if_not_exists(self, database: str, **kwargs) -> str:  # noqa pylint: disable=unused-argument
         """Postgres doesn't have great CINE support.
@@ -112,31 +114,30 @@ class PostgresAdapter(BaseLocalTargetAdapter):
         """
         conn = self.get_connection()
         database = self.quoted(self._correct_case(database))
-        statement = f'CREATE DATABASE {database}'
+        statement = f"CREATE DATABASE {database}"
         try:
             conn.execute(statement)
         except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as sql_errs:
             if (f'database "{database}" already exists' in str(sql_errs)) or (
-                    'duplicate key value violates unique constraint ' in str(sql_errs)):
-                logger.debug('Database %s already exists, skipping.', database)
+                "duplicate key value violates unique constraint " in str(sql_errs)
+            ):
+                logger.debug("Database %s already exists, skipping.", database)
             else:
                 raise sql_errs
         return database
 
     def create_all_database_extensions(self) -> str:
-        """Post-processing step to create extensions on all existing databases
-        """
+        """Post-processing step to create extensions on all existing databases"""
         unique_databases = set(self._get_all_databases())
         for database in unique_databases:
             # load any pg extensions that are required
             db_conn = self.get_connection(database_override=database)
             for ext in self.extensions:
-                statement = f'create extension if not exists \"{ext}\"'
+                statement = f'create extension if not exists "{ext}"'
                 try:
                     db_conn.execute(statement)
                 except sqlalchemy.exc.IntegrityError as error:
-                    logger.error(
-                        'Duplicate extension creation of %s caused an error:\n%s', ext, error)
+                    logger.error("Duplicate extension creation of %s caused an error:\n%s", ext, error)
 
     def create_schema_if_not_exists(self, database: str, schema: str) -> None:
         database = self.quoted(self._correct_case(database))
@@ -163,18 +164,11 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             self.quoted(self._correct_case(relation.database)),
             self.quoted(self._correct_case(relation.schema)),
         )
-        engine = self.get_connection(
-            database_override=quoted_database, schema_override=quoted_schema
-        )
+        engine = self.get_connection(database_override=quoted_database, schema_override=quoted_schema)
         original_columns, data = self.prepare_columns_and_data_for_insertion(data)
 
-        attribute_type_map = {
-            attr.name: attr.data_type.sqlalchemy_type for attr in relation.attributes
-        }
-        data_type_map = {
-            col: case_insensitive_dict_value(attribute_type_map, col)
-            for col in data.columns.to_list()
-        }
+        attribute_type_map = {attr.name: attr.data_type.sqlalchemy_type for attr in relation.attributes}
+        data_type_map = {col: case_insensitive_dict_value(attribute_type_map, col) for col in data.columns.to_list()}
 
         return (
             {
@@ -192,7 +186,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
         )
 
     def _get_all_databases(self) -> List[str]:
-        logger.debug('Getting all databases from postgres...')
+        logger.debug("Getting all databases from postgres...")
         query = "SELECT datname FROM pg_database WHERE datistemplate = false;"
         engine = self.get_connection()
         try:
@@ -202,12 +196,12 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             logger.info("Failed to get databases:%s", exc)
             raise exc
 
-        logger.debug(f'Done. Found {len(databases)} databases.')
+        logger.debug(f"Done. Found {len(databases)} databases.")
         return [d[0] for d in databases] if len(databases) > 0 else databases
 
     def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         database = self.quoted(database)
-        logger.debug(f'Collecting schemas from {database} in postgres...')
+        logger.debug(f"Collecting schemas from {database} in postgres...")
         query = f"SELECT schema_name FROM information_schema.schemata WHERE catalog_name = '{database}' AND \
             schema_name NOT IN ('information_schema', 'pg_catalog')"
         if exclude_defaults:
@@ -219,16 +213,13 @@ class PostgresAdapter(BaseLocalTargetAdapter):
             result = engine.execute(query)
             schemas = result.fetchall()
         except Exception as exc:
-            logger.info(
-                "Failed to get schemas for database %s: %s", database, exc)
+            logger.info("Failed to get schemas for database %s: %s", database, exc)
             raise exc
-        logger.debug(
-            f'Done. Found {len(schemas)} schemas in {database} database.')
+        logger.debug(f"Done. Found {len(schemas)} schemas in {database} database.")
         return [s[0] for s in schemas] if len(schemas) > 0 else schemas
 
     def _get_relations_from_database(self, schema_obj: BaseLocalTargetAdapter._DatabaseObject) -> List[Relation]:
-        quoted_database = self.quoted(
-            schema_obj.full_relation.database)  # quoted db name
+        quoted_database = self.quoted(schema_obj.full_relation.database)  # quoted db name
         relation_database = schema_obj.full_relation.database  # case corrected db name
         case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schame name
         relations_sql = f"""
@@ -253,52 +244,49 @@ class PostgresAdapter(BaseLocalTargetAdapter):
                                     AND m.table_type <> 'external'
                               """
 
-        logger.debug(
-            f'Collecting detailed relations from database {quoted_database}...')
+        logger.debug(f"Collecting detailed relations from database {quoted_database}...")
         relations_frame = self._safe_query(relations_sql, quoted_database)
-        unique_relations = (
-            relations_frame['schema'] + '.' + relations_frame['relation']).unique().tolist()
+        unique_relations = (relations_frame["schema"] + "." + relations_frame["relation"]).unique().tolist()
         logger.debug(
-            f'Done collecting relations. Found a total of {len(unique_relations)} '
-            f'unique relations in database {quoted_database}')
+            f"Done collecting relations. Found a total of {len(unique_relations)} "
+            f"unique relations in database {quoted_database}"
+        )
         relations = list()
         for relation in unique_relations:
-            logger.debug(
-                f'Building relation {quoted_database + "." + relation}...')
+            logger.debug(f'Building relation {quoted_database + "." + relation}...')
             attributes = list()
 
-            for attribute in relations_frame.loc[(relations_frame['schema'] + '.'
-                                                  + relations_frame['relation']) == relation].itertuples():
-                logger.debug(
-                    f'adding attribute {attribute.attribute} to relation..')
+            for attribute in relations_frame.loc[
+                (relations_frame["schema"] + "." + relations_frame["relation"]) == relation
+            ].itertuples():
+                logger.debug(f"adding attribute {attribute.attribute} to relation..")
                 attributes.append(
-                    Attribute(
-                        self._correct_case(attribute.attribute),
-                        self._get_data_type(attribute.data_type)
-                    ))
+                    Attribute(self._correct_case(attribute.attribute), self._get_data_type(attribute.data_type))
+                )
 
-                relation = Relation(relation_database,
-                                    self._correct_case(attribute.schema),
-                                    self._correct_case(attribute.relation),
-                                    self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")],
-                                    attributes)
-            logger.debug(f'Added relation {relation.dot_notation} to pool.')
+                relation = Relation(
+                    relation_database,
+                    self._correct_case(attribute.schema),
+                    self._correct_case(attribute.relation),
+                    self.MATERIALIZATION_MAPPINGS[attribute.materialization.replace(" ", "_")],
+                    attributes,
+                )
+            logger.debug(f"Added relation {relation.dot_notation} to pool.")
             relations.append(relation)
-        logger.debug(
-            f'Acquired {len(relations)} total relations from database {quoted_database}.')
+        logger.debug(f"Acquired {len(relations)} total relations from database {quoted_database}.")
         return relations
 
     def load_data_into_relation(self, relation: "Relation", data: Optional[DataFrame], clone: bool = False) -> None:
         try:
             return super().load_data_into_relation(relation, data)
         except ValueError as exc:
-            if 'cannot contain NUL' in str(exc):
-                logger.warning("Invalid 0x00 char found in %s. "
-                               "Removing from affected columns and trying again",
-                               self.quoted_dot_notation(relation))
+            if "cannot contain NUL" in str(exc):
+                logger.warning(
+                    "Invalid 0x00 char found in %s. " "Removing from affected columns and trying again",
+                    self.quoted_dot_notation(relation),
+                )
                 fixed_data = self.replace_x00_values(data)
-                logger.info("Retrying data load for %s",
-                            self.quoted_dot_notation(relation))
+                logger.info("Retrying data load for %s", self.quoted_dot_notation(relation))
                 return super().load_data_into_relation(relation, fixed_data)
 
             raise exc
@@ -306,19 +294,22 @@ class PostgresAdapter(BaseLocalTargetAdapter):
     def replace_x00_values(self, data: DataFrame) -> DataFrame:
         for col, col_type in data.dtypes.items():
             # str types are put into object type columns
-            if col_type == 'object' and isinstance(data[col][0], str):
-                matched_nul_char = (data[col].str.find('\x00') > -1)
+            if col_type == "object" and isinstance(data[col][0], str):
+                matched_nul_char = data[col].str.find("\x00") > -1
                 if any(matched_nul_char):
-                    logger.warning("Invalid 0x00 char found in column %s. Replacing with '%s' "
-                                   "(excluding bounding single quotes)", col, self.x00_replacement)
-                    data[col] = data[col].str.replace(
-                        '\x00', self.x00_replacement)
+                    logger.warning(
+                        "Invalid 0x00 char found in column %s. Replacing with '%s' "
+                        "(excluding bounding single quotes)",
+                        col,
+                        self.x00_replacement,
+                    )
+                    data[col] = data[col].str.replace("\x00", self.x00_replacement)
         return data
 
     @staticmethod
     def quoted(val: str) -> str:
         """Returns quoted value if appropriate."""
-        return f'"{val}"' if ' ' in val else val
+        return f'"{val}"' if " " in val else val
 
     @classmethod
     def _build_snowshu_envars(cls, snowshu_envars: list) -> list:
@@ -329,8 +320,7 @@ class PostgresAdapter(BaseLocalTargetAdapter):
 
     def image_initialize_bash_commands(self) -> List[str]:
         # install extra postgres extension packages here
-        commands = [
-            f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}']
+        commands = [f'apt-get update && apt-get install -y {" ".join(self.PRELOADED_PACKAGES)}']
         return commands
 
     def initialize_replica(self, config: Configuration, **kwargs) -> None:
@@ -351,14 +341,11 @@ class PostgresAdapter(BaseLocalTargetAdapter):
                         incremental_image = f"{incremental_image}:latest"
 
                     images = self.shdocker.client.images.list(name=incremental_image)
-                    logger.debug(
-                        f"List of images found with name {incremental_image}: {images}"
-                    )
+                    logger.debug(f"List of images found with name {incremental_image}: {images}")
                     image_commands = [
                         item["CreatedBy"]
                         for item in images[0].history()
-                        if "postgres" in item["CreatedBy"]
-                        or "PGDATA" in item["CreatedBy"]
+                        if "postgres" in item["CreatedBy"] or "PGDATA" in item["CreatedBy"]
                     ]
 
                     if image_commands:
@@ -396,85 +383,92 @@ class PostgresAdapter(BaseLocalTargetAdapter):
 AS
 {relation.view_ddl}
 """
-        engine = self.get_connection(database_override=database,
-                                     schema_override=schema)
+        engine = self.get_connection(database_override=database, schema_override=schema)
         try:
             engine.execute(ddl_statement)
         except Exception as exc:
-            logger.info("Failed to create %s %s:%s", relation.materialization.name,
-                        self.quoted_dot_notation(relation),
-                        exc)
+            logger.info(
+                "Failed to create %s %s:%s", relation.materialization.name, self.quoted_dot_notation(relation), exc
+            )
             raise exc
-        logger.info('Created relation %s', self.quoted_dot_notation(relation))
+        logger.info("Created relation %s", self.quoted_dot_notation(relation))
 
     def enable_cross_database(self) -> None:
-        unique_databases = {correct_case(d, self.DEFAULT_CASE == 'upper') for d in self._get_all_databases()}
-        unique_databases.remove('postgres')
+        unique_databases = {correct_case(d, self.DEFAULT_CASE == "upper") for d in self._get_all_databases()}
+        unique_databases.remove("postgres")
         schemas = []
         for database in unique_databases:
-            schemas += [(correct_case(database,
-                                      self.DEFAULT_CASE == 'upper'),
-                         correct_case(schema,
-                                      self.DEFAULT_CASE == 'upper')) for schema in self._get_all_schemas(database,
-                                                                                                         True)]
+            schemas += [
+                (
+                    correct_case(database, self.DEFAULT_CASE == "upper"),
+                    correct_case(schema, self.DEFAULT_CASE == "upper"),
+                )
+                for schema in self._get_all_schemas(database, True)
+            ]
 
         unique_schemas = set(schemas)
-        unique_databases.add('snowshu')
-        unique_schemas.add(('snowshu', 'snowshu',))
+        unique_databases.add("snowshu")
+        unique_schemas.add(
+            (
+                "snowshu",
+                "snowshu",
+            )
+        )
 
         def statement_runner(statement: str):
-            logger.info('executing statement `%s`...', statement)
+            logger.info("executing statement `%s`...", statement)
             conn.execute(statement)
-            logger.debug('Executed.')
+            logger.debug("Executed.")
 
         for u_db in unique_databases:
             conn = self.get_connection(database_override=u_db)
-            statement_runner('CREATE EXTENSION IF NOT EXISTS postgres_fdw')
+            statement_runner("CREATE EXTENSION IF NOT EXISTS postgres_fdw")
             for remote_database in filter((lambda x, current_db=u_db: x != current_db), unique_databases):
-                statement_runner(f"CREATE SERVER IF NOT EXISTS {remote_database} FOREIGN DATA WRAPPER "
-                                 f"postgres_fdw OPTIONS (dbname '{remote_database}',port '9999')")
+                statement_runner(
+                    f"CREATE SERVER IF NOT EXISTS {remote_database} FOREIGN DATA WRAPPER "
+                    f"postgres_fdw OPTIONS (dbname '{remote_database}',port '9999')"
+                )
 
-                statement_runner(f"CREATE USER MAPPING IF NOT EXISTS for snowshu SERVER {remote_database} "
-                                 f"OPTIONS (user 'snowshu', password 'snowshu')")
+                statement_runner(
+                    f"CREATE USER MAPPING IF NOT EXISTS for snowshu SERVER {remote_database} "
+                    f"OPTIONS (user 'snowshu', password 'snowshu')"
+                )
 
             for schema_database, schema in unique_schemas:
                 if schema_database != u_db and not self.is_fdw_schema(schema, unique_databases):
-                    statement_runner(
-                        f'DROP SCHEMA IF EXISTS {schema_database}__{schema} CASCADE')
-                    statement_runner(
-                        f'CREATE SCHEMA {schema_database}__{schema}')
+                    statement_runner(f"DROP SCHEMA IF EXISTS {schema_database}__{schema} CASCADE")
+                    statement_runner(f"CREATE SCHEMA {schema_database}__{schema}")
 
-                    statement_runner(f'IMPORT FOREIGN SCHEMA {schema} FROM SERVER '
-                                     f'{schema_database} INTO {schema_database}__{schema}')
+                    statement_runner(
+                        f"IMPORT FOREIGN SCHEMA {schema} FROM SERVER "
+                        f"{schema_database} INTO {schema_database}__{schema}"
+                    )
 
     def copy_replica_data(self) -> Tuple[bool, str]:
         if self.passive_container:
             # Dump from active to shared volume
-            status = self.container.exec_run(
-                f"/bin/bash -c '{self.DOCKER_SHARE_REPLICA_DATA}'", tty=True)
+            status = self.container.exec_run(f"/bin/bash -c '{self.DOCKER_SHARE_REPLICA_DATA}'", tty=True)
 
             # Load dump from shared volume to passive
             self.container.stop()
             self.passive_container.start()
-            logger.info('Copying replica data into passive container')
+            logger.info("Copying replica data into passive container")
 
             # Wait for db init
             for _ in range(1200):  # for 10 minutes
                 if self.passive_container.exec_run(self.DOCKER_READY_COMMAND).exit_code == 0:
                     break
-                time.sleep(.5)
+                time.sleep(0.5)
             else:
-                raise UnableToStartPostgres(
-                    'Unable to verify that postgres has started, aborting due to timeout')
+                raise UnableToStartPostgres("Unable to verify that postgres has started, aborting due to timeout")
 
-            self.passive_container.exec_run(
-                f"/bin/bash -c '{self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE}'", tty=True)
+            self.passive_container.exec_run(f"/bin/bash -c '{self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE}'", tty=True)
             return status
 
-        logger.info('Build is single arch, skipping copy...')
+        logger.info("Build is single arch, skipping copy...")
         return [0]
 
     @staticmethod
     def is_fdw_schema(schema, unique_databases) -> bool:
-        splitted = schema.split('__')
+        splitted = schema.split("__")
         return len(splitted) == 2 and splitted[0] in unique_databases

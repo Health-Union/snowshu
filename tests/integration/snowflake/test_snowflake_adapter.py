@@ -19,7 +19,7 @@ from tests.assets.integration_test_setup import CREDENTIALS, get_connection_prof
 from tests.common import query_equalize
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def sf_adapter():
     with open(CREDENTIALS) as cred_file:
         credentials = yaml.safe_load(cred_file)
@@ -32,17 +32,13 @@ def sf_adapter():
 
 
 def test_directionally_wrap_statement(sf_adapter):
-    sampling = BernoulliSampleMethod(50, units='probability')
+    sampling = BernoulliSampleMethod(50, units="probability")
     query = """SELECT * FROM "SNOWSHU_DEVELOPMENT"."EXTERNAL_DATA"."ADDRESS_REGION_ATTRIBUTES"
             WHERE IS_CURRENTLY_TARGETED = TRUE
             AND SALES_REGION IN ('northeast', 'southeast')
             AND PRIMARY_REGIONAL_CREDIT_PROVIDER = 'mastercard'"""
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "EXTERNAL_DATA", "ADDRESS_REGION_ATTRIBUTES"
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE,
-                        materialization=[],
-                        attributes=[])
+    relation = Relation(database=DATABASE, schema=SCHEMA, name=TABLE, materialization=[], attributes=[])
     statement = sf_adapter.directionally_wrap_statement(query, relation, sampling)
 
     assert query_equalize(statement) == query_equalize(f"""
@@ -69,11 +65,7 @@ def test_directionally_wrap_statement(sf_adapter):
 def test_upstream_constraint_statement(sf_adapter):
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "CHILD_TYPE_2_ITEMS"
     LOCAL_KEY, REMOTE_KEY = "ID", "PARENT_2_ID"
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE,
-                        materialization=[],
-                        attributes=[])
+    relation = Relation(database=DATABASE, schema=SCHEMA, name=TABLE, materialization=[], attributes=[])
     statement = sf_adapter.upstream_constraint_statement(relation, LOCAL_KEY, REMOTE_KEY)
 
     assert query_equalize(statement) == query_equalize(f" {LOCAL_KEY} in (SELECT {REMOTE_KEY} FROM \
@@ -82,15 +74,12 @@ def test_upstream_constraint_statement(sf_adapter):
 
 def test_population_count_statement(sf_adapter):
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE,
-                        materialization=[],
-                        attributes=[])
+    relation = Relation(database=DATABASE, schema=SCHEMA, name=TABLE, materialization=[], attributes=[])
     statement = sf_adapter.population_count_statement(relation)
 
     assert query_equalize(statement) == query_equalize(
-        f"SELECT COUNT(*) FROM {sf_adapter.quoted_dot_notation(relation)}")
+        f"SELECT COUNT(*) FROM {sf_adapter.quoted_dot_notation(relation)}"
+    )
 
     assert len(sf_adapter._safe_query(statement)) > 0
 
@@ -110,11 +99,7 @@ def test_get_all_schemas(sf_adapter):
 
 def test_view_creation_statement(sf_adapter):
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE,
-                        materialization=[],
-                        attributes=[])
+    relation = Relation(database=DATABASE, schema=SCHEMA, name=TABLE, materialization=[], attributes=[])
     statement = sf_adapter.view_creation_statement(relation)
 
     assert query_equalize(statement) == query_equalize(f"""
@@ -126,11 +111,7 @@ def test_view_creation_statement(sf_adapter):
 
 def test_unsampled_statement(sf_adapter):
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE,
-                        materialization=[],
-                        attributes=[])
+    relation = Relation(database=DATABASE, schema=SCHEMA, name=TABLE, materialization=[], attributes=[])
     statement = sf_adapter.unsampled_statement(relation)
 
     assert query_equalize(statement) == query_equalize(f"""
@@ -145,21 +126,14 @@ def test_unsampled_statement(sf_adapter):
 
 def test_union_constraint_statement(sf_adapter):
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE_2"
-    subject = Relation(database=DATABASE,
-                       schema=SCHEMA,
-                       name=TABLE,
-                       materialization=[],
-                       attributes=[])
+    subject = Relation(database=DATABASE, schema=SCHEMA, name=TABLE, materialization=[], attributes=[])
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "CHILD_TYPE_1_ITEMS"
-    constraint = Relation(database=DATABASE,
-                          schema=SCHEMA,
-                          name=TABLE,
-                          materialization=[],
-                          attributes=[])
+    constraint = Relation(database=DATABASE, schema=SCHEMA, name=TABLE, materialization=[], attributes=[])
     max_number_of_outliers = randrange(1, 10)
     subject_key, constraint_key = "ID", "PARENT_2_ID"
-    statement = sf_adapter.union_constraint_statement(subject, constraint, subject_key, constraint_key,
-                                                      max_number_of_outliers)
+    statement = sf_adapter.union_constraint_statement(
+        subject, constraint, subject_key, constraint_key, max_number_of_outliers
+    )
 
     assert query_equalize(statement) == query_equalize(f"""
             (SELECT
@@ -183,11 +157,13 @@ def test_polymorphic_constraint_statement(sf_adapter):
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
     LOCAL_KEY, REMOTE_KEY = "ID", "CHILD_ID"
     LOCAL_TYPE, TYPE_MATCH_VAL = "CHILD_TYPE", "type_2"
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE,
-                        materialization=[],
-                        attributes=[Attribute("CHILD_ID", DataType("CHILD_ID", True))])
+    relation = Relation(
+        database=DATABASE,
+        schema=SCHEMA,
+        name=TABLE,
+        materialization=[],
+        attributes=[Attribute("CHILD_ID", DataType("CHILD_ID", True))],
+    )
     relation.core_query = f"""
         SELECT
             *
@@ -197,29 +173,31 @@ def test_polymorphic_constraint_statement(sf_adapter):
         """
     predicate = sf_adapter.predicate_constraint_statement(relation, True, LOCAL_KEY, REMOTE_KEY)
 
-    assert f" ({predicate} AND LOWER({LOCAL_TYPE}) = LOWER('{TYPE_MATCH_VAL}') ) " == \
-           sf_adapter.polymorphic_constraint_statement(relation,
-                                                       True,
-                                                       LOCAL_KEY,
-                                                       REMOTE_KEY,
-                                                       LOCAL_TYPE,
-                                                       TYPE_MATCH_VAL)
+    assert (
+        f" ({predicate} AND LOWER({LOCAL_TYPE}) = LOWER('{TYPE_MATCH_VAL}') ) "
+        == sf_adapter.polymorphic_constraint_statement(
+            relation, True, LOCAL_KEY, REMOTE_KEY, LOCAL_TYPE, TYPE_MATCH_VAL
+        )
+    )
 
 
 def test_count_query(sf_adapter):
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
-    query = f'SELECT * FROM {DATABASE}.{SCHEMA}.{TABLE}'
+    query = f"SELECT * FROM {DATABASE}.{SCHEMA}.{TABLE}"
     assert sf_adapter._count_query(query) == 14
 
 
 def test_get_relations_from_database(sf_adapter):
-    SCHEMA_OBJ = BaseSourceAdapter._DatabaseObject("POLYMORPHIC_DATA",
-                                                   Relation("snowshu_development", "POLYMORPHIC_DATA", "", None, None))
-    relations_list = [Relation("snowshu_development", "POLYMORPHIC_DATA", "PARENT_TABLE_2", mz.TABLE, None),
-                      Relation("snowshu_development", "POLYMORPHIC_DATA", "CHILD_TYPE_2_ITEMS", mz.TABLE, None),
-                      Relation("snowshu_development", "POLYMORPHIC_DATA", "PARENT_TABLE", mz.TABLE, None),
-                      Relation("snowshu_development", "POLYMORPHIC_DATA", "CHILD_TYPE_1_ITEMS", mz.TABLE, None),
-                      Relation("snowshu_development", "POLYMORPHIC_DATA", "CHILD_TYPE_0_ITEMS", mz.TABLE, None)]
+    SCHEMA_OBJ = BaseSourceAdapter._DatabaseObject(
+        "POLYMORPHIC_DATA", Relation("snowshu_development", "POLYMORPHIC_DATA", "", None, None)
+    )
+    relations_list = [
+        Relation("snowshu_development", "POLYMORPHIC_DATA", "PARENT_TABLE_2", mz.TABLE, None),
+        Relation("snowshu_development", "POLYMORPHIC_DATA", "CHILD_TYPE_2_ITEMS", mz.TABLE, None),
+        Relation("snowshu_development", "POLYMORPHIC_DATA", "PARENT_TABLE", mz.TABLE, None),
+        Relation("snowshu_development", "POLYMORPHIC_DATA", "CHILD_TYPE_1_ITEMS", mz.TABLE, None),
+        Relation("snowshu_development", "POLYMORPHIC_DATA", "CHILD_TYPE_0_ITEMS", mz.TABLE, None),
+    ]
     received_relations_list = sf_adapter._get_relations_from_database(schema_obj=SCHEMA_OBJ)
     relations_list.sort(key=lambda relation_item: relation_item.name)
     received_relations_list.sort(key=lambda relation_item: relation_item.name)
@@ -229,11 +207,7 @@ def test_get_relations_from_database(sf_adapter):
 
 def test_sample_statement_from_relation(sf_adapter):
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "EXTERNAL_DATA", "ADDRESS_REGION_ATTRIBUTES"
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE,
-                        materialization=[],
-                        attributes=[])
+    relation = Relation(database=DATABASE, schema=SCHEMA, name=TABLE, materialization=[], attributes=[])
     sample = sf_adapter.sample_statement_from_relation(relation, BernoulliSampleMethod(10, units="probability"))
 
     assert query_equalize(sample) == query_equalize(f"""
@@ -249,12 +223,8 @@ def test_sample_statement_from_relation(sf_adapter):
 
 def test_analyze_wrap_statement(sf_adapter):
     DATABASE, SCHEMA, NAME, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE", "PARENT_TABLE"
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=NAME,
-                        materialization=[],
-                        attributes=[])
-    sql = f'SELECT * from {DATABASE}.{SCHEMA}.{TABLE}'
+    relation = Relation(database=DATABASE, schema=SCHEMA, name=NAME, materialization=[], attributes=[])
+    sql = f"SELECT * from {DATABASE}.{SCHEMA}.{TABLE}"
     statement = sf_adapter.analyze_wrap_statement(sql, relation)
 
     assert query_equalize(statement) == query_equalize(f"""
@@ -292,11 +262,13 @@ def test_analyze_wrap_statement(sf_adapter):
 def test_predicate_constraint_statement(sf_adapter):
     DATABASE, SCHEMA, TABLE = "SNOWSHU_DEVELOPMENT", "POLYMORPHIC_DATA", "PARENT_TABLE"
     LOCAL_KEY, REMOTE_KEY = "ID", "CHILD_ID"
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE,
-                        materialization=[],
-                        attributes=[Attribute("CHILD_ID", DataType("CHILD_ID", True))])
+    relation = Relation(
+        database=DATABASE,
+        schema=SCHEMA,
+        name=TABLE,
+        materialization=[],
+        attributes=[Attribute("CHILD_ID", DataType("CHILD_ID", True))],
+    )
     relation.core_query = f"""
         SELECT
             *
@@ -320,6 +292,7 @@ def test_predicate_constraint_statement(sf_adapter):
         ))
         """)
 
+
 def test_check_count_and_query(sf_adapter):
     query = 'SELECT CHILD_ID from "SNOWSHU_DEVELOPMENT"."POLYMORPHIC_DATA"."PARENT_TABLE"'
     with pytest.raises(TooManyRecords) as exc:
@@ -332,10 +305,7 @@ def test_check_count_and_query(sf_adapter):
 def test_generate_schema(sf_adapter):
     """Testing whether schema phisically appears in snowflake warehouse
     after using snowflake_adapter.generate_schema()"""
-    DATABASE, SCHEMA = (
-        "SNOWSHU_DEVELOPMENT",
-        "_".join(["GENERATE_TEST_SCHEMA", generate_unique_uuid().upper()])
-    )
+    DATABASE, SCHEMA = ("SNOWSHU_DEVELOPMENT", "_".join(["GENERATE_TEST_SCHEMA", generate_unique_uuid().upper()]))
     try:
         # Clean up before test
         if SCHEMA in sf_adapter._get_all_schemas(DATABASE):
@@ -352,10 +322,7 @@ def test_generate_schema(sf_adapter):
 def test_drop_schema(sf_adapter):
     """Test whether snowflake_adapter.drop_schema() successfully
     drop schema (with cascade) from snowflake warehouse."""
-    DATABASE, SCHEMA = (
-        "SNOWSHU_DEVELOPMENT",
-        "_".join(["DROP_SCHEMA_TEST", generate_unique_uuid().upper()])
-    )
+    DATABASE, SCHEMA = ("SNOWSHU_DEVELOPMENT", "_".join(["DROP_SCHEMA_TEST", generate_unique_uuid().upper()]))
     try:
         # Setup: Ensure the schema exists before attempting to drop it
         if SCHEMA not in sf_adapter._get_all_schemas(DATABASE):
@@ -376,7 +343,7 @@ def test_create_table(sf_adapter):
     DATABASE, SCHEMA, TABLE = (
         "SNOWSHU_DEVELOPMENT",
         "_".join(["CREATE_TABLE_TEST", generate_unique_uuid().upper()]),
-        "TEST_TABLE"
+        "TEST_TABLE",
     )
     query = "SELECT 1 AS test_col"
     try:
@@ -393,6 +360,7 @@ def test_create_table(sf_adapter):
         sf_adapter.drop_table(name=TABLE, schema=SCHEMA, database=DATABASE)
         sf_adapter.drop_schema(name=SCHEMA, database=DATABASE)
 
+
 def test_create_table_same_names(sf_adapter, caplog):
     """Test whether snowflake_adapter.create_table() successfully informs user
     with a warning that the table already exists when trying to create a table
@@ -400,7 +368,7 @@ def test_create_table_same_names(sf_adapter, caplog):
     DATABASE, SCHEMA, TABLE = (
         "SNOWSHU_DEVELOPMENT",
         "_".join(["CREATE_TABLE_TEST", generate_unique_uuid().upper()]),
-        "TEST_TABLE"
+        "TEST_TABLE",
     )
     query = "SELECT 1 AS test_col"
     try:
@@ -414,7 +382,8 @@ def test_create_table_same_names(sf_adapter, caplog):
         assert f"{TABLE} already exists" in caplog.text
     finally:
         # Clean up after test
-        sf_adapter.drop_schema(name=SCHEMA, database=DATABASE) 
+        sf_adapter.drop_schema(name=SCHEMA, database=DATABASE)
+
 
 def test_drop_table(sf_adapter):
     """Test whether snowflake_adapter.drop_table() successfully
@@ -422,7 +391,7 @@ def test_drop_table(sf_adapter):
     DATABASE, SCHEMA, TABLE = (
         "SNOWSHU_DEVELOPMENT",
         "_".join(["DROP_TABLE_TEST", generate_unique_uuid().upper()]),
-        "TEST_TABLE"
+        "TEST_TABLE",
     )
     query = "SELECT 1 AS test_col"
     try:

@@ -12,16 +12,17 @@ from sqlalchemy import create_engine
 
 from snowshu.adapters.target_adapters.postgres_adapter import PostgresAdapter
 from snowshu.core.docker import SnowShuDocker
-from snowshu.configs import (DEFAULT_PRESERVE_CASE,
-                             DEFAULT_MAX_NUMBER_OF_OUTLIERS,
-                             DOCKER_REMOUNT_DIRECTORY,
-                             DOCKER_TARGET_CONTAINER,
-                             DOCKER_REPLICA_VOLUME,
-                             DOCKER_NETWORK,
-                             PACKAGE_ROOT,
-                             LOCAL_ARCHITECTURE,
-                             POSTGRES_IMAGE
-                             )
+from snowshu.configs import (
+    DEFAULT_PRESERVE_CASE,
+    DEFAULT_MAX_NUMBER_OF_OUTLIERS,
+    DOCKER_REMOUNT_DIRECTORY,
+    DOCKER_TARGET_CONTAINER,
+    DOCKER_REPLICA_VOLUME,
+    DOCKER_NETWORK,
+    PACKAGE_ROOT,
+    LOCAL_ARCHITECTURE,
+    POSTGRES_IMAGE,
+)
 from snowshu.core.main import cli
 from snowshu.core.models import Relation, Attribute, data_types
 from snowshu.core.models.materializations import TABLE
@@ -32,14 +33,11 @@ from snowshu.core.models.materializations import TABLE
 # 3. Queries the replica
 # 4. Spins down and cleans up
 
-BASE_CONN = 'postgresql://snowshu:snowshu@integration-test:9999/{}'
-INITIAL_INCREMENTAL_CONFIG_PATH = os.path.join(PACKAGE_ROOT,
-                                               'tests',
-                                               'assets',
-                                               'replica_test_incremental_config.yml')
-CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, 'tests', 'assets', 'replica_test_config.yml')
-SNOWSHU_META_STRING = BASE_CONN.format('snowshu')
-SNOWSHU_DEVELOPMENT_STRING = BASE_CONN.format('snowshu_development')
+BASE_CONN = "postgresql://snowshu:snowshu@integration-test:9999/{}"
+INITIAL_INCREMENTAL_CONFIG_PATH = os.path.join(PACKAGE_ROOT, "tests", "assets", "replica_test_incremental_config.yml")
+CONFIGURATION_PATH = os.path.join(PACKAGE_ROOT, "tests", "assets", "replica_test_config.yml")
+SNOWSHU_META_STRING = BASE_CONN.format("snowshu")
+SNOWSHU_DEVELOPMENT_STRING = BASE_CONN.format("snowshu_development")
 DOCKER_SPIN_UP_TIMEOUT = 15
 
 
@@ -59,31 +57,31 @@ def find_number_of_processed_relations(strings):
 
 def test_reports_full_catalog_start(end_to_end):
     result_lines = end_to_end
-    assert any_appearance_of('Building filtered catalog...', result_lines)
+    assert any_appearance_of("Building filtered catalog...", result_lines)
 
 
 def test_finds_n_relations(end_to_end):
     result_lines = end_to_end
-    assert find_number_of_processed_relations(result_lines) == 16, \
-        "Number of found relations do not match the expected of 16 relations. Check database."
+    assert (
+        find_number_of_processed_relations(result_lines) == 16
+    ), "Number of found relations do not match the expected of 16 relations. Check database."
 
 
 def test_replicates_order_items(end_to_end):
     result_lines = end_to_end
-    assert any_appearance_of('Done replication of relation SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS', result_lines)
+    assert any_appearance_of("Done replication of relation SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS", result_lines)
 
 
 @pytest.mark.skip
 def test_snowshu_explain(end_to_end):
     runner = CliRunner()
-    response = json.loads(runner.invoke(
-        cli, ('explain', 'integration-test', '--json')))
+    response = json.loads(runner.invoke(cli, ("explain", "integration-test", "--json")))
 
-    assert response['name'] == 'integration-test'
-    assert response['image'] == POSTGRES_IMAGE
-    assert response['target_adapter'] == 'postgres'
-    assert response['source_adapter'] == 'snowflake'
-    assert datetime(response['created_at']) < datetime.now()
+    assert response["name"] == "integration-test"
+    assert response["image"] == POSTGRES_IMAGE
+    assert response["target_adapter"] == "postgres"
+    assert response["source_adapter"] == "snowflake"
+    assert datetime(response["created_at"]) < datetime.now()
 
 
 def test_replica_meta(end_to_end):
@@ -91,7 +89,7 @@ def test_replica_meta(end_to_end):
     query_string = """
         SELECT * FROM SNOWSHU.SNOWSHU.REPLICA_META
     """
-    with open(CONFIGURATION_PATH, 'r') as file_stream:
+    with open(CONFIGURATION_PATH, "r") as file_stream:
         expected_config = yaml.safe_load(file_stream)
     # default for preserve case and max_outliers are set after parsing
     expected_config["preserve_case"] = DEFAULT_PRESERVE_CASE
@@ -101,12 +99,12 @@ def test_replica_meta(end_to_end):
     query = conn.execute(query_string)
     results = query.fetchall()
     for record in results:
-        assert record['created_at']
+        assert record["created_at"]
         # values from replica_test_config.yml
-        assert record['name'] == 'integration-test'
-        assert record['short_description'] == 'this is a sample with LIVE CREDS for integration'
-        assert record['long_description'] == 'this is for testing against a live db'
-        assert record['config_json'] == expected_config
+        assert record["name"] == "integration-test"
+        assert record["short_description"] == "this is a sample with LIVE CREDS for integration"
+        assert record["long_description"] == "this is for testing against a live db"
+        assert record["config_json"] == expected_config
 
     assert len(results) == 1
 
@@ -119,7 +117,7 @@ def test_polymorphic_parent_id(end_to_end):
     query = conn.execute(query_string)
     results = query.fetchall()
     for record in results:
-        assert record['id'] not in (13, 14)
+        assert record["id"] not in (13, 14)
     assert len(results) == 12
 
 
@@ -131,13 +129,13 @@ def test_polymorphic_child_id(end_to_end):
     query = conn.execute(query_string)
     results = query.fetchall()
     for record in results:
-        assert record['id'] not in (13, 14)
+        assert record["id"] not in (13, 14)
     assert len(results) == 12
 
 
 def test_polymorphic_child_tables(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
-    for val in ['0', '1', '2']:
+    for val in ["0", "1", "2"]:
         query_string = f"""
             SELECT * FROM SNOWSHU_DEVELOPMENT.POLYMORPHIC_DATA.CHILD_TYPE_{val}_ITEMS
         """
@@ -147,7 +145,7 @@ def test_polymorphic_child_tables(end_to_end):
 
 
 def test_bidirectional(end_to_end):
-    print('test_bidirectional')
+    print("test_bidirectional")
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
         SELECT
@@ -169,7 +167,7 @@ def test_bidirectional(end_to_end):
 
 
 def test_directional(end_to_end):
-    print('test_directional')
+    print("test_directional")
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = """
         WITH
@@ -209,30 +207,30 @@ def test_view(end_to_end):
 
 def test_cross_database_query(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
-    query = 'SELECT COUNT(*) FROM snowshu__snowshu.replica_meta'
+    query = "SELECT COUNT(*) FROM snowshu__snowshu.replica_meta"
     q = conn.execute(query)
     assert len(set(q.fetchall()[0])) == 1
 
 
 def test_applies_emulation_function(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
-    query = 'SELECT ANY_VALUE(id) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS'
+    query = "SELECT ANY_VALUE(id) FROM SNOWSHU_DEVELOPMENT.SOURCE_SYSTEM.ORDER_ITEMS"
     q = conn.execute(query)
     assert int(q.fetchall()[0][0]) > 0
 
 
 def test_applies_uuid_emulation_function(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
-    query = 'SELECT UUID_STRING()'
+    query = "SELECT UUID_STRING()"
     q = conn.execute(query)
-    assert re.match('[0-9A-Fa-f-]{36}', q.fetchall()[0][0])
+    assert re.match("[0-9A-Fa-f-]{36}", q.fetchall()[0][0])
 
 
 def test_applies_pg_extensions(end_to_end):
     conn = create_engine(SNOWSHU_DEVELOPMENT_STRING)
     query = "SELECT CASE WHEN 'My_Cased_String'::citext = 'my_cased_string'::citext THEN 'SUCCESS' ELSE 'FAIL' END"
     q = conn.execute(query)
-    assert q.fetchall()[0][0] == 'SUCCESS'
+    assert q.fetchall()[0][0] == "SUCCESS"
 
 
 def test_data_types(end_to_end):
@@ -282,7 +280,7 @@ def test_data_types(end_to_end):
         "timestamp_tz_col": "timestamp with time zone",
         "varbinary_col": "bytea",
         "varchar_col": "character varying",
-        "variant_col": "json"
+        "variant_col": "json",
     }
     assert {t[0]: t[1] for t in type_mappings} == EXPECTED_DATA_TYPES
 
@@ -320,20 +318,16 @@ def test_casing(end_to_end):
 def test_get_relations_from_database(end_to_end):
     adapter = PostgresAdapter(replica_metadata={})
     if adapter.target != "localhost":
-        adapter._credentials.host = 'integration-test'
+        adapter._credentials.host = "integration-test"
 
-    config_patterns = [
-        dict(database="snowshu",
-             schema=".*",
-             name=".*")
-    ]
+    config_patterns = [dict(database="snowshu", schema=".*", name=".*")]
 
     attributes = [
-        Attribute('created_at', data_types.TIMESTAMP_TZ),
-        Attribute('config_json', data_types.JSON),
-        Attribute('name', data_types.VARCHAR),
-        Attribute('short_description', data_types.VARCHAR),
-        Attribute('long_description', data_types.VARCHAR)
+        Attribute("created_at", data_types.TIMESTAMP_TZ),
+        Attribute("config_json", data_types.JSON),
+        Attribute("name", data_types.VARCHAR),
+        Attribute("short_description", data_types.VARCHAR),
+        Attribute("long_description", data_types.VARCHAR),
     ]
     relation = Relation("snowshu", "snowshu", "replica_meta", TABLE, attributes)
 
@@ -347,18 +341,18 @@ def test_get_relations_from_database(end_to_end):
 def test_x_db_incremental_import(end_to_end):
     adapter = PostgresAdapter(replica_metadata={})
     if adapter.target != "localhost":
-        adapter._credentials.host = 'integration-test'
+        adapter._credentials.host = "integration-test"
 
     def successfully_enabled_without_errors(adapter):
         try:
             adapter.enable_cross_database()
             adapter.enable_cross_database()
             unique_databases = set(adapter._get_all_databases())
-            unique_databases.remove('postgres')
+            unique_databases.remove("postgres")
             schemas_len = []
             for database in unique_databases:
                 for schema in adapter._get_all_schemas(database, True):
-                    schemas_len.append(len(schema.split('__')))
+                    schemas_len.append(len(schema.split("__")))
             assert all(x <= 2 for x in schemas_len)
             return True
         except sqlalchemy.exc.ProgrammingError:
@@ -376,24 +370,28 @@ def test_using_different_image(end_to_end):
     network = shdocker._get_or_create_network(DOCKER_NETWORK)
 
     target_adapter.DOCKER_TARGET_PORT = 9990
-    envars = ['POSTGRES_USER=snowshu',
-              'POSTGRES_PASSWORD=snowshu',
-              'POSTGRES_DB=snowshu',
-              f'PGDATA=/{DOCKER_REMOUNT_DIRECTORY}']
+    envars = [
+        "POSTGRES_USER=snowshu",
+        "POSTGRES_PASSWORD=snowshu",
+        "POSTGRES_DB=snowshu",
+        f"PGDATA=/{DOCKER_REMOUNT_DIRECTORY}",
+    ]
 
     target_container = shdocker.create_and_init_container(
-        image=client.images.get('snowshu_replica_integration-test'),
+        image=client.images.get("snowshu_replica_integration-test"),
         target_adapter=target_adapter,
-        source_adapter='SnowflakeAdapter',
+        source_adapter="SnowflakeAdapter",
         container_name=DOCKER_TARGET_CONTAINER,
         network=network,
         replica_volume=replica_volume,
-        envars=envars
-        )
-    assert target_container.status == 'created'
-    assert target_container.image.tags[0] in [f'snowshu_replica_integration-test:{LOCAL_ARCHITECTURE.value}',
-                                               'snowshu_replica_integration-test:latest']
+        envars=envars,
+    )
+    assert target_container.status == "created"
+    assert target_container.image.tags[0] in [
+        f"snowshu_replica_integration-test:{LOCAL_ARCHITECTURE.value}",
+        "snowshu_replica_integration-test:latest",
+    ]
     target_container.start()
     target_container.reload()
-    assert target_container.status == 'running'
+    assert target_container.status == "running"
     target_container.remove(force=True)

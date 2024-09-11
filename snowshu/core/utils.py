@@ -10,6 +10,7 @@ import yaml
 import docker
 
 from snowshu.configs import Architecture, ARCH_MAP
+
 if TYPE_CHECKING:
     from snowshu.adapters.base_sql_adapter import BaseSQLAdapter
     from snowshu.adapters.source_adapters.base_source_adapter import BaseSourceAdapter
@@ -20,20 +21,18 @@ logger = logging.getLogger(__name__)
 
 
 def correct_case(val: str, upper: bool = True):
-    """ Returns the case corrected value based on general sql identifier rules
+    """Returns the case corrected value based on general sql identifier rules
 
-        If the value is entirely one case, made up of only word characters
-        and doesn't begin with a number, we can conform the case
+    If the value is entirely one case, made up of only word characters
+    and doesn't begin with a number, we can conform the case
 
-        ARGS:
-            - val: string that is the value to correct case for
-            - upper: flag to determine the case to conform to. Defaults to True (uppercase)
-        RETURNS:
-            the case corrected value
+    ARGS:
+        - val: string that is the value to correct case for
+        - upper: flag to determine the case to conform to. Defaults to True (uppercase)
+    RETURNS:
+        the case corrected value
     """
-    if any({val.isupper(), val.islower()}) and \
-            re.fullmatch(r'^\w*$', val) and \
-            not re.fullmatch(r'^[0-9].*', val):
+    if any({val.isupper(), val.islower()}) and re.fullmatch(r"^\w*$", val) and not re.fullmatch(r"^[0-9].*", val):
         val = val.upper() if upper else val.lower()
     return val
 
@@ -58,19 +57,17 @@ def key_for_value(dictionary, value):
     return list(dictionary.keys())[list(dictionary.values()).index(value)]
 
 
-def get_config_value(
-        parent: dict,
-        key: str,
-        envar: Optional[str] = None,
-        parent_name: Optional[str] = None) -> Any:
+def get_config_value(parent: dict, key: str, envar: Optional[str] = None, parent_name: Optional[str] = None) -> Any:
     try:
         return parent[key]
     except KeyError as err:
         if envar is not None and os.getenv(envar) is not None:
             return os.getenv(envar)
 
-        message = (f'Config issue: missing required attribute'
-                   f'{key + " from object " + parent_name if parent_name is not None else key}.')
+        message = (
+            f'Config issue: missing required attribute'
+            f'{key + " from object " + parent_name if parent_name is not None else key}.'
+        )
         logger.error(message)
         raise err
 
@@ -78,17 +75,18 @@ def get_config_value(
 def load_from_file_or_path(loadable: Union[Path, str, TextIO]) -> dict:
     try:
         with open(loadable) as file_obj:  # noqa pylint: disable=unspecified-encoding
-            logger.debug('loading from file %s', file_obj.name)
+            logger.debug("loading from file %s", file_obj.name)
             loaded = yaml.safe_load(file_obj)
     except TypeError:
-        logger.debug('loading from file-like object...')
+        logger.debug("loading from file-like object...")
         loaded = yaml.safe_load(loadable)
-    logger.debug('Done loading.')
+    logger.debug("Done loading.")
     return loaded
 
 
-def fetch_adapter(name: str,
-                  section: str) -> Union[Type['BaseSourceAdapter'], Type['BaseTargetAdapter'], Type['BaseSQLAdapter']]:
+def fetch_adapter(
+    name: str, section: str
+) -> Union[Type["BaseSourceAdapter"], Type["BaseTargetAdapter"], Type["BaseSQLAdapter"]]:
     """Locates and returns the specified adapter.
 
     Args:
@@ -98,10 +96,9 @@ def fetch_adapter(name: str,
         The adapter if found, raises :class:`AdapterNotFound <snowshu.exceptions.AdapterNotFound>`.
     """
     try:
-        return getattr(import_module(f'snowshu.adapters.{section}_adapters'),
-                       name.capitalize() + 'Adapter')
+        return getattr(import_module(f"snowshu.adapters.{section}_adapters"), name.capitalize() + "Adapter")
     except AttributeError as err:
-        logger.critical('No %s adapter found by the name of %s', section, name)
+        logger.critical("No %s adapter found by the name of %s", section, name)
         raise err
 
 
@@ -111,13 +108,7 @@ def get_multiarch_list(local_arch: Architecture) -> List[Architecture]:
     The list is ordered such that the architecture provided as input is placed at the beginning.
     """
 
-    all_archs = list(
-        set(
-            ARCH_MAP[arch].value
-            for arch in Architecture
-            if arch != Architecture.UNKNOWN
-        )
-    )
+    all_archs = list(set(ARCH_MAP[arch].value for arch in Architecture if arch != Architecture.UNKNOWN))
     all_archs.remove(ARCH_MAP[local_arch].value)
     all_archs.insert(0, ARCH_MAP[local_arch].value)
     logger.info(f"Building for architectures: {all_archs}")
@@ -125,17 +116,16 @@ def get_multiarch_list(local_arch: Architecture) -> List[Architecture]:
 
 
 def remove_dangling_replica_containers() -> None:
-    """ Cleans up existing containers in situation of a failed build
-    """
+    """Cleans up existing containers in situation of a failed build"""
     client = docker.from_env()
     for container in client.containers.list(all=True):
-        if 'snowshu_target_' in container.name:
+        if "snowshu_target_" in container.name:
             container.remove(force=True)
 
 
 def generate_unique_uuid(is_upper: bool = True) -> str:
     """Generates a unique name based on name and randomly generated uuid."""
-    _uuid = str(uuid.uuid4()).rsplit('-', maxsplit=1)[-1]
+    _uuid = str(uuid.uuid4()).rsplit("-", maxsplit=1)[-1]
     return _uuid.upper() if is_upper else _uuid
 
 
