@@ -8,6 +8,7 @@ from click.testing import CliRunner
 
 from snowshu.core import main
 from snowshu.configs import ARCH_MAP
+
 from snowshu.core.graph import SnowShuGraph
 from snowshu.core.graph_set_runner import GraphSetRunner
 from snowshu.core.replica.replica_factory import ReplicaFactory
