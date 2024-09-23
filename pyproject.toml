@@ -8,6 +8,4 @@ exclude = [
 [tool.ruff.lint]
 ignore = [
     "F821",  # Undefined name
-    # "MC0001",  # McCabe complexity
-    # "C0411",  # cyclic-import
 ]
