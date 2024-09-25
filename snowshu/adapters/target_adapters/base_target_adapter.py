@@ -1,27 +1,27 @@
 import logging
 from pathlib import Path
 from abc import abstractmethod
-from typing import Iterable, Optional
-
+from typing import Iterable, Optional, Tuple, List
 
 import pandas as pd
 
-
 from snowshu.core.configuration_parser import Configuration
-from snowshu.core.models import DataType
+from snowshu.core.models import DataType, Credentials, Relation
 from snowshu.adapters import BaseSQLAdapter
-from snowshu.core.models import Credentials, Relation
-
+from snowshu.core import utils
 
 logger = logging.getLogger(__name__)
-
 
 class BaseTargetAdapter(BaseSQLAdapter):
     """All target adapters inherit from this one."""
 
-    def __init__(self, replica_metadata: dict):
+    uuid: Optional[str] = None
+
+    def __init__(self, replica_metadata: dict, uuid: Optional[str] = None, **kwargs):
         super().__init__()
         self.replica_meta = replica_metadata
+        if self.__class__.uuid is None:
+            self.__class__.uuid = uuid if uuid is not None else utils.generate_unique_uuid()
 
     @abstractmethod
     def _generate_credentials(self, host) -> Credentials:
