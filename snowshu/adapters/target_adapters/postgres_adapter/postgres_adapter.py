@@ -21,6 +21,7 @@ from snowshu.core.models.attribute import Attribute
 from snowshu.core.models.relation import Relation
 from snowshu.core.utils import correct_case
 from snowshu.exceptions import UnableToStartPostgres
+from snowshu.core import utils
 
 logger = logging.getLogger(__name__)
 
@@ -83,8 +84,9 @@ class PostgresAdapter(BaseLocalTargetAdapter):
         "varchar": dtypes.VARCHAR,
         "character_varying": dtypes.VARCHAR
     }
+    uuid: Optional[str] = None
 
-    def __init__(self, replica_metadata: dict, **kwargs):
+    def __init__(self, replica_metadata: dict, uuid: Optional[str] = None, **kwargs):
         super().__init__(replica_metadata)
 
         self.extensions = kwargs.get("pg_extensions", [])
@@ -100,6 +102,10 @@ class PostgresAdapter(BaseLocalTargetAdapter):
         self.DOCKER_IMPORT_REPLICA_DATA_FROM_SHARE = (  # noqa pylint: disable=invalid-name
             f"gunzip -c {self.DOCKER_REPLICA_MOUNT_FOLDER}/replica_dump.gz"
             f" | psql -p {self._credentials.port} -U {self._credentials.user}")
+        if PostgresAdapter.uuid is None:
+            PostgresAdapter.uuid = (
+                uuid if uuid is not None else utils.generate_unique_uuid()
+            )
 
     @staticmethod
     def _create_snowshu_schema_statement() -> str:
