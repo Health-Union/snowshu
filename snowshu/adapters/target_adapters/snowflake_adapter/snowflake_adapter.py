@@ -26,7 +26,6 @@ from snowshu.configs import DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.adapters.target_adapters.base_remote_target_adapter import (
     BaseRemoteTargetAdapter,
 )
-from snowshu.core import utils
 
 logger = logging.getLogger(__name__)
 
@@ -48,25 +47,19 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     ROLLBACK = True
 
     crt_databases_lock = threading.Lock()
-    uuid: Optional[str] = None
     replica_prefix: Optional[str] = None
 
     def __init__(self, replica_metadata: dict, uuid: Optional[str] = None):
-        BaseRemoteTargetAdapter.__init__(self, replica_metadata)
+        super().__init__(replica_metadata, uuid=uuid)
 
         config_json = json.loads(self.replica_meta["config_json"])
         self.credentials = self._generate_credentials(config_json["credpath"])
         self.conn = self.get_connection()
 
-        # Initialize the UUID and replica prefix if they have not been set
-        # These values need to be set once per adapter instance
-        if SnowflakeAdapter.uuid is None:
-            SnowflakeAdapter.uuid = (
-                uuid if uuid is not None else utils.generate_unique_uuid()
-            )
+        # Initialize the replica prefix if it has not been set
         if SnowflakeAdapter.replica_prefix is None:
             SnowflakeAdapter.replica_prefix = (
-                f"SNOWSHU_{SnowflakeAdapter.uuid}_{self.replica_meta['name'].upper()}"
+                f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
             )
 
     def initialize_replica(self, config: Configuration, **kwargs):

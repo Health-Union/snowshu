@@ -66,10 +66,8 @@ class GraphSetRunner:
         if self.barf:
             shutil.rmtree(self.barf_output, ignore_errors=True)
             os.makedirs(self.barf_output)
-        self.same_as_source = json.loads(target_adapter.replica_meta["config_json"])[
-            "target"
-        ]["same_as_source"]
-
+        target_config = json.loads(target_adapter.replica_meta["config_json"])["target"]
+        self.same_as_source = target_config.get("same_as_source", False)
         view_graph_set = [graph for graph in graph_set if graph.contains_views]
         table_graph_set = list(set(graph_set) - set(view_graph_set))
 

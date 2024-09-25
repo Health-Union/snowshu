@@ -72,6 +72,7 @@ class ReplicaFactory:
                     flags=re.IGNORECASE,
                 )
             )
+            logger.info(f"Incremental target catalog: {incremental_target_catalog}")
 
             apply_source_case = alter_relation_case(
                 case_function=self.config.source_profile.adapter._correct_case  # noqa pylint: disable=protected-access
@@ -109,7 +110,7 @@ class ReplicaFactory:
         return printable_result(
             graph_to_result_list(graphs),
             self.run_analyze,
-            self.config.target_profile.adapter.replica_meta["replica_info"],
+            self.config.target_profile.adapter.replica_meta.get("replica_info", None),
         )
 
     def load_config(self,
