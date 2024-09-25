@@ -1,7 +1,7 @@
 import json
 import logging
 import threading
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Set
 
 import pandas as pd
 import sqlalchemy
@@ -31,7 +31,6 @@ logger = logging.getLogger(__name__)
 
 
 class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
-
     REQUIRED_CREDENTIALS = (
         USER,
         PASSWORD,
@@ -62,13 +61,150 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                 f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
             )
 
+    def build_catalog(
+        self, incremental_prefix: str, thread_workers: int = 4
+    ) -> Set[Relation]:
+        """
+        Builds and returns a set of Relations present in Snowflake replicas from databases that start with the given prefix.
+
+        Args:
+            incremental_prefix (str): The prefix to filter databases.
+            thread_workers (int): Number of threads to use for concurrent fetching.
+
+        Returns:
+            Set[Relation]: A set of Relation objects from databases matching the prefix.
+        """
+        from concurrent.futures import ThreadPoolExecutor
+
+        catalog = set()
+        self.incremental_prefix = incremental_prefix
+        def accumulate_relations(database: str):
+            if not database.startswith(incremental_prefix):
+                logger.debug(
+                    f"Skipping database '{database}' as it does not start with prefix '{incremental_prefix}'."
+                )
+                return
+            try:
+                schemas = self._get_all_schemas(database)
+                for schema in schemas:
+                    try:
+                        relations = self._get_relations_from_database(database, schema)
+                        catalog.update(relations)
+                    except Exception as e:
+                        logger.error(
+                            f"Error fetching relations from schema '{schema}' in database '{database}': {e}"
+                        )
+            except Exception as e:
+                logger.error(f"Error fetching schemas from database '{database}': {e}")
+
+        try:
+            all_databases = self._get_all_databases()
+        except NotImplementedError:
+            logger.error("The method _get_all_databases is not implemented.")
+            return set()
+
+        with ThreadPoolExecutor(max_workers=thread_workers) as executor:
+            executor.map(accumulate_relations, all_databases)
+
+        logger.info(
+            f"Build catalog completed. Found {len(catalog)} relations in databases starting with prefix '{incremental_prefix}'."
+        )
+        return catalog
+
+    def _get_all_databases(self) -> List[str]:
+        """Retrieve all databases in the Snowflake connection."""
+        query = "SHOW DATABASES"
+        try:
+            result = self._safe_query(query)
+            databases = result["name"].tolist()
+            logger.debug(f"Retrieved databases: {databases}")
+            return databases
+        except Exception as e:
+            logger.error(f"Failed to retrieve databases: {e}")
+            return []
+
+    def _get_all_schemas(
+        self, database: str, exclude_defaults: Optional[bool] = False
+    ) -> List[str]:
+        """Retrieve all schemas in a given database.
+
+        Args:
+            database (str): The database name.
+            exclude_defaults (bool): Whether to exclude default schemas like INFORMATION_SCHEMA.
+
+        Returns:
+            List[str]: A list of schema names.
+        """
+        query = f"SHOW SCHEMAS IN DATABASE {self.quoted(database)}"
+        if exclude_defaults:
+            query += " WHERE SCHEMA_NAME NOT IN ('INFORMATION_SCHEMA', 'PUBLIC')"
+        try:
+            result = self._safe_query(query)
+            schemas = result["name"].tolist()
+            logger.debug(f"Retrieved schemas from database '{database}': {schemas}")
+            return schemas
+        except Exception as e:
+            logger.error(f"Failed to retrieve schemas from database '{database}': {e}")
+            return []
+
+    def _get_relations_from_database(
+        self, database: str, schema: str
+    ) -> List[Relation]:
+        """Retrieve all relations from a given database and schema.
+
+        Args:
+            database (str): The database name.
+            schema (str): The schema name.
+
+        Returns:
+            List[Relation]: A list of Relation objects.
+        """
+        query = f"""
+            SELECT 
+                m.table_schema AS schema,
+                m.table_name AS relation,
+                m.table_type AS materialization,
+                c.column_name AS attribute,
+                c.ordinal_position AS ordinal,
+                c.data_type AS data_type
+            FROM {self.quoted(database)}.information_schema.TABLES m
+            INNER JOIN {self.quoted(database)}.information_schema.COLUMNS c 
+                ON c.table_schema = m.table_schema 
+                AND c.table_name = m.table_name
+            WHERE m.table_schema = '{schema}'
+              AND m.table_schema <> 'INFORMATION_SCHEMA'
+        """
+        try:
+            relations_frame = self._safe_query(query)
+            relations = {}
+            for _, row in relations_frame.iterrows():
+                key = row["relation"]
+                if key not in relations:
+                    materialization = (
+                        mz.TABLE
+                        if row["materialization"].upper() == "BASE TABLE"
+                        else mz.VIEW
+                    )
+                    relations[key] = Relation(
+                        database=database.split("_", 3)[-1],
+                        schema=row["schema"],
+                        name=row["relation"],
+                        materialization=materialization,
+                        attributes=[],
+                    )
+                logger.debug(
+                    f"Retrieved {len(relations)} relations from schema '{schema}' in database '{database}'."
+                )
+            return list(relations.values())
+        except Exception as e:
+            logger.error(
+                f"Failed to retrieve relations from database '{database}', schema '{schema}': {e}"
+            )
+            return []
+
     def initialize_replica(self, config: Configuration, **kwargs):
         self._initialize_snowshu_meta_database()
         self._initialize_replica_info()
-        if kwargs.get("incremental_image", None):
-            raise NotImplementedError(
-                "Incremental builds are not supported for Snowflake target adapter."
-            )
 
     def create_database_name(self, database: str) -> str:
         if database != "SNOWSHU":
@@ -173,7 +309,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         meta_data = pd.DataFrame(
             [
                 dict(
-                    created_at=pendulum.now('UTC').naive(),
+                    created_at=pendulum.now("UTC").naive(),
                     name=self.replica_meta["name"],
                     short_description=self.replica_meta["short_description"],
                     long_description=self.replica_meta["long_description"],
@@ -192,7 +328,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         schema: str,
         engine: Optional[sqlalchemy.engine.base.Engine] = None,
     ):
-        database_name = self.create_database_name(database) 
+        database_name = self.create_database_name(database)
         logger.debug(f"Creating schema {schema}...")
 
         engine = self.conn if not engine else engine
@@ -230,15 +366,6 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             data,
         )
 
-    def _get_all_databases(self):
-        pass
-
-    def _get_all_schemas(self, database, exclude_defaults=False):
-        pass
-
-    def _get_relations_from_database(self, schema_obj):
-        pass
-
     def _initialize_replica_info(self) -> None:
         # Prepare for tabular format
         self.replica_meta["replica_info"] = [
@@ -252,4 +379,4 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     @staticmethod
     def quoted(val: str) -> str:
         """Returns quoted value if appropriate."""
-        return f'"{val}"' if ' ' in val else val
+        return f'"{val}"' if " " in val else val
