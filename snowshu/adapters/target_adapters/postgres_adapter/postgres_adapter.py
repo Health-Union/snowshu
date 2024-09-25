@@ -23,6 +23,7 @@ from snowshu.exceptions import UnableToStartPostgres
 
 logger = logging.getLogger(__name__)
 
+
 class PostgresAdapter(BaseLocalTargetAdapter):
     name = 'postgres'
     dialect = 'postgresql'

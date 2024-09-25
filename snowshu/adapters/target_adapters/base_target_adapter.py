@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 from abc import abstractmethod
-from typing import Iterable, Optional, Tuple, List
+from typing import Iterable, Optional
 
 import pandas as pd
 
@@ -12,13 +12,14 @@ from snowshu.core import utils
 
 logger = logging.getLogger(__name__)
 
+
 class BaseTargetAdapter(BaseSQLAdapter):
     """All target adapters inherit from this one."""
 
     uuid: Optional[str] = None
 
     def __init__(self, replica_metadata: dict, uuid: Optional[str] = None, **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
         self.replica_meta = replica_metadata
         if self.__class__.uuid is None:
             self.__class__.uuid = uuid if uuid is not None else utils.generate_unique_uuid()

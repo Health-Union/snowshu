@@ -36,8 +36,8 @@ class BaseLocalTargetAdapter(BaseTargetAdapter):
     ALLOWED_CREDENTIALS = []
     DOCKER_TARGET_PORT = DOCKER_TARGET_PORT
 
-    def __init__(self, replica_metadata: dict):
-        super().__init__(replica_metadata)
+    def __init__(self, replica_metadata: dict, uuid: Optional[str] = None):
+        super().__init__(replica_metadata, uuid=uuid)
         for attr in ("DOCKER_IMAGE", "DOCKER_SNOWSHU_ENVARS"):
             if not hasattr(self, attr):
                 raise NotImplementedError(
