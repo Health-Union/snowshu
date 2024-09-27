@@ -67,20 +67,21 @@ class ReplicaFactory:
         if self.incremental:
             incremental_target_catalog = (
                 self.config.target_profile.adapter.build_catalog(
+                    incremental_prefix=self.incremental,
                     patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
                     thread_workers=self.config.threads,
                     flags=re.IGNORECASE,
                 )
             )
-            logger.info(f"Incremental target catalog: {incremental_target_catalog}")
-
             apply_source_case = alter_relation_case(
                 case_function=self.config.source_profile.adapter._correct_case  # noqa pylint: disable=protected-access
             )
             incremental_target_catalog_casted = set(
                 map(apply_source_case, incremental_target_catalog)
             )
-
+            SnowShuGraph.catalog_difference(
+                graph.graph, incremental_target_catalog_casted
+            )
             graph.graph = SnowShuGraph.catalog_difference(
                 graph.graph, incremental_target_catalog_casted
             )

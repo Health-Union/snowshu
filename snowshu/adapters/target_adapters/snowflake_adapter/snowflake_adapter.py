@@ -62,7 +62,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             )
 
     def build_catalog(
-        self, incremental_prefix: str, thread_workers: int = 4
+        self, incremental_prefix: str, thread_workers: int = 4, **kwargs
     ) -> Set[Relation]:
         """
         Builds and returns a set of Relations present in Snowflake replicas from databases that start with the given prefix.
@@ -164,13 +164,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                 m.table_schema AS schema,
                 m.table_name AS relation,
                 m.table_type AS materialization,
-                c.column_name AS attribute,
-                c.ordinal_position AS ordinal,
-                c.data_type AS data_type
             FROM {self.quoted(database)}.information_schema.TABLES m
-            INNER JOIN {self.quoted(database)}.information_schema.COLUMNS c 
-                ON c.table_schema = m.table_schema 
-                AND c.table_name = m.table_name
             WHERE m.table_schema = '{schema}'
               AND m.table_schema <> 'INFORMATION_SCHEMA'
         """
@@ -205,6 +199,20 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def initialize_replica(self, config: Configuration, **kwargs):
         self._initialize_snowshu_meta_database()
         self._initialize_replica_info()
+        
+        incremental_image = kwargs.get("incremental_image")
+        if incremental_image:
+            self._update_replica_info(incremental_image)
+        else:
+            logger.debug("No incremental image provided. Replica will be created from scratch.")
+
+    def _update_replica_info(self, incremental_image: str):
+        incremental_uuid = incremental_image.split("_")[1]
+        logger.info(f"Overwriting uuid with {incremental_uuid}")
+        self.uuid = incremental_uuid
+        
+        logger.info(f"Overwriting replica prefix with {incremental_image}")
+        self.replica_prefix = incremental_image
 
     def create_database_name(self, database: str) -> str:
         if database != "SNOWSHU":
