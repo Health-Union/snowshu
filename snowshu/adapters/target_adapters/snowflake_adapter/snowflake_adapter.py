@@ -66,7 +66,10 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         SnowflakeAdapter.replica_prefix = replica_prefix
 
     def build_catalog(
-        self, incremental_prefix: str, thread_workers: int = 4, **kwargs  # pylint: disable=unused-argument
+        self,
+        incremental_prefix: str,
+        thread_workers: int = 4,
+        **kwargs,  # pylint: disable=unused-argument
     ) -> Set[Relation]:
         """
         Builds and returns a set of Relations present in Snowflake replicas
@@ -81,6 +84,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         """
 
         catalog = set()
+
         def accumulate_relations(database: str):
             if not database.startswith(incremental_prefix):
                 logger.debug(
@@ -93,19 +97,21 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                     try:
                         relations = self._get_relations_from_database(database, schema)
                         catalog.update(relations)
-                    except Exception as exc:
+                    except sqlalchemy.exc.SQLAlchemyError as exc:
                         logger.error(
                             f"Error fetching relations from schema '{schema}' in database '{database}': {exc}"
                         )
             except sqlalchemy.exc.SQLAlchemyError as exc:
-                logger.error(f"Error fetching schemas from database '{incremental_prefix}': {exc}")
+                logger.error(
+                    f"Error fetching schemas from database '{incremental_prefix}': {exc}"
+                )
 
         try:
             all_databases = self._get_all_databases()
         except sqlalchemy.exc.SQLAlchemyError as exc:
             logger.error(f"SQLAlchemy error during catalog build: {exc}")
-            return set()   
-            
+            return set()
+
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             executor.map(accumulate_relations, all_databases)
 
@@ -148,7 +154,9 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             logger.debug(f"Retrieved schemas from database '{database}': {schemas}")
             return schemas
         except sqlalchemy.exc.SQLAlchemyError as exc:
-            logger.error(f"Failed to retrieve schemas from database '{database}': {exc}")
+            logger.error(
+                f"Failed to retrieve schemas from database '{database}': {exc}"
+            )
             return []
 
     def _get_relations_from_database(
@@ -203,18 +211,20 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def initialize_replica(self, config: Configuration, **kwargs):
         self._initialize_snowshu_meta_database()
         self._initialize_replica_info()
-        
+
         incremental_image = kwargs.get("incremental_image")
         if incremental_image:
             self._update_replica_info(incremental_image)
         else:
-            logger.debug("No incremental image provided. Replica will be created from scratch.")
+            logger.debug(
+                "No incremental image provided. Replica will be created from scratch."
+            )
 
     def _update_replica_info(self, incremental_image: str):
         incremental_uuid = incremental_image.split("_")[1]
         logger.info(f"Overwriting uuid with {incremental_uuid}")
         self.uuid = incremental_uuid
-        
+
         logger.info(f"Overwriting replica prefix with {incremental_image}")
         self.replica_prefix = incremental_image
 
