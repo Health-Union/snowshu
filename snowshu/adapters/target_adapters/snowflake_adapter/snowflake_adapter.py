@@ -2,6 +2,7 @@ import json
 import logging
 import threading
 from typing import Optional, Tuple, List, Set
+from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 import sqlalchemy
@@ -61,11 +62,15 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                 f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
             )
 
+    def set_replica_prefix(self, replica_prefix: str):
+        SnowflakeAdapter.replica_prefix = replica_prefix
+
     def build_catalog(
-        self, incremental_prefix: str, thread_workers: int = 4, **kwargs
+        self, incremental_prefix: str, thread_workers: int = 4, **kwargs  # pylint: disable=unused-argument
     ) -> Set[Relation]:
         """
-        Builds and returns a set of Relations present in Snowflake replicas from databases that start with the given prefix.
+        Builds and returns a set of Relations present in Snowflake replicas
+        from databases that start with the given prefix.
 
         Args:
             incremental_prefix (str): The prefix to filter databases.
@@ -74,10 +79,9 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         Returns:
             Set[Relation]: A set of Relation objects from databases matching the prefix.
         """
-        from concurrent.futures import ThreadPoolExecutor
 
         catalog = set()
-        self.incremental_prefix = incremental_prefix
+        self.set_replica_prefix(incremental_prefix)
         def accumulate_relations(database: str):
             if not database.startswith(incremental_prefix):
                 logger.debug(
@@ -90,12 +94,12 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                     try:
                         relations = self._get_relations_from_database(database, schema)
                         catalog.update(relations)
-                    except Exception as e:
+                    except Exception as exc:
                         logger.error(
-                            f"Error fetching relations from schema '{schema}' in database '{database}': {e}"
+                            f"Error fetching relations from schema '{schema}' in database '{database}': {exc}"
                         )
-            except Exception as e:
-                logger.error(f"Error fetching schemas from database '{database}': {e}")
+            except Exception as exc:
+                logger.error(f"Error fetching schemas from database '{database}': {exc}")
 
         try:
             all_databases = self._get_all_databases()
@@ -107,7 +111,8 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             executor.map(accumulate_relations, all_databases)
 
         logger.info(
-            f"Build catalog completed. Found {len(catalog)} relations in databases starting with prefix '{incremental_prefix}'."
+            f"Build catalog completed. Found {len(catalog)} relations "
+            f"in databases starting with prefix '{incremental_prefix}'."
         )
         return catalog
 
@@ -119,8 +124,8 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             databases = result["name"].tolist()
             logger.debug(f"Retrieved databases: {databases}")
             return databases
-        except Exception as e:
-            logger.error(f"Failed to retrieve databases: {e}")
+        except Exception as exc:
+            logger.error(f"Failed to retrieve databases: {exc}")
             return []
 
     def _get_all_schemas(
@@ -143,8 +148,8 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             schemas = result["name"].tolist()
             logger.debug(f"Retrieved schemas from database '{database}': {schemas}")
             return schemas
-        except Exception as e:
-            logger.error(f"Failed to retrieve schemas from database '{database}': {e}")
+        except Exception as exc:
+            logger.error(f"Failed to retrieve schemas from database '{database}': {exc}")
             return []
 
     def _get_relations_from_database(
@@ -190,9 +195,9 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                     f"Retrieved {len(relations)} relations from schema '{schema}' in database '{database}'."
                 )
             return list(relations.values())
-        except Exception as e:
+        except Exception as exc:
             logger.error(
-                f"Failed to retrieve relations from database '{database}', schema '{schema}': {e}"
+                f"Failed to retrieve relations from database '{database}', schema '{schema}': {exc}"
             )
             return []
 
