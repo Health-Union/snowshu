@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 import threading
 from typing import Optional, Tuple, List, Set
 from concurrent.futures import ThreadPoolExecutor
@@ -77,6 +76,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         Returns:
             Set[Relation]: A set of Relation objects from databases matching the prefix.
         """
+        
         catalog = set()
 
         def accumulate_relations(database: str):

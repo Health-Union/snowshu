@@ -1,7 +1,7 @@
 import time
 from pathlib import Path
 from typing import Optional, TextIO, Union
-
+import re
 import logging
 
 from snowshu.adapters.target_adapters.base_remote_target_adapter import BaseRemoteTargetAdapter

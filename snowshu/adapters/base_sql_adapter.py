@@ -153,7 +153,9 @@ class BaseSQLAdapter(ABC):
         """
         database = database if database is not None else self._credentials.database
         return (
-            f"{dialect}://{self._credentials.user}:{self._credentials.password}@{self._credentials.host}/{database}?",
+            f"{dialect}://{self._credentials.user}:"
+            f"{self._credentials.password}@{self._credentials.host}/"
+            f"{database}?",
             {USER, PASSWORD, HOST, DATABASE, }
         )
 
