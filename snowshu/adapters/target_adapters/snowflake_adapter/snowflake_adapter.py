@@ -81,7 +81,6 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         """
 
         catalog = set()
-        self.set_replica_prefix(incremental_prefix)
         def accumulate_relations(database: str):
             if not database.startswith(incremental_prefix):
                 logger.debug(
@@ -98,15 +97,15 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                         logger.error(
                             f"Error fetching relations from schema '{schema}' in database '{database}': {exc}"
                         )
-            except Exception as exc:
-                logger.error(f"Error fetching schemas from database '{database}': {exc}")
+            except sqlalchemy.exc.SQLAlchemyError as exc:
+                logger.error(f"Error fetching schemas from database '{incremental_prefix}': {exc}")
 
         try:
             all_databases = self._get_all_databases()
-        except NotImplementedError:
-            logger.error("The method _get_all_databases is not implemented.")
-            return set()
-
+        except sqlalchemy.exc.SQLAlchemyError as exc:
+            logger.error(f"SQLAlchemy error during catalog build: {exc}")
+            return set()   
+            
         with ThreadPoolExecutor(max_workers=thread_workers) as executor:
             executor.map(accumulate_relations, all_databases)
 
@@ -124,7 +123,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             databases = result["name"].tolist()
             logger.debug(f"Retrieved databases: {databases}")
             return databases
-        except Exception as exc:
+        except sqlalchemy.exc.SQLAlchemyError as exc:
             logger.error(f"Failed to retrieve databases: {exc}")
             return []
 
@@ -148,7 +147,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             schemas = result["name"].tolist()
             logger.debug(f"Retrieved schemas from database '{database}': {schemas}")
             return schemas
-        except Exception as exc:
+        except sqlalchemy.exc.SQLAlchemyError as exc:
             logger.error(f"Failed to retrieve schemas from database '{database}': {exc}")
             return []
 
@@ -195,7 +194,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                     f"Retrieved {len(relations)} relations from schema '{schema}' in database '{database}'."
                 )
             return list(relations.values())
-        except Exception as exc:
+        except sqlalchemy.exc.SQLAlchemyError as exc:
             logger.error(
                 f"Failed to retrieve relations from database '{database}', schema '{schema}': {exc}"
             )
