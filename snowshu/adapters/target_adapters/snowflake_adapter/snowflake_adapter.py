@@ -76,7 +76,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         Returns:
             Set[Relation]: A set of Relation objects from databases matching the prefix.
         """
-        
+
         catalog = set()
 
         def accumulate_relations(database: str):
@@ -153,7 +153,9 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             )
             return []
 
-    def _get_relations_from_database(self, database: str, schema: str ) -> List[Relation]: # pylint: disable=arguments-differ
+    def _get_relations_from_database(
+        self, database: str, schema: str
+    ) -> List[Relation]:  # pylint: disable=arguments-differ
         """Retrieve all relations from a given database and schema.
 
         Args:
@@ -163,6 +165,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         Returns:
             List[Relation]: A list of Relation objects.
         """
+
         query = f"""
             SELECT 
                 m.table_schema AS schema,
