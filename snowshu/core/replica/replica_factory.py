@@ -67,7 +67,6 @@ class ReplicaFactory:
         if self.incremental:
             incremental_target_catalog = (
                 self.config.target_profile.adapter.build_catalog(
-                    incremental_prefix=self.incremental,
                     patterns=SnowShuGraph.build_sum_patterns_from_configs(self.config),
                     thread_workers=self.config.threads,
                     flags=re.IGNORECASE,

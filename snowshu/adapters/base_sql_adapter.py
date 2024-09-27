@@ -162,7 +162,6 @@ class BaseSQLAdapter(ABC):
         patterns: Iterable[dict],
         thread_workers: int,
         flags: re.RegexFlag = 0,
-        **kwargs,  # pylint: disable=unused-argument
     ) -> Set[Relation]:
         """ This function is expected to return all of the relations that satisfy the filters
 

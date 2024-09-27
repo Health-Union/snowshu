@@ -1,5 +1,6 @@
 import json
 import logging
+import re
 import threading
 from typing import Optional, Tuple, List, Set
 from concurrent.futures import ThreadPoolExecutor
@@ -65,30 +66,23 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def set_replica_prefix(self, replica_prefix: str):
         SnowflakeAdapter.replica_prefix = replica_prefix
 
-    def build_catalog(
-        self,
-        incremental_prefix: str,
-        thread_workers: int = 4,
-        **kwargs,  # pylint: disable=unused-argument
-    ) -> Set[Relation]:
+    def build_catalog(self, thread_workers: int = 4) -> Set[Relation]:  # pylint: disable=arguments-differ
         """
         Builds and returns a set of Relations present in Snowflake replicas
         from databases that start with the given prefix.
 
         Args:
-            incremental_prefix (str): The prefix to filter databases.
             thread_workers (int): Number of threads to use for concurrent fetching.
 
         Returns:
             Set[Relation]: A set of Relation objects from databases matching the prefix.
         """
-
         catalog = set()
 
         def accumulate_relations(database: str):
-            if not database.startswith(incremental_prefix):
+            if not database.startswith(self.replica_prefix):
                 logger.debug(
-                    f"Skipping database '{database}' as it does not start with prefix '{incremental_prefix}'."
+                    f"Skipping database '{database}' as it does not start with prefix '{self.replica_prefix}'."
                 )
                 return
             try:
@@ -103,7 +97,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                         )
             except sqlalchemy.exc.SQLAlchemyError as exc:
                 logger.error(
-                    f"Error fetching schemas from database '{incremental_prefix}': {exc}"
+                    f"Error fetching schemas from database '{database}': {exc}"
                 )
 
         try:
@@ -117,7 +111,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
 
         logger.info(
             f"Build catalog completed. Found {len(catalog)} relations "
-            f"in databases starting with prefix '{incremental_prefix}'."
+            f"in databases starting with prefix '{self.replica_prefix}'."
         )
         return catalog
 
@@ -159,9 +153,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             )
             return []
 
-    def _get_relations_from_database(
-        self, database: str, schema: str
-    ) -> List[Relation]:
+    def _get_relations_from_database(self, database: str, schema: str ) -> List[Relation]: # pylint: disable=arguments-differ
         """Retrieve all relations from a given database and schema.
 
         Args:
