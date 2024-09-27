@@ -153,7 +153,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             )
             return []
 
-    def _get_relations_from_database( # pylint: disable=arguments-differ
+    def _get_relations_from_database(  # pylint: disable=arguments-differ
         self, database: str, schema: str  
     ) -> List[Relation]:
         """Retrieve all relations from a given database and schema.
