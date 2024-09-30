@@ -12,8 +12,11 @@ from snowshu.core.models.credentials import Credentials
 
 @pytest.fixture
 def mock_adapter():
-    config = {"credpath": "tests/assets/integration/credentials_snowflake_target.yml"}
-    replica_metadata = {"name": "test_replica", "config_json": json.dumps(config)}
+    # Use mock data for config
+    mock_config = {
+        "credpath": "tests/assets/mock_credentials_snowflake_target.yml"
+    }
+    replica_metadata = {"name": "test_replica", "config_json": json.dumps(mock_config)}
     adapter = SnowflakeAdapter(replica_metadata=replica_metadata)
 
     with mock.patch.object(adapter, "_generate_credentials") as mock_generate_creds:
@@ -23,9 +26,10 @@ def mock_adapter():
             account="mock_account",
             database="mock_database",
             role="mock_role",
+            warehouse="mock_warehouse"
         )
         adapter.credentials = mock_generate_creds.return_value
-        adapter.conn = mock.MagicMock()  # Mock the connection if needed
+        adapter.conn = mock.MagicMock()  # Mock the connection
         yield adapter
 
 
