@@ -77,9 +77,6 @@ class ReplicaFactory:
             incremental_target_catalog_casted = set(
                 map(apply_source_case, incremental_target_catalog)
             )
-            SnowShuGraph.catalog_difference(
-                graph.graph, incremental_target_catalog_casted
-            )
             graph.graph = SnowShuGraph.catalog_difference(
                 graph.graph, incremental_target_catalog_casted
             )

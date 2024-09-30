@@ -90,16 +90,11 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             try:
                 schemas = self._get_all_schemas(database)
                 for schema in schemas:
-                    try:
-                        relations = self._get_relations_from_database(database, schema)
-                        catalog.update(relations)
-                    except sqlalchemy.exc.SQLAlchemyError as exc:
-                        logger.error(
-                            f"Error fetching relations from schema '{schema}' in database '{database}': {exc}"
-                        )
+                    relations = self._get_relations_from_database(database, schema)
+                    catalog.update(relations)
             except sqlalchemy.exc.SQLAlchemyError as exc:
                 logger.error(
-                    f"Error fetching schemas from database '{database}': {exc}"
+                    f"Error processing database '{database}': {exc}"
                 )
 
         try:
@@ -172,7 +167,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             SELECT 
                 m.table_schema AS schema,
                 m.table_name AS relation,
-                m.table_type AS materialization,
+                m.table_type AS materialization
             FROM {self.quoted(database)}.information_schema.TABLES m
             WHERE m.table_schema = '{schema}'
               AND m.table_schema <> 'INFORMATION_SCHEMA'
@@ -195,10 +190,12 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                         materialization=materialization,
                         attributes=[],
                     )
-                logger.debug(
-                    f"Retrieved {len(relations)} relations from schema '{schema}' in database '{database}'."
-                )
-            return list(relations.values())
+            
+            result = list(relations.values())
+            logger.debug(
+                f"Retrieved {len(result)} relations from schema '{schema}' in database '{database}'."
+            )
+            return result
         except sqlalchemy.exc.SQLAlchemyError as exc:
             logger.error(
                 f"Failed to retrieve relations from database '{database}', schema '{schema}': {exc}"
