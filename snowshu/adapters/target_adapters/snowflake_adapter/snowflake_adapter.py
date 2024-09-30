@@ -65,7 +65,6 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def set_replica_prefix(self, replica_prefix: str):
         SnowflakeAdapter.replica_prefix = replica_prefix
 
-
     def build_catalog(self, thread_workers: int = 4, **kwargs) -> Set[Relation]:  # pylint: disable=arguments-differ
         """
         Builds and returns a set of Relations present in Snowflake replicas
