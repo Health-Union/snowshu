@@ -65,7 +65,8 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     def set_replica_prefix(self, replica_prefix: str):
         SnowflakeAdapter.replica_prefix = replica_prefix
 
-    def build_catalog(self, thread_workers: int = 4) -> Set[Relation]:  # pylint: disable=arguments-differ
+
+    def build_catalog(self, thread_workers: int = 4, **kwargs) -> Set[Relation]:  # pylint: disable=arguments-differ
         """
         Builds and returns a set of Relations present in Snowflake replicas
         from databases that start with the given prefix.
@@ -76,6 +77,8 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         Returns:
             Set[Relation]: A set of Relation objects from databases matching the prefix.
         """
+
+        del kwargs  # Surpress unused variable warning
 
         catalog = set()
 
@@ -222,6 +225,11 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
 
         logger.info(f"Overwriting replica prefix with {incremental_image}")
         self.replica_prefix = incremental_image
+
+        self.replica_meta["replica_info"] = [
+            ["Replica Name", self.replica_meta["name"].upper()],
+            ["Replica Prefix", incremental_image],
+        ]
 
     def create_database_name(self, database: str) -> str:
         if database != "SNOWSHU":
