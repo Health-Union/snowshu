@@ -190,7 +190,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                         materialization=materialization,
                         attributes=[],
                     )
-            
+
             result = list(relations.values())
             logger.debug(
                 f"Retrieved {len(result)} relations from schema '{schema}' in database '{database}'."
