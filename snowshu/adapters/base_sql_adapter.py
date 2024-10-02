@@ -155,7 +155,12 @@ class BaseSQLAdapter(ABC):
             f"{dialect}://{self._credentials.user}:"
             f"{self._credentials.password}@{self._credentials.host}/"
             f"{database}?",
-            {USER, PASSWORD, HOST, DATABASE, }
+            {
+                USER,
+                PASSWORD,
+                HOST,
+                DATABASE,
+            },
         )
 
     def build_catalog(
@@ -164,7 +169,7 @@ class BaseSQLAdapter(ABC):
         thread_workers: int,
         flags: re.RegexFlag = 0,
     ) -> Set[Relation]:
-        """ This function is expected to return all of the relations that satisfy the filters
+        """This function is expected to return all of the relations that satisfy the filters
 
         Args:
             patterns (Iterable[dict]): Filter dictionaries to apply to the databases

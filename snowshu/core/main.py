@@ -132,7 +132,7 @@ def create(
     replica = ReplicaFactory()
     replica.load_config(replica_file, target_arch=target_arch)
 
-    replica.check_adapter_support(replica, multiarch, '-m', 'multiarch')
+    replica.check_adapter_support(replica, multiarch, "-m", "multiarch")
 
     replica.incremental = incremental
     click.echo(replica.create(name=name, barf=barf, retry_count=retry_count))

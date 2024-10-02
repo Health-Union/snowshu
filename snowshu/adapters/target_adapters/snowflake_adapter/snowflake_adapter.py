@@ -58,9 +58,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
 
         # Initialize the replica prefix if it has not been set
         if SnowflakeAdapter.replica_prefix is None:
-            SnowflakeAdapter.replica_prefix = (
-                f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
-            )
+            SnowflakeAdapter.replica_prefix = f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
 
     def set_replica_prefix(self, replica_prefix: str):
         SnowflakeAdapter.replica_prefix = replica_prefix
@@ -93,9 +91,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                     relations = self._get_relations_from_database(database, schema)
                     catalog.update(relations)
             except sqlalchemy.exc.SQLAlchemyError as exc:
-                logger.error(
-                    f"Error processing database '{database}': {exc}"
-                )
+                logger.error(f"Error processing database '{database}': {exc}")
 
         try:
             all_databases = self._get_all_databases()
@@ -124,9 +120,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             logger.error(f"Failed to retrieve databases: {exc}")
             return []
 
-    def _get_all_schemas(
-        self, database: str, exclude_defaults: Optional[bool] = False
-    ) -> List[str]:
+    def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         """Retrieve all schemas in a given database.
 
         Args:
@@ -145,13 +139,11 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             logger.debug(f"Retrieved schemas from database '{database}': {schemas}")
             return schemas
         except sqlalchemy.exc.SQLAlchemyError as exc:
-            logger.error(
-                f"Failed to retrieve schemas from database '{database}': {exc}"
-            )
+            logger.error(f"Failed to retrieve schemas from database '{database}': {exc}")
             return []
 
     def _get_relations_from_database(  # pylint: disable=arguments-differ
-        self, database: str, schema: str  
+        self, database: str, schema: str
     ) -> List[Relation]:
         """Retrieve all relations from a given database and schema.
 
@@ -164,7 +156,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         """
 
         query = f"""
-            SELECT 
+            SELECT
                 m.table_schema AS schema,
                 m.table_name AS relation,
                 m.table_type AS materialization
@@ -178,11 +170,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             for _, row in relations_frame.iterrows():
                 key = row["relation"]
                 if key not in relations:
-                    materialization = (
-                        mz.TABLE
-                        if row["materialization"].upper() == "BASE TABLE"
-                        else mz.VIEW
-                    )
+                    materialization = mz.TABLE if row["materialization"].upper() == "BASE TABLE" else mz.VIEW
                     relations[key] = Relation(
                         database=database.split("_", 3)[-1],
                         schema=row["schema"],
@@ -192,14 +180,10 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
                     )
 
             result = list(relations.values())
-            logger.debug(
-                f"Retrieved {len(result)} relations from schema '{schema}' in database '{database}'."
-            )
+            logger.debug(f"Retrieved {len(result)} relations from schema '{schema}' in database '{database}'.")
             return result
         except sqlalchemy.exc.SQLAlchemyError as exc:
-            logger.error(
-                f"Failed to retrieve relations from database '{database}', schema '{schema}': {exc}"
-            )
+            logger.error(f"Failed to retrieve relations from database '{database}', schema '{schema}': {exc}")
             return []
 
     def initialize_replica(self, config: Configuration, **kwargs):
@@ -210,9 +194,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
         if incremental_image:
             self._update_replica_info(incremental_image)
         else:
-            logger.debug(
-                "No incremental image provided. Replica will be created from scratch."
-            )
+            logger.debug("No incremental image provided. Replica will be created from scratch.")
 
     def _update_replica_info(self, incremental_image: str):
         incremental_uuid = incremental_image.split("_")[1]

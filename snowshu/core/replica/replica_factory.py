@@ -64,12 +64,8 @@ class ReplicaFactory:
             apply_source_case = alter_relation_case(
                 case_function=self.config.source_profile.adapter._correct_case  # noqa pylint: disable=protected-access
             )
-            incremental_target_catalog_casted = set(
-                map(apply_source_case, incremental_target_catalog)
-            )
-            graph.graph = SnowShuGraph.catalog_difference(
-                graph.graph, incremental_target_catalog_casted
-            )
+            incremental_target_catalog_casted = set(map(apply_source_case, incremental_target_catalog))
+            graph.graph = SnowShuGraph.catalog_difference(graph.graph, incremental_target_catalog_casted)
 
         graphs = graph.get_connected_subgraphs()
         if len(graphs) < 1:
