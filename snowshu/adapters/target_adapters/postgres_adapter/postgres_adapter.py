@@ -2,7 +2,6 @@ import time
 import logging
 from typing import List, Optional, Tuple
 
-
 import sqlalchemy
 from pandas import DataFrame
 
@@ -81,8 +80,8 @@ class PostgresAdapter(BaseLocalTargetAdapter):
         "character_varying": dtypes.VARCHAR,
     }
 
-    def __init__(self, replica_metadata: dict, **kwargs):
-        super().__init__(replica_metadata)
+    def __init__(self, replica_metadata: dict, uuid: Optional[str] = None, **kwargs):
+        super().__init__(replica_metadata, uuid=uuid)
 
         self.extensions = kwargs.get("pg_extensions", [])
         self.x00_replacement = kwargs.get("pg_0x00_replacement", "")

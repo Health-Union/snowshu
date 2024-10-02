@@ -1,8 +1,7 @@
-import re
 import time
 from pathlib import Path
 from typing import Optional, TextIO, Union
-
+import re
 import logging
 
 from snowshu.adapters.target_adapters.base_remote_target_adapter import BaseRemoteTargetAdapter
@@ -62,13 +61,15 @@ class ReplicaFactory:
                 thread_workers=self.config.threads,
                 flags=re.IGNORECASE,
             )
-
             apply_source_case = alter_relation_case(
                 case_function=self.config.source_profile.adapter._correct_case  # noqa pylint: disable=protected-access
             )
-            incremental_target_catalog_casted = set(map(apply_source_case, incremental_target_catalog))
-
-            graph.graph = SnowShuGraph.catalog_difference(graph.graph, incremental_target_catalog_casted)
+            incremental_target_catalog_casted = set(
+                map(apply_source_case, incremental_target_catalog)
+            )
+            graph.graph = SnowShuGraph.catalog_difference(
+                graph.graph, incremental_target_catalog_casted
+            )
 
         graphs = graph.get_connected_subgraphs()
         if len(graphs) < 1:
@@ -95,7 +96,7 @@ class ReplicaFactory:
         return printable_result(
             graph_to_result_list(graphs),
             self.run_analyze,
-            self.config.target_profile.adapter.replica_meta["replica_info"],
+            self.config.target_profile.adapter.replica_meta.get("replica_info", None),
         )
 
     def load_config(self, config: Union[Path, str, TextIO], target_arch=None):

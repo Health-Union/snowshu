@@ -1,7 +1,8 @@
 import json
 import logging
 import threading
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Set
+from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 import sqlalchemy
@@ -26,7 +27,6 @@ from snowshu.configs import DEFAULT_INSERT_CHUNK_SIZE
 from snowshu.adapters.target_adapters.base_remote_target_adapter import (
     BaseRemoteTargetAdapter,
 )
-from snowshu.core import utils
 
 logger = logging.getLogger(__name__)
 
@@ -47,28 +47,185 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
     ROLLBACK = True
 
     crt_databases_lock = threading.Lock()
-    uuid: Optional[str] = None
     replica_prefix: Optional[str] = None
 
     def __init__(self, replica_metadata: dict, uuid: Optional[str] = None):
-        BaseRemoteTargetAdapter.__init__(self, replica_metadata)
+        super().__init__(replica_metadata, uuid=uuid)
 
         config_json = json.loads(self.replica_meta["config_json"])
         self.credentials = self._generate_credentials(config_json["credpath"])
         self.conn = self.get_connection()
 
-        # Initialize the UUID and replica prefix if they have not been set
-        # These values need to be set once per adapter instance
-        if SnowflakeAdapter.uuid is None:
-            SnowflakeAdapter.uuid = uuid if uuid is not None else utils.generate_unique_uuid()
+        # Initialize the replica prefix if it has not been set
         if SnowflakeAdapter.replica_prefix is None:
-            SnowflakeAdapter.replica_prefix = f"SNOWSHU_{SnowflakeAdapter.uuid}_{self.replica_meta['name'].upper()}"
+            SnowflakeAdapter.replica_prefix = (
+                f"SNOWSHU_{self.uuid}_{self.replica_meta['name'].upper()}"
+            )
+
+    def set_replica_prefix(self, replica_prefix: str):
+        SnowflakeAdapter.replica_prefix = replica_prefix
+
+    def build_catalog(self, thread_workers: int = 4, **kwargs) -> Set[Relation]:  # pylint: disable=arguments-differ
+        """
+        Builds and returns a set of Relations present in Snowflake replicas
+        from databases that start with the given prefix.
+
+        Args:
+            thread_workers (int): Number of threads to use for concurrent fetching.
+
+        Returns:
+            Set[Relation]: A set of Relation objects from databases matching the prefix.
+        """
+
+        del kwargs  # Surpress unused variable warning
+
+        catalog = set()
+
+        def accumulate_relations(database: str):
+            if not database.startswith(self.replica_prefix):
+                logger.debug(
+                    f"Skipping database '{database}' as it does not start with prefix '{self.replica_prefix}'."
+                )
+                return
+            try:
+                schemas = self._get_all_schemas(database)
+                for schema in schemas:
+                    relations = self._get_relations_from_database(database, schema)
+                    catalog.update(relations)
+            except sqlalchemy.exc.SQLAlchemyError as exc:
+                logger.error(
+                    f"Error processing database '{database}': {exc}"
+                )
+
+        try:
+            all_databases = self._get_all_databases()
+        except sqlalchemy.exc.SQLAlchemyError as exc:
+            logger.error(f"SQLAlchemy error during catalog build: {exc}")
+            return set()
+
+        with ThreadPoolExecutor(max_workers=thread_workers) as executor:
+            executor.map(accumulate_relations, all_databases)
+
+        logger.info(
+            f"Build catalog completed. Found {len(catalog)} relations "
+            f"in databases starting with prefix '{self.replica_prefix}'."
+        )
+        return catalog
+
+    def _get_all_databases(self) -> List[str]:
+        """Retrieve all databases in the Snowflake connection."""
+        query = "SHOW DATABASES"
+        try:
+            result = self._safe_query(query)
+            databases = result["name"].tolist()
+            logger.debug(f"Retrieved databases: {databases}")
+            return databases
+        except sqlalchemy.exc.SQLAlchemyError as exc:
+            logger.error(f"Failed to retrieve databases: {exc}")
+            return []
+
+    def _get_all_schemas(
+        self, database: str, exclude_defaults: Optional[bool] = False
+    ) -> List[str]:
+        """Retrieve all schemas in a given database.
+
+        Args:
+            database (str): The database name.
+            exclude_defaults (bool): Whether to exclude default schemas like INFORMATION_SCHEMA.
+
+        Returns:
+            List[str]: A list of schema names.
+        """
+        query = f"SHOW SCHEMAS IN DATABASE {self.quoted(database)}"
+        if exclude_defaults:
+            query += " WHERE SCHEMA_NAME NOT IN ('INFORMATION_SCHEMA', 'PUBLIC')"
+        try:
+            result = self._safe_query(query)
+            schemas = result["name"].tolist()
+            logger.debug(f"Retrieved schemas from database '{database}': {schemas}")
+            return schemas
+        except sqlalchemy.exc.SQLAlchemyError as exc:
+            logger.error(
+                f"Failed to retrieve schemas from database '{database}': {exc}"
+            )
+            return []
+
+    def _get_relations_from_database(  # pylint: disable=arguments-differ
+        self, database: str, schema: str  
+    ) -> List[Relation]:
+        """Retrieve all relations from a given database and schema.
+
+        Args:
+            database (str): The database name.
+            schema (str): The schema name.
+
+        Returns:
+            List[Relation]: A list of Relation objects.
+        """
+
+        query = f"""
+            SELECT 
+                m.table_schema AS schema,
+                m.table_name AS relation,
+                m.table_type AS materialization
+            FROM {self.quoted(database)}.information_schema.TABLES m
+            WHERE m.table_schema = '{schema}'
+              AND m.table_schema <> 'INFORMATION_SCHEMA'
+        """
+        try:
+            relations_frame = self._safe_query(query)
+            relations = {}
+            for _, row in relations_frame.iterrows():
+                key = row["relation"]
+                if key not in relations:
+                    materialization = (
+                        mz.TABLE
+                        if row["materialization"].upper() == "BASE TABLE"
+                        else mz.VIEW
+                    )
+                    relations[key] = Relation(
+                        database=database.split("_", 3)[-1],
+                        schema=row["schema"],
+                        name=row["relation"],
+                        materialization=materialization,
+                        attributes=[],
+                    )
+
+            result = list(relations.values())
+            logger.debug(
+                f"Retrieved {len(result)} relations from schema '{schema}' in database '{database}'."
+            )
+            return result
+        except sqlalchemy.exc.SQLAlchemyError as exc:
+            logger.error(
+                f"Failed to retrieve relations from database '{database}', schema '{schema}': {exc}"
+            )
+            return []
 
     def initialize_replica(self, config: Configuration, **kwargs):
         self._initialize_snowshu_meta_database()
         self._initialize_replica_info()
-        if kwargs.get("incremental_image", None):
-            raise NotImplementedError("Incremental builds are not supported for Snowflake target adapter.")
+
+        incremental_image = kwargs.get("incremental_image")
+        if incremental_image:
+            self._update_replica_info(incremental_image)
+        else:
+            logger.debug(
+                "No incremental image provided. Replica will be created from scratch."
+            )
+
+    def _update_replica_info(self, incremental_image: str):
+        incremental_uuid = incremental_image.split("_")[1]
+        logger.info(f"Overwriting uuid with {incremental_uuid}")
+        self.uuid = incremental_uuid
+
+        logger.info(f"Overwriting replica prefix with {incremental_image}")
+        self.replica_prefix = incremental_image
+
+        self.replica_meta["replica_info"] = [
+            ["Replica Name", self.replica_meta["name"].upper()],
+            ["Replica Prefix", incremental_image],
+        ]
 
     def create_database_name(self, database: str) -> str:
         if database != "SNOWSHU":
@@ -223,15 +380,6 @@ class SnowflakeAdapter(SnowflakeCommon, BaseRemoteTargetAdapter):
             original_columns,
             data,
         )
-
-    def _get_all_databases(self):
-        pass
-
-    def _get_all_schemas(self, database, exclude_defaults=False):
-        pass
-
-    def _get_relations_from_database(self, schema_obj):
-        pass
 
     def _initialize_replica_info(self) -> None:
         # Prepare for tabular format
