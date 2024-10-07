@@ -1,5 +1,4 @@
 import random
-from contextlib import nullcontext as does_not_raise
 from unittest import mock
 from urllib.parse import quote
 
@@ -14,62 +13,54 @@ from snowshu.core.models.relation import Relation
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from tests.common import query_equalize, rand_string
 
+
 @pytest.fixture
 def credentials():
-    return Credentials(
-        user="user", password="password", account="account", database="database"
-    )
+    return Credentials(user="user", password="password", account="account", database="database")
+
 
 def test_get_connection():
     sf = SnowflakeAdapter()
     USER, PASSWORD, ACCOUNT, DATABASE, ROLE = [rand_string(15) for _ in range(5)]
 
-    creds = Credentials(user=USER, password=PASSWORD,
-                        account=ACCOUNT, database=DATABASE)
+    creds = Credentials(user=USER, password=PASSWORD, account=ACCOUNT, database=DATABASE)
 
     sf.credentials = creds
 
     conn_string = sf.get_connection()
 
-    assert str(
-        conn_string.url) == f'snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/'
+    assert str(conn_string.url) == f"snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/"
 
     sf.credentials.role = ROLE
     conn_string = sf.get_connection()
 
-    assert conn_string.url.render_as_string(hide_password=False) == \
-           f'snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
+    assert (
+        conn_string.url.render_as_string(hide_password=False)
+        == f"snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/?role={ROLE}"
+    )
 
 
 def test_build_conn_string():
     sf = SnowflakeAdapter()
     USER, PASSWORD, ACCOUNT, DATABASE, ROLE = [rand_string(15) for _ in range(5)]
 
-    creds = Credentials(user=USER,
-                        password=PASSWORD,
-                        account=ACCOUNT,
-                        database=DATABASE,
-                        role=ROLE)
+    creds = Credentials(user=USER, password=PASSWORD, account=ACCOUNT, database=DATABASE, role=ROLE)
     sf.credentials = creds
     conn_string = sf._build_conn_string()
 
-    assert str(conn_string) == f'snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
+    assert str(conn_string) == f"snowflake://{USER}:{PASSWORD}@{ACCOUNT}/{DATABASE}/?role={ROLE}"
 
 
 def test_build_conn_string_spacial_symbols():
-    special = random.choice(['@', ':', ';', '/', '\\', '?', '&'])
+    special = random.choice(["@", ":", ";", "/", "\\", "?", "&"])
     sf = SnowflakeAdapter()
     USER, PASSWORD, ACCOUNT, DATABASE, ROLE = [rand_string(5) + special + rand_string(5) for _ in range(5)]
 
-    creds = Credentials(user=USER,
-                        password=PASSWORD,
-                        account=ACCOUNT,
-                        database=DATABASE,
-                        role=ROLE)
+    creds = Credentials(user=USER, password=PASSWORD, account=ACCOUNT, database=DATABASE, role=ROLE)
     sf.credentials = creds
     conn_string = sf._build_conn_string()
     user, password, account, database, role = [quote(obj) for obj in (USER, PASSWORD, ACCOUNT, DATABASE, ROLE)]
-    assert str(conn_string) == f'snowflake://{user}:{password}@{account}/{database}/?role={role}'
+    assert str(conn_string) == f"snowflake://{user}:{password}@{account}/{database}/?role={role}"
 
 
 def test_sample_statement():
@@ -78,11 +69,7 @@ def test_sample_statement():
     DATABASE = sf._correct_case(DATABASE)
     SCHEMA = sf._correct_case(SCHEMA)
     TABLE = sf._correct_case(TABLE)
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE,
-                        materialization=TABLE,
-                        attributes=[])
+    relation = Relation(database=DATABASE, schema=SCHEMA, name=TABLE, materialization=TABLE, attributes=[])
     sample = sf.sample_statement_from_relation(relation, BernoulliSampleMethod(10, units="probability"))
     assert query_equalize(sample) == query_equalize(f"""
 SELECT
@@ -92,16 +79,12 @@ FROM
     SAMPLE BERNOULLI (10)
 """)
 
-@mock.patch.object(SnowflakeAdapter, 'format_remote_key')
+
+@mock.patch.object(SnowflakeAdapter, "format_remote_key")
 def test_directional_statement(mock_format_remote_key):
     sf = SnowflakeAdapter()
-    DATABASE, SCHEMA, TABLE, LOCAL_KEY, REMOTE_KEY = [
-        rand_string(10) for _ in range(5)]
-    relation = Relation(database=DATABASE,
-                        schema=SCHEMA,
-                        name=TABLE,
-                        materialization=TABLE,
-                        attributes=[])
+    DATABASE, SCHEMA, TABLE, LOCAL_KEY, REMOTE_KEY = [rand_string(10) for _ in range(5)]
+    relation = Relation(database=DATABASE, schema=SCHEMA, name=TABLE, materialization=TABLE, attributes=[])
     relation.core_query = f"""
 SELECT
     *
@@ -110,8 +93,7 @@ FROM
     SAMPLE BERNOULLI (10)
 """
     mock_format_remote_key.return_value = REMOTE_KEY
-    statement = sf.predicate_constraint_statement(
-        relation, True, LOCAL_KEY, REMOTE_KEY)
+    statement = sf.predicate_constraint_statement(relation, True, LOCAL_KEY, REMOTE_KEY)
     assert query_equalize(statement) == query_equalize(f"""
 {LOCAL_KEY} IN
     ( SELECT
@@ -130,9 +112,8 @@ FROM
 def test_analyze_wrap_statement():
     sf = SnowflakeAdapter()
     DATABASE, SCHEMA, NAME = [rand_string(10) for _ in range(3)]
-    relation = Relation(database=DATABASE, schema=SCHEMA,
-                        name=NAME, materialization=TABLE, attributes=[])
-    sql = f"SELECT * FROM some_crazy_query"
+    relation = Relation(database=DATABASE, schema=SCHEMA, name=NAME, materialization=TABLE, attributes=[])
+    sql = "SELECT * FROM some_crazy_query"
     statement = sf.analyze_wrap_statement(sql, relation)
     assert query_equalize(statement) == query_equalize(f"""
 WITH
@@ -166,7 +147,7 @@ LIMIT 1
 
 def test_directionally_wrap_statement_directional():
     sf = SnowflakeAdapter()
-    sampling = BernoulliSampleMethod(50, units='probability')
+    sampling = BernoulliSampleMethod(50, units="probability")
     query = "SELECT * FROM highly_conditional_query"
     relmock = mock.MagicMock()
     relmock.scoped_cte = lambda x: x
@@ -188,23 +169,26 @@ FROM
     {relmock.scoped_cte('SNOWSHU_DIRECTIONAL_SAMPLE')}
 """)
 
-@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key')
-@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
-@mock.patch('snowshu.core.models.relation.Relation')
-def test_predicate_constraint_statement_analyze_false_quoted_non_empty_constraint_set(mock_relation, mock_query, mock_format_remote_key):
-    """ Given non empty constraint set and analyze=False we expect a predicate constraint statement """
+
+@mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key")
+@mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query")
+@mock.patch("snowshu.core.models.relation.Relation")
+def test_predicate_constraint_statement_analyze_false_quoted_non_empty_constraint_set(
+    mock_relation, mock_query, mock_format_remote_key
+):
+    """Given non empty constraint set and analyze=False we expect a predicate constraint statement"""
     sf = SnowflakeAdapter()
     mock_format_remote_key.return_value = "remote_key::VARCHAR"
-    mock_relation.temp_dot_notation = 'mock_dot_notation'
-    mock_query.return_value = DataFrame(['1, 2, 3'])
-    result = sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
-    assert query_equalize(result) == query_equalize("local_key IN ( SELECT DISTINCT remote_key::VARCHAR FROM mock_dot_notation )")
+    mock_relation.temp_dot_notation = "mock_dot_notation"
+    mock_query.return_value = DataFrame(["1, 2, 3"])
+    result = sf.predicate_constraint_statement(mock_relation, False, "local_key", "remote_key")
+    assert query_equalize(result) == query_equalize(
+        "local_key IN ( SELECT DISTINCT remote_key::VARCHAR FROM mock_dot_notation )"
+    )
 
 
 @mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key")
-@mock.patch(
-    "snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query"
-)
+@mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query")
 @mock.patch("snowshu.core.models.relation.Relation")
 def test_predicate_constraint_statement_analyze_false_unquoted_non_empty_constraint_set(
     mock_relation, mock_query, mock_format_remote_key
@@ -214,45 +198,46 @@ def test_predicate_constraint_statement_analyze_false_unquoted_non_empty_constra
     mock_format_remote_key.return_value = "remote_key"
     mock_relation.temp_dot_notation = "mock_dot_notation"
     mock_query.return_value = DataFrame(["1, 2, 3"])
-    result = sf.predicate_constraint_statement(
-        mock_relation, False, "local_key", "remote_key"
-    )
+    result = sf.predicate_constraint_statement(mock_relation, False, "local_key", "remote_key")
     assert query_equalize(result) == query_equalize(
         "local_key IN ( SELECT DISTINCT remote_key FROM mock_dot_notation ) "
     )
 
 
-@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key')
-@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
-@mock.patch('snowshu.core.models.relation.Relation')
-def test_predicate_constraint_statement_analyze_false_empty_constraint_set(mock_relation, mock_query, mock_format_remote_key):
+@mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key")
+@mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query")
+@mock.patch("snowshu.core.models.relation.Relation")
+def test_predicate_constraint_statement_analyze_false_empty_constraint_set(
+    mock_relation, mock_query, mock_format_remote_key
+):
     """
     Given empty constraint set and analyze=False we expect a predicate constraint statement
     with a IndexError raised
     """
     sf = SnowflakeAdapter()
-    mock_format_remote_key.return_value = 'remote_key'
-    mock_relation.temp_dot_notation = 'mock_dot_notation'
+    mock_format_remote_key.return_value = "remote_key"
+    mock_relation.temp_dot_notation = "mock_dot_notation"
     mock_query.return_value = DataFrame([])
-    with pytest.raises(IndexError, match=f"Failed to build predicates, the constraint set is empty."):
-        sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
+    with pytest.raises(IndexError, match="Failed to build predicates, the constraint set is empty."):
+        sf.predicate_constraint_statement(mock_relation, False, "local_key", "remote_key")
 
 
-@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key')
-@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
-@mock.patch('snowshu.core.models.relation.Relation')
+@mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter.format_remote_key")
+@mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query")
+@mock.patch("snowshu.core.models.relation.Relation")
 def test_predicate_constraint_statement_analyze_false_key_error(mock_relation, mock_safe_query, mock_format_remote_key):
     sf = SnowflakeAdapter()
-    mock_format_remote_key.return_value = 'remote_key'
-    mock_relation.temp_dot_notation = 'mock_dot_notation'
+    mock_format_remote_key.return_value = "remote_key"
+    mock_relation.temp_dot_notation = "mock_dot_notation"
     mock_safe_query.side_effect = KeyError()
     with pytest.raises(KeyError, match=r"Remote key remote_key not found in mock_dot_notation table."):
-        sf.predicate_constraint_statement(mock_relation, False, 'local_key', 'remote_key')
+        sf.predicate_constraint_statement(mock_relation, False, "local_key", "remote_key")
 
-@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
+
+@mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query")
 @mock.patch("snowshu.core.models.relation.Relation")
 def test_format_remote_key_quoted(mock_relation, mock_query):
-    """ Verifies that the remote key values is formatted to VARCHAR if it's a type that requires quotes """
+    """Verifies that the remote key values is formatted to VARCHAR if it's a type that requires quotes"""
     sf = SnowflakeAdapter()
     mock_attribute = mock.Mock()
     mock_attribute.data_type.requires_quotes = True
@@ -263,10 +248,10 @@ def test_format_remote_key_quoted(mock_relation, mock_query):
     assert result == remote_key
 
 
-@mock.patch('snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query')
+@mock.patch("snowshu.adapters.source_adapters.snowflake_adapter.SnowflakeAdapter._safe_query")
 @mock.patch("snowshu.core.models.relation.Relation")
 def test_format_remote_key_unquoted(mock_relation, mock_query):
-    """ Verifies that the remote key values is NOT formatted, if it's a type that does not require quotes"""
+    """Verifies that the remote key values is NOT formatted, if it's a type that does not require quotes"""
     sf = SnowflakeAdapter()
     mock_attribute = mock.Mock()
     mock_attribute.data_type.requires_quotes = False
@@ -274,11 +259,11 @@ def test_format_remote_key_unquoted(mock_relation, mock_query):
     mock_query.return_value = DataFrame({"data_type": ["NUMBER"]})
     remote_key = "rkey"
     result = sf.format_remote_key(mock_relation, remote_key)
-    assert result == f'{remote_key}::VARCHAR'
+    assert result == f"{remote_key}::VARCHAR"
 
 
 def test_retry_count_query():
-    """ Verifies that the retry decorator works as expected """
+    """Verifies that the retry decorator works as expected"""
     error_list = [OperationalError, OperationalError, OperationalError, SystemError, RuntimeError]
     with mock.patch("snowshu.adapters.source_adapters.SnowflakeAdapter._count_query", side_effect=error_list):
         sf = SnowflakeAdapter()
@@ -299,7 +284,7 @@ def test_quoted():
 
 def test_quoted_for_spaced_string():
     sf = SnowflakeAdapter()
-    val = rand_string(5) + ' ' + rand_string(6)
+    val = rand_string(5) + " " + rand_string(6)
 
     assert f'"{val}"' == sf.quoted(val)
 
@@ -319,6 +304,7 @@ def test_default_role_setting_is_null(credentials):
     sf.set_default_role()
     assert sf.credentials.role == "SNOWSHU_REPLICA_BUILDER_ROLE"
 
+
 def test_default_role_setting_is_not_null(credentials):
     sf = SnowflakeAdapter()
     sf.credentials = credentials
@@ -326,4 +312,3 @@ def test_default_role_setting_is_not_null(credentials):
     assert sf.credentials.role == "role"
     sf.set_default_role()
     assert sf.credentials.role == "role"
-

@@ -1,7 +1,5 @@
 class BaseSampleSize:
-    """The base class for all sample size methods.
-
-    """
+    """The base class for all sample size methods."""
 
     @property
     def size(self) -> int:

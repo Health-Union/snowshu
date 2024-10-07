@@ -26,6 +26,6 @@ jobs:
     - name: Build the Docker image
       run: docker-compose up -d
     - name: Run Linter
-      run: docker-compose exec -T snowshu prospector
+      run: docker-compose exec -T snowshu ruff check .
     - name: Run Unit Test
       run: docker-compose exec -T snowshu py.test --cov=snowshu tests/unit

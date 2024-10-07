@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 class BaseRemoteTargetAdapter(BaseTargetAdapter):
     """Base class for all remote target adapters eg. Snowflake, BigQuery etc."""
 
-    def _generate_credentials(self, host: Union[str, 'StringIO', dict]) -> Credentials:
-        """ Check if credentials has been passed to credentials.yaml """
+    def _generate_credentials(self, host: Union[str, "StringIO", dict]) -> Credentials:
+        """Check if credentials has been passed to credentials.yaml"""
         credentials = ConfigurationParser().get_dict_from_anything(host, CREDENTIALS_TARGET_JSON_SCHEMA)
         credentials = credentials["targets"][0]
         del credentials["name"]

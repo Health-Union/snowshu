@@ -11,12 +11,11 @@ logger = logging.getLogger(__name__)
 SNOWFLAKE_ACCOUNT_DEFAULT_ROLE = "SNOWSHU_REPLICA_BUILDER_ROLE"
 
 
-class SnowflakeCommon():
-
+class SnowflakeCommon:
     def set_default_role(self) -> None:
         """Sets the default role for the connection."""
         if self.credentials.role is None:
-            logger.info('Setting default role to %s...', SNOWFLAKE_ACCOUNT_DEFAULT_ROLE)
+            logger.info("Setting default role to %s...", SNOWFLAKE_ACCOUNT_DEFAULT_ROLE)
             self.credentials.role = SNOWFLAKE_ACCOUNT_DEFAULT_ROLE
             logger.debug("Default role set to %s.", self.credentials.role)
 
@@ -31,9 +30,7 @@ class SnowflakeCommon():
         schema override are provided.
         """
         if not self._credentials:
-            raise KeyError(
-                "Adapter.get_connection called before setting Adapter.credentials"
-            )
+            raise KeyError("Adapter.get_connection called before setting Adapter.credentials")
 
         logger.debug(f"Acquiring {self.__class__.__name__} connection...")
         engine = sqlalchemy.create_engine(
@@ -49,9 +46,7 @@ class SnowflakeCommon():
         schema_override: Optional[str] = None,
     ) -> str:
         """Overrides the base method to align with snowflake's connection string format."""
-        database = (
-            database_override if database_override else self._credentials.database
-        )
+        database = database_override if database_override else self._credentials.database
         schema = schema_override if schema_override else self._credentials.schema
 
         base_conn = (

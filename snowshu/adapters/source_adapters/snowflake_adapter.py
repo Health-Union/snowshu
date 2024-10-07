@@ -13,8 +13,7 @@ import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
 from snowshu.adapters.source_adapters import BaseSourceAdapter
 from snowshu.core.models.attribute import Attribute
-from snowshu.core.models.credentials import (ACCOUNT, DATABASE, PASSWORD, ROLE,
-                                             SCHEMA, USER, WAREHOUSE)
+from snowshu.core.models.credentials import ACCOUNT, DATABASE, PASSWORD, ROLE, SCHEMA, USER, WAREHOUSE
 from snowshu.core.models.relation import Relation
 from snowshu.exceptions import TooManyRecords
 from snowshu.logger import Logger
@@ -34,14 +33,23 @@ class SnowflakeAdapter(SnowflakeCommon, BaseSourceAdapter):
                        If preserve_case is True,SnowShu will __not__ alter cases (dangerous!).
     """
 
-    name = 'snowflake'
+    name = "snowflake"
     SUPPORTS_CROSS_DATABASE = True
-    SUPPORTED_FUNCTIONS = set(['ANY_VALUE', 'RLIKE', 'UUID_STRING'])
+    SUPPORTED_FUNCTIONS = set(["ANY_VALUE", "RLIKE", "UUID_STRING"])
     SUPPORTED_SAMPLE_METHODS = (BernoulliSampleMethod,)
-    REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
-    ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
+    REQUIRED_CREDENTIALS = (
+        USER,
+        PASSWORD,
+        ACCOUNT,
+        DATABASE,
+    )
+    ALLOWED_CREDENTIALS = (
+        SCHEMA,
+        WAREHOUSE,
+        ROLE,
+    )
     # snowflake in-db is UPPER, but connector is actually lower :(
-    DEFAULT_CASE = 'upper'
+    DEFAULT_CASE = "upper"
 
     DATA_TYPE_MAPPINGS = {
         "array": dtypes.JSON,
@@ -74,59 +82,54 @@ class SnowflakeAdapter(SnowflakeCommon, BaseSourceAdapter):
         "timestamp_tz": dtypes.TIMESTAMP_TZ,
         "varbinary": dtypes.BINARY,
         "varchar": dtypes.VARCHAR,
-        "variant": dtypes.JSON}
+        "variant": dtypes.JSON,
+    }
 
-    MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
-                                "VIEW": mz.TABLE}
+    MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE, "VIEW": mz.TABLE}
 
     @overrides
     def _get_all_databases(self) -> List[str]:
-        """ Use the SHOW api to get all the available db structures."""
-        logger.debug('Collecting databases from snowflake...')
-        show_result = tuple(self._safe_query(
-            "SHOW TERSE DATABASES")['name'].tolist())
+        """Use the SHOW api to get all the available db structures."""
+        logger.debug("Collecting databases from snowflake...")
+        show_result = tuple(self._safe_query("SHOW TERSE DATABASES")["name"].tolist())
         databases = list(set(show_result))
-        logger.debug(f'Done. Found {len(databases)} databases.')
+        logger.debug(f"Done. Found {len(databases)} databases.")
         return databases
 
     @overrides
     def _get_all_schemas(self, database: str, exclude_defaults: Optional[bool] = False) -> List[str]:
         database = self.quoted(database)
-        logger.debug(f'Collecting schemas from {database} in snowflake...')
-        show_result = self._safe_query(f'SHOW TERSE SCHEMAS IN DATABASE {database}')[
-            'name'].tolist()
+        logger.debug(f"Collecting schemas from {database} in snowflake...")
+        show_result = self._safe_query(f"SHOW TERSE SCHEMAS IN DATABASE {database}")["name"].tolist()
         schemas = set(show_result)
-        logger.debug(
-            f'Done. Found {len(schemas)} schemas in {database} database.')
+        logger.debug(f"Done. Found {len(schemas)} schemas in {database} database.")
         return schemas
 
     def _get_all_tables(self, database: str, schema: str) -> List[str]:
         database = self.quoted(database)
         schema = self.quoted(schema)
-        logger.debug(f'Collecting tables from {schema} schema in {database} database in snowflake...')
-        show_result = self._safe_query(f'SHOW TERSE TABLES IN SCHEMA {database}.{schema}')['name'].tolist()
+        logger.debug(f"Collecting tables from {schema} schema in {database} database in snowflake...")
+        show_result = self._safe_query(f"SHOW TERSE TABLES IN SCHEMA {database}.{schema}")["name"].tolist()
         tables = list(set(show_result))
-        logger.debug(f'Done. Found {len(tables)} tables in {schema} schema of {database} database.')
+        logger.debug(f"Done. Found {len(tables)} tables in {schema} schema of {database} database.")
         return tables
 
-    def generate_schema(self, name: str, database: str = 'SNOWSHU'):
+    def generate_schema(self, name: str, database: str = "SNOWSHU"):
         """Create a schema in the specified database.
 
-            Args:
-                name: The name of the schema to create.
-                database: The database where the schema will be created.
-                          Defaults to 'SNOWSHU'.
+        Args:
+            name: The name of the schema to create.
+            database: The database where the schema will be created.
+                      Defaults to 'SNOWSHU'.
         """
 
-        corrected_database, corrected_name = (
-            self._correct_case(x) for x in (database, name))
+        corrected_database, corrected_name = (self._correct_case(x) for x in (database, name))
         try:
-            logger.debug("Creating a schema %s in %s database...",
-                         corrected_name, corrected_database)
-            query = f'''CREATE TRANSIENT SCHEMA IF NOT EXISTS
-                    {corrected_database}.{corrected_name}'''
+            logger.debug("Creating a schema %s in %s database...", corrected_name, corrected_database)
+            query = f"""CREATE TRANSIENT SCHEMA IF NOT EXISTS
+                    {corrected_database}.{corrected_name}"""
             result = self._safe_query(query)
-            logger.info("Schema creation result: %s", result['status'][0])
+            logger.info("Schema creation result: %s", result["status"][0])
         except ValueError as err:
             error_message = (
                 f"An error occurred while creating the schema {corrected_name} "
@@ -135,7 +138,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseSourceAdapter):
             logger.error(error_message)
             raise
 
-    def drop_schema(self, name: str, database: str = 'SNOWSHU'):
+    def drop_schema(self, name: str, database: str = "SNOWSHU"):
         """Drop a schema and all of its contained objects (tables, views,
         stored procedures)
 
@@ -144,14 +147,12 @@ class SnowflakeAdapter(SnowflakeCommon, BaseSourceAdapter):
                 database: The database name where the schema is located.
                             Defaults to SNOWSHU.
         """
-        corrected_database, corrected_name = (
-            self._correct_case(x) for x in (database, name))
+        corrected_database, corrected_name = (self._correct_case(x) for x in (database, name))
         try:
-            logger.debug("Creating a schema %s in %s database...",
-                         corrected_name, corrected_database)
-            query = f'''DROP SCHEMA IF EXISTS
+            logger.debug("Creating a schema %s in %s database...", corrected_name, corrected_database)
+            query = f"""DROP SCHEMA IF EXISTS
                     {corrected_database}.{corrected_name}
-                    CASCADE'''
+                    CASCADE"""
             result = self._safe_query(query)
             logger.info("Schema drop result: %s", result["status"][0])
         except ValueError as err:
@@ -162,13 +163,11 @@ class SnowflakeAdapter(SnowflakeCommon, BaseSourceAdapter):
             logger.error(error_message)
             raise
 
-    def create_table(self, query: str, name: str, schema: str, database: str = 'SNOWSHU'):
-        corrected_name, corrected_schema, corrected_database = (
-            self._correct_case(x) for x in (name, schema, database)
-        )
-        full_query = f'''CREATE TRANSIENT TABLE IF NOT EXISTS
+    def create_table(self, query: str, name: str, schema: str, database: str = "SNOWSHU"):
+        corrected_name, corrected_schema, corrected_database = (self._correct_case(x) for x in (name, schema, database))
+        full_query = f"""CREATE TRANSIENT TABLE IF NOT EXISTS
             {corrected_database}.{corrected_schema}.{corrected_name}
-            AS {query}'''
+            AS {query}"""
         try:
             logger.debug(
                 "Creating table %s in %s.%s...",
@@ -177,7 +176,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseSourceAdapter):
                 corrected_database,
             )
             result = self._safe_query(full_query)
-            if "already exists" in result['status'][0]:
+            if "already exists" in result["status"][0]:
                 logger.warning(
                     "Table %s already exists in %s.%s, skipping creation...",
                     corrected_name,
@@ -185,7 +184,7 @@ class SnowflakeAdapter(SnowflakeCommon, BaseSourceAdapter):
                     corrected_database,
                 )
             else:
-                logger.info("Table creation result: %s", result['status'][0])
+                logger.info("Table creation result: %s", result["status"][0])
         except ValueError as err:
             error_message = (
                 f"An error occurred while creating the table {corrected_name} "
@@ -194,21 +193,19 @@ class SnowflakeAdapter(SnowflakeCommon, BaseSourceAdapter):
             logger.error(error_message)
             raise
 
-    def drop_table(self, name: str, schema: str, database: str = 'SNOWSHU'):
-        corrected_name, corrected_schema, corrected_database = (
-            self._correct_case(x) for x in (name, schema, database)
-        )
-        query = f'''DROP TABLE IF EXISTS
-            {corrected_database}.{corrected_schema}.{corrected_name}'''
+    def drop_table(self, name: str, schema: str, database: str = "SNOWSHU"):
+        corrected_name, corrected_schema, corrected_database = (self._correct_case(x) for x in (name, schema, database))
+        query = f"""DROP TABLE IF EXISTS
+            {corrected_database}.{corrected_schema}.{corrected_name}"""
         try:
-            logger.debug("Dropping table %s in %s.%s...",
-                         corrected_name, corrected_schema, corrected_database)
+            logger.debug("Dropping table %s in %s.%s...", corrected_name, corrected_schema, corrected_database)
             result = self._safe_query(query)
             logger.info("Table drop result: %s", result["status"][0])
         except ValueError as err:
             error_message = (
                 f"An error occurred while dropping the table {corrected_name} "
-                f"in database {corrected_database}: {err}")
+                f"in database {corrected_database}: {err}"
+            )
             logger.error(error_message)
             raise
 
@@ -243,10 +240,9 @@ FROM
     {adapter.quoted_dot_notation(relation)}
 """
 
-    def directionally_wrap_statement(self,
-                                     sql: str,
-                                     relation: Relation,
-                                     sample_type: Optional['BaseSampleMethod']) -> str:
+    def directionally_wrap_statement(
+        self, sql: str, relation: Relation, sample_type: Optional["BaseSampleMethod"]
+    ) -> str:
         if sample_type is None:
             return sql
 
@@ -300,8 +296,7 @@ ON
 LIMIT 1
 """
 
-    def sample_statement_from_relation(
-            self, relation: Relation, sample_type: Union['BaseSampleMethod', None]) -> str:
+    def sample_statement_from_relation(self, relation: Relation, sample_type: Union["BaseSampleMethod", None]) -> str:
         """builds the base sample statment for a given relation."""
         query = f"""
 SELECT
@@ -314,12 +309,10 @@ FROM
         return query
 
     @staticmethod
-    def union_constraint_statement(subject: Relation,
-                                   constraint: Relation,
-                                   subject_key: str,
-                                   constraint_key: str,
-                                   max_number_of_outliers: int) -> str:
-        """ Union statements to select outliers. This does not pull in NULL values. """
+    def union_constraint_statement(
+        subject: Relation, constraint: Relation, subject_key: str, constraint_key: str, max_number_of_outliers: int
+    ) -> str:
+        """Union statements to select outliers. This does not pull in NULL values."""
         adapter = SnowflakeAdapter()
         return f"""
 (SELECT
@@ -337,32 +330,24 @@ LIMIT {max_number_of_outliers})
 """
 
     @staticmethod
-    def upstream_constraint_statement(relation: Relation,
-                                      local_key: str,
-                                      remote_key: str) -> str:
-        """ builds upstream where constraints against downstream full population"""
+    def upstream_constraint_statement(relation: Relation, local_key: str, remote_key: str) -> str:
+        """builds upstream where constraints against downstream full population"""
         adapter = SnowflakeAdapter()
         return f" {local_key} in (SELECT {remote_key} FROM \
                 {adapter.quoted_dot_notation(relation)})"
 
-    def _validate_key_index_error(self,
-                                  relation: Relation,
-                                  constraint: str,
-                                  remote_key: str) -> None:
+    def _validate_key_index_error(self, relation: Relation, constraint: str, remote_key: str) -> None:
         """
         Validate that the constraint contains a valid key for the relation
         and the result of it is not an empty set.
         """
         try:
             # Run exists query to avoid keeping large objects in memory
-            exists_query = (
-                f"SELECT EXISTS ({constraint})"
-            )
+            exists_query = f"SELECT EXISTS ({constraint})"
             result = self._safe_query(exists_query)
             if result.empty:
                 logger.critical(
-                    "Failed to build predicates for %s: the constraint set "
-                    "is empty, please validate the relation.",
+                    "Failed to build predicates for %s: the constraint set " "is empty, please validate the relation.",
                     constraint,
                 )
                 raise IndexError("Failed to build predicates, the constraint set is empty.")
@@ -373,9 +358,7 @@ LIMIT {max_number_of_outliers})
                 constraint,
                 relation.temp_dot_notation,
             )
-            raise KeyError(
-                f"Remote key {remote_key} not found in {relation.temp_dot_notation} table."
-            ) from err
+            raise KeyError(f"Remote key {remote_key} not found in {relation.temp_dot_notation} table.") from err
 
     def format_remote_key(self, relation: Relation, remote_key: str) -> str:
         """Formats the remote key based on whether it needs to be quoted or not."""
@@ -388,22 +371,16 @@ LIMIT {max_number_of_outliers})
             return f"{remote_key}::VARCHAR"
         return remote_key
 
-    def predicate_constraint_statement(
-        self, relation: Relation, analyze: bool, local_key: str, remote_key: str
-    ) -> str:
+    def predicate_constraint_statement(self, relation: Relation, analyze: bool, local_key: str, remote_key: str) -> str:
         """Builds 'where' strings."""
         try:
             formatted_remote_key = self.format_remote_key(relation, remote_key)
             if analyze:
                 return (
-                    f"{local_key} IN ( SELECT {formatted_remote_key} AS {local_key} "
-                    f"FROM ({relation.core_query}))"
+                    f"{local_key} IN ( SELECT {formatted_remote_key} AS {local_key} " f"FROM ({relation.core_query}))"
                 )
 
-            constraint_query = (
-                f"    SELECT DISTINCT {formatted_remote_key} "
-                f"    FROM {relation.temp_dot_notation} "
-            )
+            constraint_query = f"    SELECT DISTINCT {formatted_remote_key} " f"    FROM {relation.temp_dot_notation} "
             self._validate_key_index_error(relation, constraint_query, remote_key)
             return f"{local_key} IN ({constraint_query})"
         except Exception as err:
@@ -415,27 +392,28 @@ LIMIT {max_number_of_outliers})
             raise
 
     # pylint: disable=too-many-arguments
-    def polymorphic_constraint_statement(self,
-                                         relation: Relation,
-                                         analyze: bool,
-                                         local_key: str,
-                                         remote_key: str,
-                                         local_type: str,
-                                         local_type_match_val: str = None) -> str:
+    def polymorphic_constraint_statement(
+        self,
+        relation: Relation,
+        analyze: bool,
+        local_key: str,
+        remote_key: str,
+        local_type: str,
+        local_type_match_val: str = None,
+    ) -> str:
         predicate = self.predicate_constraint_statement(relation, analyze, local_key, remote_key)
         if local_type_match_val:
             type_match_val = local_type_match_val
         else:
-            type_match_val = relation.name[:-1] if relation.name[-1].lower() == 's' else relation.name
+            type_match_val = relation.name[:-1] if relation.name[-1].lower() == "s" else relation.name
         return f" ({predicate} AND LOWER({local_type}) = LOWER('{type_match_val}') ) "
 
     @staticmethod
-    def _sample_type_to_query_sql(sample_type: 'BaseSampleMethod') -> str:
-        if sample_type.name == 'BERNOULLI':
-            qualifier = sample_type.probability if sample_type.probability\
-                else str(sample_type.rows) + ' ROWS'
+    def _sample_type_to_query_sql(sample_type: "BaseSampleMethod") -> str:
+        if sample_type.name == "BERNOULLI":
+            qualifier = sample_type.probability if sample_type.probability else str(sample_type.rows) + " ROWS"
             return f"SAMPLE BERNOULLI ({qualifier})"
-        if sample_type.name == 'SYSTEM':
+        if sample_type.name == "SYSTEM":
             return f"SAMPLE SYSTEM ({sample_type.probability})"
 
         message = f"{sample_type.name} is not supported for SnowflakeAdapter"
@@ -444,11 +422,10 @@ LIMIT {max_number_of_outliers})
 
     @staticmethod
     def quoted(val: str) -> str:
-        return f'"{val}"' if ' ' in val else val
+        return f'"{val}"' if " " in val else val
 
     @overrides
-    def _get_relations_from_database(
-            self, schema_obj: BaseSourceAdapter._DatabaseObject) -> List[Relation]:
+    def _get_relations_from_database(self, schema_obj: BaseSourceAdapter._DatabaseObject) -> List[Relation]:
         quoted_database = self.quoted(schema_obj.full_relation.database)  # quoted db name
         case_sensitive_schema = schema_obj.case_sensitive_name  # case sensitive schame name
         relations_sql = f"""
@@ -472,77 +449,73 @@ LIMIT {max_number_of_outliers})
                                     AND m.table_schema <> 'INFORMATION_SCHEMA'
                               """
 
-        logger.debug(
-            f'Collecting detailed relations from database {quoted_database}...')
+        logger.debug(f"Collecting detailed relations from database {quoted_database}...")
         relations_frame = self._safe_query(relations_sql)
-        unique_relations = (
-            relations_frame['schema'] +
-            '.' +
-            relations_frame['relation']).unique().tolist()
+        unique_relations = (relations_frame["schema"] + "." + relations_frame["relation"]).unique().tolist()
         logger.debug(
-            f'Done collecting relations. Found a total of {len(unique_relations)} '
-            f'unique relations in database {quoted_database}')
+            f"Done collecting relations. Found a total of {len(unique_relations)} "
+            f"unique relations in database {quoted_database}"
+        )
         relations = list()
         for relation in unique_relations:
             logger.debug(f'Building relation { quoted_database + "." + relation }...')
             attributes = list()
 
-            for attribute in relations_frame.loc[(
-                    relations_frame['schema'] + '.' + relations_frame['relation']) == relation].itertuples():
-                logger.debug(
-                    f'adding attribute {attribute.attribute} to relation..')
+            for attribute in relations_frame.loc[
+                (relations_frame["schema"] + "." + relations_frame["relation"]) == relation
+            ].itertuples():
+                logger.debug(f"adding attribute {attribute.attribute} to relation..")
                 attributes.append(
-                    Attribute(
-                        self._correct_case(attribute.attribute),
-                        self._get_data_type(attribute.data_type)
-                    ))
+                    Attribute(self._correct_case(attribute.attribute), self._get_data_type(attribute.data_type))
+                )
 
-            relation = Relation(schema_obj.full_relation.database,
-                                self._correct_case(attribute.schema),   # noqa pylint: disable=undefined-loop-variable
-                                self._correct_case(attribute.relation),   # noqa pylint: disable=undefined-loop-variable
-                                self.MATERIALIZATION_MAPPINGS[attribute.materialization],   # noqa pylint: disable=undefined-loop-variable
-                                attributes)
-            logger.debug(f'Added relation {relation.dot_notation} to pool.')
+            relation = Relation(
+                schema_obj.full_relation.database,
+                self._correct_case(attribute.schema),  # noqa pylint: disable=undefined-loop-variable
+                self._correct_case(attribute.relation),  # noqa pylint: disable=undefined-loop-variable
+                self.MATERIALIZATION_MAPPINGS[attribute.materialization],  # noqa pylint: disable=undefined-loop-variable
+                attributes,
+            )
+            logger.debug(f"Added relation {relation.dot_notation} to pool.")
             relations.append(relation)
 
-        logger.debug(
-            f'Acquired {len(relations)} total relations from database {quoted_database}.')
+        logger.debug(f"Acquired {len(relations)} total relations from database {quoted_database}.")
         return relations
 
     def _count_query(self, query: str) -> int:
         count_sql = f"WITH __SNOWSHU__COUNTABLE__QUERY as ({query}) \
                     SELECT COUNT(*) AS count FROM __SNOWSHU__COUNTABLE__QUERY"
-        count = int(self._safe_query(count_sql).iloc[0]['count'])
+        count = int(self._safe_query(count_sql).iloc[0]["count"])
         return count
 
-    @tenacity.retry(wait=wait_exponential(),
-                    stop=stop_after_attempt(4),
-                    before_sleep=Logger().log_retries,
-                    reraise=True)
-
-    def check_count_and_query(self, query: str,
-                              max_count: int,
-                              unsampled: bool,
-                              same_as_source: bool = False) -> Tuple[pd.DataFrame, int]:
+    @tenacity.retry(
+        wait=wait_exponential(), stop=stop_after_attempt(4), before_sleep=Logger().log_retries, reraise=True
+    )
+    def check_count_and_query(
+        self, query: str, max_count: int, unsampled: bool, same_as_source: bool = False
+    ) -> Tuple[pd.DataFrame, int]:
         """checks the count, if count passes returns results as a dataframe."""
         try:
-            logger.debug('Checking count for query...')
+            logger.debug("Checking count for query...")
             start_time = time.time()
             count = self._count_query(query)
             if unsampled and count > max_count:
-                warn_msg = (f'Unsampled relation has {count} rows which is over '
-                            f'the max allowed rows for this type of query ({max_count}). '
-                            f'All records will be loaded into replica.')
+                warn_msg = (
+                    f"Unsampled relation has {count} rows which is over "
+                    f"the max allowed rows for this type of query ({max_count}). "
+                    f"All records will be loaded into replica."
+                )
                 logger.warning(warn_msg)
             else:
                 assert count <= max_count
-            logger.debug(
-                f'Query count safe at {count} rows in {time.time()-start_time} seconds.')
+            logger.debug(f"Query count safe at {count} rows in {time.time()-start_time} seconds.")
         except AssertionError as exc:
-            message = (f'failed to execute query, result would have returned {count} rows '
-                       f'but the max allowed rows for this type of query is {max_count}.')
+            message = (
+                f"failed to execute query, result would have returned {count} rows "
+                f"but the max allowed rows for this type of query is {max_count}."
+            )
             logger.error(message)
-            logger.debug(f'failed sql: {query}')
+            logger.debug(f"failed sql: {query}")
             raise TooManyRecords(message) from exc
         if same_as_source:
             return pd.DataFrame({}), count

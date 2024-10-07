@@ -15,9 +15,7 @@ class CochransSampleSize(BaseSampleSize):
         confidence: The decimal representation of the desired confidence between 1 and 99% (0.01 to 0.99).
     """
 
-    def __init__(self,
-                 margin_of_error: float,
-                 confidence: float):
+    def __init__(self, margin_of_error: float, confidence: float):
         self.margin_of_error = margin_of_error
         self.confidence = confidence
 
@@ -56,14 +54,10 @@ class CochransSampleSize(BaseSampleSize):
             The minimum whole number of elements for a sample size given the instance margin of error and confidence.
         """
         if population < 1:
-            return 0 
+            return 0
 
         probability = 0.5
-        n_zero = (((self._get_alpha() ** 2)
-                   * probability
-                   * (1.0 - probability))
-                  /
-                  (self.margin_of_error**2))
+        n_zero = ((self._get_alpha() ** 2) * probability * (1.0 - probability)) / (self.margin_of_error**2)
         sample_size = n_zero
         ## adjust for smaller pops
         if population < 50000:

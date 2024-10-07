@@ -8,12 +8,14 @@ def rand_string(length: int) -> str:
     for _ in range(length):
         char = ascii_lowercase[randrange(len(ascii_lowercase))]
         result.append(char)
-    return ''.join(result)
+    return "".join(result)
+
 
 def random_date():
-    window = datetime(2020,1,1) - datetime(1990,1,1)
-    return datetime(1990,1,1) + timedelta(seconds=(randrange(window.days * 24 * 60 * 60)))
+    window = datetime(2020, 1, 1) - datetime(1990, 1, 1)
+    return datetime(1990, 1, 1) + timedelta(seconds=(randrange(window.days * 24 * 60 * 60)))
+
 
 def query_equalize(query: str) -> str:
     """removes whitespace/newline deltas from sql"""
-    return ' '.join(query.replace('\n', ' ').split())
+    return " ".join(query.replace("\n", " ").split())

@@ -77,16 +77,11 @@ class GraphSetRunner:
                 with ThreadPoolExecutor(max_workers=threads) as executor:
                     if graphs:
                         executables = [
-                            GraphExecutable(
-                                graph, source_adapter, target_adapter, analyze
-                            )
-                            for graph in graphs
+                            GraphExecutable(graph, source_adapter, target_adapter, analyze) for graph in graphs
                         ]
                         self.process_executables(executables, executor, retry_count)
         except KeyboardInterrupt:
-            logger.error(
-                "Execution interrupted by user, wait for all threads to finish..."
-            )
+            logger.error("Execution interrupted by user, wait for all threads to finish...")
             self._rollback_on_failure(executables, databases=self.databases)
         finally:
             # Drop schemas after all threads completed work
@@ -98,9 +93,7 @@ class GraphSetRunner:
         """Rolls back the databases created during the failed execution of the executables"""
         if executables:
             unique_target_adapters = {
-                executable.target_adapter
-                for executable in executables
-                if executable.target_adapter.ROLLBACK
+                executable.target_adapter for executable in executables if executable.target_adapter.ROLLBACK
             }
             for target_adapter in unique_target_adapters:
                 target_adapter.rollback_database_creation(databases=databases)
@@ -128,14 +121,11 @@ class GraphSetRunner:
         while retries >= 0:
             # Submit each executable to the executor and store the resulting Future
             futures = {
-                executor.submit(self._traverse_and_execute, executable): executable
-                for executable in executables
+                executor.submit(self._traverse_and_execute, executable): executable for executable in executables
             }
 
             # Wait for all futures to complete
-            completed, _ = concurrent.futures.wait(
-                futures.keys(), return_when=concurrent.futures.ALL_COMPLETED
-            )
+            completed, _ = concurrent.futures.wait(futures.keys(), return_when=concurrent.futures.ALL_COMPLETED)
 
             # Initialize a list to hold any executables that need to be retried
             re_executables = []
@@ -176,9 +166,7 @@ class GraphSetRunner:
         logging.info("DATABASES %s", self.databases)
         self._rollback_on_failure(executables, databases=self.databases)
 
-    def _generate_schemas_if_necessary(
-        self, adapter: BaseSQLAdapter, name: str, database: str
-    ) -> None:
+    def _generate_schemas_if_necessary(self, adapter: BaseSQLAdapter, name: str, database: str) -> None:
         """
         Helper function needed due to multi threading. We need to generate
         schemas in database only if they don't already exists there. Due to
@@ -207,9 +195,7 @@ class GraphSetRunner:
             ) as cmp_file:
                 nx.write_multiline_adjlist(executable.graph, cmp_file)
 
-    def _process_relation(
-        self, i: int, relation: Relation, executable: GraphExecutable
-    ) -> None:
+    def _process_relation(self, i: int, relation: Relation, executable: GraphExecutable) -> None:
         """Processes a single relation in the graph, extracting and loading it into the target
 
         Args:
@@ -218,9 +204,7 @@ class GraphSetRunner:
             executable (GraphExecutable): object that contains all of the necessary info for
                 executing a sample and loading it into the target
         """
-        relation.temp_schema = "_".join(
-            [relation.database, relation.schema, executable.target_adapter.uuid]
-        )
+        relation.temp_schema = "_".join([relation.database, relation.schema, executable.target_adapter.uuid])
 
         start_time = time.time()
         self._generate_schemas_if_necessary(
@@ -251,37 +235,24 @@ class GraphSetRunner:
                 logger.info(f"Relation {relation.dot_notation} is a view, skipping.")
             else:
                 result, sample_size = executable.source_adapter.check_count_and_query(
-                    relation.compiled_query,
-                    relation.sampling.max_allowed_rows,
-                    relation.unsampled,
-                    self.same_as_source
+                    relation.compiled_query, relation.sampling.max_allowed_rows, relation.unsampled, self.same_as_source
                 )
                 relation.population_size = result.iloc[0].population_size
                 relation.sample_size = result.iloc[0].sample_size
-                logger.info(
-                    f"Analysis of relation {relation.dot_notation} completed in {duration(start_time)}."
-                )
+                logger.info(f"Analysis of relation {relation.dot_notation} completed in {duration(start_time)}.")
         else:
             executable.target_adapter.create_database_if_not_exists(
                 relation.database, db_lock=self.db_lock, databases=self.databases
             )
-            executable.target_adapter.create_schema_if_not_exists(
-                relation.database, relation.schema
-            )
+            executable.target_adapter.create_schema_if_not_exists(relation.database, relation.schema)
             if relation.is_view:
-                logger.info(
-                    f"Retrieving DDL statement for view {relation.dot_notation} in source..."
-                )
+                logger.info(f"Retrieving DDL statement for view {relation.dot_notation} in source...")
                 relation.population_size = "N/A"
                 relation.sample_size = "N/A"
                 try:
-                    relation.view_ddl = executable.source_adapter.scalar_query(
-                        relation.compiled_query
-                    )
+                    relation.view_ddl = executable.source_adapter.scalar_query(relation.compiled_query)
                 except Exception as exc:
-                    raise SystemError(
-                        f"Failed to extract DDL statement: {relation.compiled_query}"
-                    ) from exc
+                    raise SystemError(f"Failed to extract DDL statement: {relation.compiled_query}") from exc
                 logger.info(
                     "Successfully extracted DDL statement for view "
                     f"{executable.target_adapter.quoted_dot_notation(relation)}"
@@ -295,20 +266,13 @@ class GraphSetRunner:
                 )
 
                 try:
-                    logger.info(
-                        f"Retrieving records from source {relation.temp_dot_notation}..."
-                    )
+                    logger.info(f"Retrieving records from source {relation.temp_dot_notation}...")
                     fetch_query = f"SELECT * FROM {relation.temp_dot_notation}"
                     query_data, sample_size = executable.source_adapter.check_count_and_query(
-                        fetch_query,
-                        relation.sampling.max_allowed_rows,
-                        relation.unsampled,
-                        self.same_as_source
+                        fetch_query, relation.sampling.max_allowed_rows, relation.unsampled, self.same_as_source
                     )
                     relation.sample_size = sample_size
-                    logger.info(
-                        f"{relation.sample_size} records retrieved for relation {relation.dot_notation}."
-                    )
+                    logger.info(f"{relation.sample_size} records retrieved for relation {relation.dot_notation}.")
                 # This except block is necessary due to VARIANT data type issues
                 # in Snowflake. In the future, we should remove this and find a
                 # better solution.
@@ -328,9 +292,7 @@ class GraphSetRunner:
                         f"issue details: {exc}"
                     ) from exc
             try:
-                executable.target_adapter.create_and_load_relation(
-                    relation, query_data, clone=self.same_as_source
-                )
+                executable.target_adapter.create_and_load_relation(relation, query_data, clone=self.same_as_source)
             except Exception as exc:
                 raise SystemError(
                     "Failed to load relation "
@@ -345,9 +307,7 @@ class GraphSetRunner:
             )
             relation.target_loaded = True
         relation.source_extracted = True
-        logger.info(
-            f"population:{relation.population_size}, sample:{relation.sample_size}"
-        )
+        logger.info(f"population:{relation.population_size}, sample:{relation.sample_size}")
         if self.barf:
             with open(
                 os.path.join(self.barf_output, f"{relation.dot_notation}.sql"),
@@ -365,9 +325,7 @@ class GraphSetRunner:
         """
         self._write_adjlist_if_necessary(executable)
         try:
-            logger.debug(
-                f"Executing graph with {len(executable.graph)} relations in it..."
-            )
+            logger.debug(f"Executing graph with {len(executable.graph)} relations in it...")
             sorted_graphs = nx.algorithms.dag.topological_sort(executable.graph)
             for i, relation in enumerate(sorted_graphs, start=1):
                 self._process_relation(i, relation, executable)

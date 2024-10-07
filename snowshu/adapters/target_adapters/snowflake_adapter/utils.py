@@ -8,9 +8,7 @@ def connect_to_database(credentials):
     """Connect to Snowflake using provided credentials."""
     try:
         logger.info("Attempting to connect to Snowflake with provided credentials.")
-        conn = snowflake.connector.connect(
-            **credentials
-        )
+        conn = snowflake.connector.connect(**credentials)
         logger.info("Successfully connected to Snowflake.")
         return conn
     except snowflake.connector.errors.Error as error:
@@ -26,14 +24,10 @@ def rename_database(cursor, old_name, new_name):
         logger.info(f"Successfully renamed database {old_name} to {new_name}.")
     except snowflake.connector.errors.Error as error:
         if "already exists" in str(error):
-            logger.warning(
-                f"Database {new_name} already exists. Dropping it and retrying rename."
-            )
+            logger.warning(f"Database {new_name} already exists. Dropping it and retrying rename.")
             cursor.execute(f"DROP DATABASE {new_name}")
             cursor.execute(f"ALTER DATABASE {old_name} RENAME TO {new_name}")
-            logger.info(
-                f"Successfully renamed database {old_name} to {new_name} after dropping existing {new_name}."
-            )
+            logger.info(f"Successfully renamed database {old_name} to {new_name} after dropping existing {new_name}.")
         else:
             logger.error(f"Failed to rename database {old_name} to {new_name}: {error}")
             raise error
@@ -44,9 +38,7 @@ def get_type_of_replica(replica_prefix):
     parts = replica_prefix.split("_")
     if len(parts) > 2:
         return "_".join(parts[2:])
-    logger.error(
-        "Invalid replica prefix. Must be in the format SNOWSHU_REPLICA_<type>."
-    )
+    logger.error("Invalid replica prefix. Must be in the format SNOWSHU_REPLICA_<type>.")
     return ""
 
 
@@ -83,9 +75,7 @@ def handle_existing_prod_databases(cursor, prod_prefix, replica_prefix, current_
         parts = old_prod_db_name.split("_")
         if len(parts) > 2:
             new_prod_db_name = f"SNOWSHU_OLD_{'_'.join(parts[2:])}_{current_date.format('YYYYMMDD')}"
-            logger.info(
-                f"Renaming production database {old_prod_db_name} to {new_prod_db_name}."
-            )
+            logger.info(f"Renaming production database {old_prod_db_name} to {new_prod_db_name}.")
             rename_database(cursor, old_prod_db_name, new_prod_db_name)
     return True
 
@@ -105,8 +95,6 @@ def handle_replica_databases(cursor, replica_prefix, prod_prefix):
             parts = old_replica_db_name.split("_")
             if len(parts) > 2:
                 new_prod_db_name = f"{prod_prefix}_{'_'.join(parts[2:])}"
-                logger.info(
-                    f"Renaming replica database {old_replica_db_name} to {new_prod_db_name}."
-                )
+                logger.info(f"Renaming replica database {old_replica_db_name} to {new_prod_db_name}.")
                 rename_database(cursor, old_replica_db_name, new_prod_db_name)
     return True

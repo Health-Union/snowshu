@@ -1,8 +1,5 @@
-
-
 class BaseSampleMethod:
-    """The base class all sample methods inherit from.
-    """
+    """The base class all sample methods inherit from."""
 
     def name(self):
         raise NotImplementedError("SampleMethod instances must have a name.")

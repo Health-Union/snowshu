@@ -6,12 +6,11 @@ from typing import Optional
 
 from coloredlogs import ColoredFormatter
 
-from snowshu.formats import (LOGGING_CLI_FORMAT, LOGGING_CLI_WARNING_FORMAT,
-                             LOGGING_DATE_FORMAT, LOGGING_FILE_FORMAT)
+from snowshu.formats import LOGGING_CLI_FORMAT, LOGGING_CLI_WARNING_FORMAT, LOGGING_DATE_FORMAT, LOGGING_FILE_FORMAT
 
 # Tone down snowflake.connector log noise by only outputting warnings and
 # higher level messages
-logging.getLogger('snowflake.connector').setLevel(logging.WARNING)
+logging.getLogger("snowflake.connector").setLevel(logging.WARNING)
 
 
 def duration(start: int) -> str:
@@ -24,15 +23,14 @@ def duration(start: int) -> str:
 
 class Logger:
     """File log is ALWAYS debug, regardless of log level."""
-    DEFAULT_LOG_FILE_LOCATION = os.path.abspath('./snowshu.log')
+
+    DEFAULT_LOG_FILE_LOCATION = os.path.abspath("./snowshu.log")
     file_handler: Optional[RotatingFileHandler] = None
 
     def __init__(self) -> None:
-        self._logger = logging.getLogger('snowshu')
+        self._logger = logging.getLogger("snowshu")
 
-    def initialize_logger(
-            self,
-            log_file_location: Optional[str] = DEFAULT_LOG_FILE_LOCATION) -> None:
+    def initialize_logger(self, log_file_location: Optional[str] = DEFAULT_LOG_FILE_LOCATION) -> None:
         self.file_handler = self._construct_file_handler(log_file_location)
         self.file_handler.setFormatter(self._construct_file_formatter())
 
@@ -49,14 +47,14 @@ class Logger:
         self.logger.addHandler(self.file_handler)
 
     def set_log_level(self, core_level: int, adapter_level: int) -> None:
-        logging.getLogger('snowshu').setLevel(core_level)
-        logging.getLogger('snowshu.adapters').setLevel(adapter_level)
+        logging.getLogger("snowshu").setLevel(core_level)
+        logging.getLogger("snowshu.adapters").setLevel(adapter_level)
 
-        for handler in logging.getLogger('snowshu').handlers:
+        for handler in logging.getLogger("snowshu").handlers:
             if handler != self.file_handler:
                 handler.setLevel(core_level)
 
-        for handler in logging.getLogger('snowshu.adapters').handlers:
+        for handler in logging.getLogger("snowshu.adapters").handlers:
             if handler != self.file_handler:
                 handler.setLevel(adapter_level)
 
@@ -65,11 +63,13 @@ class Logger:
         logger.handlers = []
 
     def log_retries(self, retry_state):
-        """ Function for passing to tenacity.retry decorator. """
-        logging.getLogger('snowshu').warning('Retrying %s: attempt %s ended with: %s',
-                                             retry_state.fn.__qualname__,
-                                             retry_state.attempt_number,
-                                             retry_state.outcome.exception())
+        """Function for passing to tenacity.retry decorator."""
+        logging.getLogger("snowshu").warning(
+            "Retrying %s: attempt %s ended with: %s",
+            retry_state.fn.__qualname__,
+            retry_state.attempt_number,
+            retry_state.outcome.exception(),
+        )
 
     @property
     def logger(self) -> logging.Logger:
@@ -85,11 +85,8 @@ class Logger:
 
     # Handlers
     @staticmethod
-    def _construct_file_handler(
-            log_file_location: str) -> RotatingFileHandler:
-        file_handler = RotatingFileHandler(log_file_location,
-                                           maxBytes=10485760,
-                                           backupCount=5)
+    def _construct_file_handler(log_file_location: str) -> RotatingFileHandler:
+        file_handler = RotatingFileHandler(log_file_location, maxBytes=10485760, backupCount=5)
         file_handler.setLevel(logging.DEBUG)
         return file_handler
 
@@ -100,31 +97,29 @@ class Logger:
     # Formatters
     @staticmethod
     def _construct_file_formatter() -> logging.Formatter:
-        return logging.Formatter(fmt=LOGGING_FILE_FORMAT,
-                                 datefmt=LOGGING_DATE_FORMAT)
+        return logging.Formatter(fmt=LOGGING_FILE_FORMAT, datefmt=LOGGING_DATE_FORMAT)
 
     def _construct_colored_formatter(self) -> ColoredFormatter:
-        return ColoredFormatter(fmt=LOGGING_CLI_FORMAT,
-                                datefmt=LOGGING_DATE_FORMAT,
-                                level_styles=self._colored_log_level_styles()
-                                )
+        return ColoredFormatter(
+            fmt=LOGGING_CLI_FORMAT, datefmt=LOGGING_DATE_FORMAT, level_styles=self._colored_log_level_styles()
+        )
 
     def _construct_warning_formatter(self) -> ColoredFormatter:
-        return ColoredFormatter(fmt=LOGGING_CLI_WARNING_FORMAT,
-                                datefmt=LOGGING_DATE_FORMAT,
-                                level_styles=self._colored_log_level_styles()
-                                )
+        return ColoredFormatter(
+            fmt=LOGGING_CLI_WARNING_FORMAT, datefmt=LOGGING_DATE_FORMAT, level_styles=self._colored_log_level_styles()
+        )
 
     @staticmethod
     def _colored_log_level_styles() -> dict:
-        return {'critical': {'color': 'red'},
-                'debug': {},
-                'error': {'color': 'red'},
-                'info': {},
-                'notice': {'color': 'magenta'},
-                'success': {'color': 'green'},
-                'warning': {'color': 'yellow'}
-                }
+        return {
+            "critical": {"color": "red"},
+            "debug": {},
+            "error": {"color": "red"},
+            "info": {},
+            "notice": {"color": "magenta"},
+            "success": {"color": "green"},
+            "warning": {"color": "yellow"},
+        }
 
     # Filters
     @staticmethod

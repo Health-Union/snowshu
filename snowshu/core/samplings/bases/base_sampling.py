@@ -6,8 +6,7 @@ if TYPE_CHECKING:
 
 
 class BaseSampling:
-    """Base class for all executable sampling classes.
-    """
+    """Base class for all executable sampling classes."""
 
     def sample_method(self):
         raise NotImplementedError()
@@ -15,9 +14,7 @@ class BaseSampling:
     def sample_size_method(self):
         raise NotImplementedError()
 
-    def prepare(self,
-                relation: "Relation",
-                source_adapter: "BaseSourceAdapter"):
+    def prepare(self, relation: "Relation", source_adapter: "BaseSourceAdapter"):
         """Runs all necessary pre-activities and instantiates the sample method.
 
         Prepare will be called before primary query compile time, so it can be used

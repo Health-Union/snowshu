@@ -10,8 +10,7 @@ class BruteForceSampleSize(BaseSampleSize):
         percentage: The decimal representation of the desired sample size between 1 and 99% (0.01 to 0.99).
     """
 
-    def __init__(self,
-                 percentage: float):
+    def __init__(self, percentage: float):
         self._percentage = percentage
 
     @property

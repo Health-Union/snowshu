@@ -14,12 +14,14 @@ class BernoulliSampleMethod(BaseSampleMethod):
         ``BernoulliSampleMethod(30)`` would give you a sample derived of aprox. 30 rows.
         ``BernoulliSampleMethod(0.3,units='probability')`` would give you a sample aprox. 30% of the population size.
     """
-    name = 'BERNOULLI'
 
-    def __init__(self,
-                 value: Union[int, float],
-                 units: Optional[str] = 'rows'):
-        ok_units = ('rows', 'probability',)
+    name = "BERNOULLI"
+
+    def __init__(self, value: Union[int, float], units: Optional[str] = "rows"):
+        ok_units = (
+            "rows",
+            "probability",
+        )
         assert units in ok_units
         self._rows, self._probability = [value if u == units else None for u in ok_units]
 

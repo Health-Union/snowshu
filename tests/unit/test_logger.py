@@ -24,48 +24,43 @@ def test_logger_log_level(temp_log):
         for adapter_log_level in [logging.INFO, logging.DEBUG]:
             log_engine.set_log_level(core_log_level, adapter_log_level)
             loggers = [
+                {"logger": logging.getLogger("snowshu"), "name": "snowshu", "expected_level": core_log_level},
                 {
-                    'logger': logging.getLogger('snowshu'),
-                    'name': 'snowshu',
-                    'expected_level': core_log_level
+                    "logger": logging.getLogger("snowshu.adapters"),
+                    "name": "snowshu.adapters",
+                    "expected_level": adapter_log_level,
                 },
                 {
-                    'logger': logging.getLogger('snowshu.adapters'),
-                    'name': 'snowshu.adapters',
-                    'expected_level': adapter_log_level
-                },
-                {
-                    'logger': logging.getLogger('snowshu.non_existing_module'),
-                    'name': 'snowshu.non_existing_module',
-                    'expected_level': core_log_level
+                    "logger": logging.getLogger("snowshu.non_existing_module"),
+                    "name": "snowshu.non_existing_module",
+                    "expected_level": core_log_level,
                 },
             ]
 
             for logger in loggers:
-
                 ERROR = rand_string(10)
                 INFO = rand_string(10)
                 DEBUG = rand_string(10)
                 WARNING = rand_string(10)
 
                 with LogCapture() as capture:
-                    logger['logger'].warning(WARNING)
-                    logger['logger'].error(ERROR)
-                    logger['logger'].info(INFO)
-                    logger['logger'].debug(DEBUG)
+                    logger["logger"].warning(WARNING)
+                    logger["logger"].error(ERROR)
+                    logger["logger"].info(INFO)
+                    logger["logger"].debug(DEBUG)
 
-                    if logger['expected_level'] == logging.DEBUG:
+                    if logger["expected_level"] == logging.DEBUG:
                         capture.check(
-                            (logger['name'], 'WARNING', WARNING),
-                            (logger['name'], 'ERROR', ERROR),
-                            (logger['name'], 'INFO', INFO),
-                            (logger['name'], 'DEBUG', DEBUG),
+                            (logger["name"], "WARNING", WARNING),
+                            (logger["name"], "ERROR", ERROR),
+                            (logger["name"], "INFO", INFO),
+                            (logger["name"], "DEBUG", DEBUG),
                         )
                     else:
                         capture.check(
-                            (logger['name'], 'WARNING', WARNING),
-                            (logger['name'], 'ERROR', ERROR),
-                            (logger['name'], 'INFO', INFO),
+                            (logger["name"], "WARNING", WARNING),
+                            (logger["name"], "ERROR", ERROR),
+                            (logger["name"], "INFO", INFO),
                         )
 
 
@@ -84,16 +79,15 @@ def test_logger_debug_log_level(temp_log):
         logger.info(INFO)
         logger.debug(DEBUG)
         capture.check(
-            ('snowshu', 'WARNING', WARNING),
-            ('snowshu', 'ERROR', ERROR),
-            ('snowshu', 'INFO', INFO),
-            ('snowshu', 'DEBUG', DEBUG),
+            ("snowshu", "WARNING", WARNING),
+            ("snowshu", "ERROR", ERROR),
+            ("snowshu", "INFO", INFO),
+            ("snowshu", "DEBUG", DEBUG),
         )
 
 
 @pytest.mark.skip
 def test_logger_always_logs_debug_to_file(temp_log):
-    levels = (logging.WARNING, logging.DEBUG, logging.INFO, logging.CRITICAL)
     log_engine = Logger()
     log_engine.initialize_logger(log_file_location=temp_log.strpath)
     for level in LOG_LEVELS:
@@ -103,5 +97,5 @@ def test_logger_always_logs_debug_to_file(temp_log):
         logger.debug(message)
         with open(temp_log) as tmp:
             line = tmp.readlines()[-1]
-            assert 'DEBUG' in line
+            assert "DEBUG" in line
             assert message in line

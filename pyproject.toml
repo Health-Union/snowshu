@@ -1,0 +1,35 @@
+[tool.ruff]
+# Set the maximum allowed line length
+line-length = 120
+
+# Exclude specific files or directories from linting
+exclude = [
+    "__init__.py",
+    "snowshu/core/models/credentials.py",
+    "tests/",  # Exclude all test files and directories
+]
+
+[tool.ruff.lint]
+# Select or ignore specific linter rules
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "C90", # mccabe
+    "PL",  # Pylint
+]
+ignore = [
+    "F821",  # undefined name
+    "PLR2004",  # magic value comparison
+    "PLR0911",  # Too many return statements
+    "PLR0912",  # Too many branches 
+    "PLW2901",  # Redefined loop name
+    "PLR0913",  # Too many arguments
+    "PLR0915",  # Too many statements 
+    "PLC0414",  # Import alias does not rename original package
+    "C901",  # Cyclomatic complexity too high (replacing mccabe's MC0001)
+]
+
+# Exclude all files in any 'tests' directory
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**/*.py" = ["ALL"]
