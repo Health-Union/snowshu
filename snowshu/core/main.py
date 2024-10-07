@@ -190,14 +190,12 @@ def adapter(ctx, type):  # noqa pylint: disable=redefined-builtin
     default="./replicas/credentials.yml",
     type=click.Path(exists=True),
     help="The path to the credentials file.",
-    required=True,
 )
 @click.option(
     "--prod-prefix",
     default="SNOWSHU_PROD",
     type=click.Choice(["SNOWSHU_PROD", "SNOWSHU_PRODUCTION", "SNOWSHU"], case_sensitive=False),
     help="The prefix to set for the prod replica objects.",
-    required=True,
 )
 @click.option(
     "--replica-prefix",
