@@ -276,13 +276,13 @@ class SnowShuDocker:
             f'Container {container.name} started, running initial setup...')
         logger.info(f'{container}\nContainer name {container.name}\nContainer status {container.status}')
         logger.info('Container logs:')
-        for log in container.logs:
+        for log in container.logs():
             logger.info(f'log: {log}')
         logger.info('Running _run_container_setup')
         self._run_container_setup(container, target_adapter)
         logger.info('Completed _run_container_setup')
         logger.info('Container logs:')
-        for log in container.logs:
+        for log in container.logs():
             logger.info(f'log: {log}')
         logger.info(f'Container {container.name} fully initialized.')
 
