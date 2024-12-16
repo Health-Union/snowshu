@@ -274,6 +274,7 @@ class SnowShuDocker:
             raise
         logger.info(
             f'Container {container.name} started, running initial setup...')
+        logger.info(f'{container}\nContainer name {container.name}\nContainer status {container.status}\nContainer logs {container.logs}')
         self._run_container_setup(container, target_adapter)
         logger.info(f'Container {container.name} fully initialized.')
 
