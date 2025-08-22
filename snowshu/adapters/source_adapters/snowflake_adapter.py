@@ -80,7 +80,8 @@ class SnowflakeAdapter(BaseSourceAdapter):
         "variant": dtypes.JSON}
 
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
-                                "VIEW": mz.TABLE}
+                                "VIEW": mz.TABLE,
+                                "EXTERNAL TABLE": mz.TABLE}
 
     @overrides
     def _get_all_databases(self) -> List[str]:
