@@ -80,8 +80,7 @@ class SnowflakeAdapter(BaseSourceAdapter):
         "variant": dtypes.JSON}
 
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
-                                "VIEW": mz.TABLE,
-                                "EXTERNAL TABLE": mz.TABLE}
+                                "VIEW": mz.TABLE}
 
     @overrides
     def _get_all_databases(self) -> List[str]:
@@ -342,6 +341,7 @@ LIMIT {max_number_of_outliers})
                                  WHERE
                                     m.table_schema = '{case_sensitive_schema}'
                                     AND m.table_schema <> 'INFORMATION_SCHEMA'
+                                    AND m.table_type <> 'EXTERNAL TABLE'
                               """
 
         logger.debug(
