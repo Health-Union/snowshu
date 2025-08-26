@@ -342,6 +342,7 @@ LIMIT {max_number_of_outliers})
                                     m.table_schema = '{case_sensitive_schema}'
                                     AND m.table_schema <> 'INFORMATION_SCHEMA'
                                     AND m.table_type <> 'EXTERNAL TABLE'
+                                    AND m.table_type <> 'MATERIALIZED VIEW'
                               """
 
         logger.debug(
