@@ -1,3 +1,4 @@
+import base64
 import logging
 import time
 from typing import TYPE_CHECKING, Any, List, Optional, Union
@@ -6,6 +7,8 @@ from urllib.parse import quote
 import pandas as pd
 import sqlalchemy
 import tenacity
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 from overrides import overrides
 from sqlalchemy.pool import NullPool
 from tenacity.stop import stop_after_attempt
@@ -15,8 +18,9 @@ import snowshu.core.models.data_types as dtypes
 import snowshu.core.models.materializations as mz
 from snowshu.adapters.source_adapters import BaseSourceAdapter
 from snowshu.core.models.attribute import Attribute
-from snowshu.core.models.credentials import (ACCOUNT, DATABASE, PASSWORD, ROLE,
-                                             SCHEMA, USER, WAREHOUSE)
+from snowshu.core.models.credentials import (ACCOUNT, DATABASE, PASSWORD,
+                                             PRIVATE_KEY, ROLE, SCHEMA, USER,
+                                             WAREHOUSE, Credentials)
 from snowshu.core.models.relation import Relation
 from snowshu.exceptions import TooManyRecords
 from snowshu.logger import Logger
@@ -40,8 +44,8 @@ class SnowflakeAdapter(BaseSourceAdapter):
     SUPPORTS_CROSS_DATABASE = True
     SUPPORTED_FUNCTIONS = set(['ANY_VALUE', 'RLIKE', 'UUID_STRING'])
     SUPPORTED_SAMPLE_METHODS = (BernoulliSampleMethod,)
-    REQUIRED_CREDENTIALS = (USER, PASSWORD, ACCOUNT, DATABASE,)
-    ALLOWED_CREDENTIALS = (SCHEMA, WAREHOUSE, ROLE,)
+    REQUIRED_CREDENTIALS = (USER, ACCOUNT, DATABASE,)
+    ALLOWED_CREDENTIALS = (PASSWORD, PRIVATE_KEY, SCHEMA, WAREHOUSE, ROLE,)
     # snowflake in-db is UPPER, but connector is actually lower :(
     DEFAULT_CASE = 'upper'
     SNOWFLAKE_MAX_NUMBER_EXPR = 16384
@@ -81,6 +85,13 @@ class SnowflakeAdapter(BaseSourceAdapter):
 
     MATERIALIZATION_MAPPINGS = {"BASE TABLE": mz.TABLE,
                                 "VIEW": mz.TABLE}
+
+    @BaseSourceAdapter.credentials.setter
+    def credentials(self, value: Credentials) -> None:
+        if bool(value.password) == bool(value.private_key):
+            raise KeyError(
+                f"{self.CLASSNAME} requires exactly one of 'password' or 'private_key' credentials.")
+        BaseSourceAdapter.credentials.fset(self, value)
 
     @overrides
     def _get_all_databases(self) -> List[str]:
@@ -306,7 +317,11 @@ LIMIT {max_number_of_outliers})
     @overrides
     def _build_conn_string(self, overrides: Optional[dict] = None) -> str:  # noqa pylint: disable=redefined-outer-name
         """overrides the base conn string."""
-        conn_parts = [f"snowflake://{quote(self.credentials.user)}:{quote(self.credentials.password)}"
+        if self.credentials.password:
+            auth_part = f"{quote(self.credentials.user)}:{quote(self.credentials.password)}"
+        else:
+            auth_part = quote(self.credentials.user)
+        conn_parts = [f"snowflake://{auth_part}"
                       f"@{quote(self.credentials.account)}/{quote(self.credentials.database)}/",
                       quote(self.credentials.schema) if self.credentials.schema is not None else '']
         get_args = []
@@ -420,6 +435,22 @@ LIMIT {max_number_of_outliers})
         response = self._safe_query(query)
         return response
 
+    def _load_private_key(self) -> bytes:
+        """Parses the private_key credential into DER-encoded PKCS8 bytes, the format
+        expected by the `private_key` connect arg of snowflake-connector-python.
+
+        The private_key credential is the base64 encoding private key string."""
+        pem_bytes = base64.b64decode(self.credentials.private_key)
+        p_key = serialization.load_pem_private_key(
+            pem_bytes,
+            password=None,
+            backend=default_backend())
+
+        return p_key.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption())
+
     @overrides
     def get_connection(
             self,
@@ -443,7 +474,11 @@ LIMIT {max_number_of_outliers})
                 database=database_override,
                 schema=schema_override).items() if v is not None)
 
+        connect_args = {}
+        if self.credentials.private_key:
+            connect_args['private_key'] = self._load_private_key()
+
         engine = sqlalchemy.create_engine(
-            self._build_conn_string(overrides), poolclass=NullPool)
+            self._build_conn_string(overrides), connect_args=connect_args, poolclass=NullPool)
         logger.debug(f'Engine acquired. Conn string: {repr(engine.url)}')
         return engine

@@ -98,6 +98,54 @@ def test_loads_good_creds(stub_creds, stub_configs):
     assert adapter_profile.adapter.credentials.password == SOURCES_PASSWORD
 
 
+def test_loads_good_creds_private_key(stub_creds, stub_configs):
+    stub_creds = stub_creds()
+    stub_configs = stub_configs()
+
+    SOURCES_NAME, SOURCES_PRIVATE_KEY, STORAGES_ACCOUNT = [
+        rand_string(10) for _ in range(3)]
+    with tempfile.NamedTemporaryFile(mode='w') as mock_file:
+        stub_creds['sources'][0]['name'] = SOURCES_NAME
+        del stub_creds['sources'][0]['password']
+        stub_creds['sources'][0]['private_key'] = SOURCES_PRIVATE_KEY
+        stub_configs['source']['profile'] = SOURCES_NAME
+        json.dump(stub_creds, mock_file)
+        mock_file.seek(0)
+        stub_configs['credpath'] = mock_file.name
+        adapter_profile = ConfigurationParser()._build_adapter_profile('source', stub_configs)
+
+    assert adapter_profile.name == SOURCES_NAME
+    assert adapter_profile.adapter.credentials.private_key == SOURCES_PRIVATE_KEY
+
+
+def test_schema_verification_errors_missing_auth(stub_creds, stub_configs):
+    stub_creds = stub_creds()
+    stub_configs = stub_configs()
+    # neither password nor private_key is set
+    del stub_creds['sources'][0]['password']
+
+    with tempfile.NamedTemporaryFile(mode='w') as mock_file:
+        json.dump(stub_creds, mock_file)
+        mock_file.seek(0)
+        stub_configs['credpath'] = mock_file.name
+        with pytest.raises(ValidationError):
+            ConfigurationParser()._build_adapter_profile('source', stub_configs)
+
+
+def test_schema_verification_errors_both_auth(stub_creds, stub_configs):
+    stub_creds = stub_creds()
+    stub_configs = stub_configs()
+    # both password and private_key are set
+    stub_creds['sources'][0]['private_key'] = rand_string(10)
+
+    with tempfile.NamedTemporaryFile(mode='w') as mock_file:
+        json.dump(stub_creds, mock_file)
+        mock_file.seek(0)
+        stub_configs['credpath'] = mock_file.name
+        with pytest.raises(ValidationError):
+            ConfigurationParser()._build_adapter_profile('source', stub_configs)
+
+
 def test_schema_verification_errors(stub_creds, stub_configs):
     stub_creds = stub_creds()
     stub_configs = stub_configs()

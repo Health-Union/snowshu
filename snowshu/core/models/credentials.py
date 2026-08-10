@@ -7,6 +7,7 @@ DATABASE = 'database'
 HOST = 'host'
 PASSWORD = 'password'  # dodgy: disable=password
 PORT = 'port'
+PRIVATE_KEY = 'private_key'  # dodgy: disable=password
 ROLE = 'role'
 SCHEMA = 'schema'
 USER = 'user'
@@ -22,6 +23,7 @@ class Credentials:  # noqa pylint: disable=too-many-instance-attributes
     host: Optional[str] = None
     password: Optional[str] = None
     port: Optional[int] = None
+    private_key: Optional[str] = None
     role: Optional[str] = None
     schema: Optional[str] = None
     user: Optional[str] = None
