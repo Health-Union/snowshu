@@ -1,9 +1,12 @@
+import base64
 import random
 from contextlib import nullcontext as does_not_raise
 from unittest import mock
 from urllib.parse import quote
 
 import pytest
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 from pandas.core.frame import DataFrame
 from psycopg2 import OperationalError
 
@@ -15,6 +18,26 @@ from snowshu.core.models.materializations import TABLE
 from snowshu.core.models.relation import Relation
 from snowshu.samplings.sample_methods import BernoulliSampleMethod
 from tests.common import query_equalize, rand_string
+
+
+def _generate_test_private_key_pem_and_der() -> tuple:
+    """Generates a test RSA key, returning (pem_bytes, der_bytes) for the same key.
+
+    pem_bytes is the full unencrypted PEM file (BEGIN/END markers included) --
+    base64-encoding it is the format expected for the `private_key` credential.
+    der_bytes is the unencrypted PKCS8 DER encoding of the same key, the format
+    the snowflake-connector-python `private_key` connect arg expects.
+    """
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    pem_bytes = key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption())
+    der_bytes = key.private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption())
+    return pem_bytes, der_bytes
 
 
 def test_get_connection():
@@ -67,6 +90,70 @@ def test_build_conn_string_spacial_symbols():
     conn_string = sf._build_conn_string()
     user, password, account, database, role = [quote(obj) for obj in (USER, PASSWORD, ACCOUNT, DATABASE, ROLE)]
     assert str(conn_string) == f'snowflake://{user}:{password}@{account}/{database}/?role={role}'
+
+
+def test_credentials_requires_password_or_private_key():
+    sf = SnowflakeAdapter()
+    USER, ACCOUNT, DATABASE = [rand_string(10) for _ in range(3)]
+
+    with pytest.raises(KeyError):
+        sf.credentials = Credentials(user=USER, account=ACCOUNT, database=DATABASE)
+
+    with pytest.raises(KeyError):
+        sf.credentials = Credentials(user=USER,
+                                     account=ACCOUNT,
+                                     database=DATABASE,
+                                     password=rand_string(10),
+                                     private_key=rand_string(10))
+
+
+def test_build_conn_string_private_key():
+    sf = SnowflakeAdapter()
+    USER, ACCOUNT, DATABASE, ROLE = [rand_string(15) for _ in range(4)]
+    pem_bytes, _ = _generate_test_private_key_pem_and_der()
+    private_key = base64.b64encode(pem_bytes).decode()
+
+    creds = Credentials(user=USER,
+                        private_key=private_key,
+                        account=ACCOUNT,
+                        database=DATABASE,
+                        role=ROLE)
+    sf.credentials = creds
+    conn_string = sf._build_conn_string()
+
+    assert str(conn_string) == f'snowflake://{USER}@{ACCOUNT}/{DATABASE}/?role={ROLE}'
+
+
+def test_load_private_key():
+    sf = SnowflakeAdapter()
+    pem_bytes, der_bytes = _generate_test_private_key_pem_and_der()
+    private_key = base64.b64encode(pem_bytes).decode()
+
+    creds = Credentials(user=rand_string(10),
+                        private_key=private_key,
+                        account=rand_string(10),
+                        database=rand_string(10))
+    sf.credentials = creds
+
+    assert sf._load_private_key() == der_bytes
+
+
+def test_get_connection_private_key():
+    sf = SnowflakeAdapter()
+    USER, ACCOUNT, DATABASE = [rand_string(10) for _ in range(3)]
+    pem_bytes, der_bytes = _generate_test_private_key_pem_and_der()
+    private_key = base64.b64encode(pem_bytes).decode()
+
+    creds = Credentials(user=USER, private_key=private_key, account=ACCOUNT, database=DATABASE)
+    sf.credentials = creds
+
+    with mock.patch(
+            "snowshu.adapters.source_adapters.snowflake_adapter.sqlalchemy.create_engine") as mock_create_engine:
+        sf.get_connection()
+
+    _, kwargs = mock_create_engine.call_args
+    assert kwargs['connect_args']['private_key'] == der_bytes
+    assert str(mock_create_engine.call_args[0][0]) == f'snowflake://{USER}@{ACCOUNT}/{DATABASE}/?'
 
 
 def test_sample_statement():

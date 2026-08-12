@@ -15,7 +15,7 @@ Your initial credentials file will look something like `this
 (*hint*: you can run ``snowshu init`` to get a generated sample file):
 
 .. code-block:: yaml
-   
+
    version: '1'
    sources:
    - name: default
@@ -23,6 +23,21 @@ Your initial credentials file will look something like `this
      account: kic1992.us-east-1
      user: frosty
      password: "such_secure_password"
+     database: "snowshu"
+
+Alternatively, you can authenticate with `key-pair authentication
+<https://docs.snowflake.com/en/user-guide/key-pair-auth>`_ instead of a password by
+providing the ``private_key`` field. Its value is the base64 private key:
+
+.. code-block:: yaml
+
+   version: '1'
+   sources:
+   - name: default
+     adapter: snowflake
+     account: kic1992.us-east-1
+     user: frosty
+     private_key: "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7..."
      database: "snowshu"
 
 
@@ -41,5 +56,6 @@ The components of the overall sources settings, dissected:
 - **adapter** (*Required*). It should always be set to ``snowflake``.
 - **account** (*Required*). It's an account identifier that uniquely identifies a Snowflake account within your organization. For example, the URL for an account uses the following format: ``<account_identifier>.snowflakecomputing.com``
 - **user** (*Required*) is a user login name used to connect or log into the Snowflake web interface. 
-- **password** (*Required*) is a user password used to connect or log into the Snowflake web interface.
+- **password** (*Required if* ``private_key`` *is not set*) is a user password used to connect or log into the Snowflake web interface.
+- **private_key** (*Required if* ``password`` *is not set*) is the base64 private key, to use for `key-pair authentication <https://docs.snowflake.com/en/user-guide/key-pair-auth>`_. Exactly one of ``password`` or ``private_key`` must be set.
 - **database** (*Required*) specifies the DataBase name to use.

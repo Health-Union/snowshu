@@ -45,14 +45,19 @@ def get_connection_profile(credentials):
         raise ValueError(
             'Test database set in file and database in configurations do not match.')
 
-    return dict(
-        account=credentials['sources'][0]['account'],
-        user=credentials['sources'][0]['user'],
-        password=credentials['sources'][0]['password'],
-        database=credentials['sources'][0]['database'],
-        role=credentials['sources'][0]['role'],
-        warehouse=credentials['sources'][0]['warehouse']
+    source = credentials['sources'][0]
+    profile = dict(
+        account=source['account'],
+        user=source['user'],
+        database=source['database'],
+        role=source['role'],
+        warehouse=source['warehouse']
     )
+    if 'private_key' in source:
+        profile['private_key'] = source['private_key']
+    else:
+        profile['password'] = source['password']
+    return profile
 
 
 def get_all_csv_file():

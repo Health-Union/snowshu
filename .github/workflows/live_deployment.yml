@@ -25,8 +25,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install twine==3.7.1
     - name: Build the Docker image
-      run: docker-compose up -d
+      run: docker compose up -d
     - name: Creating new release package
-      run: docker-compose exec -T snowshu python3 setup.py sdist bdist_wheel
+      run: docker compose exec -T snowshu python3 setup.py sdist bdist_wheel
     - name: Publishing to PyPI
       run: twine upload -u __token__ -p "$PYPI_KEY" dist/*
